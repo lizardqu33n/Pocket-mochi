@@ -67,6 +67,22 @@ export class MochiAccounts {
     await this.host.userStorage.setJson(PATH + '.pending', bank, { userId: user })
     await this.host.userStorage.move(PATH + '.pending', PATH, user)
   }
+  private async avatar(user: string, id: unknown): Promise<string> {
+    if (id === '') return ''
+    const imageId = identifier(id)
+    if (!this.host.images || !this.host.permissions.has('images')) throw new Error('Images permission is required for custom portraits.')
+    const image = await this.host.images.get(imageId, user)
+    if (!image || !/^image\/(png|jpeg|webp|gif)$/.test(image.mime_type)) throw new Error('This portrait is not available to your account.')
+    return `/api/v1/images/${imageId}`
+  }
+  async uploadAvatar(userId: string, dataUrl: unknown): Promise<string> {
+    const user = identifier(userId)
+    if (!this.host.images || !this.host.permissions.has('images')) throw new Error('Images permission is required.')
+    if (typeof dataUrl !== 'string' || dataUrl.length > 2800000 || !/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(dataUrl)) throw new Error('Choose a PNG, JPEG or WebP portrait up to 2 MB.')
+    if (atob(dataUrl.split(',')[1]).length > 2097152) throw new Error('Portrait exceeds 2 MB.')
+    const image = await this.host.images.uploadFromDataUrl(dataUrl, 'mochi-portrait', user)
+    return identifier(image.id)
+  }
   async create(user: string, input: any): Promise<MochiAccount> {
     return this.guard(user, async () => {
       const bank = await this.bank(user)
@@ -75,6 +91,7 @@ export class MochiAccounts {
       const id = fictionalAccountId(`account_${crypto.randomUUID().replaceAll('-', '')}`)
       if (bank.accounts.some(a => a.id === id)) throw new Error('Fictional account identifier collision; retry creation.')
       const account: MochiAccount = { version: 1, id, ownerId: user, revision: 1, displayName: field(input.displayName ?? persona.name, 120, true), username: username(input.username), avatarUrl: persona.avatarUrl, persona, createdAt: timestamp, updatedAt: timestamp, archived: false }
+      if (input.avatarId !== undefined) account.avatarUrl = await this.avatar(user, input.avatarId)
       bank.accounts.push(account); await this.save(user, bank)
       return account
     })
@@ -88,6 +105,7 @@ export class MochiAccounts {
       if (input.persona !== undefined) { account.persona = await this.snapshot(user, input.persona); account.avatarUrl = account.persona.avatarUrl }
       if (input.displayName !== undefined) account.displayName = field(input.displayName, 120, true)
       if (input.username !== undefined) account.username = username(input.username)
+      if (input.avatarId !== undefined) account.avatarUrl = await this.avatar(user, input.avatarId)
       account.revision++; account.updatedAt = new Date(this.now()).toISOString()
       await this.save(user, bank); return account
     })

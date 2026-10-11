@@ -6,7 +6,7 @@ import { defaultPresence } from '../src/mochi/presence.js'
 import { MochiView } from '../src/mochi/view.js'
 
 const BANK = 'alice:mochi/v1/fictional-accounts.json'
-function fixture() {
+export function fixture() {
   const files = new Map<string, any>(), events: any[] = [], calls: any[] = []
   let counter = 0, now = 1000000, failure = '', owned = true
   const personas = new Map<string, any>([['alice:p1', { id: 'p1', name: 'Mary', description: 'MARY_PRIVATE', image_id: 'portrait1' }], ['alice:p2', { id: 'p2', name: 'Jane', description: 'JANE_PRIVATE' }], ['bob:p3', { id: 'p3', name: 'Bob persona', description: 'BOB_PRIVATE' }]])

@@ -7,6 +7,7 @@ import { MochiAccounts, fictionalAccountId } from './accounts.js'
 
 // New implementation. No Character Chatroom source is included.
 export interface MochiHost {
+  images?: { get(id: string, userId: string): Promise<any>; list(options: any): Promise<any>; uploadFromDataUrl(dataUrl: string, filename: string, userId: string): Promise<any> }
   storage?: { exists(path: string): Promise<boolean>; getJson(path: string, options?: { fallback?: unknown }): Promise<any>; setJson(path: string, data: unknown): Promise<void>; move(from: string, to: string): Promise<unknown> }
   users?: { getRole(userId?: string): Promise<unknown> }
   userStorage: {
@@ -92,7 +93,9 @@ export class MochiService {
         }
       } catch { warnings.push(`Room ${match[1]} has an unreadable association; its file was preserved.`) }
     }
-    return { ...bank, accounts: bank.accounts.map(a => ({ ...a, roomIds: associations.get(a.id)!.sort() })), warnings }
+    const choices = await this.state(user)
+    const avatars = this.host.images && this.host.permissions.has('images') ? (await this.host.images.list({ userId: user, limit: 100, offset: 0, specificity: 'thumbnail' })).data.filter((a: any) => /^image\/(png|jpeg|webp|gif)$/.test(a.mime_type)).map((a: any) => ({ id: entityId(a.id), name: String(a.original_filename || 'Portrait').slice(0,120), url: `/api/v1/images/${entityId(a.id)}` })) : []
+    return { ...bank, accounts: bank.accounts.map(a => ({ ...a, roomIds: associations.get(a.id)!.sort() })), personas: choices.personas, avatars, canUploadAvatar: !!this.host.images && this.host.permissions.has('images'), warnings }
   }
   private abortFictional(userId: string, accountId: string, includeServer: boolean): void {
     if (!accountId) return
@@ -637,13 +640,15 @@ export class MochiService {
     let selectedRoomId: string | undefined
     try {
       if (payload.type.startsWith('mochi:account_') || payload.type === 'mochi:accounts') {
-        if (payload.type === 'mochi:account_create') await this.fictionalAccounts.create(userId, payload)
+        let createdAccountId: string | undefined, uploadedAvatarId: string | undefined
+        if (payload.type === 'mochi:account_create') createdAccountId = (await this.fictionalAccounts.create(userId, payload)).id
         else if (payload.type === 'mochi:account_update') await this.fictionalAccounts.update(userId, payload)
         else if (payload.type === 'mochi:account_select') await this.selectAccount(userId, payload)
         else if (payload.type === 'mochi:account_archive') await this.archiveAccount(userId, payload)
         else if (payload.type === 'mochi:account_restore') await this.fictionalAccounts.restore(userId, payload)
+        else if (payload.type === 'mochi:account_avatar_upload') uploadedAvatarId = await this.fictionalAccounts.uploadAvatar(userId, payload.dataUrl)
         else if (payload.type !== 'mochi:accounts') throw new Error('Unsupported fictional account action.')
-        this.host.sendToFrontend({ type: 'mochi:accounts', requestId: payload.requestId, state: await this.accountsState(userId) }, userId)
+        this.host.sendToFrontend({ type: 'mochi:accounts', requestId: payload.requestId, createdAccountId, uploadedAvatarId, state: await this.accountsState(userId) }, userId)
         return
       }
       if (payload.type === 'mochi:send') { await this.message(userId, payload); return }

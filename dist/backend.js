@@ -488,6 +488,28 @@ class MochiAccounts {
     await this.host.userStorage.setJson(PATH + ".pending", bank, { userId: user });
     await this.host.userStorage.move(PATH + ".pending", PATH, user);
   }
+  async avatar(user, id) {
+    if (id === "")
+      return "";
+    const imageId = identifier(id);
+    if (!this.host.images || !this.host.permissions.has("images"))
+      throw new Error("Images permission is required for custom portraits.");
+    const image = await this.host.images.get(imageId, user);
+    if (!image || !/^image\/(png|jpeg|webp|gif)$/.test(image.mime_type))
+      throw new Error("This portrait is not available to your account.");
+    return `/api/v1/images/${imageId}`;
+  }
+  async uploadAvatar(userId, dataUrl) {
+    const user = identifier(userId);
+    if (!this.host.images || !this.host.permissions.has("images"))
+      throw new Error("Images permission is required.");
+    if (typeof dataUrl !== "string" || dataUrl.length > 2800000 || !/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(dataUrl))
+      throw new Error("Choose a PNG, JPEG or WebP portrait up to 2 MB.");
+    if (atob(dataUrl.split(",")[1]).length > 2097152)
+      throw new Error("Portrait exceeds 2 MB.");
+    const image = await this.host.images.uploadFromDataUrl(dataUrl, "mochi-portrait", user);
+    return identifier(image.id);
+  }
   async create(user, input) {
     return this.guard(user, async () => {
       const bank = await this.bank(user);
@@ -498,6 +520,8 @@ class MochiAccounts {
       if (bank.accounts.some((a) => a.id === id))
         throw new Error("Fictional account identifier collision; retry creation.");
       const account = { version: 1, id, ownerId: user, revision: 1, displayName: field(input.displayName ?? persona.name, 120, true), username: username(input.username), avatarUrl: persona.avatarUrl, persona, createdAt: timestamp, updatedAt: timestamp, archived: false };
+      if (input.avatarId !== undefined)
+        account.avatarUrl = await this.avatar(user, input.avatarId);
       bank.accounts.push(account);
       await this.save(user, bank);
       return account;
@@ -518,6 +542,8 @@ class MochiAccounts {
         account.displayName = field(input.displayName, 120, true);
       if (input.username !== undefined)
         account.username = username(input.username);
+      if (input.avatarId !== undefined)
+        account.avatarUrl = await this.avatar(user, input.avatarId);
       account.revision++;
       account.updatedAt = new Date(this.now()).toISOString();
       await this.save(user, bank);
@@ -665,7 +691,9 @@ class MochiService {
         warnings.push(`Room ${match[1]} has an unreadable association; its file was preserved.`);
       }
     }
-    return { ...bank, accounts: bank.accounts.map((a) => ({ ...a, roomIds: associations.get(a.id).sort() })), warnings };
+    const choices = await this.state(user);
+    const avatars = this.host.images && this.host.permissions.has("images") ? (await this.host.images.list({ userId: user, limit: 100, offset: 0, specificity: "thumbnail" })).data.filter((a) => /^image\/(png|jpeg|webp|gif)$/.test(a.mime_type)).map((a) => ({ id: entityId(a.id), name: String(a.original_filename || "Portrait").slice(0, 120), url: `/api/v1/images/${entityId(a.id)}` })) : [];
+    return { ...bank, accounts: bank.accounts.map((a) => ({ ...a, roomIds: associations.get(a.id).sort() })), personas: choices.personas, avatars, canUploadAvatar: !!this.host.images && this.host.permissions.has("images"), warnings };
   }
   abortFictional(userId, accountId, includeServer) {
     if (!accountId)
@@ -1528,8 +1556,9 @@ class MochiService {
     let selectedRoomId;
     try {
       if (payload.type.startsWith("mochi:account_") || payload.type === "mochi:accounts") {
+        let createdAccountId, uploadedAvatarId;
         if (payload.type === "mochi:account_create")
-          await this.fictionalAccounts.create(userId, payload);
+          createdAccountId = (await this.fictionalAccounts.create(userId, payload)).id;
         else if (payload.type === "mochi:account_update")
           await this.fictionalAccounts.update(userId, payload);
         else if (payload.type === "mochi:account_select")
@@ -1538,9 +1567,11 @@ class MochiService {
           await this.archiveAccount(userId, payload);
         else if (payload.type === "mochi:account_restore")
           await this.fictionalAccounts.restore(userId, payload);
+        else if (payload.type === "mochi:account_avatar_upload")
+          uploadedAvatarId = await this.fictionalAccounts.uploadAvatar(userId, payload.dataUrl);
         else if (payload.type !== "mochi:accounts")
           throw new Error("Unsupported fictional account action.");
-        this.host.sendToFrontend({ type: "mochi:accounts", requestId: payload.requestId, state: await this.accountsState(userId) }, userId);
+        this.host.sendToFrontend({ type: "mochi:accounts", requestId: payload.requestId, createdAccountId, uploadedAvatarId, state: await this.accountsState(userId) }, userId);
         return;
       }
       if (payload.type === "mochi:send") {

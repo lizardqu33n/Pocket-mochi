@@ -4,6 +4,7 @@ import { MOCHI_STYLES } from './styles.js'
 import { showPocketSheet } from '../frontend/components/ui.js'
 import { notificationBody, type MochiNotificationPolicy } from './notifications.js'
 import { defaultPresence, STATUSES, statusFor } from './presence.js'
+import { MochiProfiles } from './profile-screen.js'
 
 function action(label: string, icon: string, compact = false): HTMLButtonElement {
   const node = button('', `lp-button${compact ? ' mochi-icon-button' : ''}`)
@@ -23,6 +24,8 @@ function portrait(name: string, url = ''): HTMLSpanElement {
 import { defaultMochiSettings, type MochiMessage, type MochiNotification, type MochiRoom, type MochiSettings, type MochiState } from './types.js'
 
 export class MochiView {
+  private profiles = new MochiProfiles()
+  private profilesOpen = false
   state: MochiState | null = null
   roomId = ''
   creating = false
@@ -92,6 +95,13 @@ export class MochiView {
     this.redraw()
   }
   receive(payload: any): boolean {
+    if(payload?.type==='mochi:accounts') {
+      if(payload.requestId!==this.request)return true
+      clearTimeout(this.timeout);this.busy=false;this.profiles.state=payload.state
+      if(payload.uploadedAvatarId&&this.profiles.draft)this.profiles.draft.avatarId=payload.uploadedAvatarId
+      else if(this.operation!=='mochi:accounts')this.profiles.draft=null
+      this.redraw();return true
+    }
     if (['mochi:notification', 'mochi:notifications', 'mochi:room_updated', 'mochi:job_finished'].includes(payload?.type) &&
         (payload.accountId ?? payload.notification?.accountId ?? payload.room?.accountId) !== this.state?.accountId) return true
     if (payload?.type === 'mochi:room_updated') {
@@ -193,6 +203,7 @@ export class MochiView {
     }
     header.append(headerActions, mascot); page.append(header)
     if (this.error) { const error = el('p', 'mochi-error', this.error); error.setAttribute('role', 'alert'); page.append(error) }
+    if(this.profilesOpen){page.append(this.profiles.render(this.busy,(type,input)=>this.dispatch(type,input),()=>this.redraw(),()=>{this.profilesOpen=false;this.redraw()}));return page}
     if (!this.state) return page
     if (this.feedback) { const status = el('p', 'mochi-muted', this.feedback); status.setAttribute('role', 'status'); page.append(status) }
     for (const warning of this.state.warnings) page.append(el('p', 'mochi-error', warning))
@@ -224,6 +235,7 @@ export class MochiView {
     }
     if (this.roomId) page.append(el('p', 'mochi-error', 'This room is unavailable. Refresh or select another room.'))
     page.append(el('p', 'mochi-muted', 'Your independent character rooms.'))
+    const profiles=action('Mochi profiles','people');profiles.disabled=this.busy;profiles.onclick=()=>{this.leave();this.profilesOpen=true;this.profiles.draft=null;this.dispatch('mochi:accounts')};page.append(profiles)
     const create = action('New room', 'plus'); create.classList.add('mochi-primary'); create.disabled = this.busy
     create.onclick = () => { this.creating = true; this.draft = null; this.redraw() }; page.append(create)
     if (!this.state.rooms.length) page.append(el('p', 'mochi-card', 'No rooms yet. Choose your characters and the identity you want to use.'))
