@@ -14,6 +14,15 @@ export interface PocketGenerationHost {
 
 const historyLocks = new Map<string, Promise<DevicePreferences>>()
 
+/** Direct provider boundary shared by Pocket and independent apps. No RP assembly or preference writes. */
+export async function callPocketProvider(spindle: any, request: Record<string, unknown>): Promise<any> {
+  const signal = request.signal instanceof AbortSignal ? request.signal : undefined
+  signal?.throwIfAborted()
+  const result = await spindle.generate.quiet(request)
+  signal?.throwIfAborted()
+  return result
+}
+
 function compactError(error: unknown): string {
   const raw = error instanceof Error ? error.message : String(error)
   return raw.replace(/\b(?:sk-|key-|Bearer\s+)[A-Za-z0-9._-]{8,}\b/gi, '[redacted]').replace(/\s+/g, ' ').trim().slice(0, 500) || 'Generation failed'
@@ -97,7 +106,7 @@ export async function runPocketGeneration(
           if (chunk.type === 'done') result = chunk
         }
         if (!result) throw new Error('The provider stream ended without a completed response. Retry enrichment.')
-      } else result = await host.spindle.generate.quiet(request)
+      } else result = await callPocketProvider(host.spindle, request)
     }
     await generate()
     if (input.signal instanceof AbortSignal) input.signal.throwIfAborted()

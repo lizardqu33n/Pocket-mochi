@@ -1,5 +1,533 @@
+// src/frontend/components/icons.ts
+var POCKET_ICONS = {
+  home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 10 8.5-7 8.5 7v9.5a1.5 1.5 0 0 1-1.5 1.5h-5v-6H10v6H5a1.5 1.5 0 0 1-1.5-1.5z"/></svg>',
+  messages: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 11.5a8 8 0 0 1-11.7 7.1L4 20l1.4-4.6A8 8 0 1 1 20.5 11.5Z"/><path d="M8 10.5h.01M12 10.5h.01M16 10.5h.01"/></svg>',
+  contacts: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0M16 8h5M18.5 5.5v5"/></svg>',
+  camera: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7.5h3l1.5-2h7l1.5 2h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',
+  gallery: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m4.5 18 4.7-4.7 3.1 3.1 2.2-2.2 5 5"/></svg>',
+  notes: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h14v18H5zM8 8h8M8 12h8M8 16h5"/></svg>',
+  weather: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M8 18.5h9a4 4 0 0 0 .4-8A6 6 0 0 0 6 12.5a3 3 0 0 0 2 6Z"/><path d="M8 5V3M4.5 7 3 5.5M11.5 7 13 5.5"/></svg>',
+  calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M7 14h3M14 14h3M7 18h3"/></svg>',
+  trackers: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+  settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.8 1.8 0 0 0 .4 2l.1.1-2.8 2.8-.1-.1a1.8 1.8 0 0 0-2-.4 1.8 1.8 0 0 0-1.1 1.6v.2H10V21a1.8 1.8 0 0 0-1.1-1.6 1.8 1.8 0 0 0-2 .4l-.1.1L4 17.1l.1-.1a1.8 1.8 0 0 0 .4-2A1.8 1.8 0 0 0 3 13.9h-.2V10H3a1.8 1.8 0 0 0 1.6-1.1 1.8 1.8 0 0 0-.4-2l-.1-.1L6.9 4l.1.1a1.8 1.8 0 0 0 2 .4A1.8 1.8 0 0 0 10 3V2.8h4V3a1.8 1.8 0 0 0 1.1 1.6 1.8 1.8 0 0 0 2-.4l.1-.1L20 6.9l-.1.1a1.8 1.8 0 0 0-.4 2 1.8 1.8 0 0 0 1.6 1.1h.2V14h-.2a1.8 1.8 0 0 0-1.7 1Z"/></svg>',
+  notifications: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>',
+  back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>',
+  send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m21 3-7.2 18-3.2-7.6L3 10zM10.6 13.4 21 3"/></svg>',
+  sparkle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5c.5 4.2 2.8 6.5 7 7-4.2.5-6.5 2.8-7 7-.5-4.2-2.8-6.5-7-7 4.2-.5 6.5-2.8 7-7Z"/><path d="M19 16.5c.2 2 1.3 3.1 3 3.3-1.7.2-2.8 1.3-3 3.2-.2-1.9-1.3-3-3-3.2 1.7-.2 2.8-1.3 3-3.3Z"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14M10 11v6M14 11v6"/></svg>'
+};
+
 // src/domain/gallery-page.ts
 var GALLERY_PAGE_SIZE = 48;
+
+// src/frontend/shared.ts
+function el(tag, className = "", content = "") {
+  const node = document.createElement(tag);
+  if (className)
+    node.className = className;
+  if (content)
+    node.textContent = content;
+  return node;
+}
+function button(label, className = "lp-button") {
+  const node = el("button", className, label);
+  node.type = "button";
+  return node;
+}
+function formatTime(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime()))
+    return "";
+  return new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(date);
+}
+function formatDate(value, detail = false) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime()))
+    return String(value || "");
+  return new Intl.DateTimeFormat(undefined, detail ? { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" } : { month: "short", day: "numeric" }).format(date);
+}
+function dateTimeLocal(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime()))
+    return "";
+  const offset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+}
+function inputValue(input) {
+  return input.value.trim();
+}
+function requestId(prefix = "req") {
+  return `${prefix}_${globalThis.crypto?.randomUUID?.() || `${Date.now()}_${Math.random().toString(36).slice(2)}`}`;
+}
+
+// src/mochi/styles.ts
+var MOCHI_STYLES = `
+.mochi-view [hidden]{display:none!important}
+.mochi-view{width:100%;flex:1}
+.mochi-view{--mochi-accent:color-mix(in srgb,var(--lp-accent,#a99bff) 35%,#b7a0e8);--mochi-surface:var(--lp-bg,var(--lumiverse-bg,#17151d));--mochi-border:var(--lp-border,#ffffff18);color:var(--lp-text,var(--lumiverse-text,#f7f5ff));background:var(--mochi-surface);font:inherit;line-height:1.45;padding:16px;display:flex;flex-direction:column;gap:14px;overflow:auto;height:100%;min-width:0;box-sizing:border-box;container-type:inline-size}
+.mochi-view *{box-sizing:border-box}.mochi-view h2,.mochi-view h3,.mochi-view p{margin:0}.mochi-view h2{font-size:23px;letter-spacing:-.04em}.mochi-view h3{font-size:17px;overflow-wrap:anywhere}.mochi-view header,.mochi-actions{display:flex;align-items:center;justify-content:space-between;gap:8px}.mochi-brand{display:flex;align-items:center;gap:8px}.mochi-brand>span{color:var(--mochi-accent)}.mochi-view svg{width:20px;height:20px;display:block;flex:none}
+.mochi-view button{font:inherit;color:inherit;cursor:pointer}.mochi-view .lp-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 14px;border:1px solid var(--mochi-border);border-radius:12px;background:color-mix(in srgb,var(--lp-text,#fff) 4%,var(--mochi-surface));font-size:13px;font-weight:600}.mochi-view .mochi-icon-button{width:44px;padding:10px;flex:none;border-radius:50%}.mochi-view .mochi-primary{background:var(--mochi-accent);color:#21182e;border-color:transparent}.mochi-view button:disabled{opacity:.45;cursor:default}.mochi-view button:not(:disabled):hover{border-color:var(--mochi-accent)}.mochi-view :is(button,input,textarea,select):focus-visible{outline:2px solid var(--mochi-accent);outline-offset:3px}
+.mochi-muted{color:var(--lp-muted,var(--lumiverse-text-muted,#a9a3b5));font-size:12px}.mochi-error{color:var(--lp-destructive,#ed7c8c);font-size:13px;overflow-wrap:anywhere}.mochi-room-header{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--mochi-border)}.mochi-room-header .mochi-actions{justify-content:end}.mochi-room-info{display:grid;gap:3px;min-width:0}.mochi-member-strip{display:flex;gap:8px;flex-wrap:wrap}.mochi-member{display:flex;align-items:center;gap:6px;min-width:0;font-size:11px;max-width:100%}.mochi-member>span:last-child{overflow-wrap:anywhere}.mochi-member .mochi-avatar{width:26px;height:26px;font-size:11px;flex:none}
+.mochi-card{width:100%;padding:14px;border:1px solid var(--mochi-border);border-radius:16px;background:color-mix(in srgb,var(--mochi-accent) 4%,var(--mochi-surface));display:flex;gap:12px;text-align:left;align-items:center}.mochi-card-copy{min-width:0;display:grid;gap:4px;flex:1}.mochi-card-copy strong{overflow-wrap:anywhere;font-size:14px}.mochi-preview{font-size:12px;color:var(--lp-muted,#a9a3b5);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}.mochi-room-avatars{width:48px;flex:none;display:flex;flex-wrap:wrap;gap:2px}.mochi-room-avatars .mochi-avatar{width:23px;height:23px;font-size:10px}.mochi-room-avatars[data-single=true] .mochi-avatar{width:44px;height:44px;font-size:18px}
+.mochi-form{display:flex;flex-direction:column;gap:18px;min-width:0}.mochi-view label{display:flex;flex-direction:column;gap:7px;font-size:12px;font-weight:600;min-width:0}.mochi-view :is(input,textarea,select){box-sizing:border-box;width:100%;min-width:0;min-height:44px;padding:11px 12px;border-radius:12px;border:1px solid var(--mochi-border);background:color-mix(in srgb,var(--lp-text,#fff) 3%,var(--mochi-surface));color:inherit;font:inherit;font-size:14px;line-height:1.4}.mochi-view textarea{resize:vertical}.mochi-view option{background:var(--mochi-surface);color:var(--lp-text,#f7f5ff)}.mochi-view .mochi-toggle{flex-direction:row;align-items:center;justify-content:space-between;gap:12px;padding:12px;background:color-mix(in srgb,var(--mochi-accent) 5%,var(--mochi-surface));border:1px solid var(--mochi-border);border-radius:12px}.mochi-view input[type=checkbox]{appearance:auto;min-height:24px;width:24px;height:24px;flex:none;accent-color:var(--mochi-accent);margin:0}
+.mochi-picker{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.mochi-choice{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:8px;min-width:0;padding:12px 6px;border:1px solid transparent;border-radius:14px;background:transparent;font-size:12px!important;line-height:1.35;overflow-wrap:anywhere;text-align:center}.mochi-choice>span:last-child{width:100%;min-width:0}.mochi-choice[aria-pressed=true]{border-color:var(--mochi-accent);background:color-mix(in srgb,var(--mochi-accent) 12%,var(--mochi-surface))}.mochi-choice[aria-pressed=true]::after{content:'✓';position:absolute;right:5px;top:5px;border-radius:50%;width:18px;height:18px;background:var(--mochi-accent);color:#21182e;font-size:12px}.mochi-avatar,.mochi-message-avatar{display:flex;align-items:center;justify-content:center;width:48px;height:48px;flex:none;border-radius:50%;background:color-mix(in srgb,var(--mochi-accent) 18%,var(--mochi-surface));border:1px solid color-mix(in srgb,var(--mochi-accent) 35%,var(--mochi-border));overflow:hidden;color:var(--mochi-accent);font-weight:650}.mochi-avatar img,.mochi-message-avatar img{width:100%;height:100%;object-fit:cover}
+.mochi-thread{display:flex;flex-direction:column;gap:18px;flex:1;min-height:160px;overflow-y:auto;overscroll-behavior:contain;padding:4px 0 10px}.mochi-message{display:flex;gap:8px;align-items:flex-start;min-width:0}.mochi-message[data-role=user]{flex-direction:row-reverse}.mochi-message-avatar{width:32px;height:32px;font-size:12px;margin-top:2px}.mochi-message-body{max-width:min(86%,calc(100% - 40px));min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:5px}.mochi-message[data-role=user] .mochi-message-body{align-items:flex-end}.mochi-message-name{font-size:12px;font-weight:650;overflow-wrap:anywhere}.mochi-bubble{width:fit-content;max-width:100%;background:color-mix(in srgb,var(--lp-text,#fff) 7%,var(--mochi-surface));border:1px solid var(--mochi-border);border-radius:12px;padding:10px 12px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.5}.mochi-message[data-role=user] .mochi-bubble{background:color-mix(in srgb,var(--mochi-accent) 24%,var(--mochi-surface));border-color:color-mix(in srgb,var(--mochi-accent) 28%,var(--mochi-border))}.mochi-message time{font-size:10px;color:var(--lp-muted,#a9a3b5)}
+.mochi-composer{position:sticky;bottom:0;flex-shrink:0;background:var(--mochi-surface);padding:10px 0 max(4px,env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--mochi-border)}.mochi-composer-row{display:flex;gap:8px;align-items:flex-end}.mochi-composer textarea{flex:1;min-height:44px;max-height:112px;resize:none;border-radius:18px;padding:11px 13px}.mochi-composer select{font-size:12px;min-height:36px;padding:7px 10px}.mochi-composer-hint{font-size:10px;color:var(--lp-muted,#a9a3b5)}.mochi-view>header,.mochi-room-header,.mochi-member-strip{flex-shrink:0}
+@container (max-width:320px){.mochi-picker{grid-template-columns:repeat(2,minmax(0,1fr))}.mochi-room-header{gap:6px}.mochi-member-strip{gap:6px}}
+`;
+
+// src/mochi/types.ts
+var defaultMochiSettings = () => ({ autoReply: true, connectionId: "", contextTokens: 8192, outputTokens: 1200, instructions: "", characterNames: {} });
+var MOCHI_ROOM_ID = /^room_[a-f0-9]{32}$/;
+
+// src/mochi/view.ts
+function action(label, icon, compact = false) {
+  const node = button("", `lp-button${compact ? " mochi-icon-button" : ""}`);
+  node.setAttribute("aria-label", label);
+  node.title = label;
+  const glyph = el("span");
+  glyph.setAttribute("aria-hidden", "true");
+  glyph.innerHTML = POCKET_ICONS[icon] || `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icon === "stop" ? '<rect x="6" y="6" width="12" height="12" rx="2"/>' : '<path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-2l2 2M4 17l2 2a7 7 0 0 0 12-2"/>'}</svg>`;
+  node.append(glyph);
+  if (!compact)
+    node.append(el("span", "", label));
+  return node;
+}
+function portrait(name, url = "") {
+  const node = el("span", "mochi-avatar", name.slice(0, 1).toUpperCase() || "?");
+  node.setAttribute("aria-hidden", "true");
+  if (url) {
+    const img = el("img");
+    img.src = url;
+    img.alt = "";
+    node.replaceChildren(img);
+  }
+  return node;
+}
+
+class MochiView {
+  send;
+  redraw;
+  navigate;
+  state = null;
+  roomId = "";
+  creating = false;
+  editing = false;
+  busy = false;
+  error = "";
+  request = "";
+  drafts = new Map;
+  responders = new Map;
+  ownGenerations = new Map;
+  selectionVersion = 0;
+  requestVersion = 0;
+  settingsDraft = null;
+  draftRevision = 0;
+  timeout;
+  draft = null;
+  constructor(send, redraw, navigate) {
+    this.send = send;
+    this.redraw = redraw;
+    this.navigate = navigate;
+  }
+  load() {
+    this.dispatch("mochi:list");
+  }
+  select(id) {
+    if (this.roomId !== id) {
+      this.leave();
+      this.selectionVersion++;
+      this.roomId = id;
+      this.creating = false;
+      this.editing = false;
+      this.draft = null;
+      this.settingsDraft = null;
+    }
+  }
+  leave() {
+    const generationRequestId = this.ownGenerations.get(this.roomId);
+    if (generationRequestId)
+      this.send({ type: "mochi:cancel", roomId: this.roomId, generationRequestId });
+  }
+  destroy() {
+    this.leave();
+    clearTimeout(this.timeout);
+  }
+  dispatch(type, values = {}) {
+    if (this.busy)
+      return;
+    this.request = requestId("mochi");
+    this.requestVersion = this.selectionVersion;
+    if (type === "mochi:send")
+      this.ownGenerations.set(this.roomId, this.request);
+    this.busy = true;
+    this.error = "";
+    clearTimeout(this.timeout);
+    this.timeout = setTimeout(() => {
+      this.busy = false;
+      this.error = "No response received. Refresh the inbox to check whether your room was saved before trying again.";
+      this.redraw();
+    }, 30000);
+    this.send({ type, requestId: this.request, ...values });
+    this.redraw();
+  }
+  receive(payload) {
+    if (payload?.type !== "mochi:state" && payload?.type !== "mochi:error")
+      return false;
+    if (payload.requestId !== this.request)
+      return true;
+    clearTimeout(this.timeout);
+    this.busy = false;
+    if (payload.type === "mochi:error") {
+      if (this.requestVersion === this.selectionVersion)
+        this.error = String(payload.message);
+    } else {
+      this.state = payload.state;
+      if (payload.accepted && this.ownGenerations.get(this.roomId) === payload.requestId)
+        this.drafts.set(this.roomId, "");
+      for (const [id, request] of this.ownGenerations)
+        if (this.state && this.state.jobs?.[id] !== request)
+          this.ownGenerations.delete(id);
+      if (payload.selectedRoomId && this.requestVersion === this.selectionVersion) {
+        this.creating = false;
+        this.editing = false;
+        this.draft = null;
+        this.roomId = payload.selectedRoomId;
+        this.navigate(this.roomId);
+      }
+    }
+    this.redraw();
+    return true;
+  }
+  render() {
+    const page = el("div", "mochi-view");
+    const style = el("style");
+    style.textContent = MOCHI_STYLES;
+    page.append(style);
+    const header = el("header");
+    const brand = el("div", "mochi-brand");
+    brand.append(el("h2", "", "Mochi"));
+    const sparkle = el("span");
+    sparkle.innerHTML = POCKET_ICONS.sparkle;
+    sparkle.setAttribute("aria-hidden", "true");
+    brand.append(sparkle);
+    header.append(brand);
+    const refresh = action("Refresh", "refresh", true);
+    refresh.disabled = this.busy;
+    refresh.onclick = () => this.load();
+    header.append(refresh);
+    page.append(header);
+    if (this.error) {
+      const error = el("p", "mochi-error", this.error);
+      error.setAttribute("role", "alert");
+      page.append(error);
+    }
+    if (!this.state)
+      return page;
+    for (const warning of this.state.warnings)
+      page.append(el("p", "mochi-error", warning));
+    const room = this.state.rooms.find((room) => room.id === this.roomId);
+    if (this.creating || this.editing) {
+      page.append(this.form(this.editing ? room : undefined));
+      return page;
+    }
+    if (room) {
+      const roomHeader = el("div", "mochi-room-header");
+      const info = el("div", "mochi-room-info");
+      info.append(el("h3", "", room.title), el("p", "mochi-muted", `${room.characterIds.length} ${room.characterIds.length === 1 ? "character" : "characters"}`), el("p", "mochi-muted", `You are ${room.persona.name}`));
+      const controls = el("div", "mochi-actions");
+      const inbox = action("Room inbox", "back", true);
+      inbox.onclick = () => {
+        this.select("");
+        this.navigate();
+      };
+      const edit = action("Room settings", "settings", true);
+      edit.onclick = () => {
+        this.leave();
+        this.editing = true;
+        this.draft = null;
+        this.settingsDraft = null;
+        this.redraw();
+      };
+      controls.append(inbox, edit);
+      roomHeader.append(info, controls);
+      page.append(roomHeader);
+      const members = el("div", "mochi-member-strip");
+      for (const id of room.characterIds) {
+        const character = this.state.characters.find((c) => c.id === id);
+        const name = room.settings?.characterNames[id] || character?.name || "Unavailable character";
+        const card = el("div", "mochi-member");
+        card.append(portrait(name, character?.avatarUrl), el("span", "", name));
+        members.append(card);
+      }
+      page.append(members, this.thread(room), this.composer(room));
+      return page;
+    }
+    if (this.roomId)
+      page.append(el("p", "mochi-error", "This room is unavailable. Refresh or select another room."));
+    page.append(el("p", "mochi-muted", "Your independent character rooms."));
+    const create = action("New room", "plus");
+    create.classList.add("mochi-primary");
+    create.disabled = this.busy;
+    create.onclick = () => {
+      this.creating = true;
+      this.draft = null;
+      this.redraw();
+    };
+    page.append(create);
+    if (!this.state.rooms.length)
+      page.append(el("p", "mochi-card", "No rooms yet. Choose your characters and the identity you want to use."));
+    for (const room of this.state.rooms) {
+      const row = button("", "mochi-card");
+      const avatars = el("div", "mochi-room-avatars");
+      avatars.dataset.single = String(room.characterIds.length === 1);
+      for (const id of room.characterIds.slice(0, 4)) {
+        const c = this.state.characters.find((c) => c.id === id);
+        avatars.append(portrait(room.settings?.characterNames[id] || c?.name || "?", c?.avatarUrl));
+      }
+      const copy = el("div", "mochi-card-copy");
+      copy.append(el("strong", "", room.title), el("span", "mochi-muted", `${room.characterIds.length === 1 ? "Direct room" : `${room.characterIds.length} characters`} · ${room.persona.name}`));
+      const last = room.messages.at(-1);
+      copy.append(el("span", "mochi-preview", last?.content ? `${last.name}: ${last.content}` : "Start a conversation"));
+      row.append(avatars, copy);
+      row.onclick = () => {
+        this.select(room.id);
+        this.navigate(room.id);
+      };
+      page.append(row);
+    }
+    return page;
+  }
+  form(room) {
+    const state = this.state;
+    if (!this.draft)
+      this.draftRevision = room?.revision || 0;
+    this.draft ||= { title: room?.title || "", characterIds: [...room?.characterIds || []], persona: room ? "keep" : "manual", name: room?.persona.name || "You", description: room?.persona.description || "" };
+    const draft = this.draft;
+    this.settingsDraft ||= structuredClone(room?.settings || defaultMochiSettings());
+    const settings = this.settingsDraft;
+    const form = el("form", "mochi-form");
+    form.append(el("h3", "", room ? "Room settings" : "New room"));
+    const field = (label, input) => {
+      input.setAttribute("aria-label", label);
+      const node = el("label", input.tagName === "INPUT" && input.type === "checkbox" ? "mochi-toggle" : "", label);
+      node.append(input);
+      form.append(node);
+    };
+    const title = el("input");
+    title.required = true;
+    title.maxLength = 120;
+    title.value = draft.title;
+    title.oninput = () => {
+      draft.title = title.value;
+    };
+    field("Room name", title);
+    const picker = el("div", "mochi-picker");
+    picker.setAttribute("role", "group");
+    picker.setAttribute("aria-label", "Room characters");
+    for (const character of state.characters) {
+      const choice = button("", "mochi-choice");
+      choice.append(portrait(character.name, character.avatarUrl));
+      choice.append(el("span", "", character.name));
+      choice.setAttribute("aria-pressed", String(draft.characterIds.includes(character.id)));
+      choice.onclick = () => {
+        draft.characterIds = draft.characterIds.includes(character.id) ? draft.characterIds.filter((id) => id !== character.id) : [...draft.characterIds, character.id];
+        choice.setAttribute("aria-pressed", String(draft.characterIds.includes(character.id)));
+      };
+      picker.append(choice);
+    }
+    form.append(el("p", "", "Choose 1–12 characters"), picker);
+    const persona = el("select");
+    const option = (value, label) => {
+      const o = el("option", "", label);
+      o.value = value;
+      persona.append(o);
+    };
+    if (room)
+      option("keep", `Keep saved identity: ${room.persona.name}`);
+    option("manual", "Custom identity");
+    state.personas.forEach((p, i) => option(String(i), `${p.name} (${p.source === "pocket" ? "Pocket profile" : "Lumiverse persona"})`));
+    persona.value = draft.persona;
+    persona.onchange = () => {
+      draft.persona = persona.value;
+      this.redraw();
+    };
+    field("Your identity in this room", persona);
+    if (draft.persona === "manual") {
+      const name = el("input");
+      name.required = true;
+      name.maxLength = 120;
+      name.value = draft.name;
+      name.oninput = () => {
+        draft.name = name.value;
+      };
+      field("Your name", name);
+      const description = el("textarea");
+      description.maxLength = 12000;
+      description.rows = 3;
+      description.value = draft.description;
+      description.oninput = () => {
+        draft.description = description.value;
+      };
+      field("Identity description", description);
+    }
+    if (room) {
+      const connection = el("select");
+      const empty = el("option", "", "Choose connection");
+      empty.value = "";
+      connection.append(empty);
+      for (const c of state.connections || []) {
+        const o = el("option", "", `${c.name} · ${c.model}`);
+        o.value = c.id;
+        connection.append(o);
+      }
+      connection.value = settings.connectionId;
+      connection.onchange = () => {
+        settings.connectionId = connection.value;
+      };
+      field("Generation connection", connection);
+      const auto = el("input");
+      auto.type = "checkbox";
+      auto.checked = settings.autoReply;
+      auto.onchange = () => {
+        settings.autoReply = auto.checked;
+      };
+      field("Reply automatically after sending", auto);
+      for (const [label, key] of [["Total token budget", "contextTokens"], ["Maximum reply tokens", "outputTokens"]]) {
+        const input = el("input");
+        input.type = "number";
+        input.value = String(settings[key]);
+        input.oninput = () => {
+          settings[key] = Number(input.value);
+        };
+        field(label, input);
+      }
+      const instructions = el("textarea");
+      instructions.maxLength = 6000;
+      instructions.value = settings.instructions;
+      instructions.oninput = () => {
+        settings.instructions = instructions.value;
+      };
+      field("Room instructions", instructions);
+      for (const id of room.characterIds) {
+        const input = el("input");
+        input.maxLength = 120;
+        input.value = settings.characterNames[id] || "";
+        input.oninput = () => {
+          settings.characterNames[id] = input.value;
+        };
+        field(`Room name for ${state.characters.find((c) => c.id === id)?.name || id}`, input);
+      }
+    }
+    const save = action(this.busy ? "Saving…" : room ? "Save settings" : "Create room", room ? "settings" : "plus");
+    save.classList.add("mochi-primary");
+    save.type = "submit";
+    save.disabled = this.busy;
+    const cancel = action("Cancel", "back");
+    cancel.disabled = this.busy;
+    cancel.onclick = () => {
+      this.creating = false;
+      this.editing = false;
+      this.draft = null;
+      this.redraw();
+    };
+    const actions = el("div", "mochi-actions");
+    actions.append(save, cancel);
+    form.append(actions);
+    form.onsubmit = (event) => {
+      event.preventDefault();
+      const selected = draft.persona === "keep" ? undefined : draft.persona === "manual" ? { source: "manual", name: draft.name, description: draft.description } : state.personas[Number(draft.persona)];
+      this.dispatch(room ? "mochi:update" : "mochi:create", { roomId: room?.id, revision: room ? this.draftRevision : undefined, title: draft.title, characterIds: draft.characterIds, persona: selected, ...room ? { settings } : {} });
+    };
+    return form;
+  }
+  thread(room) {
+    const thread = el("div", "mochi-thread");
+    thread.setAttribute("role", "log");
+    thread.setAttribute("aria-label", "Room messages");
+    thread.dataset.pocketThread = "mochi";
+    globalThis.requestAnimationFrame?.(() => {
+      thread.scrollTop = thread.scrollHeight;
+    });
+    for (const raw of room.messages) {
+      const message = raw;
+      const row = el("div", "mochi-message");
+      row.dataset.role = message.role;
+      const avatar = el("span", "mochi-message-avatar", message.name?.slice(0, 1) || "?");
+      if (message.avatarUrl) {
+        const image = el("img");
+        image.src = message.avatarUrl;
+        image.alt = "";
+        avatar.replaceChildren(image);
+      }
+      const body = el("div", "mochi-message-body");
+      const time = el("time", "", new Date(message.createdAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }));
+      time.dateTime = message.createdAt;
+      body.append(el("strong", "mochi-message-name", message.name || "Unknown"), el("div", "mochi-bubble", message.content || ""), time);
+      row.append(avatar, body);
+      thread.append(row);
+    }
+    if (this.state?.jobs?.[room.id]) {
+      const status = el("p", "mochi-muted", "Character is replying…");
+      status.setAttribute("role", "status");
+      thread.append(status);
+    }
+    return thread;
+  }
+  composer(room) {
+    const form = el("form", "mochi-composer");
+    const responder = el("select");
+    responder.setAttribute("aria-label", "Next responder");
+    const auto = el("option", "", "Automatic responder");
+    auto.value = "auto";
+    responder.append(auto);
+    for (const id of room.characterIds) {
+      const o = el("option", "", room.settings?.characterNames[id] || this.state?.characters.find((c) => c.id === id)?.name || id);
+      o.value = id;
+      responder.append(o);
+    }
+    const selected = this.responders.get(room.id) || "auto";
+    responder.value = room.characterIds.includes(selected) ? selected : "auto";
+    responder.onchange = () => this.responders.set(room.id, responder.value);
+    const input = el("textarea");
+    input.rows = 1;
+    input.maxLength = 32000;
+    input.setAttribute("aria-label", "Message");
+    input.placeholder = `Message ${room.title}…`;
+    input.value = this.drafts.get(room.id) || "";
+    input.dataset.pocketComposer = `mochi_${room.id}`;
+    input.oninput = () => {
+      this.drafts.set(room.id, input.value);
+      input.style.height = "auto";
+      input.style.height = `${Math.min(input.scrollHeight, 112)}px`;
+    };
+    input.onkeydown = (event) => {
+      if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+        event.preventDefault();
+        form.requestSubmit();
+      }
+    };
+    const job = this.state?.jobs?.[room.id];
+    const submit = action("Send", "send", true);
+    submit.classList.add("mochi-primary");
+    submit.type = "submit";
+    submit.disabled = this.busy || Boolean(job);
+    const stop = action("Stop reply", "stop", true);
+    stop.disabled = !job;
+    stop.hidden = !job;
+    stop.onclick = () => this.send({ type: "mochi:cancel", roomId: room.id, generationRequestId: job });
+    form.onsubmit = (event) => {
+      event.preventDefault();
+      if (!this.busy && !job)
+        this.dispatch("mochi:send", { roomId: room.id, revision: room.revision, content: input.value, responder: responder.value });
+    };
+    const actions = el("div", "mochi-composer-row");
+    actions.append(input, submit, stop);
+    form.append(responder, actions, el("p", "mochi-composer-hint", "Send empty to continue · Shift+Enter for a new line"));
+    return form;
+  }
+}
 
 // src/frontend/components/tts-connection.ts
 async function listTtsConnections(signal) {
@@ -850,7 +1378,7 @@ function wallpaperCss(primary, secondary) {
 }
 
 // src/domain/navigation.ts
-var APPS = new Set(["home", "messages", "contacts", "gallery", "camera", "notes", "weather", "calendar", "trackers", "notifications", "settings"]);
+var APPS = new Set(["home", "messages", "mochi", "contacts", "gallery", "camera", "notes", "weather", "calendar", "trackers", "notifications", "settings"]);
 function shortId(value) {
   if (typeof value !== "string")
     return;
@@ -862,6 +1390,8 @@ function normalizePocketRoute(value, fallback = { app: "home" }) {
     return fallback;
   const raw = value;
   const app = typeof raw.app === "string" && APPS.has(raw.app) ? raw.app : fallback.app;
+  if (app === "mochi")
+    return { app, ...typeof raw.roomId === "string" && MOCHI_ROOM_ID.test(raw.roomId) ? { roomId: raw.roomId } : {} };
   if (app === "messages")
     return {
       app,
@@ -1185,46 +1715,6 @@ function supportsPocketTouchScroll(widget) {
 function applyPocketTouchScroll(widget, preference) {
   if (supportsPocketTouchScroll(widget))
     widget.setTouchScrollMode(resolvePocketTouchScrollMode(preference));
-}
-
-// src/frontend/shared.ts
-function el(tag, className = "", content = "") {
-  const node = document.createElement(tag);
-  if (className)
-    node.className = className;
-  if (content)
-    node.textContent = content;
-  return node;
-}
-function button(label, className = "lp-button") {
-  const node = el("button", className, label);
-  node.type = "button";
-  return node;
-}
-function formatTime(value) {
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime()))
-    return "";
-  return new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(date);
-}
-function formatDate(value, detail = false) {
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime()))
-    return String(value || "");
-  return new Intl.DateTimeFormat(undefined, detail ? { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" } : { month: "short", day: "numeric" }).format(date);
-}
-function dateTimeLocal(value) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime()))
-    return "";
-  const offset = date.getTimezoneOffset() * 60000;
-  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
-}
-function inputValue(input) {
-  return input.value.trim();
-}
-function requestId(prefix = "req") {
-  return `${prefix}_${globalThis.crypto?.randomUUID?.() || `${Date.now()}_${Math.random().toString(36).slice(2)}`}`;
 }
 
 // src/frontend/components/identity-profiles.ts
@@ -5147,7 +5637,7 @@ function node(tag, className, text = "") {
   element.textContent = text;
   return element;
 }
-function portrait(name, url) {
+function portrait2(name, url) {
   const avatar = node("span", "pocket-phone-avatar", name.slice(0, 1).toUpperCase());
   avatar.setAttribute("aria-hidden", "true");
   if (url) {
@@ -5246,7 +5736,7 @@ function appHeader(title, subtitle, openRoute, avatarUrl) {
   const back = node("span", "pocket-phone-header-back");
   back.append(icon("back"));
   const identity = node("span", "pocket-phone-header-identity");
-  identity.append(portrait(title, avatarUrl), node("strong", "pocket-phone-conversation-title", title));
+  identity.append(portrait2(title, avatarUrl), node("strong", "pocket-phone-conversation-title", title));
   if (subtitle)
     identity.append(node("span", "pocket-phone-subtitle", subtitle));
   const video = node("span", "pocket-phone-header-action");
@@ -5310,7 +5800,7 @@ function buildPhoneScreen(activity, openRoute, options) {
     const app = node("span", "pocket-phone-notification-app");
     app.append(icon("message"), node("span", "pocket-phone-app-label", "Messages"));
     const body = node("span", "pocket-phone-notification-body");
-    body.append(portrait(presentation.senderName || "?", options.avatarUrl));
+    body.append(portrait2(presentation.senderName || "?", options.avatarUrl));
     const copy = node("span", "pocket-phone-notification-content");
     copy.append(node("strong", "pocket-phone-notification-sender", presentation.senderName || "Message"), node("span", "pocket-phone-notification-copy", `${presentation.format === "voice" ? "▶ Voice message · " : ""}${activity.summary || ""}`));
     body.append(copy);
@@ -5324,7 +5814,7 @@ function buildPhoneScreen(activity, openRoute, options) {
     back.append(icon("back"));
     callHeader.append(back, node("span", "pocket-phone-app-label", "Phone"));
     const identity = node("div", "pocket-phone-call-identity");
-    identity.append(portrait(presentation.senderName || "Call", options.avatarUrl), node("strong", "pocket-phone-call-name", [presentation.senderName, recipients].filter(Boolean).join(" → ") || activity.title), node("span", "pocket-phone-call-status", callSummary(presentation.call)));
+    identity.append(portrait2(presentation.senderName || "Call", options.avatarUrl), node("strong", "pocket-phone-call-name", [presentation.senderName, recipients].filter(Boolean).join(" → ") || activity.title), node("span", "pocket-phone-call-status", callSummary(presentation.call)));
     const controls = node("div", "pocket-phone-call-controls");
     const control = (name, label, danger = false) => {
       const item = node("span", `pocket-phone-call-control${danger ? " pocket-phone-call-danger" : ""}`);
@@ -5350,7 +5840,7 @@ function buildPhoneScreen(activity, openRoute, options) {
       const previous = messages[index - 1];
       row.dataset.continuation = String(Boolean(previous && previous.senderName === message.senderName));
       if (message.direction !== "sent") {
-        row.append(portrait(message.senderName, options.avatars?.[message.senderActorId || ""]));
+        row.append(portrait2(message.senderName, options.avatars?.[message.senderActorId || ""]));
         const content = node("span", "pocket-phone-message-content");
         if (row.dataset.continuation !== "true")
           content.append(node("strong", "pocket-phone-sender", message.senderName));
@@ -5371,969 +5861,969 @@ function buildPhoneScreen(activity, openRoute, options) {
 }
 
 // src/frontend/components/pocket-inline-redesign.css
-var pocket_inline_redesign_default = `/* Normalize the Pocket-owned mount wrappers too; a transformed parent distorts the whole device. */
-.pocket-artifact-stack[data-pocket-ui="true"],
-.pocket-inline-anchor[data-pocket-host="true"],
-.pocket-receipt-host[data-pocket-host="true"] {
-  all: revert;
-  font: 400 14px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  text-transform: none;
-  text-shadow: none;
-  letter-spacing: normal;
-  color: #f5f2fb;
-  display: grid;
-  gap: 5px;
-  min-width: 0;
-  width: 100%;
-  box-sizing: border-box;
-  position: static;
-  transform: none;
-  padding: 0;
-  border: 0;
-  background: none;
-}
-.pocket-inline-anchor[data-pocket-host="true"] { margin: 12px 0; }
-.pocket-receipt-host[data-pocket-host="true"] { margin: 8px 0 2px; max-width: min(100%,460px); }
-.pocket-artifact-stack[data-pocket-ui="true"]::before,
-.pocket-artifact-stack[data-pocket-ui="true"]::after,
-.pocket-inline-anchor[data-pocket-host="true"]::before,
-.pocket-inline-anchor[data-pocket-host="true"]::after,
-.pocket-receipt-host[data-pocket-host="true"]::before,
-.pocket-receipt-host[data-pocket-host="true"]::after { content: none; }
-.pocket-artifact-stack[data-pocket-ui="true"] > .pocket-inline-frame[data-pocket-ui="true"] { margin-inline: auto; }
-
-/* Pocket owns its inline UI; host prose/theme rules must not become phone chrome. */
-.pocket-inline-frame[data-pocket-ui="true"] {
-  all: revert;
-  display: block;
-  isolation: isolate;
-  color-scheme: dark;
-  font: 400 14px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: var(--pocket-inline-text, #f5f2fb);
-  text-align: left;
-  text-transform: none;
-  letter-spacing: normal;
-  text-shadow: none;
-  white-space: normal;
-  word-break: normal;
-  overflow-wrap: anywhere;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] :where(div, span, strong, button, input, textarea, img, time) {
-  all: revert;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: none;
-  font: inherit;
-  color: inherit;
-  letter-spacing: inherit;
-  text-transform: none;
-  text-shadow: none;
-  text-align: inherit;
-  white-space: normal;
-  overflow-wrap: inherit;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"],
-.pocket-inline-frame[data-pocket-ui="true"] *,
-.pocket-inline-frame[data-pocket-ui="true"] *::before,
-.pocket-inline-frame[data-pocket-ui="true"] *::after {
-  box-sizing: border-box;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"]::before,
-.pocket-inline-frame[data-pocket-ui="true"]::after,
-.pocket-inline-frame[data-pocket-ui="true"] *::before,
-.pocket-inline-frame[data-pocket-ui="true"] *::after {
-  all: revert;
-  content: none;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] :where(button, input, textarea) {
-  appearance: none;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] :where(svg) {
-  display: inline-block;
-  position: static;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: none;
-  filter: none;
-  text-transform: none;
-  letter-spacing: inherit;
-  text-shadow: none;
-  transform: none;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] {
-  --pocket-inline-accent: #8b7dff;
-  --pocket-inline-text: #f5f2fb;
-  --pocket-inline-muted: #a8a2b3;
-  --pocket-inline-surface: #242129;
-  --pocket-inline-surface-2: #2b2731;
-  --pocket-inline-surface-3: #17151c;
-  --pocket-inline-border: rgba(255, 255, 255, .075);
-  --pocket-inline-shadow: 0 16px 46px rgba(0, 0, 0, .32), inset 0 1px 0 rgba(255, 255, 255, .025);
-}
-
-.pocket-artifact-stack,
-.pocket-inline-frame[data-pocket-ui="true"] {
-  box-sizing: border-box;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"][data-appearance="cards"] {
-  width: min(100%, 470px);
-  color: var(--pocket-inline-text);
-}
-
-.pocket-inline-frame[data-pocket-ui="true"][data-appearance="cards"] .pocket-inline-artifact,
-.pocket-inline-frame[data-pocket-ui="true"][data-appearance="cards"] .pocket-inline-batch {
-  width: 100%;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-artifact {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 100%;
-  min-width: 0;
-  padding: 16px 18px;
-  color: var(--pocket-inline-text);
-  text-align: left;
-  font: inherit;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.018), transparent 26%),
-    linear-gradient(145deg, #27242d 0%, #211f27 68%, #1d1b22 100%);
-  border: 1px solid var(--pocket-inline-border);
-  border-radius: 18px;
-  box-shadow: var(--pocket-inline-shadow);
-  cursor: pointer;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-artifact:hover {
-  border-color: color-mix(in srgb, var(--pocket-inline-accent) 22%, rgba(255,255,255,.08));
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-artifact:focus-visible,
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-transcript-more:focus-visible,
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device button:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--pocket-inline-accent) 72%, white 12%);
-  outline-offset: 3px;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-artifact-device {
-  display: block;
-  margin-bottom: -2px;
-  color: #8f8998;
-  font-size: 11px;
-  font-weight: 650;
-  letter-spacing: .015em;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-artifact-header,
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-transcript-header,
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-artifact-chrome {
-  min-width: 0;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-artifact-header,
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-transcript-header {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(255,255,255,.055);
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-artifact-chrome {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  color: #a9a3b2;
-  font-size: 11px;
-  font-weight: 650;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-artifact-app {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-artifact-app svg {
-  width: 14px;
-  height: 14px;
-  color: var(--pocket-inline-accent);
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-artifact-state,
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-artifact-recipient {
-  color: #8e8897;
-  font-size: 10px;
-  font-weight: 560;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-artifact-recipient {
-  align-self: flex-end;
-  margin-top: -24px;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-message-body {
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
-  gap: 11px;
-  align-items: start;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-message-content,
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-transcript-content,
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-call-details {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-avatar,
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-avatar {
-  display: inline-grid;
-  place-items: center;
-  flex: 0 0 auto;
-  overflow: hidden;
-  color: white;
-  font-weight: 720;
-  background:
-    linear-gradient(145deg, color-mix(in srgb, var(--pocket-inline-accent) 76%, white 6%), color-mix(in srgb, var(--pocket-inline-accent) 52%, #231f2c));
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.15), 0 4px 14px rgba(0,0,0,.18);
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  font-size: 13px;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-avatar img,
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-artifact-actors,
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-transcript-title {
-  color: #fbf9ff;
-  font-weight: 760;
-  letter-spacing: -.01em;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-artifact-actors {
-  font-size: 14px;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-artifact-copy {
-  color: #e5e1ea;
-  font-size: 13px;
-  line-height: 1.46;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-chat-bubble,
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-transcript-bubble {
-  border: 1px solid rgba(255,255,255,.035);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.025), 0 5px 14px rgba(0,0,0,.11);
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-chat-bubble {
-  align-self: flex-end;
-  max-width: 82%;
-  padding: 9px 13px;
-  border-radius: 15px 15px 5px 15px;
-  color: white;
-  background: linear-gradient(145deg, color-mix(in srgb, var(--pocket-inline-accent) 90%, white 10%), color-mix(in srgb, var(--pocket-inline-accent) 78%, black));
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-call {
-  align-items: center;
-  min-height: 180px;
-  justify-content: center;
-  text-align: center;
-  background:
-    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--pocket-inline-accent) 10%, transparent), transparent 48%),
-    linear-gradient(160deg, #28252e, #1d1b22);
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-call-identity {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 9px;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-call .pocket-inline-avatar {
-  width: 46px;
-  height: 46px;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-call .pocket-inline-artifact-chrome {
-  justify-content: center;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-call-symbol {
-  display: inline-grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  margin-top: 4px;
-  color: #fff;
-  background: linear-gradient(145deg, #bd5d69, #974552);
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: 50%;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 8px 20px rgba(0,0,0,.22);
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-call-symbol svg {
-  width: 18px;
-  height: 18px;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-transcript-title {
-  font-size: 15px;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-transcript {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-transcript-row {
-  display: grid;
-  grid-template-columns: 28px minmax(0, 1fr);
-  gap: 10px;
-  align-items: start;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-transcript-row[data-continuation="true"] .pocket-inline-avatar {
-  visibility: hidden;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-transcript-row .pocket-inline-avatar {
-  width: 28px;
-  height: 28px;
-  font-size: 11px;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-transcript-sender {
-  color: #938d9b;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: .01em;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-transcript-bubble {
-  align-self: flex-start;
-  max-width: 90%;
-  padding: 9px 12px;
-  color: #f0edf5;
-  font-size: 12px;
-  line-height: 1.42;
-  background: linear-gradient(145deg, #2c2933, #27242d);
-  border-radius: 5px 13px 13px 13px;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-transcript-row[data-direction="sent"] .pocket-inline-transcript-bubble {
-  color: #fff;
-  background: linear-gradient(145deg, color-mix(in srgb, var(--pocket-inline-accent) 78%, black), color-mix(in srgb, var(--pocket-inline-accent) 64%, black));
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-batch {
-  border-radius: 18px;
-  overflow: hidden;
-  background: #1e1c23;
-  border: 1px solid var(--pocket-inline-border);
-  box-shadow: var(--pocket-inline-shadow);
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-batch .pocket-inline-artifact {
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-transcript-more {
-  width: 100%;
-  padding: 11px 14px;
-  color: #a8a2b2;
-  font: inherit;
-  font-size: 11px;
-  background: linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,.012));
-  border: 0;
-  border-top: 1px solid rgba(255,255,255,.055);
-  cursor: pointer;
-}
-
-/* Full-phone renderer */
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device {
-  box-sizing: border-box;
-  width: min(360px, 92vw);
-  aspect-ratio: 9 / 18.4;
-  padding: 5px;
-  color: var(--pocket-inline-text);
-  background:
-    linear-gradient(145deg, #4a4650 0%, #27242c 22%, #121116 64%, #343039 100%);
-  border: 1px solid rgba(255,255,255,.12);
-  border-radius: 42px;
-  box-shadow:
-    0 32px 70px rgba(0,0,0,.48),
-    0 8px 24px rgba(0,0,0,.3),
-    inset 0 1px 0 rgba(255,255,255,.18),
-    inset 0 -1px 0 rgba(255,255,255,.04);
-  overflow: hidden;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-screen {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
-  color: #f7f5fb;
-  background:
-    radial-gradient(circle at 40% -5%, color-mix(in srgb, var(--pocket-inline-accent) 11%, transparent), transparent 34%),
-    linear-gradient(180deg, #15131a 0%, #100f14 100%);
-  border-radius: 36px;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.035);
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-status {
-  position: relative;
-  z-index: 5;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  flex: 0 0 35px;
-  padding: 0 17px;
-  color: rgba(255,255,255,.92);
-  font-size: 10px;
-  font-weight: 720;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-status-time {
-  justify-self: start;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-island {
-  width: 76px;
-  height: 20px;
-  border-radius: 999px;
-  background: rgba(0,0,0,.82);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.025), 0 1px 0 rgba(255,255,255,.02);
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-indicators {
-  display: flex;
-  align-items: center;
-  justify-self: end;
-  gap: 5px;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-indicators svg {
-  width: 13px;
-  height: 13px;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-indicators svg:last-child {
-  width: 18px;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-home-indicator {
-  position: absolute;
-  left: 50%;
-  bottom: 7px;
-  width: 92px;
-  height: 4px;
-  transform: translateX(-50%);
-  border-radius: 999px;
-  background: rgba(255,255,255,.64);
-  box-shadow: 0 1px 4px rgba(0,0,0,.25);
-}
-
-/* Lock screen */
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-lock {
-  background:
-    radial-gradient(circle at 68% 8%, color-mix(in srgb,var(--pocket-inline-accent) 34%,transparent), transparent 28%),
-    radial-gradient(circle at 18% 44%, color-mix(in srgb,var(--pocket-inline-accent) 22%,transparent), transparent 34%),
-    linear-gradient(155deg, #242229 0%, #17151b 44%, #0d0c10 100%);
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-lock::after {
-  content: '';
-  position: absolute;
-  inset: 35px 0 0;
-  pointer-events: none;
-  background: linear-gradient(180deg, rgba(255,255,255,.025), transparent 24%, rgba(0,0,0,.12));
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-lock-hero {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  padding: 40px 18px 26px;
-  text-shadow: 0 2px 14px rgba(0,0,0,.28);
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-lock-label {
-  color: rgba(255,255,255,.64);
-  font-size: 11px;
-  font-weight: 580;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-clock {
-  color: #fff;
-  font-size: 54px;
-  font-weight: 280;
-  line-height: 1;
-  letter-spacing: -.045em;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-clock[data-precision="approximate"],
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-clock[data-precision="unknown"] { font-size:28px; line-height:1.2; letter-spacing:-.02em; max-width:100%; overflow-wrap:anywhere; }
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-lock-caption {
-  color: rgba(255,255,255,.74);
-  font-size: 12px;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-notification {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: calc(100% - 28px);
-  margin: 0 14px;
-  padding: 13px 14px 14px;
-  color: #f7f4fb;
-  text-align: left;
-  font: inherit;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.024)),
-    rgba(28,25,34,.86);
-  border: 1px solid rgba(255,255,255,.11);
-  border-radius: 18px;
-  box-shadow: 0 14px 30px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.055);
-  backdrop-filter: blur(14px);
-  cursor: pointer;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-notification-app {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: rgba(255,255,255,.68);
-  font-size: 10px;
-  font-weight: 650;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-notification-app svg {
-  width: 14px;
-  height: 14px;
-  color: color-mix(in srgb, var(--pocket-inline-accent) 88%, white 8%);
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-notification-body {
-  display: grid;
-  grid-template-columns: 34px minmax(0,1fr);
-  gap: 10px;
-  align-items: start;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-notification-content {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  font-size: 12px;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-notification-sender {
-  font-size: 13px;
-  font-weight: 760;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-notification-copy {
-  display: -webkit-box;
-  overflow: hidden;
-  color: rgba(255,255,255,.9);
-  font-size: 12px;
-  line-height: 1.4;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 4;
-}
-
-/* Open chat */
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-chat {
-  background:
-    radial-gradient(circle at 70% -8%, color-mix(in srgb, var(--pocket-inline-accent) 8%, transparent), transparent 32%),
-    #0c0b0f;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-app-header {
-  position: relative;
-  z-index: 2;
-  display: grid;
-  grid-template-columns: 36px minmax(0,1fr) 36px;
-  align-items: center;
-  flex: 0 0 72px;
-  width: 100%;
-  padding: 7px 12px 9px;
-  color: inherit;
-  text-align: center;
-  font: inherit;
-  background: linear-gradient(180deg, rgba(31,28,36,.98), rgba(22,20,27,.96));
-  border: 0;
-  border-bottom: 1px solid rgba(255,255,255,.065);
-  box-shadow: 0 9px 18px rgba(0,0,0,.12);
-  cursor: pointer;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-header-back,
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-header-action {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  color: color-mix(in srgb, var(--pocket-inline-accent) 82%, white 10%);
-  border-radius: 50%;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-header-back svg,
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-header-action svg {
-  width: 20px;
-  height: 20px;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-header-action {
-  background: rgba(255,255,255,.055);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.045);
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-header-identity {
-  display: grid;
-  grid-template-columns: 34px minmax(0,1fr);
-  grid-template-rows: auto auto;
-  align-items: center;
-  justify-self: center;
-  column-gap: 8px;
-  min-width: 0;
-  text-align: left;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-header-identity .pocket-phone-avatar {
-  grid-row: 1 / 3;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-conversation-title {
-  overflow: hidden;
-  font-size: 13px;
-  font-weight: 760;
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-subtitle {
-  color: #918b99;
-  font-size: 9px;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-thread {
-  display: flex;
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: auto;
-  flex-direction: column;
-  gap: 12px;
-  padding: 16px 13px 20px;
-  scrollbar-color: rgba(255,255,255,.12) transparent;
-  scrollbar-width: thin;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-thread::-webkit-scrollbar {
-  width: 6px;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-thread::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,.12);
-  border-radius: 999px;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-thread::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-message {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  width: 100%;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-message[data-continuation="false"] {
-  margin-top: 4px;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-message[data-direction="sent"] {
-  justify-content: flex-end;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-message[data-continuation="true"] .pocket-phone-avatar {
-  visibility: hidden;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-message-content {
-  display: flex;
-  max-width: 76%;
-  min-width: 0;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-sender {
-  margin-left: 4px;
-  color: #878190;
-  font-size: 9px;
-  font-weight: 680;
-  letter-spacing: .01em;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-bubble {
-  display: block;
-  padding: 10px 12px;
-  color: #f3eff7;
-  font-size: 12px;
-  line-height: 1.42;
-  background: linear-gradient(145deg, #2b2731, #232029);
-  border: 1px solid rgba(255,255,255,.045);
-  border-radius: 6px 15px 15px 15px;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.025), 0 4px 12px rgba(0,0,0,.16);
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-message[data-direction="sent"] .pocket-phone-bubble {
-  color: #fff;
-  background: linear-gradient(145deg, color-mix(in srgb, var(--pocket-inline-accent) 92%, #a698ff 8%), color-mix(in srgb, var(--pocket-inline-accent) 78%, #5f54d5));
-  border-radius: 15px 15px 5px 15px;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 8px 18px rgba(67,52,149,.18);
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-delivery {
-  align-self: flex-end;
-  margin: -3px 3px 0 0;
-  color: #77727f;
-  font-size: 8px;
-  font-weight: 680;
-  text-transform: uppercase;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-composer {
-  display: grid;
-  grid-template-columns: 34px minmax(0,1fr) 32px;
-  align-items: center;
-  flex: 0 0 58px;
-  gap: 7px;
-  padding: 8px 10px 13px;
-  background: linear-gradient(180deg, rgba(19,17,23,.94), rgba(11,10,14,.98));
-  border-top: 1px solid rgba(255,255,255,.065);
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-composer-action,
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-composer-send {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  color: #aaa4b3;
-  background: #24212a;
-  border: 1px solid rgba(255,255,255,.055);
-  border-radius: 50%;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-composer-send {
-  color: #fff;
-  background: linear-gradient(145deg, color-mix(in srgb, var(--pocket-inline-accent) 92%, #aaa0ff), color-mix(in srgb, var(--pocket-inline-accent) 72%, #5449c7));
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-composer-action svg,
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-composer-send svg {
-  width: 16px;
-  height: 16px;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-composer-field {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-  height: 34px;
-  padding: 0 12px;
-  color: #797480;
-  font-size: 11px;
-  background: #131117;
-  border: 1px solid rgba(255,255,255,.12);
-  border-radius: 999px;
-  box-shadow: inset 0 2px 8px rgba(0,0,0,.2);
-}
-
-/* Dedicated call screen */
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-call {
-  background:
-    radial-gradient(circle at 50% 15%, color-mix(in srgb, var(--pocket-inline-accent) 26%, transparent), transparent 34%),
-    radial-gradient(circle at 80% 75%, color-mix(in srgb,var(--pocket-inline-accent) 18%,transparent), transparent 30%),
-    linear-gradient(180deg, #24202d 0%, #151219 55%, #0d0c10 100%);
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-call-header {
-  grid-template-columns: 36px 1fr;
-  justify-items: start;
-  flex-basis: 54px;
-  background: transparent;
-  border-bottom: 0;
-  box-shadow: none;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-call-header .pocket-phone-app-label {
-  color: #aaa4b3;
-  font-size: 11px;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-call-identity {
-  display: flex;
-  flex: 1 1 auto;
-  min-height: 0;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  padding: 0 24px 40px;
-  text-align: center;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-call-identity .pocket-phone-avatar {
-  width: 86px;
-  height: 86px;
-  margin-bottom: 9px;
-  font-size: 28px;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 18px 42px rgba(0,0,0,.28);
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-call-name {
-  font-size: 20px;
-  font-weight: 760;
-  letter-spacing: -.025em;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-call-status {
-  color: #a39dab;
-  font-size: 12px;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-call-controls {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 9px;
-  flex: 0 0 auto;
-  padding: 0 18px 36px;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-call-control {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  align-items: center;
-  gap: 7px;
-  color: #aaa4b3;
-  font-size: 9px;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-call-control-icon {
-  display: grid;
-  place-items: center;
-  width: 48px;
-  height: 48px;
-  color: #f8f6fb;
-  background: linear-gradient(145deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
-  border: 1px solid rgba(255,255,255,.09);
-  border-radius: 50%;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 9px 20px rgba(0,0,0,.18);
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-call-control-icon > svg,
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-call-control-icon .pocket-call-symbol svg {
-  width: 19px;
-  height: 19px;
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-call-control.pocket-phone-call-danger .pocket-phone-call-control-icon {
-  background: linear-gradient(145deg, #c35d69, #984651);
-}
-
-.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-call-control-icon .pocket-call-symbol {
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  background: transparent;
-  border: 0;
-  box-shadow: none;
-}
-
-@media (max-width: 560px) {
-  .pocket-inline-frame[data-pocket-ui="true"][data-appearance="cards"] {
-    width: 100%;
-  }
-
-  .pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-artifact {
-    padding: 14px;
-    border-radius: 16px;
-  }
-
-  .pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device {
-    width: min(340px, 94vw);
-  }
-}
-
-.pocket-inline-frame[data-pocket-ui="true"] [hidden] { display: none; }
-
-/* Between-turn connectors stay compact even when prose artifacts use Full Phone. */
-.pocket-receipt-host[data-pocket-host="true"][data-pocket-connector="true"] { width:100%; max-width:none; margin:8px 0; }
-.pocket-receipt-host[data-pocket-host="true"][data-pocket-connector="true"][hidden] { display:none; }
-.pocket-inline-frame[data-pocket-ui="true"][data-appearance="connector"] { width:100%; }
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-connector { display:grid; gap:0; border:1px solid var(--pocket-inline-border); border-radius:12px; background:var(--pocket-inline-surface,#201e25); overflow:hidden; box-shadow:0 3px 12px #0002; }
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-connector-heading { display:block; width:100%; padding:9px 12px; text-align:left; color:var(--pocket-inline-text); font-size:11px; font-weight:650; border-bottom:1px solid var(--pocket-inline-border); cursor:pointer; opacity:.8; }
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-connector-row { display:grid; position:relative; grid-template-columns:minmax(0,1fr); gap:3px; width:100%; padding:10px 12px; text-align:left; cursor:pointer; }
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-connector-row + .pocket-connector-row { border-top:1px solid var(--pocket-inline-border); }
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-connector-row[data-direction="sent"] { text-align:right; border-right:2px solid var(--pocket-inline-accent); }
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-connector-sender { font-size:10px; font-weight:650; opacity:.65; }
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-connector-copy { font-size:13px; line-height:1.45; white-space:pre-wrap; }
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-connector-row:hover { background:color-mix(in srgb,var(--pocket-inline-text) 4%,transparent); }
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-connector-row:focus-visible,
-.pocket-inline-frame[data-pocket-ui="true"] .pocket-connector-heading:focus-visible { outline:2px solid var(--pocket-inline-accent); outline-offset:-3px; }
+var pocket_inline_redesign_default = `/* Normalize the Pocket-owned mount wrappers too; a transformed parent distorts the whole device. */\r
+.pocket-artifact-stack[data-pocket-ui="true"],\r
+.pocket-inline-anchor[data-pocket-host="true"],\r
+.pocket-receipt-host[data-pocket-host="true"] {\r
+  all: revert;\r
+  font: 400 14px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;\r
+  text-transform: none;\r
+  text-shadow: none;\r
+  letter-spacing: normal;\r
+  color: #f5f2fb;\r
+  display: grid;\r
+  gap: 5px;\r
+  min-width: 0;\r
+  width: 100%;\r
+  box-sizing: border-box;\r
+  position: static;\r
+  transform: none;\r
+  padding: 0;\r
+  border: 0;\r
+  background: none;\r
+}\r
+.pocket-inline-anchor[data-pocket-host="true"] { margin: 12px 0; }\r
+.pocket-receipt-host[data-pocket-host="true"] { margin: 8px 0 2px; max-width: min(100%,460px); }\r
+.pocket-artifact-stack[data-pocket-ui="true"]::before,\r
+.pocket-artifact-stack[data-pocket-ui="true"]::after,\r
+.pocket-inline-anchor[data-pocket-host="true"]::before,\r
+.pocket-inline-anchor[data-pocket-host="true"]::after,\r
+.pocket-receipt-host[data-pocket-host="true"]::before,\r
+.pocket-receipt-host[data-pocket-host="true"]::after { content: none; }\r
+.pocket-artifact-stack[data-pocket-ui="true"] > .pocket-inline-frame[data-pocket-ui="true"] { margin-inline: auto; }\r
+\r
+/* Pocket owns its inline UI; host prose/theme rules must not become phone chrome. */\r
+.pocket-inline-frame[data-pocket-ui="true"] {\r
+  all: revert;\r
+  display: block;\r
+  isolation: isolate;\r
+  color-scheme: dark;\r
+  font: 400 14px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;\r
+  color: var(--pocket-inline-text, #f5f2fb);\r
+  text-align: left;\r
+  text-transform: none;\r
+  letter-spacing: normal;\r
+  text-shadow: none;\r
+  white-space: normal;\r
+  word-break: normal;\r
+  overflow-wrap: anywhere;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] :where(div, span, strong, button, input, textarea, img, time) {\r
+  all: revert;\r
+  margin: 0;\r
+  padding: 0;\r
+  border: 0;\r
+  background: none;\r
+  font: inherit;\r
+  color: inherit;\r
+  letter-spacing: inherit;\r
+  text-transform: none;\r
+  text-shadow: none;\r
+  text-align: inherit;\r
+  white-space: normal;\r
+  overflow-wrap: inherit;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"],\r
+.pocket-inline-frame[data-pocket-ui="true"] *,\r
+.pocket-inline-frame[data-pocket-ui="true"] *::before,\r
+.pocket-inline-frame[data-pocket-ui="true"] *::after {\r
+  box-sizing: border-box;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"]::before,\r
+.pocket-inline-frame[data-pocket-ui="true"]::after,\r
+.pocket-inline-frame[data-pocket-ui="true"] *::before,\r
+.pocket-inline-frame[data-pocket-ui="true"] *::after {\r
+  all: revert;\r
+  content: none;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] :where(button, input, textarea) {\r
+  appearance: none;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] :where(svg) {\r
+  display: inline-block;\r
+  position: static;\r
+  margin: 0;\r
+  padding: 0;\r
+  border: 0;\r
+  background: none;\r
+  filter: none;\r
+  text-transform: none;\r
+  letter-spacing: inherit;\r
+  text-shadow: none;\r
+  transform: none;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] {\r
+  --pocket-inline-accent: #8b7dff;\r
+  --pocket-inline-text: #f5f2fb;\r
+  --pocket-inline-muted: #a8a2b3;\r
+  --pocket-inline-surface: #242129;\r
+  --pocket-inline-surface-2: #2b2731;\r
+  --pocket-inline-surface-3: #17151c;\r
+  --pocket-inline-border: rgba(255, 255, 255, .075);\r
+  --pocket-inline-shadow: 0 16px 46px rgba(0, 0, 0, .32), inset 0 1px 0 rgba(255, 255, 255, .025);\r
+}\r
+\r
+.pocket-artifact-stack,\r
+.pocket-inline-frame[data-pocket-ui="true"] {\r
+  box-sizing: border-box;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"][data-appearance="cards"] {\r
+  width: min(100%, 470px);\r
+  color: var(--pocket-inline-text);\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"][data-appearance="cards"] .pocket-inline-artifact,\r
+.pocket-inline-frame[data-pocket-ui="true"][data-appearance="cards"] .pocket-inline-batch {\r
+  width: 100%;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-artifact {\r
+  box-sizing: border-box;\r
+  display: flex;\r
+  flex-direction: column;\r
+  gap: 10px;\r
+  width: 100%;\r
+  min-width: 0;\r
+  padding: 16px 18px;\r
+  color: var(--pocket-inline-text);\r
+  text-align: left;\r
+  font: inherit;\r
+  background:\r
+    linear-gradient(180deg, rgba(255,255,255,.018), transparent 26%),\r
+    linear-gradient(145deg, #27242d 0%, #211f27 68%, #1d1b22 100%);\r
+  border: 1px solid var(--pocket-inline-border);\r
+  border-radius: 18px;\r
+  box-shadow: var(--pocket-inline-shadow);\r
+  cursor: pointer;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-artifact:hover {\r
+  border-color: color-mix(in srgb, var(--pocket-inline-accent) 22%, rgba(255,255,255,.08));\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-artifact:focus-visible,\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-transcript-more:focus-visible,\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device button:focus-visible {\r
+  outline: 2px solid color-mix(in srgb, var(--pocket-inline-accent) 72%, white 12%);\r
+  outline-offset: 3px;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-artifact-device {\r
+  display: block;\r
+  margin-bottom: -2px;\r
+  color: #8f8998;\r
+  font-size: 11px;\r
+  font-weight: 650;\r
+  letter-spacing: .015em;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-artifact-header,\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-transcript-header,\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-artifact-chrome {\r
+  min-width: 0;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-artifact-header,\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-transcript-header {\r
+  display: flex;\r
+  flex-direction: column;\r
+  gap: 7px;\r
+  padding-bottom: 10px;\r
+  border-bottom: 1px solid rgba(255,255,255,.055);\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-artifact-chrome {\r
+  display: flex;\r
+  align-items: center;\r
+  justify-content: space-between;\r
+  gap: 12px;\r
+  color: #a9a3b2;\r
+  font-size: 11px;\r
+  font-weight: 650;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-artifact-app {\r
+  display: inline-flex;\r
+  align-items: center;\r
+  gap: 6px;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-artifact-app svg {\r
+  width: 14px;\r
+  height: 14px;\r
+  color: var(--pocket-inline-accent);\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-artifact-state,\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-artifact-recipient {\r
+  color: #8e8897;\r
+  font-size: 10px;\r
+  font-weight: 560;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-artifact-recipient {\r
+  align-self: flex-end;\r
+  margin-top: -24px;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-message-body {\r
+  display: grid;\r
+  grid-template-columns: 34px minmax(0, 1fr);\r
+  gap: 11px;\r
+  align-items: start;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-message-content,\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-transcript-content,\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-call-details {\r
+  display: flex;\r
+  min-width: 0;\r
+  flex-direction: column;\r
+  gap: 5px;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-avatar,\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-avatar {\r
+  display: inline-grid;\r
+  place-items: center;\r
+  flex: 0 0 auto;\r
+  overflow: hidden;\r
+  color: white;\r
+  font-weight: 720;\r
+  background:\r
+    linear-gradient(145deg, color-mix(in srgb, var(--pocket-inline-accent) 76%, white 6%), color-mix(in srgb, var(--pocket-inline-accent) 52%, #231f2c));\r
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.15), 0 4px 14px rgba(0,0,0,.18);\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-avatar {\r
+  width: 34px;\r
+  height: 34px;\r
+  border-radius: 50%;\r
+  font-size: 13px;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-avatar img,\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-avatar img {\r
+  width: 100%;\r
+  height: 100%;\r
+  object-fit: cover;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-artifact-actors,\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-transcript-title {\r
+  color: #fbf9ff;\r
+  font-weight: 760;\r
+  letter-spacing: -.01em;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-artifact-actors {\r
+  font-size: 14px;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-artifact-copy {\r
+  color: #e5e1ea;\r
+  font-size: 13px;\r
+  line-height: 1.46;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-chat-bubble,\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-transcript-bubble {\r
+  border: 1px solid rgba(255,255,255,.035);\r
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025), 0 5px 14px rgba(0,0,0,.11);\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-chat-bubble {\r
+  align-self: flex-end;\r
+  max-width: 82%;\r
+  padding: 9px 13px;\r
+  border-radius: 15px 15px 5px 15px;\r
+  color: white;\r
+  background: linear-gradient(145deg, color-mix(in srgb, var(--pocket-inline-accent) 90%, white 10%), color-mix(in srgb, var(--pocket-inline-accent) 78%, black));\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-call {\r
+  align-items: center;\r
+  min-height: 180px;\r
+  justify-content: center;\r
+  text-align: center;\r
+  background:\r
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--pocket-inline-accent) 10%, transparent), transparent 48%),\r
+    linear-gradient(160deg, #28252e, #1d1b22);\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-call-identity {\r
+  display: flex;\r
+  flex-direction: column;\r
+  align-items: center;\r
+  gap: 9px;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-call .pocket-inline-avatar {\r
+  width: 46px;\r
+  height: 46px;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-call .pocket-inline-artifact-chrome {\r
+  justify-content: center;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-call-symbol {\r
+  display: inline-grid;\r
+  place-items: center;\r
+  width: 38px;\r
+  height: 38px;\r
+  margin-top: 4px;\r
+  color: #fff;\r
+  background: linear-gradient(145deg, #bd5d69, #974552);\r
+  border: 1px solid rgba(255,255,255,.1);\r
+  border-radius: 50%;\r
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 8px 20px rgba(0,0,0,.22);\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-call-symbol svg {\r
+  width: 18px;\r
+  height: 18px;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-transcript-title {\r
+  font-size: 15px;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-transcript {\r
+  display: flex;\r
+  flex-direction: column;\r
+  gap: 14px;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-transcript-row {\r
+  display: grid;\r
+  grid-template-columns: 28px minmax(0, 1fr);\r
+  gap: 10px;\r
+  align-items: start;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-transcript-row[data-continuation="true"] .pocket-inline-avatar {\r
+  visibility: hidden;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-transcript-row .pocket-inline-avatar {\r
+  width: 28px;\r
+  height: 28px;\r
+  font-size: 11px;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-transcript-sender {\r
+  color: #938d9b;\r
+  font-size: 10px;\r
+  font-weight: 700;\r
+  letter-spacing: .01em;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-transcript-bubble {\r
+  align-self: flex-start;\r
+  max-width: 90%;\r
+  padding: 9px 12px;\r
+  color: #f0edf5;\r
+  font-size: 12px;\r
+  line-height: 1.42;\r
+  background: linear-gradient(145deg, #2c2933, #27242d);\r
+  border-radius: 5px 13px 13px 13px;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-transcript-row[data-direction="sent"] .pocket-inline-transcript-bubble {\r
+  color: #fff;\r
+  background: linear-gradient(145deg, color-mix(in srgb, var(--pocket-inline-accent) 78%, black), color-mix(in srgb, var(--pocket-inline-accent) 64%, black));\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-batch {\r
+  border-radius: 18px;\r
+  overflow: hidden;\r
+  background: #1e1c23;\r
+  border: 1px solid var(--pocket-inline-border);\r
+  box-shadow: var(--pocket-inline-shadow);\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-batch .pocket-inline-artifact {\r
+  border: 0;\r
+  border-radius: 0;\r
+  box-shadow: none;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-transcript-more {\r
+  width: 100%;\r
+  padding: 11px 14px;\r
+  color: #a8a2b2;\r
+  font: inherit;\r
+  font-size: 11px;\r
+  background: linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,.012));\r
+  border: 0;\r
+  border-top: 1px solid rgba(255,255,255,.055);\r
+  cursor: pointer;\r
+}\r
+\r
+/* Full-phone renderer */\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device {\r
+  box-sizing: border-box;\r
+  width: min(360px, 92vw);\r
+  aspect-ratio: 9 / 18.4;\r
+  padding: 5px;\r
+  color: var(--pocket-inline-text);\r
+  background:\r
+    linear-gradient(145deg, #4a4650 0%, #27242c 22%, #121116 64%, #343039 100%);\r
+  border: 1px solid rgba(255,255,255,.12);\r
+  border-radius: 42px;\r
+  box-shadow:\r
+    0 32px 70px rgba(0,0,0,.48),\r
+    0 8px 24px rgba(0,0,0,.3),\r
+    inset 0 1px 0 rgba(255,255,255,.18),\r
+    inset 0 -1px 0 rgba(255,255,255,.04);\r
+  overflow: hidden;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-screen {\r
+  position: relative;\r
+  display: flex;\r
+  flex-direction: column;\r
+  width: 100%;\r
+  height: 100%;\r
+  min-height: 0;\r
+  overflow: hidden;\r
+  color: #f7f5fb;\r
+  background:\r
+    radial-gradient(circle at 40% -5%, color-mix(in srgb, var(--pocket-inline-accent) 11%, transparent), transparent 34%),\r
+    linear-gradient(180deg, #15131a 0%, #100f14 100%);\r
+  border-radius: 36px;\r
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.035);\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-status {\r
+  position: relative;\r
+  z-index: 5;\r
+  display: grid;\r
+  grid-template-columns: 1fr auto 1fr;\r
+  align-items: center;\r
+  flex: 0 0 35px;\r
+  padding: 0 17px;\r
+  color: rgba(255,255,255,.92);\r
+  font-size: 10px;\r
+  font-weight: 720;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-status-time {\r
+  justify-self: start;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-island {\r
+  width: 76px;\r
+  height: 20px;\r
+  border-radius: 999px;\r
+  background: rgba(0,0,0,.82);\r
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025), 0 1px 0 rgba(255,255,255,.02);\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-indicators {\r
+  display: flex;\r
+  align-items: center;\r
+  justify-self: end;\r
+  gap: 5px;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-indicators svg {\r
+  width: 13px;\r
+  height: 13px;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-indicators svg:last-child {\r
+  width: 18px;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-home-indicator {\r
+  position: absolute;\r
+  left: 50%;\r
+  bottom: 7px;\r
+  width: 92px;\r
+  height: 4px;\r
+  transform: translateX(-50%);\r
+  border-radius: 999px;\r
+  background: rgba(255,255,255,.64);\r
+  box-shadow: 0 1px 4px rgba(0,0,0,.25);\r
+}\r
+\r
+/* Lock screen */\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-lock {\r
+  background:\r
+    radial-gradient(circle at 68% 8%, color-mix(in srgb,var(--pocket-inline-accent) 34%,transparent), transparent 28%),\r
+    radial-gradient(circle at 18% 44%, color-mix(in srgb,var(--pocket-inline-accent) 22%,transparent), transparent 34%),\r
+    linear-gradient(155deg, #242229 0%, #17151b 44%, #0d0c10 100%);\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-lock::after {\r
+  content: '';\r
+  position: absolute;\r
+  inset: 35px 0 0;\r
+  pointer-events: none;\r
+  background: linear-gradient(180deg, rgba(255,255,255,.025), transparent 24%, rgba(0,0,0,.12));\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-lock-hero {\r
+  position: relative;\r
+  z-index: 1;\r
+  display: flex;\r
+  flex-direction: column;\r
+  align-items: center;\r
+  gap: 5px;\r
+  padding: 40px 18px 26px;\r
+  text-shadow: 0 2px 14px rgba(0,0,0,.28);\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-lock-label {\r
+  color: rgba(255,255,255,.64);\r
+  font-size: 11px;\r
+  font-weight: 580;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-clock {\r
+  color: #fff;\r
+  font-size: 54px;\r
+  font-weight: 280;\r
+  line-height: 1;\r
+  letter-spacing: -.045em;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-clock[data-precision="approximate"],\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-clock[data-precision="unknown"] { font-size:28px; line-height:1.2; letter-spacing:-.02em; max-width:100%; overflow-wrap:anywhere; }\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-lock-caption {\r
+  color: rgba(255,255,255,.74);\r
+  font-size: 12px;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-notification {\r
+  position: relative;\r
+  z-index: 2;\r
+  display: flex;\r
+  flex-direction: column;\r
+  gap: 10px;\r
+  width: calc(100% - 28px);\r
+  margin: 0 14px;\r
+  padding: 13px 14px 14px;\r
+  color: #f7f4fb;\r
+  text-align: left;\r
+  font: inherit;\r
+  background:\r
+    linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.024)),\r
+    rgba(28,25,34,.86);\r
+  border: 1px solid rgba(255,255,255,.11);\r
+  border-radius: 18px;\r
+  box-shadow: 0 14px 30px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.055);\r
+  backdrop-filter: blur(14px);\r
+  cursor: pointer;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-notification-app {\r
+  display: flex;\r
+  align-items: center;\r
+  gap: 6px;\r
+  color: rgba(255,255,255,.68);\r
+  font-size: 10px;\r
+  font-weight: 650;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-notification-app svg {\r
+  width: 14px;\r
+  height: 14px;\r
+  color: color-mix(in srgb, var(--pocket-inline-accent) 88%, white 8%);\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-notification-body {\r
+  display: grid;\r
+  grid-template-columns: 34px minmax(0,1fr);\r
+  gap: 10px;\r
+  align-items: start;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-notification-content {\r
+  display: flex;\r
+  min-width: 0;\r
+  flex-direction: column;\r
+  gap: 4px;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-avatar {\r
+  width: 34px;\r
+  height: 34px;\r
+  border-radius: 50%;\r
+  font-size: 12px;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-notification-sender {\r
+  font-size: 13px;\r
+  font-weight: 760;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-notification-copy {\r
+  display: -webkit-box;\r
+  overflow: hidden;\r
+  color: rgba(255,255,255,.9);\r
+  font-size: 12px;\r
+  line-height: 1.4;\r
+  -webkit-box-orient: vertical;\r
+  -webkit-line-clamp: 4;\r
+}\r
+\r
+/* Open chat */\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-chat {\r
+  background:\r
+    radial-gradient(circle at 70% -8%, color-mix(in srgb, var(--pocket-inline-accent) 8%, transparent), transparent 32%),\r
+    #0c0b0f;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-app-header {\r
+  position: relative;\r
+  z-index: 2;\r
+  display: grid;\r
+  grid-template-columns: 36px minmax(0,1fr) 36px;\r
+  align-items: center;\r
+  flex: 0 0 72px;\r
+  width: 100%;\r
+  padding: 7px 12px 9px;\r
+  color: inherit;\r
+  text-align: center;\r
+  font: inherit;\r
+  background: linear-gradient(180deg, rgba(31,28,36,.98), rgba(22,20,27,.96));\r
+  border: 0;\r
+  border-bottom: 1px solid rgba(255,255,255,.065);\r
+  box-shadow: 0 9px 18px rgba(0,0,0,.12);\r
+  cursor: pointer;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-header-back,\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-header-action {\r
+  display: grid;\r
+  place-items: center;\r
+  width: 32px;\r
+  height: 32px;\r
+  color: color-mix(in srgb, var(--pocket-inline-accent) 82%, white 10%);\r
+  border-radius: 50%;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-header-back svg,\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-header-action svg {\r
+  width: 20px;\r
+  height: 20px;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-header-action {\r
+  background: rgba(255,255,255,.055);\r
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.045);\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-header-identity {\r
+  display: grid;\r
+  grid-template-columns: 34px minmax(0,1fr);\r
+  grid-template-rows: auto auto;\r
+  align-items: center;\r
+  justify-self: center;\r
+  column-gap: 8px;\r
+  min-width: 0;\r
+  text-align: left;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-header-identity .pocket-phone-avatar {\r
+  grid-row: 1 / 3;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-conversation-title {\r
+  overflow: hidden;\r
+  font-size: 13px;\r
+  font-weight: 760;\r
+  line-height: 1.2;\r
+  text-overflow: ellipsis;\r
+  white-space: nowrap;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-subtitle {\r
+  color: #918b99;\r
+  font-size: 9px;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-thread {\r
+  display: flex;\r
+  flex: 1 1 auto;\r
+  min-height: 0;\r
+  overflow: auto;\r
+  flex-direction: column;\r
+  gap: 12px;\r
+  padding: 16px 13px 20px;\r
+  scrollbar-color: rgba(255,255,255,.12) transparent;\r
+  scrollbar-width: thin;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-thread::-webkit-scrollbar {\r
+  width: 6px;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-thread::-webkit-scrollbar-thumb {\r
+  background: rgba(255,255,255,.12);\r
+  border-radius: 999px;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-thread::-webkit-scrollbar-track {\r
+  background: transparent;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-message {\r
+  display: flex;\r
+  align-items: flex-end;\r
+  gap: 8px;\r
+  width: 100%;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-message[data-continuation="false"] {\r
+  margin-top: 4px;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-message[data-direction="sent"] {\r
+  justify-content: flex-end;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-message[data-continuation="true"] .pocket-phone-avatar {\r
+  visibility: hidden;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-message-content {\r
+  display: flex;\r
+  max-width: 76%;\r
+  min-width: 0;\r
+  flex-direction: column;\r
+  gap: 4px;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-sender {\r
+  margin-left: 4px;\r
+  color: #878190;\r
+  font-size: 9px;\r
+  font-weight: 680;\r
+  letter-spacing: .01em;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-bubble {\r
+  display: block;\r
+  padding: 10px 12px;\r
+  color: #f3eff7;\r
+  font-size: 12px;\r
+  line-height: 1.42;\r
+  background: linear-gradient(145deg, #2b2731, #232029);\r
+  border: 1px solid rgba(255,255,255,.045);\r
+  border-radius: 6px 15px 15px 15px;\r
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025), 0 4px 12px rgba(0,0,0,.16);\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-message[data-direction="sent"] .pocket-phone-bubble {\r
+  color: #fff;\r
+  background: linear-gradient(145deg, color-mix(in srgb, var(--pocket-inline-accent) 92%, #a698ff 8%), color-mix(in srgb, var(--pocket-inline-accent) 78%, #5f54d5));\r
+  border-radius: 15px 15px 5px 15px;\r
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 8px 18px rgba(67,52,149,.18);\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-delivery {\r
+  align-self: flex-end;\r
+  margin: -3px 3px 0 0;\r
+  color: #77727f;\r
+  font-size: 8px;\r
+  font-weight: 680;\r
+  text-transform: uppercase;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-composer {\r
+  display: grid;\r
+  grid-template-columns: 34px minmax(0,1fr) 32px;\r
+  align-items: center;\r
+  flex: 0 0 58px;\r
+  gap: 7px;\r
+  padding: 8px 10px 13px;\r
+  background: linear-gradient(180deg, rgba(19,17,23,.94), rgba(11,10,14,.98));\r
+  border-top: 1px solid rgba(255,255,255,.065);\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-composer-action,\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-composer-send {\r
+  display: grid;\r
+  place-items: center;\r
+  width: 30px;\r
+  height: 30px;\r
+  color: #aaa4b3;\r
+  background: #24212a;\r
+  border: 1px solid rgba(255,255,255,.055);\r
+  border-radius: 50%;\r
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04);\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-composer-send {\r
+  color: #fff;\r
+  background: linear-gradient(145deg, color-mix(in srgb, var(--pocket-inline-accent) 92%, #aaa0ff), color-mix(in srgb, var(--pocket-inline-accent) 72%, #5449c7));\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-composer-action svg,\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-composer-send svg {\r
+  width: 16px;\r
+  height: 16px;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-composer-field {\r
+  display: flex;\r
+  align-items: center;\r
+  min-width: 0;\r
+  height: 34px;\r
+  padding: 0 12px;\r
+  color: #797480;\r
+  font-size: 11px;\r
+  background: #131117;\r
+  border: 1px solid rgba(255,255,255,.12);\r
+  border-radius: 999px;\r
+  box-shadow: inset 0 2px 8px rgba(0,0,0,.2);\r
+}\r
+\r
+/* Dedicated call screen */\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-call {\r
+  background:\r
+    radial-gradient(circle at 50% 15%, color-mix(in srgb, var(--pocket-inline-accent) 26%, transparent), transparent 34%),\r
+    radial-gradient(circle at 80% 75%, color-mix(in srgb,var(--pocket-inline-accent) 18%,transparent), transparent 30%),\r
+    linear-gradient(180deg, #24202d 0%, #151219 55%, #0d0c10 100%);\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-call-header {\r
+  grid-template-columns: 36px 1fr;\r
+  justify-items: start;\r
+  flex-basis: 54px;\r
+  background: transparent;\r
+  border-bottom: 0;\r
+  box-shadow: none;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-call-header .pocket-phone-app-label {\r
+  color: #aaa4b3;\r
+  font-size: 11px;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-call-identity {\r
+  display: flex;\r
+  flex: 1 1 auto;\r
+  min-height: 0;\r
+  flex-direction: column;\r
+  align-items: center;\r
+  justify-content: center;\r
+  gap: 9px;\r
+  padding: 0 24px 40px;\r
+  text-align: center;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-call-identity .pocket-phone-avatar {\r
+  width: 86px;\r
+  height: 86px;\r
+  margin-bottom: 9px;\r
+  font-size: 28px;\r
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 18px 42px rgba(0,0,0,.28);\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-call-name {\r
+  font-size: 20px;\r
+  font-weight: 760;\r
+  letter-spacing: -.025em;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-call-status {\r
+  color: #a39dab;\r
+  font-size: 12px;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-call-controls {\r
+  display: grid;\r
+  grid-template-columns: repeat(4, 1fr);\r
+  gap: 9px;\r
+  flex: 0 0 auto;\r
+  padding: 0 18px 36px;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-call-control {\r
+  display: flex;\r
+  min-width: 0;\r
+  flex-direction: column;\r
+  align-items: center;\r
+  gap: 7px;\r
+  color: #aaa4b3;\r
+  font-size: 9px;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-call-control-icon {\r
+  display: grid;\r
+  place-items: center;\r
+  width: 48px;\r
+  height: 48px;\r
+  color: #f8f6fb;\r
+  background: linear-gradient(145deg, rgba(255,255,255,.12), rgba(255,255,255,.06));\r
+  border: 1px solid rgba(255,255,255,.09);\r
+  border-radius: 50%;\r
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 9px 20px rgba(0,0,0,.18);\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-call-control-icon > svg,\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-call-control-icon .pocket-call-symbol svg {\r
+  width: 19px;\r
+  height: 19px;\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-call-control.pocket-phone-call-danger .pocket-phone-call-control-icon {\r
+  background: linear-gradient(145deg, #c35d69, #984651);\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device .pocket-phone-call-control-icon .pocket-call-symbol {\r
+  width: 100%;\r
+  height: 100%;\r
+  margin: 0;\r
+  background: transparent;\r
+  border: 0;\r
+  box-shadow: none;\r
+}\r
+\r
+@media (max-width: 560px) {\r
+  .pocket-inline-frame[data-pocket-ui="true"][data-appearance="cards"] {\r
+    width: 100%;\r
+  }\r
+\r
+  .pocket-inline-frame[data-pocket-ui="true"] .pocket-inline-artifact {\r
+    padding: 14px;\r
+    border-radius: 16px;\r
+  }\r
+\r
+  .pocket-inline-frame[data-pocket-ui="true"].pocket-phone-device {\r
+    width: min(340px, 94vw);\r
+  }\r
+}\r
+\r
+.pocket-inline-frame[data-pocket-ui="true"] [hidden] { display: none; }\r
+\r
+/* Between-turn connectors stay compact even when prose artifacts use Full Phone. */\r
+.pocket-receipt-host[data-pocket-host="true"][data-pocket-connector="true"] { width:100%; max-width:none; margin:8px 0; }\r
+.pocket-receipt-host[data-pocket-host="true"][data-pocket-connector="true"][hidden] { display:none; }\r
+.pocket-inline-frame[data-pocket-ui="true"][data-appearance="connector"] { width:100%; }\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-connector { display:grid; gap:0; border:1px solid var(--pocket-inline-border); border-radius:12px; background:var(--pocket-inline-surface,#201e25); overflow:hidden; box-shadow:0 3px 12px #0002; }\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-connector-heading { display:block; width:100%; padding:9px 12px; text-align:left; color:var(--pocket-inline-text); font-size:11px; font-weight:650; border-bottom:1px solid var(--pocket-inline-border); cursor:pointer; opacity:.8; }\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-connector-row { display:grid; position:relative; grid-template-columns:minmax(0,1fr); gap:3px; width:100%; padding:10px 12px; text-align:left; cursor:pointer; }\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-connector-row + .pocket-connector-row { border-top:1px solid var(--pocket-inline-border); }\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-connector-row[data-direction="sent"] { text-align:right; border-right:2px solid var(--pocket-inline-accent); }\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-connector-sender { font-size:10px; font-weight:650; opacity:.65; }\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-connector-copy { font-size:13px; line-height:1.45; white-space:pre-wrap; }\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-connector-row:hover { background:color-mix(in srgb,var(--pocket-inline-text) 4%,transparent); }\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-connector-row:focus-visible,\r
+.pocket-inline-frame[data-pocket-ui="true"] .pocket-connector-heading:focus-visible { outline:2px solid var(--pocket-inline-accent); outline-offset:-3px; }\r
 `;
 
 // src/frontend/components/inline-styles.ts
@@ -7018,25 +7508,8 @@ function pocketDeviceKey(chatId, characterId, deviceOwnerActorId) {
 function pocketSurfaceId() {
   return requestId("pocket_surface").replace(/[^a-zA-Z0-9_-]/g, "_");
 }
-var ICONS2 = {
-  home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 10 8.5-7 8.5 7v9.5a1.5 1.5 0 0 1-1.5 1.5h-5v-6H10v6H5a1.5 1.5 0 0 1-1.5-1.5z"/></svg>',
-  messages: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 11.5a8 8 0 0 1-11.7 7.1L4 20l1.4-4.6A8 8 0 1 1 20.5 11.5Z"/><path d="M8 10.5h.01M12 10.5h.01M16 10.5h.01"/></svg>',
-  contacts: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0M16 8h5M18.5 5.5v5"/></svg>',
-  camera: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7.5h3l1.5-2h7l1.5 2h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',
-  gallery: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m4.5 18 4.7-4.7 3.1 3.1 2.2-2.2 5 5"/></svg>',
-  notes: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h14v18H5zM8 8h8M8 12h8M8 16h5"/></svg>',
-  weather: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M8 18.5h9a4 4 0 0 0 .4-8A6 6 0 0 0 6 12.5a3 3 0 0 0 2 6Z"/><path d="M8 5V3M4.5 7 3 5.5M11.5 7 13 5.5"/></svg>',
-  calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M7 14h3M14 14h3M7 18h3"/></svg>',
-  trackers: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
-  settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.8 1.8 0 0 0 .4 2l.1.1-2.8 2.8-.1-.1a1.8 1.8 0 0 0-2-.4 1.8 1.8 0 0 0-1.1 1.6v.2H10V21a1.8 1.8 0 0 0-1.1-1.6 1.8 1.8 0 0 0-2 .4l-.1.1L4 17.1l.1-.1a1.8 1.8 0 0 0 .4-2A1.8 1.8 0 0 0 3 13.9h-.2V10H3a1.8 1.8 0 0 0 1.6-1.1 1.8 1.8 0 0 0-.4-2l-.1-.1L6.9 4l.1.1a1.8 1.8 0 0 0 2 .4A1.8 1.8 0 0 0 10 3V2.8h4V3a1.8 1.8 0 0 0 1.1 1.6 1.8 1.8 0 0 0 2-.4l.1-.1L20 6.9l-.1.1a1.8 1.8 0 0 0-.4 2 1.8 1.8 0 0 0 1.6 1.1h.2V14h-.2a1.8 1.8 0 0 0-1.7 1Z"/></svg>',
-  notifications: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>',
-  back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>',
-  send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m21 3-7.2 18-3.2-7.6L3 10zM10.6 13.4 21 3"/></svg>',
-  sparkle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5c.5 4.2 2.8 6.5 7 7-4.2.5-6.5 2.8-7 7-.5-4.2-2.8-6.5-7-7 4.2-.5 6.5-2.8 7-7Z"/><path d="M19 16.5c.2 2 1.3 3.1 3 3.3-1.7.2-2.8 1.3-3 3.2-.2-1.9-1.3-3-3-3.2 1.7-.2 2.8-1.3 3-3.3Z"/></svg>',
-  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
-  trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14M10 11v6M14 11v6"/></svg>'
-};
 var APP_META = [
+  { app: "mochi", label: "Mochi", icon: "sparkle" },
   { app: "messages", label: "Messages", icon: "messages", dock: true },
   { app: "camera", label: "Camera", icon: "camera", dock: true },
   { app: "gallery", label: "Gallery", icon: "gallery", dock: true },
@@ -7049,7 +7522,7 @@ var APP_META = [
 ];
 function icon2(name) {
   const node = el("span");
-  node.innerHTML = ICONS2[name] || ICONS2.home;
+  node.innerHTML = POCKET_ICONS[name] || POCKET_ICONS.home;
   return node;
 }
 function iconButton(name, label) {
@@ -7079,6 +7552,10 @@ class PocketController {
   clock;
   expanded = false;
   currentApp = "home";
+  mochi = new MochiView((payload) => this.ctx.sendToBackend(payload), () => {
+    if (this.currentApp === "mochi")
+      this.render(false);
+  }, (roomId) => this.openPocket({ app: "mochi", roomId }));
   state = null;
   preferences = defaultPreferences();
   settingsDraft = null;
@@ -7286,6 +7763,7 @@ class PocketController {
     this.refresh();
   }
   destroy() {
+    this.mochi.destroy();
     this.voicePlayer.stop();
     this.setupModalDismiss?.();
     this.destroyed = true;
@@ -7491,6 +7969,7 @@ class PocketController {
         this.selectedConversationId = "";
         this.selectedMessageId = "";
         this.currentApp = "home";
+        this.mochi.leave();
         this.router.reset({ app: "home" });
         this.updateBadge();
         this.renderDrawerLanding();
@@ -7941,6 +8420,8 @@ class PocketController {
     this.lastComposerReferenceId = reference.id;
   }
   onBackend(payload) {
+    if (this.mochi.receive(payload))
+      return;
     if (!payload || typeof payload !== "object" || typeof payload.type !== "string")
       return;
     if (payload.type === "lumiphone:state" && payload.state) {
@@ -8661,6 +9142,7 @@ class PocketController {
     });
   }
   close() {
+    this.mochi.leave();
     this.voicePlayer.stop();
     if (!this.widget && !this.dockPanel && !this.mobileWidget)
       return;
@@ -8749,7 +9231,9 @@ class PocketController {
   openPocket(routeInput, pushHistory = true) {
     const normalized = normalizePocketRoute(routeInput);
     const route = this.router.navigate(normalized, !pushHistory);
-    if (!this.state) {
+    if (this.currentApp === "mochi" && route.app !== "mochi")
+      this.mochi.leave();
+    if (!this.state && route.app !== "mochi") {
       this.pendingRoute = route;
       this.open();
       this.refresh();
@@ -8760,6 +9244,15 @@ class PocketController {
     if (this.currentApp === "settings" && route.app !== "settings")
       this.settingsDraft = null;
     this.currentApp = route.app;
+    if (route.app === "mochi") {
+      this.mochi.select(route.roomId || "");
+      if (!this.mochi.state)
+        this.mochi.load();
+      this.render(true);
+      return;
+    }
+    if (!this.state)
+      return;
     if (route.app === "messages") {
       const owner = this.currentDeviceOwnerActorId() || pocketPersonaActorId(this.state);
       const conversation = (route.conversationId ? this.state.conversations.find((entry) => entry.id === route.conversationId && conversationVisibleOnDevice(this.state, entry, owner)) : null) || (route.contactId ? this.state.conversations.find((entry) => entry.kind === "direct" && conversationVisibleOnDevice(this.state, entry, owner) && conversationActorIds(entry).includes(route.contactId)) : null);
@@ -8989,14 +9482,14 @@ class PocketController {
     const selection = document.activeElement instanceof HTMLTextAreaElement ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
     for (const cleanup of this.viewCleanups.splice(0))
       cleanup();
-    if (!this.state) {
+    if (!this.state && this.currentApp !== "mochi") {
       this.screen.replaceChildren(this.loadingView());
       return;
     }
     this.applyAppearance();
-    const view = this.currentApp === "home" ? this.renderHome() : this.currentApp === "messages" ? this.renderMessages() : this.currentApp === "contacts" ? this.renderContacts() : this.currentApp === "gallery" ? this.renderGallery() : this.currentApp === "camera" ? this.renderCamera() : this.currentApp === "notes" ? this.renderNotes() : this.currentApp === "weather" ? this.renderWeather() : this.currentApp === "calendar" ? this.renderCalendar() : this.currentApp === "trackers" ? this.renderTrackers() : this.currentApp === "notifications" ? this.renderNotifications() : this.renderSettings();
+    const view = this.currentApp === "mochi" ? this.mochi.render() : this.currentApp === "home" ? this.renderHome() : this.currentApp === "messages" ? this.renderMessages() : this.currentApp === "contacts" ? this.renderContacts() : this.currentApp === "gallery" ? this.renderGallery() : this.currentApp === "camera" ? this.renderCamera() : this.currentApp === "notes" ? this.renderNotes() : this.currentApp === "weather" ? this.renderWeather() : this.currentApp === "calendar" ? this.renderCalendar() : this.currentApp === "trackers" ? this.renderTrackers() : this.currentApp === "notifications" ? this.renderNotifications() : this.renderSettings();
     view.classList.add("lumiphone-app-view");
-    if (this.currentApp === "contacts" && ["config", "new", "draft"].includes(this.selectedContactView)) {
+    if (this.state && this.currentApp === "contacts" && ["config", "new", "draft"].includes(this.selectedContactView)) {
       const key = `${this.state.chatId}:${this.state.characterId}:${this.selectedContactId}:${this.selectedContactView}`;
       const fields = [...view.querySelectorAll("input, textarea, select")];
       const draft = this.contactFormDrafts.get(key);

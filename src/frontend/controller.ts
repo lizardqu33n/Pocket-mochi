@@ -1,4 +1,6 @@
+import { POCKET_ICONS as ICONS } from './components/icons.js'
 import { GALLERY_PAGE_SIZE } from '../domain/gallery-page.js'
+import { MochiView } from '../mochi/view.js'
 import { VoiceMessagePlayer } from './components/voice-message.js'
 import type {
   CalendarEvent,
@@ -76,26 +78,9 @@ function pocketSurfaceId(): string {
   return requestId('pocket_surface').replace(/[^a-zA-Z0-9_-]/g, '_')
 }
 
-const ICONS: Record<string, string> = {
-  home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 10 8.5-7 8.5 7v9.5a1.5 1.5 0 0 1-1.5 1.5h-5v-6H10v6H5a1.5 1.5 0 0 1-1.5-1.5z"/></svg>',
-  messages: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 11.5a8 8 0 0 1-11.7 7.1L4 20l1.4-4.6A8 8 0 1 1 20.5 11.5Z"/><path d="M8 10.5h.01M12 10.5h.01M16 10.5h.01"/></svg>',
-  contacts: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0M16 8h5M18.5 5.5v5"/></svg>',
-  camera: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7.5h3l1.5-2h7l1.5 2h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',
-  gallery: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m4.5 18 4.7-4.7 3.1 3.1 2.2-2.2 5 5"/></svg>',
-  notes: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h14v18H5zM8 8h8M8 12h8M8 16h5"/></svg>',
-  weather: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M8 18.5h9a4 4 0 0 0 .4-8A6 6 0 0 0 6 12.5a3 3 0 0 0 2 6Z"/><path d="M8 5V3M4.5 7 3 5.5M11.5 7 13 5.5"/></svg>',
-  calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M7 14h3M14 14h3M7 18h3"/></svg>',
-  trackers: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
-  settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.8 1.8 0 0 0 .4 2l.1.1-2.8 2.8-.1-.1a1.8 1.8 0 0 0-2-.4 1.8 1.8 0 0 0-1.1 1.6v.2H10V21a1.8 1.8 0 0 0-1.1-1.6 1.8 1.8 0 0 0-2 .4l-.1.1L4 17.1l.1-.1a1.8 1.8 0 0 0 .4-2A1.8 1.8 0 0 0 3 13.9h-.2V10H3a1.8 1.8 0 0 0 1.6-1.1 1.8 1.8 0 0 0-.4-2l-.1-.1L6.9 4l.1.1a1.8 1.8 0 0 0 2 .4A1.8 1.8 0 0 0 10 3V2.8h4V3a1.8 1.8 0 0 0 1.1 1.6 1.8 1.8 0 0 0 2-.4l.1-.1L20 6.9l-.1.1a1.8 1.8 0 0 0-.4 2 1.8 1.8 0 0 0 1.6 1.1h.2V14h-.2a1.8 1.8 0 0 0-1.7 1Z"/></svg>',
-  notifications: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>',
-  back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>',
-  send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m21 3-7.2 18-3.2-7.6L3 10zM10.6 13.4 21 3"/></svg>',
-  sparkle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5c.5 4.2 2.8 6.5 7 7-4.2.5-6.5 2.8-7 7-.5-4.2-2.8-6.5-7-7 4.2-.5 6.5-2.8 7-7Z"/><path d="M19 16.5c.2 2 1.3 3.1 3 3.3-1.7.2-2.8 1.3-3 3.2-.2-1.9-1.3-3-3-3.2 1.7-.2 2.8-1.3 3-3.3Z"/></svg>',
-  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
-  trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14M10 11v6M14 11v6"/></svg>',
-}
 
 const APP_META: Array<{ app: PhoneApp; label: string; icon: string; dock?: boolean }> = [
+  { app: 'mochi', label: 'Mochi', icon: 'sparkle' },
   { app: 'messages', label: 'Messages', icon: 'messages', dock: true },
   { app: 'camera', label: 'Camera', icon: 'camera', dock: true },
   { app: 'gallery', label: 'Gallery', icon: 'gallery', dock: true },
@@ -140,6 +125,7 @@ class PocketController {
   private clock: HTMLSpanElement
   private expanded = false
   private currentApp: PhoneApp = 'home'
+  private mochi = new MochiView(payload => this.ctx.sendToBackend(payload), () => { if (this.currentApp === 'mochi') this.render(false) }, roomId => this.openPocket({ app: 'mochi', roomId }))
   private state: PhoneState | null = null
   private preferences: DevicePreferences = defaultPreferences()
   private settingsDraft: DevicePreferences | null = null
@@ -330,6 +316,7 @@ class PocketController {
   }
 
   destroy(): void {
+    this.mochi.destroy()
     this.voicePlayer.stop()
     this.setupModalDismiss?.()
     this.destroyed = true
@@ -519,6 +506,7 @@ class PocketController {
           this.selectedConversationId = ''
           this.selectedMessageId = ''
           this.currentApp = 'home'
+          this.mochi.leave()
           this.router.reset({ app: 'home' })
           this.updateBadge()
           this.renderDrawerLanding()
@@ -962,6 +950,7 @@ class PocketController {
   }
 
   private onBackend(payload: BackendPayload): void {
+    if (this.mochi.receive(payload)) return
     if (!payload || typeof payload !== 'object' || typeof payload.type !== 'string') return
     if (payload.type === 'lumiphone:state' && payload.state) {
       const active = this.ctx.getActiveChat()
@@ -1552,6 +1541,7 @@ class PocketController {
   }
 
   private close(): void {
+    this.mochi.leave()
     this.voicePlayer.stop()
     if (!this.widget && !this.dockPanel && !this.mobileWidget) return
     this.expanded = false
@@ -1624,7 +1614,8 @@ class PocketController {
   private openPocket(routeInput: PocketRoute, pushHistory = true): void {
     const normalized = normalizePocketRoute(routeInput)
     const route = this.router.navigate(normalized, !pushHistory)
-    if (!this.state) {
+    if (this.currentApp === 'mochi' && route.app !== 'mochi') this.mochi.leave()
+    if (!this.state && route.app !== 'mochi') {
       this.pendingRoute = route
       this.open()
       this.refresh()
@@ -1633,6 +1624,13 @@ class PocketController {
     if (!this.expanded) this.open()
     if (this.currentApp === 'settings' && route.app !== 'settings') this.settingsDraft = null
     this.currentApp = route.app
+    if (route.app === 'mochi') {
+      this.mochi.select(route.roomId || '')
+      if (!this.mochi.state) this.mochi.load()
+      this.render(true)
+      return
+    }
+    if (!this.state) return
     if (route.app === 'messages') {
       const owner = this.currentDeviceOwnerActorId() || pocketPersonaActorId(this.state)
       const conversation = (route.conversationId ? this.state.conversations.find((entry) => entry.id === route.conversationId && conversationVisibleOnDevice(this.state!, entry, owner)) : null)
@@ -1852,12 +1850,13 @@ class PocketController {
     const focusedComposer = document.activeElement instanceof HTMLTextAreaElement ? document.activeElement.dataset.pocketComposer : ''
     const selection = document.activeElement instanceof HTMLTextAreaElement ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] as const : null
     for (const cleanup of this.viewCleanups.splice(0)) cleanup()
-    if (!this.state) {
+    if (!this.state && this.currentApp !== 'mochi') {
       this.screen.replaceChildren(this.loadingView())
       return
     }
     this.applyAppearance()
-    const view = this.currentApp === 'home' ? this.renderHome()
+    const view = this.currentApp === 'mochi' ? this.mochi.render()
+      : this.currentApp === 'home' ? this.renderHome()
       : this.currentApp === 'messages' ? this.renderMessages()
       : this.currentApp === 'contacts' ? this.renderContacts()
       : this.currentApp === 'gallery' ? this.renderGallery()
@@ -1869,7 +1868,7 @@ class PocketController {
       : this.currentApp === 'notifications' ? this.renderNotifications()
       : this.renderSettings()
     view.classList.add('lumiphone-app-view')
-    if (this.currentApp === 'contacts' && ['config', 'new', 'draft'].includes(this.selectedContactView)) {
+    if (this.state && this.currentApp === 'contacts' && ['config', 'new', 'draft'].includes(this.selectedContactView)) {
       const key = `${this.state.chatId}:${this.state.characterId}:${this.selectedContactId}:${this.selectedContactView}`
       const fields = [...view.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>('input, textarea, select')]
       const draft = this.contactFormDrafts.get(key)

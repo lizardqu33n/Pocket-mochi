@@ -1,6 +1,7 @@
 import type { PhoneApp, PocketRoute } from '../types.js'
+import { MOCHI_ROOM_ID } from '../mochi/types.js'
 
-const APPS = new Set<PhoneApp>(['home', 'messages', 'contacts', 'gallery', 'camera', 'notes', 'weather', 'calendar', 'trackers', 'notifications', 'settings'])
+const APPS = new Set<PhoneApp>(['home', 'messages', 'mochi', 'contacts', 'gallery', 'camera', 'notes', 'weather', 'calendar', 'trackers', 'notifications', 'settings'])
 
 function shortId(value: unknown): string | undefined {
   if (typeof value !== 'string') return undefined
@@ -12,6 +13,7 @@ export function normalizePocketRoute(value: unknown, fallback: PocketRoute = { a
   if (!value || typeof value !== 'object' || Array.isArray(value)) return fallback
   const raw = value as Record<string, unknown>
   const app = typeof raw.app === 'string' && APPS.has(raw.app as PhoneApp) ? raw.app as PhoneApp : fallback.app
+  if (app === 'mochi') return { app, ...(typeof raw.roomId === 'string' && MOCHI_ROOM_ID.test(raw.roomId) ? { roomId: raw.roomId } : {}) }
   if (app === 'messages') return {
     app,
     conversationId: shortId(raw.conversationId),

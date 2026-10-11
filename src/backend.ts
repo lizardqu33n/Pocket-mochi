@@ -1,4 +1,5 @@
 import { GALLERY_PAGE_SIZE, galleryOffset } from './domain/gallery-page.js'
+import { MochiService } from './mochi/service.js'
 import { voiceMessage } from './domain/voice.js'
 import type {
   CalendarEvent,
@@ -71,6 +72,7 @@ import { normalizeContactGroups, saveContactGroup } from './domain/contact-group
 import { createPocketReference, latestArmedReference, referenceForGeneration, serializePocketReference } from './backend/references.js'
 
 declare const spindle: import('lumiverse-spindle-types').SpindleAPI
+const mochi = new MochiService(spindle)
 
 type AnyRecord = Record<string, unknown>
 function stringArray(value: unknown, limit: number, maxLength: number): string[] {
@@ -4752,6 +4754,10 @@ async function applyAction(input: AnyRecord, userId?: string, source: 'model' | 
 }
 
 async function handleFrontend(payload: unknown, userId?: string): Promise<void> {
+  if (isRecord(payload) && typeof payload.type === 'string' && payload.type.startsWith('mochi:')) {
+    await mochi.handle(payload, userId)
+    return
+  }
   if (!isRecord(payload) || !text(payload.type, 120).startsWith('lumiphone:')) return
   const requestId = text(payload.requestId, 180)
   try {

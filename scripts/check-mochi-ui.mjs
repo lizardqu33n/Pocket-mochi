@@ -1,0 +1,129 @@
+import assert from 'node:assert/strict'
+import { createRequire } from 'node:module'
+import { mkdir, writeFile } from 'node:fs/promises'
+import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { spawnSync } from 'node:child_process'
+
+const root = fileURLToPath(new URL('../', import.meta.url))
+const require = createRequire(import.meta.url)
+const playwright = require(require.resolve('playwright', { paths: [process.env.POCKET_PLAYWRIGHT_ROOT || root] }))
+const output = resolve(root, 'tmp/mochi-ui')
+await mkdir(output, { recursive: true })
+// Only synthetic data. This exercises the production view without any host or provider.
+await writeFile(resolve(output, 'entry.ts'), `
+import { MochiView } from ${JSON.stringify(resolve(root, 'src/mochi/view.ts'))};
+import { MochiService } from ${JSON.stringify(resolve(root, 'src/mochi/service.ts'))};
+import { PHONE_STYLES } from ${JSON.stringify(resolve(root, 'src/styles.ts'))};
+const style = document.createElement('style'); style.textContent = PHONE_STYLES; document.head.append(style);
+const files = new Map(); let serial=0;
+const demoPortrait = 'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80"><rect width="80" height="80" fill="#b6a2d5"/><circle cx="40" cy="30" r="15" fill="#f4dccf"/><path d="M10 80V68a30 30 0 0 1 60 0v12" fill="#625477"/><path d="M24 29a16 16 0 0 1 32 0l-8-6-24 9" fill="#514660"/></svg>');
+const characters=[{id:'character1',name:'Long character name for mobile wrapping',description:'Synthetic character',image_id:''},{id:'character2',name:'Second character',description:'Synthetic second character',image_id:''}];
+const host={
+ userStorage:{exists:async(p,u)=>files.has(u+':'+p),getJson:async(p,o)=>structuredClone(files.get(o.userId+':'+p)??o.fallback),setJson:async(p,v,o)=>{files.set(o.userId+':'+p,structuredClone(v))},move:async(a,b,u)=>{files.set(u+':'+b,files.get(u+':'+a));files.delete(u+':'+a)},list:async(p,u)=>[...files.keys()].filter(k=>k.startsWith(u+':'+p)).map(k=>k.slice((u+':'+p).length))},
+ characters:{get:async id=>characters.find(c=>c.id===id),list:async()=>({data:characters})},personas:{get:async()=>null,list:async()=>({data:[]})},permissions:{has:()=>true},
+ connections:{get:async()=>({id:'test',model:'synthetic'}),list:async()=>[{id:'test',name:'Simulated connection',model:'synthetic'}]},tokens:{countMessages:async m=>({total_tokens:Math.ceil(JSON.stringify(m).length/4)})},
+ generate:{quiet:async r=>{await new Promise(resolve=>setTimeout(resolve,250));serial++;return {content:JSON.stringify({speakerId:r.messages[0].content.includes('required speakerId is "character1"')?'character1':r.messages[0].content.includes('required speakerId is "character2"')?'character2':'character2',text:'Simulated character reply '+serial})}}},
+ sendToFrontend:p=>{if(p.state){for(const c of p.state.characters)c.avatarUrl=demoPortrait;for(const r of p.state.rooms)for(const m of r.messages)if(m.role==='assistant')m.avatarUrl=demoPortrait;}view.receive(p)}
+};
+const service=new MochiService(host);
+const render = () => {const node=view.render();node.classList.add('lumiphone-app-view');document.getElementById('app').replaceChildren(node)};
+const view = new MochiView(payload => {void service.handle(payload,'synthetic-user')}, render, id => { view.select(id || ''); render(); });
+view.load();
+`)
+const build = spawnSync('bun', ['build', resolve(output, 'entry.ts'), '--target=browser', '--outfile=' + resolve(output, 'view.js')], { cwd: root, encoding: 'utf8' })
+assert.equal(build.status, 0, build.stderr)
+await writeFile(resolve(output, 'index.html'), '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mochi simulated preview</title><style>body{margin:0;background:#201a29;font:15px system-ui}#phone{width:min(443px,100%);height:100dvh;max-height:none;margin:auto;border:0;border-radius:0;box-shadow:none}#app{height:100%;width:100%;min-height:0}button{font:inherit}</style><div class="lumiphone-widget-root"><div id="phone" class="lumiphone-shell"><div class="lumiphone-statusbar" aria-hidden="true">Mochi preview</div><div id="app" class="lumiphone-screen"></div><div class="lumiphone-homebar" aria-hidden="true"></div></div></div><script src="view.js"></script>')
+const browser = await playwright.chromium.launch({ headless: true, ...(process.env.POCKET_BROWSER_PATH ? { executablePath: process.env.POCKET_BROWSER_PATH } : {}) })
+try {
+  for (const width of [320, 390, 900]) {
+    const page = await browser.newPage({ viewport: { width, height: 850 } })
+    await page.goto(new URL('file:///' + resolve(output, 'index.html').replaceAll('\\', '/')).href)
+    await page.getByRole('button', { name: 'New room', exact: true }).click()
+    assert.ok(await page.locator('.mochi-view').evaluate(n => n.getBoundingClientRect().width >= 300), 'Mochi must fill the available handset width')
+    await page.getByLabel('Room name', { exact: true }).fill('My independent room')
+    await page.getByRole('button', { name: 'Long character name for mobile wrapping' }).click()
+    const longChoice = page.getByRole('button', { name: 'Long character name for mobile wrapping' })
+    assert.equal(await longChoice.getAttribute('aria-pressed'), 'true')
+    await longChoice.click()
+    assert.equal(await longChoice.getAttribute('aria-pressed'), 'false')
+    await longChoice.click()
+    assert.equal(await longChoice.getAttribute('aria-pressed'), 'true')
+    assert.ok(await longChoice.evaluate(n => n.scrollWidth <= n.clientWidth && n.querySelector('span:last-child').getBoundingClientRect().height > 20), 'Long character names must wrap inside their choice')
+    assert.ok(await page.locator('.mochi-choice .mochi-avatar').evaluateAll(nodes => nodes.every(n => {const r=n.getBoundingClientRect();return r.width >= 40 && Math.abs(r.width-r.height)<1 && getComputedStyle(n).borderRadius==='50%'})), 'Picker portraits must remain circular')
+    assert.ok(await page.locator('.mochi-choice img').evaluateAll(nodes => nodes.length===2 && nodes.every(n=>n.complete && n.naturalWidth>0)), 'Character portrait images must load')
+    await page.getByRole('button', { name: 'Second character', exact: true }).click()
+    await page.getByLabel('Your name', { exact: true }).fill('Stable persona')
+    await page.getByLabel('Identity description').fill('Room-specific identity')
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'creation form must not overflow')
+    await page.screenshot({ path: resolve(output, 'create-' + width + '.png') })
+    await page.getByRole('button', { name: 'Create room', exact: true }).click()
+    await page.getByText('You are Stable persona', { exact: true }).waitFor()
+    await page.getByRole('button', { name: 'Room settings', exact: true }).click()
+    await page.getByLabel('Generation connection', { exact: true }).selectOption('test')
+    await page.getByLabel('Room instructions', { exact: true }).fill('Keep this cozy.')
+    await page.getByLabel('Room name', { exact: true }).fill('Discarded draft')
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click()
+    await page.getByRole('button', { name: 'Room settings', exact: true }).click()
+    assert.equal(await page.getByLabel('Room name', { exact: true }).inputValue(), 'My independent room', 'Cancel discards form edits')
+    assert.equal(await page.getByLabel('Room instructions', { exact: true }).inputValue(), '')
+    await page.getByLabel('Generation connection', { exact: true }).selectOption('test')
+    await page.getByLabel('Room instructions', { exact: true }).fill('Keep this cozy.')
+    await page.getByLabel('Room name for Second character', { exact: true }).fill('Room nickname')
+    await page.getByRole('button', { name: 'Save settings', exact: true }).click()
+    await page.getByRole('button', { name: 'Room settings', exact: true }).click()
+    assert.equal(await page.getByLabel('Room instructions', { exact: true }).inputValue(), 'Keep this cozy.')
+    assert.equal(await page.getByLabel('Generation connection', { exact: true }).inputValue(), 'test')
+    await page.screenshot({ path: resolve(output, 'settings-' + width + '.png'), fullPage: true })
+    await page.getByRole('button', { name: 'Save settings', exact: true }).scrollIntoViewIfNeeded()
+    await page.screenshot({ path: resolve(output, 'settings-bottom-' + width + '.png') })
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click()
+    await page.getByLabel('Message', { exact: true }).fill('Hello from my independent room')
+    await page.getByLabel('Message', { exact: true }).press('Shift+Enter')
+    assert.equal(await page.locator('.mochi-message').count(), 0, 'Shift+Enter must not send')
+    await page.getByLabel('Message', { exact: true }).press('Enter')
+    await page.getByText('Simulated character reply 1', { exact: true }).waitFor()
+    assert.ok(await page.locator('.mochi-bubble').evaluateAll(nodes => nodes.every(n => n.getBoundingClientRect().width <= n.closest('.mochi-message').getBoundingClientRect().width * .88 + 1)), 'Bubbles must stay below 88% of the row width')
+    assert.ok(await page.locator('.mochi-message[data-role=assistant] .mochi-bubble').evaluate(n => n.getBoundingClientRect().width < n.closest('.mochi-thread').getBoundingClientRect().width * .8), 'Short messages must use content-sized bubbles')
+    assert.equal(await page.locator('.mochi-bubble strong').count(), 0, 'Names stay outside bubbles')
+    assert.equal(await page.locator('.mochi-message time').count(), 2)
+    assert.ok(await page.locator('.mochi-bubble').first().evaluate(n => {const saved=n.textContent;n.textContent='LongUnbrokenMessage'.repeat(50);const fits=n.scrollWidth<=n.clientWidth && n.getBoundingClientRect().width<=n.closest('.mochi-message').getBoundingClientRect().width*.88+1;n.textContent=saved;return fits}), 'Long unbroken messages must wrap within the bubble limit')
+    assert.ok(await page.getByRole('button', { name: 'Send', exact: true }).evaluate(n => {const r=n.getBoundingClientRect();return r.width>=44 && r.height>=44}), 'Send must be touch-friendly')
+    await page.getByLabel('Message', { exact: true }).fill('draft line\\n'.repeat(20))
+    assert.ok(await page.getByLabel('Message', { exact: true }).evaluate(n => n.getBoundingClientRect().height<=113 && n.scrollWidth<=n.clientWidth), 'Composer grows within its height limit')
+    await page.getByLabel('Message', { exact: true }).fill('')
+    assert.equal(await page.locator('.mochi-message[data-role=user]').count(), 1)
+    await page.getByLabel('Next responder').selectOption('character1')
+    await page.getByLabel('Message', { exact: true }).press('Enter')
+    await page.getByText('Simulated character reply 2', { exact: true }).waitFor()
+    assert.equal(await page.locator('.mochi-message[data-role=user]').count(), 1, 'empty Enter must not store a blank user message')
+    await page.getByRole('button', { name: 'Room settings', exact: true }).click()
+    await page.getByLabel('Reply automatically after sending').uncheck()
+    await page.getByRole('button', { name: 'Save settings', exact: true }).click()
+    await page.getByLabel('Message', { exact: true }).fill('Manual-only message')
+    await page.getByRole('button', { name: 'Send', exact: true }).click()
+    await page.getByText('Manual-only message', { exact: true }).waitFor()
+    assert.equal(await page.locator('.mochi-message[data-role=assistant]').count(), 2)
+    await page.getByRole('button', { name: 'Send', exact: true }).click()
+    await page.getByRole('button', { name: 'Stop reply', exact: true }).click()
+    await page.waitForTimeout(400)
+    assert.equal(await page.locator('.mochi-message[data-role=assistant]').count(), 2, 'late cancelled provider result must be discarded')
+    await page.getByRole('button', { name: 'Send', exact: true }).click()
+    await page.getByRole('button', { name: 'Room inbox', exact: true }).click()
+    await page.waitForTimeout(400)
+    await page.getByRole('button', { name: /My independent room.*Stable persona/ }).click()
+    assert.equal(await page.locator('.mochi-message[data-role=assistant]').count(), 2, 'leaving a room must cancel its late response')
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'thread and composer must not overflow')
+    await page.screenshot({ path: resolve(output, 'room-' + width + '.png') })
+    await page.locator('#phone').evaluate(n => n.dataset.theme='porcelain')
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'Light host theme must also fit')
+    await page.screenshot({ path: resolve(output, 'room-light-' + width + '.png') })
+    await page.locator('#phone').evaluate(n => n.dataset.theme='dark')
+    await page.getByRole('button', { name: 'Room inbox', exact: true }).click()
+    await page.getByRole('button', { name: /My independent room.*Stable persona/ }).waitFor()
+    assert.equal(await page.locator('.mochi-preview').textContent(), 'Stable persona: Manual-only message', 'Inbox preview comes from the saved last message')
+    await page.screenshot({ path: resolve(output, 'inbox-' + width + '.png') })
+    await page.close()
+  }
+  console.log('Mochi simulated Chromium UI passed at 320px, 390px and 900px. Browser: ' + browser.version())
+} finally { await browser.close() }

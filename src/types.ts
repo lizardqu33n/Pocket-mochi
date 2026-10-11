@@ -1,6 +1,7 @@
 export type PhoneApp =
   | 'home'
   | 'messages'
+  | 'mochi'
   | 'contacts'
   | 'gallery'
   | 'camera'
@@ -16,6 +17,7 @@ export type OpenAnimation = 'spring' | 'slide' | 'fade' | 'none'
 
 export type PocketRoute =
   | { app: 'home' }
+  | { app: 'mochi'; roomId?: string }
   | { app: 'messages'; conversationId?: string; contactId?: string; messageId?: string; view?: 'thread' | 'new-group' | 'group-editor' | 'group-detail' }
   | { app: 'contacts'; contactId?: string; groupId?: string; view?: 'list' | 'detail' | 'config' | 'import' | 'quick-gen' | 'new' | 'draft' | 'groups' | 'group-config' | 'bank' | 'cast-config' | 'cast-import' | 'bank-entry' }
   | { app: 'trackers'; trackerId?: string; view?: 'detail' | 'config' }

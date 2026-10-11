@@ -1891,7 +1891,51 @@ assert.equal(dockRequestCount, 2, 'reopening Pocket must request a fresh dock ha
 assert.ok(dockRoot.querySelector('.lumiphone-shell:not([hidden])'))
 const handsetHost = dockRoot.querySelector('.lumiphone-handset-host')
 assert.ok(Math.abs((parseFloat(handsetHost.style.width) / parseFloat(handsetHost.style.height)) - (9 / 18.4)) < 0.01, 'desktop phone bounds are not 9:18.4')
-assert.equal(dockRoot.querySelectorAll('.lp-app-icon').length, 9)
+assert.equal(dockRoot.querySelectorAll('.lp-app-icon').length, 10)
+assert.ok(dockRoot.querySelector('.lp-app-icon[aria-label="Messages"]'), 'original Messages stays registered')
+const mochiStorage = spindle.userStorage, mochiActive = spindle.chats.getActive
+const mochiPersonasList = spindle.personas.list
+const mochiFiles = new Map()
+const beforeMochiPhones = structuredClone([...storage.entries()])
+try {
+  spindle.personas.list = async () => ({ data: [] })
+  spindle.userStorage = {
+    exists: async (path, user) => mochiFiles.has(user + ':' + path),
+    getJson: async (path, options) => structuredClone(mochiFiles.get(options.userId + ':' + path) ?? options.fallback),
+    setJson: async (path, value, options) => { mochiFiles.set(options.userId + ':' + path, structuredClone(value)) },
+    move: async (from, to, user) => { mochiFiles.set(user + ':' + to, mochiFiles.get(user + ':' + from)); mochiFiles.delete(user + ':' + from) },
+    list: async (prefix, user) => [...mochiFiles.keys()].filter(path => path.startsWith(user + ':' + prefix)).map(path => path.slice((user + ':' + prefix).length)),
+  }
+  spindle.chats.getActive = async () => { throw new Error('Mochi must not resolve native RP context') }
+  dockRoot.querySelector('.lp-app-icon[aria-label="Mochi"]').click()
+  const request = frontendSends.at(-1)
+  assert.equal(request.type, 'mochi:list')
+  assert.equal(request.chatId, undefined, 'Mochi transport does not attach active RP context')
+  await frontendHandler(request, 'user-a')
+  backendReceiver(frontendMessages.at(-1))
+  assert.match(dockRoot.querySelector('.mochi-view').textContent, /No rooms yet/)
+  ;[...dockRoot.querySelectorAll('.mochi-view button')].find(node => node.textContent === 'New room').click()
+  const form = dockRoot.querySelector('.mochi-view form')
+  const fields = form.querySelectorAll('input')
+  fields[0].value = 'Independent room'; fields[0].dispatchEvent(new dom.window.Event('input'))
+  fields[1].value = 'Stable room persona'; fields[1].dispatchEvent(new dom.window.Event('input'))
+  form.querySelector('.mochi-choice').click()
+  form.dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true }))
+  await frontendHandler(frontendSends.at(-1), 'user-a')
+  const response = frontendMessages.at(-1)
+  assert.equal(response.type, 'mochi:state')
+  backendReceiver(response)
+  assert.match(dockRoot.querySelector('.mochi-view').textContent, /Stable room persona/)
+  backendReceiver({ ...firstState, reason: 'chat_switched' })
+  backendReceiver({ ...firstState, reason: 'persona_changed' })
+  assert.match(dockRoot.querySelector('.mochi-view').textContent, /Stable room persona/, 'RP refresh must retain the independent view and snapshot')
+  assert.ok(dockRoot.querySelector('.mochi-view textarea[aria-label="Message"]'), 'Mochi has an independent message composer')
+  assert.deepEqual([...storage.entries()], beforeMochiPhones, 'Mochi must not write existing phones or preferences')
+} finally {
+  spindle.userStorage = mochiStorage; spindle.chats.getActive = mochiActive
+  spindle.personas.list = mochiPersonasList
+  dockRoot.querySelector('.lumiphone-homebar button').click()
+}
 await exportVisual('home', dockRoot)
 for (const [name, width, scale] of [['min', 288, .7], ['max', 443, 1.3]]) {
   const scaledHome = dockRoot.cloneNode(true)
