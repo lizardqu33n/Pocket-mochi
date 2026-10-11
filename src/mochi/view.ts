@@ -248,6 +248,21 @@ export class MochiView {
       for (const c of state.connections || []) { const o = el('option', '', `${c.name} · ${c.model}`); o.value = c.id; connection.append(o) }
       connection.value = settings.connectionId; connection.onchange = () => { settings.connectionId = connection.value }; field('Generation connection', connection)
       const auto = el('input'); auto.type = 'checkbox'; auto.checked = settings.autoReply; auto.onchange = () => { settings.autoReply = auto.checked }; field('Reply automatically after sending', auto)
+      const accountBackground = el('input'); accountBackground.type = 'checkbox'; accountBackground.checked = !!state.backgroundEnabled; accountBackground.disabled = this.busy
+      accountBackground.onchange = () => this.dispatch('mochi:background_account', { enabled: accountBackground.checked }); field('Allow server-side background messaging for my account', accountBackground)
+      const roomBackground = el('input'); roomBackground.type = 'checkbox'; roomBackground.checked = !!room.background?.enabled; roomBackground.disabled = this.busy
+      roomBackground.onchange = () => this.dispatch('mochi:background_room', { roomId: room.id, revision: room.revision, enabled: roomBackground.checked }); field('Allow scheduled messages in this room', roomBackground)
+      if (state.backgroundEnabled && room.background?.enabled) {
+        const due = el('input'); due.type = 'datetime-local'; field('Scheduled message time', due)
+        const schedule = action('Schedule character message', 'plus'); schedule.type = 'button'; schedule.disabled = this.busy
+        schedule.onclick = () => this.dispatch('mochi:schedule', { roomId: room.id, revision: room.revision, occurrenceId: requestId('scheduled'), dueAt: new Date(due.value).getTime(), responder: this.responders.get(room.id) || 'auto' })
+        form.append(schedule)
+        for (const job of room.background.jobs) {
+          const row = el('div', 'mochi-actions'); row.append(el('small', 'mochi-muted', `${new Date(job.dueAt).toLocaleString()} · ${job.status}`))
+          const cancelJob = action('Cancel scheduled message', 'close'); cancelJob.type = 'button'; cancelJob.disabled = this.busy
+          cancelJob.onclick = () => this.dispatch('mochi:schedule_cancel', { roomId: room.id, occurrenceId: job.id }); row.append(cancelJob); form.append(row)
+        }
+      }
       for (const [label, key] of [['Total token budget', 'contextTokens'], ['Maximum reply tokens', 'outputTokens']] as const) {
         const input = el('input'); input.type = 'number'; input.value = String(settings[key]); input.oninput = () => { settings[key] = Number(input.value) }; field(label, input)
       }

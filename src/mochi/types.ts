@@ -32,8 +32,11 @@ export interface MochiRoom {
   notificationRevision?: number
   createdAt: string
   updatedAt: string
+  runtime?: import('./scheduling.js').RoomRuntime
+  background?: import('./scheduling.js').PublicRuntime
 }
 export interface MochiState {
+  backgroundEnabled?: boolean
   rooms: MochiRoom[]
   characters: MochiCharacter[]
   personas: MochiPersona[]

@@ -1,8 +1,11 @@
 import { roomId, defaultMochiSettings, type MochiSettings, type MochiMessage, type MochiPersona, type MochiRoom, type MochiState } from './types.js'
 import { generateMochiReply, validateMochiSources } from './generation.js'
+import { identifier, MAX_JOBS, publicRuntime, scheduleInput, temporaryFailure, TERMINAL, validateRuntime, type ScheduledJob } from './scheduling.js'
 
 // New implementation. No Character Chatroom source is included.
 export interface MochiHost {
+  storage?: { exists(path: string): Promise<boolean>; getJson(path: string, options?: { fallback?: unknown }): Promise<any>; setJson(path: string, data: unknown): Promise<void>; move(from: string, to: string): Promise<unknown> }
+  users?: { getRole(userId?: string): Promise<unknown> }
   userStorage: {
     exists(path: string, userId: string): Promise<boolean>
     getJson(path: string, options: { userId: string; fallback?: unknown }): Promise<unknown>
@@ -44,6 +47,7 @@ function validateRoom(value: any, id: string): MochiRoom {
   return value
 }
 export class MochiService {
+  backgroundEnabled: (userId: string) => Promise<boolean> = async () => false
   private locks = new Map<string, Promise<unknown>>()
   private jobs = new Map<string, { requestId: string; controller: AbortController }>()
   private pending = new Map<string, Set<{ requestId: string; controller: AbortController }>>()
@@ -71,6 +75,7 @@ export class MochiService {
     const user = this.account(userId), path = pathFor(id)
     if (!await this.host.userStorage.exists(path, user)) throw new Error('This room is not available to your account.')
     const room = validateRoom(await this.host.userStorage.getJson(path, { userId: user }), id)
+    if (room.runtime !== undefined) validateRuntime(room.runtime)
     room.settings = this.settings(room.settings, room.characterIds)
     room.receipts ||= []
     if (!Array.isArray(room.receipts) || room.receipts.some(id => typeof id !== 'string')) throw new Error('Invalid saved send receipts.')
@@ -170,15 +175,15 @@ export class MochiService {
     if (bank?.version === 1 && Array.isArray(bank.entries)) for (const p of bank.entries.filter((p: any) => p.kind === 'persona')) choices.push({ source: 'pocket', sourceId: p.id, name: p.name, description: '', avatarUrl: '' })
     const connections = this.host.permissions.has('generation') && this.host.connections ? (await this.host.connections.list(user)).map(c => ({ id: c.id, name: c.name || c.model, model: c.model })) : []
     const jobs: Record<string, string> = {}
-    for (const room of rooms) { const job = this.jobs.get(this.jobKey(user, room.id)); if (job) jobs[room.id] = job.requestId }
-    return { rooms: rooms.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)), characters: characters.map(c => ({ id: c.id, name: c.name, avatarUrl: c.image_id ? `/api/v1/images/${c.image_id}` : '' })), personas: choices, warnings, connections, jobs, notifications: rooms.flatMap(r => r.notifications || []).sort((a, b) => b.createdAt.localeCompare(a.createdAt)) }
+    for (const room of rooms) { const job = this.jobs.get(this.jobKey(user, room.id)); if (job && !job.requestId.startsWith('server_')) jobs[room.id] = job.requestId }
+    return { backgroundEnabled: await this.backgroundEnabled(user), rooms: rooms.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).map(({ runtime, ...room }) => ({ ...room, background: publicRuntime(runtime) })), characters: characters.map(c => ({ id: c.id, name: c.name, avatarUrl: c.image_id ? `/api/v1/images/${c.image_id}` : '' })), personas: choices, warnings, connections, jobs, notifications: rooms.flatMap(r => r.notifications || []).sort((a, b) => b.createdAt.localeCompare(a.createdAt)) }
   }
   async cancel(userId: string, id: string, requestId: string): Promise<void> {
     const user = this.account(userId)
     roomId(id)
     const job = this.jobs.get(this.jobKey(user, id))
     let matched = false
-    if (job?.requestId === requestId) { job.controller.abort(); matched = true }
+    if (job?.requestId === requestId && !job.requestId.startsWith('server_')) { job.controller.abort(); matched = true }
     for (const queued of this.pending.get(this.jobKey(user, id)) || []) if (queued.requestId === requestId) { queued.controller.abort(); matched = true }
     if (!matched) await this.read(user, id)
   }
@@ -245,6 +250,132 @@ export class MochiService {
     return matches[0]
   }
   private previousVersion(m: MochiMessage) { return { content: m.content, name: m.name, avatarUrl: m.avatarUrl, savedAt: new Date().toISOString() } }
+  async scheduledRooms(userId: string): Promise<MochiRoom[]> {
+    const user = identifier(userId), rooms: MochiRoom[] = []
+    for (const file of await this.host.userStorage.list(ROOT, user)) {
+      const match = /^(room_[a-f0-9]{32})\.json$/.exec(file)
+      if (match) rooms.push(await this.read(user, match[1]))
+    }
+    return rooms
+  }
+  async schedule(userId: string, input: any, now: number): Promise<void> {
+    const user = identifier(userId), spec = scheduleInput(input, now)
+    await this.locked(user, spec.roomId, async () => {
+      const room = await this.read(user, spec.roomId)
+      if (room.revision !== input.revision) throw new Error('This room changed elsewhere. Refresh before scheduling.')
+      if (!room.runtime?.enabled) throw new Error('Enable background messaging for this room first.')
+      if (spec.responder !== 'auto' && !room.characterIds.includes(spec.responder)) throw new Error('The selected responder is not in this room.')
+      if (room.runtime.jobs.some(j => j.id === spec.id)) return
+      if (room.runtime.jobs.length >= MAX_JOBS || room.runtime.jobs.filter(j => !TERMINAL.has(j.status)).length >= 4) throw new Error('The scheduled queue is full.')
+      room.runtime.jobs.push({ id: spec.id, dueAt: spec.dueAt, expiresAt: spec.dueAt + 3600000, revision: room.revision, responder: spec.responder, status: 'queued', attempts: 0, nextAttemptAt: spec.dueAt })
+      await this.persist(user, room)
+    })
+  }
+  async configureScheduledRoom(userId: string, input: any): Promise<void> {
+    const user = identifier(userId), id = roomId(input.roomId)
+    if (typeof input.enabled !== 'boolean') throw new Error('Invalid background setting.')
+    if (!input.enabled) this.abortScheduled(user, id)
+    await this.locked(user, id, async () => {
+      const room = await this.read(user, id)
+      if (input.revision !== room.revision) throw new Error('This room changed elsewhere. Refresh before changing background settings.')
+      room.runtime ||= { version: 1, enabled: false, jobs: [] }
+      room.runtime.enabled = input.enabled
+      if (!input.enabled) for (const j of room.runtime.jobs) if (!TERMINAL.has(j.status)) { j.status = 'cancelled'; delete j.draft }
+      await this.persist(user, room)
+    })
+  }
+  abortScheduled(userId?: string, id?: string, occurrenceId?: string): void {
+    for (const [key, job] of this.jobs) {
+      const [user, room] = JSON.parse(key)
+      if (job.requestId.startsWith('server_') && (!userId || user === userId) && (!id || room === id) && (!occurrenceId || job.requestId === `server_${occurrenceId}`)) job.controller.abort()
+    }
+  }
+  async cancelScheduled(userId: string, id: string, occurrenceId: string): Promise<void> {
+    identifier(userId); roomId(id); identifier(occurrenceId)
+    this.abortScheduled(userId, id, occurrenceId)
+    await this.locked(userId, id, async () => {
+      const room = await this.read(userId, id), j = room.runtime?.jobs.find(j => j.id === occurrenceId)
+      if (!j || TERMINAL.has(j.status)) return
+      j.status = 'cancelled'; delete j.draft
+      await this.persist(userId, room)
+    })
+  }
+  /** Server-owned execution never uses interactive acceptance receipts or frontend acknowledgements. */
+  async dispatchScheduled(userId: string, id: string, occurrenceId: string, now: () => number, allowed: () => Promise<boolean>, reserve: () => Promise<boolean>): Promise<void> {
+    const user = identifier(userId), key = this.jobKey(user, roomId(id)), controller = new AbortController(), requestId = `server_${identifier(occurrenceId)}`
+    const claim = crypto.randomUUID().replaceAll('-', '')
+    let snapshot: MochiRoom | undefined, generate = false
+    const permitted = async (room: MochiRoom) => {
+      controller.signal.throwIfAborted()
+      if (!room.runtime?.enabled || !await allowed()) throw new Error('Background messaging is disabled.')
+      await validateMochiSources(this.host, room, user)
+      if (!this.host.permissions.has('characters')) throw new Error('Character permission is required.')
+      for (const c of room.characterIds) if (!await this.host.characters.get(c, user)) throw new Error('A room character is not available.')
+      controller.signal.throwIfAborted()
+    }
+    await this.locked(user, id, async () => {
+      const room = await this.read(user, id), j = room.runtime?.jobs.find(j => j.id === occurrenceId)
+      if (!j || TERMINAL.has(j.status) || j.status === 'paused' || this.jobs.has(key) || j.nextAttemptAt > now() || (j.status === 'generating' && (j.leaseUntil || 0) > now())) return
+      if (j.expiresAt < now() || j.revision !== room.revision) { j.status = j.expiresAt < now() ? 'missed' : 'cancelled'; delete j.draft; await this.persist(user, room); return }
+      if (!room.runtime!.enabled || !await allowed()) { j.status = 'cancelled'; delete j.draft; await this.persist(user, room); return }
+      if (j.responder !== 'auto' && !room.characterIds.includes(j.responder)) { j.status = 'paused'; j.reason = 'Responder is unavailable.'; await this.persist(user, room); return }
+      // A generated draft is recoverable without another paid request.
+      generate = !j.draft
+      if (generate && j.attempts >= 3) { j.status = 'failed'; await this.persist(user, room); return }
+      if (!generate && (j.deliveryAttempts || 0) >= 3) { j.status = 'paused'; j.reason = 'Delivery could not be saved. Deferred content is preserved.'; await this.persist(user, room); return }
+      if (generate && !await reserve()) return
+      j.claim = claim; j.leaseUntil = now() + 240000
+      if (generate) { j.status = 'generating'; j.attempts++ }
+      else j.deliveryAttempts = (j.deliveryAttempts || 0) + 1
+      this.jobs.set(key, { requestId, controller })
+      try { await this.persist(user, room); snapshot = room } catch (error) { this.jobs.delete(key); throw error }
+    })
+    if (!snapshot) return
+    const timer = setTimeout(() => controller.abort(), 180000)
+    try {
+      await permitted(snapshot)
+      if (generate) {
+        const j = snapshot.runtime!.jobs.find(j => j.id === occurrenceId)!
+        const reply = await generateMochiReply(this.host, snapshot, user, j.responder, controller.signal)
+        await this.locked(user, id, async () => {
+          const room = await this.read(user, id), job = room.runtime?.jobs.find(j => j.id === occurrenceId)
+          await permitted(room)
+          if (!job || job.claim !== claim || job.status !== 'generating' || room.revision !== j.revision) throw new Error('The room changed; scheduled output was discarded.')
+          job.draft = { characterId: reply.character.id, text: reply.text, name: room.settings!.characterNames[reply.character.id] || reply.character.name, avatarUrl: reply.character.image_id ? `/api/v1/images/${entityId(reply.character.image_id)}` : '' }
+          job.status = 'generated'
+          await this.persist(user, room, controller.signal)
+        })
+      }
+      await this.locked(user, id, async () => {
+        const room = await this.read(user, id), j = room.runtime?.jobs.find(j => j.id === occurrenceId)
+        await permitted(room)
+        if (!j || j.claim !== claim || j.status !== 'generated' || !j.draft || j.revision !== room.revision || j.expiresAt < now()) throw new Error('The scheduled delivery changed or expired.')
+        const draft = j.draft, createdAt = new Date(now()).toISOString(), messageId = crypto.randomUUID()
+        const message: MochiMessage = { id: messageId, requestId, role: 'assistant', characterId: draft.characterId, name: draft.name, avatarUrl: draft.avatarUrl, content: draft.text, createdAt }
+        room.messages.push(message)
+        const notification = { id: messageId, messageId, roomId: id, roomTitle: room.title, title: draft.name, body: draft.text.slice(0, 220), avatarUrl: draft.avatarUrl, createdAt, read: false }
+        room.notifications!.push(notification); room.notificationRevision!++; room.revision++; room.updatedAt = createdAt
+        // Completion tombstone is atomic with the message, independent of later deletion.
+        j.status = 'delivered'; j.messageId = messageId; j.deliveredAt = now(); delete j.draft
+        await this.persist(user, room, controller.signal)
+        this.host.sendToFrontend({ type: 'mochi:notification', notification, notificationRevision: room.notificationRevision }, user)
+      })
+    } catch (error) {
+      await this.locked(user, id, async () => {
+        const room = await this.read(user, id), j = room.runtime?.jobs.find(j => j.id === occurrenceId)
+        if (!j || j.claim !== claim || TERMINAL.has(j.status)) return
+        if (!room.runtime!.enabled || !await allowed() || j.revision !== room.revision) { j.status = 'cancelled'; delete j.draft }
+        else if (controller.signal.aborted || temporaryFailure(error)) {
+          j.status = j.draft ? 'generated' : j.attempts < 3 ? 'queued' : 'failed'
+          j.nextAttemptAt = now() + Math.min(900000, 60000 * 2 ** Math.max(0, j.attempts - 1)); j.leaseUntil = 0
+        } else { j.status = 'paused'; j.reason = 'Scheduled messaging needs attention. Check room sources, provider and storage.' }
+        await this.persist(user, room)
+      })
+    } finally {
+      clearTimeout(timer)
+      if (this.jobs.get(key)?.controller === controller) this.jobs.delete(key)
+    }
+  }
   async message(userId: string, input: any, regenerate = false): Promise<void> {
     const user = this.account(userId), id = roomId(input.roomId), requestId = entityId(input.requestId)
     const key = this.jobKey(user, id), controller = new AbortController()

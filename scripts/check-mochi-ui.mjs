@@ -14,6 +14,7 @@ await mkdir(output, { recursive: true })
 await writeFile(resolve(output, 'entry.ts'), `
 import { MochiView } from ${JSON.stringify(resolve(root, 'src/mochi/view.ts'))};
 import { MochiService } from ${JSON.stringify(resolve(root, 'src/mochi/service.ts'))};
+import { MochiScheduler } from ${JSON.stringify(resolve(root, 'src/mochi/scheduler.ts'))};
 import { showMochiNotification, reconcileMochiNotifications } from ${JSON.stringify(resolve(root, 'src/mochi/notifications.ts'))};
 import { PHONE_STYLES } from ${JSON.stringify(resolve(root, 'src/styles.ts'))};
 const style = document.createElement('style'); style.textContent = PHONE_STYLES; document.head.append(style);
@@ -21,6 +22,7 @@ const files = new Map(); let serial=0;
 const demoPortrait = 'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80"><rect width="80" height="80" fill="#b6a2d5"/><circle cx="40" cy="30" r="15" fill="#f4dccf"/><path d="M10 80V68a30 30 0 0 1 60 0v12" fill="#625477"/><path d="M24 29a16 16 0 0 1 32 0l-8-6-24 9" fill="#514660"/></svg>');
 const characters=[{id:'character1',name:'Long character name for mobile wrapping',description:'Synthetic character',image_id:''},{id:'character2',name:'Second character',description:'Synthetic second character',image_id:''}];
 const host={
+ storage:{exists:async p=>files.has('registry:'+p),getJson:async p=>structuredClone(files.get('registry:'+p)),setJson:async(p,v)=>files.set('registry:'+p,structuredClone(v)),move:async(a,b)=>{files.set('registry:'+b,files.get('registry:'+a));files.delete('registry:'+a)}},
  userStorage:{exists:async(p,u)=>files.has(u+':'+p),getJson:async(p,o)=>structuredClone(files.get(o.userId+':'+p)??o.fallback),setJson:async(p,v,o)=>{files.set(o.userId+':'+p,structuredClone(v))},move:async(a,b,u)=>{files.set(u+':'+b,files.get(u+':'+a));files.delete(u+':'+a)},list:async(p,u)=>[...files.keys()].filter(k=>k.startsWith(u+':'+p)).map(k=>k.slice((u+':'+p).length))},
  characters:{get:async id=>characters.find(c=>c.id===id),list:async()=>({data:characters})},personas:{get:async()=>null,list:async()=>({data:[]})},permissions:{has:()=>true},
  connections:{get:async()=>({id:'test',model:'synthetic'}),list:async()=>[{id:'test',name:'Simulated connection',model:'synthetic'}]},tokens:{countMessages:async m=>({total_tokens:Math.ceil(JSON.stringify(m).length/4)})},
@@ -28,10 +30,11 @@ const host={
  sendToFrontend:p=>{if(p.notification)p.notification.avatarUrl=demoPortrait;if(p.notifications)for(const n of p.notifications)n.avatarUrl=demoPortrait;if(p.state){for(const c of p.state.characters)c.avatarUrl=demoPortrait;for(const n of p.state.notifications||[])n.avatarUrl=demoPortrait;for(const r of p.state.rooms)for(const m of r.messages)if(m.role==='assistant')m.avatarUrl=demoPortrait;}view.receive(p)}
 };
 const service=new MochiService(host);
+const scheduler=new MochiScheduler(host,service);scheduler.start(false);
 const render = () => {const node=view.render();node.classList.add('lumiphone-app-view');document.getElementById('app').replaceChildren(node)};
 const policy={enabled:true,previews:true,visible:true};
-const view = new MochiView(payload => {void service.handle(payload,'synthetic-user')}, render, id => { view.select(id || ''); render(); },()=>policy,n=>showMochiNotification(document.getElementById('phone'),n,policy.previews,()=>view.openRoom(n.roomId)),(notices,rooms)=>reconcileMochiNotifications(document.getElementById('phone'),notices,rooms));
-window.__mochiDemo={view,service,host,files,policy};
+const view = new MochiView(payload => {if(['mochi:background_account','mochi:background_room','mochi:schedule','mochi:schedule_cancel'].includes(payload.type)){void scheduler.handle(payload,'synthetic-user').then(async()=>host.sendToFrontend({type:'mochi:state',requestId:payload.requestId,state:await service.state('synthetic-user')})).catch(()=>host.sendToFrontend({type:'mochi:error',requestId:payload.requestId,message:'Scheduling failed'}))}else void service.handle(payload,'synthetic-user')}, render, id => { view.select(id || ''); render(); },()=>policy,n=>showMochiNotification(document.getElementById('phone'),n,policy.previews,()=>view.openRoom(n.roomId)),(notices,rooms)=>reconcileMochiNotifications(document.getElementById('phone'),notices,rooms));
+window.__mochiDemo={view,service,host,files,policy,scheduler};
 view.load();
 `)
 const build = spawnSync('bun', ['build', resolve(output, 'entry.ts'), '--target=browser', '--outfile=' + resolve(output, 'view.js')], { cwd: root, encoding: 'utf8' })
@@ -79,6 +82,19 @@ try {
     await page.getByRole('button', { name: 'Room settings', exact: true }).click()
     assert.equal(await page.getByLabel('Room instructions', { exact: true }).inputValue(), 'Keep this cozy.')
     assert.equal(await page.getByLabel('Generation connection', { exact: true }).inputValue(), 'test')
+    await page.getByLabel('Allow server-side background messaging for my account', { exact: true }).check()
+    await page.waitForFunction(()=>window.__mochiDemo.view.state.backgroundEnabled&&!window.__mochiDemo.view.busy)
+    await page.getByLabel('Allow scheduled messages in this room', { exact: true }).check()
+    await page.getByLabel('Scheduled message time', { exact: true }).waitFor()
+    await page.getByLabel('Scheduled message time', { exact: true }).fill(await page.evaluate(()=>{const d=new Date(Date.now()+3600000);return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16)}))
+    await page.getByRole('button',{name:'Schedule character message',exact:true}).click()
+    await page.getByRole('button',{name:'Cancel scheduled message',exact:true}).waitFor()
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'Scheduling controls must not overflow')
+    await page.screenshot({path:resolve(output,'scheduler-'+width+'.png')})
+    await page.getByRole('button',{name:'Cancel scheduled message',exact:true}).click()
+    await page.waitForFunction(()=>!window.__mochiDemo.view.busy&&window.__mochiDemo.view.state.rooms.every(r=>!r.background?.jobs.length))
+    await page.getByLabel('Allow server-side background messaging for my account',{exact:true}).uncheck()
+    await page.waitForFunction(()=>!window.__mochiDemo.view.busy&&!window.__mochiDemo.view.state.backgroundEnabled)
     await page.screenshot({ path: resolve(output, 'settings-' + width + '.png'), fullPage: true })
     await page.getByRole('button', { name: 'Save settings', exact: true }).scrollIntoViewIfNeeded()
     await page.screenshot({ path: resolve(output, 'settings-bottom-' + width + '.png') })

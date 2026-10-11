@@ -1,0 +1,49 @@
+import { roomId } from './types.js'
+
+export type ScheduledStatus = 'queued' | 'generating' | 'generated' | 'delivered' | 'cancelled' | 'paused' | 'failed' | 'missed'
+export interface ScheduledDraft { characterId: string; name: string; avatarUrl: string; text: string }
+export interface ScheduledJob {
+  id: string; dueAt: number; expiresAt: number; revision: number; responder: string
+  status: ScheduledStatus; attempts: number; nextAttemptAt: number; claim?: string; leaseUntil?: number
+  draft?: ScheduledDraft; deliveredAt?: number; messageId?: string; reason?: string
+  deliveryAttempts?: number
+}
+export interface RoomRuntime { version: 1; enabled: boolean; jobs: ScheduledJob[] }
+export interface PublicRuntime { enabled: boolean; jobs: Array<Pick<ScheduledJob, 'id' | 'dueAt' | 'status' | 'attempts' | 'reason'>> }
+export const TERMINAL = new Set<ScheduledStatus>(['delivered', 'cancelled', 'failed', 'missed'])
+export const MAX_JOBS = 10000 // Never evict completion tombstones and silently allow duplicate delivery.
+export function identifier(value: unknown): string {
+  if (typeof value !== 'string' || !/^[A-Za-z0-9_-]{1,180}$/.test(value)) throw new Error('Invalid scheduling identifier.')
+  return value
+}
+export function validateRuntime(value: unknown): RoomRuntime {
+  const r = value as RoomRuntime
+  if (!r || r.version !== 1 || typeof r.enabled !== 'boolean' || !Array.isArray(r.jobs) || r.jobs.length > MAX_JOBS) throw new Error('Damaged scheduling records; the room file was preserved.')
+  const ids = new Set<string>()
+  for (const j of r.jobs) {
+    identifier(j.id); identifier(j.responder)
+    if (ids.has(j.id) || !['queued','generating','generated','delivered','cancelled','paused','failed','missed'].includes(j.status) ||
+      ![j.dueAt,j.expiresAt,j.nextAttemptAt,j.revision,j.attempts].every(Number.isSafeInteger) || j.dueAt < 0 || j.expiresAt < j.dueAt || j.nextAttemptAt < 0 || j.revision < 1 || j.attempts < 0 || j.attempts > 3 ||
+      (j.leaseUntil !== undefined && (!Number.isSafeInteger(j.leaseUntil) || j.leaseUntil < 0))) throw new Error('Damaged scheduled job; history was preserved.')
+    if (j.deliveryAttempts !== undefined && (!Number.isSafeInteger(j.deliveryAttempts) || j.deliveryAttempts < 0 || j.deliveryAttempts > 3)) throw new Error('Damaged delivery attempts; history was preserved.')
+    if (j.claim !== undefined) identifier(j.claim)
+    if (j.draft && (typeof j.draft.text !== 'string' || !j.draft.text.trim() || j.draft.text.length > 32000 || typeof j.draft.name !== 'string' || j.draft.name.length > 120 || typeof j.draft.avatarUrl !== 'string' || j.draft.avatarUrl.length > 500)) throw new Error('Damaged deferred message; history was preserved.')
+    if (j.draft) identifier(j.draft.characterId)
+    if (j.status === 'generated' && !j.draft) throw new Error('Missing deferred message; history was preserved.')
+    ids.add(j.id)
+  }
+  return r
+}
+export function publicRuntime(r?: RoomRuntime): PublicRuntime | undefined {
+  return r ? { enabled: r.enabled, jobs: r.jobs.filter(j => !TERMINAL.has(j.status)).map(({id,dueAt,status,attempts,reason}) => ({id,dueAt,status,attempts,reason})) } : undefined
+}
+export function scheduleInput(input: any, now: number): { id: string; roomId: string; responder: string; dueAt: number } {
+  const dueAt = input?.dueAt
+  if (!Number.isSafeInteger(dueAt) || dueAt < now || dueAt > now + 30 * 86400000) throw new Error('Choose a schedule within the next 30 days.')
+  return { id: identifier(input.occurrenceId), roomId: roomId(input.roomId), responder: input.responder === undefined ? 'auto' : identifier(input.responder), dueAt }
+}
+/** Only clearly temporary errors retry; unknown/auth/configuration failures pause. */
+export function temporaryFailure(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+  return /\b(?:429|502|503|504)\b|rate.?limit|temporar|ECONNRESET|ETIMEDOUT|fetch failed|network|timed? ?out|disk|rename|storage|ENOSPC/i.test(message) && !/credential|API key|permission|not available|not found|decrypt/i.test(message)
+}

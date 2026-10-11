@@ -254,6 +254,52 @@ async function generateMochiReply(host, room, userId, responder, signal) {
   return { character, text: parsed.text.trim() };
 }
 
+// src/mochi/scheduling.ts
+var TERMINAL = new Set(["delivered", "cancelled", "failed", "missed"]);
+var MAX_JOBS = 1e4;
+function identifier(value) {
+  if (typeof value !== "string" || !/^[A-Za-z0-9_-]{1,180}$/.test(value))
+    throw new Error("Invalid scheduling identifier.");
+  return value;
+}
+function validateRuntime(value) {
+  const r = value;
+  if (!r || r.version !== 1 || typeof r.enabled !== "boolean" || !Array.isArray(r.jobs) || r.jobs.length > MAX_JOBS)
+    throw new Error("Damaged scheduling records; the room file was preserved.");
+  const ids = new Set;
+  for (const j of r.jobs) {
+    identifier(j.id);
+    identifier(j.responder);
+    if (ids.has(j.id) || !["queued", "generating", "generated", "delivered", "cancelled", "paused", "failed", "missed"].includes(j.status) || ![j.dueAt, j.expiresAt, j.nextAttemptAt, j.revision, j.attempts].every(Number.isSafeInteger) || j.dueAt < 0 || j.expiresAt < j.dueAt || j.nextAttemptAt < 0 || j.revision < 1 || j.attempts < 0 || j.attempts > 3 || j.leaseUntil !== undefined && (!Number.isSafeInteger(j.leaseUntil) || j.leaseUntil < 0))
+      throw new Error("Damaged scheduled job; history was preserved.");
+    if (j.deliveryAttempts !== undefined && (!Number.isSafeInteger(j.deliveryAttempts) || j.deliveryAttempts < 0 || j.deliveryAttempts > 3))
+      throw new Error("Damaged delivery attempts; history was preserved.");
+    if (j.claim !== undefined)
+      identifier(j.claim);
+    if (j.draft && (typeof j.draft.text !== "string" || !j.draft.text.trim() || j.draft.text.length > 32000 || typeof j.draft.name !== "string" || j.draft.name.length > 120 || typeof j.draft.avatarUrl !== "string" || j.draft.avatarUrl.length > 500))
+      throw new Error("Damaged deferred message; history was preserved.");
+    if (j.draft)
+      identifier(j.draft.characterId);
+    if (j.status === "generated" && !j.draft)
+      throw new Error("Missing deferred message; history was preserved.");
+    ids.add(j.id);
+  }
+  return r;
+}
+function publicRuntime(r) {
+  return r ? { enabled: r.enabled, jobs: r.jobs.filter((j) => !TERMINAL.has(j.status)).map(({ id, dueAt, status, attempts, reason }) => ({ id, dueAt, status, attempts, reason })) } : undefined;
+}
+function scheduleInput(input, now) {
+  const dueAt = input?.dueAt;
+  if (!Number.isSafeInteger(dueAt) || dueAt < now || dueAt > now + 30 * 86400000)
+    throw new Error("Choose a schedule within the next 30 days.");
+  return { id: identifier(input.occurrenceId), roomId: roomId(input.roomId), responder: input.responder === undefined ? "auto" : identifier(input.responder), dueAt };
+}
+function temporaryFailure(error) {
+  const message = error instanceof Error ? error.message : String(error);
+  return /\b(?:429|502|503|504)\b|rate.?limit|temporar|ECONNRESET|ETIMEDOUT|fetch failed|network|timed? ?out|disk|rename|storage|ENOSPC/i.test(message) && !/credential|API key|permission|not available|not found|decrypt/i.test(message);
+}
+
 // src/mochi/service.ts
 var ROOT = "mochi/v1/rooms/";
 var pathFor = (id) => `${ROOT}${roomId(id)}.json`;
@@ -287,6 +333,7 @@ function validateRoom(value, id) {
 class MochiService {
   host;
   makeId;
+  backgroundEnabled = async () => false;
   locks = new Map;
   jobs = new Map;
   pending = new Map;
@@ -331,6 +378,8 @@ class MochiService {
     if (!await this.host.userStorage.exists(path, user))
       throw new Error("This room is not available to your account.");
     const room = validateRoom(await this.host.userStorage.getJson(path, { userId: user }), id);
+    if (room.runtime !== undefined)
+      validateRuntime(room.runtime);
     room.settings = this.settings(room.settings, room.characterIds);
     room.receipts ||= [];
     if (!Array.isArray(room.receipts) || room.receipts.some((id) => typeof id !== "string"))
@@ -465,17 +514,17 @@ class MochiService {
     const jobs = {};
     for (const room of rooms) {
       const job = this.jobs.get(this.jobKey(user, room.id));
-      if (job)
+      if (job && !job.requestId.startsWith("server_"))
         jobs[room.id] = job.requestId;
     }
-    return { rooms: rooms.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)), characters: characters.map((c) => ({ id: c.id, name: c.name, avatarUrl: c.image_id ? `/api/v1/images/${c.image_id}` : "" })), personas: choices, warnings, connections, jobs, notifications: rooms.flatMap((r) => r.notifications || []).sort((a, b) => b.createdAt.localeCompare(a.createdAt)) };
+    return { backgroundEnabled: await this.backgroundEnabled(user), rooms: rooms.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).map(({ runtime, ...room }) => ({ ...room, background: publicRuntime(runtime) })), characters: characters.map((c) => ({ id: c.id, name: c.name, avatarUrl: c.image_id ? `/api/v1/images/${c.image_id}` : "" })), personas: choices, warnings, connections, jobs, notifications: rooms.flatMap((r) => r.notifications || []).sort((a, b) => b.createdAt.localeCompare(a.createdAt)) };
   }
   async cancel(userId, id, requestId) {
     const user = this.account(userId);
     roomId(id);
     const job = this.jobs.get(this.jobKey(user, id));
     let matched = false;
-    if (job?.requestId === requestId) {
+    if (job?.requestId === requestId && !job.requestId.startsWith("server_")) {
       job.controller.abort();
       matched = true;
     }
@@ -578,6 +627,206 @@ class MochiService {
   }
   previousVersion(m) {
     return { content: m.content, name: m.name, avatarUrl: m.avatarUrl, savedAt: new Date().toISOString() };
+  }
+  async scheduledRooms(userId) {
+    const user = identifier(userId), rooms = [];
+    for (const file of await this.host.userStorage.list(ROOT, user)) {
+      const match = /^(room_[a-f0-9]{32})\.json$/.exec(file);
+      if (match)
+        rooms.push(await this.read(user, match[1]));
+    }
+    return rooms;
+  }
+  async schedule(userId, input, now) {
+    const user = identifier(userId), spec = scheduleInput(input, now);
+    await this.locked(user, spec.roomId, async () => {
+      const room = await this.read(user, spec.roomId);
+      if (room.revision !== input.revision)
+        throw new Error("This room changed elsewhere. Refresh before scheduling.");
+      if (!room.runtime?.enabled)
+        throw new Error("Enable background messaging for this room first.");
+      if (spec.responder !== "auto" && !room.characterIds.includes(spec.responder))
+        throw new Error("The selected responder is not in this room.");
+      if (room.runtime.jobs.some((j) => j.id === spec.id))
+        return;
+      if (room.runtime.jobs.length >= MAX_JOBS || room.runtime.jobs.filter((j) => !TERMINAL.has(j.status)).length >= 4)
+        throw new Error("The scheduled queue is full.");
+      room.runtime.jobs.push({ id: spec.id, dueAt: spec.dueAt, expiresAt: spec.dueAt + 3600000, revision: room.revision, responder: spec.responder, status: "queued", attempts: 0, nextAttemptAt: spec.dueAt });
+      await this.persist(user, room);
+    });
+  }
+  async configureScheduledRoom(userId, input) {
+    const user = identifier(userId), id = roomId(input.roomId);
+    if (typeof input.enabled !== "boolean")
+      throw new Error("Invalid background setting.");
+    if (!input.enabled)
+      this.abortScheduled(user, id);
+    await this.locked(user, id, async () => {
+      const room = await this.read(user, id);
+      if (input.revision !== room.revision)
+        throw new Error("This room changed elsewhere. Refresh before changing background settings.");
+      room.runtime ||= { version: 1, enabled: false, jobs: [] };
+      room.runtime.enabled = input.enabled;
+      if (!input.enabled) {
+        for (const j of room.runtime.jobs)
+          if (!TERMINAL.has(j.status)) {
+            j.status = "cancelled";
+            delete j.draft;
+          }
+      }
+      await this.persist(user, room);
+    });
+  }
+  abortScheduled(userId, id, occurrenceId) {
+    for (const [key, job] of this.jobs) {
+      const [user, room] = JSON.parse(key);
+      if (job.requestId.startsWith("server_") && (!userId || user === userId) && (!id || room === id) && (!occurrenceId || job.requestId === `server_${occurrenceId}`))
+        job.controller.abort();
+    }
+  }
+  async cancelScheduled(userId, id, occurrenceId) {
+    identifier(userId);
+    roomId(id);
+    identifier(occurrenceId);
+    this.abortScheduled(userId, id, occurrenceId);
+    await this.locked(userId, id, async () => {
+      const room = await this.read(userId, id), j = room.runtime?.jobs.find((j) => j.id === occurrenceId);
+      if (!j || TERMINAL.has(j.status))
+        return;
+      j.status = "cancelled";
+      delete j.draft;
+      await this.persist(userId, room);
+    });
+  }
+  async dispatchScheduled(userId, id, occurrenceId, now, allowed, reserve) {
+    const user = identifier(userId), key = this.jobKey(user, roomId(id)), controller = new AbortController, requestId = `server_${identifier(occurrenceId)}`;
+    const claim = crypto.randomUUID().replaceAll("-", "");
+    let snapshot, generate = false;
+    const permitted = async (room) => {
+      controller.signal.throwIfAborted();
+      if (!room.runtime?.enabled || !await allowed())
+        throw new Error("Background messaging is disabled.");
+      await validateMochiSources(this.host, room, user);
+      if (!this.host.permissions.has("characters"))
+        throw new Error("Character permission is required.");
+      for (const c of room.characterIds)
+        if (!await this.host.characters.get(c, user))
+          throw new Error("A room character is not available.");
+      controller.signal.throwIfAborted();
+    };
+    await this.locked(user, id, async () => {
+      const room = await this.read(user, id), j = room.runtime?.jobs.find((j) => j.id === occurrenceId);
+      if (!j || TERMINAL.has(j.status) || j.status === "paused" || this.jobs.has(key) || j.nextAttemptAt > now() || j.status === "generating" && (j.leaseUntil || 0) > now())
+        return;
+      if (j.expiresAt < now() || j.revision !== room.revision) {
+        j.status = j.expiresAt < now() ? "missed" : "cancelled";
+        delete j.draft;
+        await this.persist(user, room);
+        return;
+      }
+      if (!room.runtime.enabled || !await allowed()) {
+        j.status = "cancelled";
+        delete j.draft;
+        await this.persist(user, room);
+        return;
+      }
+      if (j.responder !== "auto" && !room.characterIds.includes(j.responder)) {
+        j.status = "paused";
+        j.reason = "Responder is unavailable.";
+        await this.persist(user, room);
+        return;
+      }
+      generate = !j.draft;
+      if (generate && j.attempts >= 3) {
+        j.status = "failed";
+        await this.persist(user, room);
+        return;
+      }
+      if (!generate && (j.deliveryAttempts || 0) >= 3) {
+        j.status = "paused";
+        j.reason = "Delivery could not be saved. Deferred content is preserved.";
+        await this.persist(user, room);
+        return;
+      }
+      if (generate && !await reserve())
+        return;
+      j.claim = claim;
+      j.leaseUntil = now() + 240000;
+      if (generate) {
+        j.status = "generating";
+        j.attempts++;
+      } else
+        j.deliveryAttempts = (j.deliveryAttempts || 0) + 1;
+      this.jobs.set(key, { requestId, controller });
+      try {
+        await this.persist(user, room);
+        snapshot = room;
+      } catch (error) {
+        this.jobs.delete(key);
+        throw error;
+      }
+    });
+    if (!snapshot)
+      return;
+    const timer = setTimeout(() => controller.abort(), 180000);
+    try {
+      await permitted(snapshot);
+      if (generate) {
+        const j = snapshot.runtime.jobs.find((j) => j.id === occurrenceId);
+        const reply = await generateMochiReply(this.host, snapshot, user, j.responder, controller.signal);
+        await this.locked(user, id, async () => {
+          const room = await this.read(user, id), job = room.runtime?.jobs.find((j) => j.id === occurrenceId);
+          await permitted(room);
+          if (!job || job.claim !== claim || job.status !== "generating" || room.revision !== j.revision)
+            throw new Error("The room changed; scheduled output was discarded.");
+          job.draft = { characterId: reply.character.id, text: reply.text, name: room.settings.characterNames[reply.character.id] || reply.character.name, avatarUrl: reply.character.image_id ? `/api/v1/images/${entityId(reply.character.image_id)}` : "" };
+          job.status = "generated";
+          await this.persist(user, room, controller.signal);
+        });
+      }
+      await this.locked(user, id, async () => {
+        const room = await this.read(user, id), j = room.runtime?.jobs.find((j) => j.id === occurrenceId);
+        await permitted(room);
+        if (!j || j.claim !== claim || j.status !== "generated" || !j.draft || j.revision !== room.revision || j.expiresAt < now())
+          throw new Error("The scheduled delivery changed or expired.");
+        const draft = j.draft, createdAt = new Date(now()).toISOString(), messageId = crypto.randomUUID();
+        const message = { id: messageId, requestId, role: "assistant", characterId: draft.characterId, name: draft.name, avatarUrl: draft.avatarUrl, content: draft.text, createdAt };
+        room.messages.push(message);
+        const notification = { id: messageId, messageId, roomId: id, roomTitle: room.title, title: draft.name, body: draft.text.slice(0, 220), avatarUrl: draft.avatarUrl, createdAt, read: false };
+        room.notifications.push(notification);
+        room.notificationRevision++;
+        room.revision++;
+        room.updatedAt = createdAt;
+        j.status = "delivered";
+        j.messageId = messageId;
+        j.deliveredAt = now();
+        delete j.draft;
+        await this.persist(user, room, controller.signal);
+        this.host.sendToFrontend({ type: "mochi:notification", notification, notificationRevision: room.notificationRevision }, user);
+      });
+    } catch (error) {
+      await this.locked(user, id, async () => {
+        const room = await this.read(user, id), j = room.runtime?.jobs.find((j) => j.id === occurrenceId);
+        if (!j || j.claim !== claim || TERMINAL.has(j.status))
+          return;
+        if (!room.runtime.enabled || !await allowed() || j.revision !== room.revision) {
+          j.status = "cancelled";
+          delete j.draft;
+        } else if (controller.signal.aborted || temporaryFailure(error)) {
+          j.status = j.draft ? "generated" : j.attempts < 3 ? "queued" : "failed";
+          j.nextAttemptAt = now() + Math.min(900000, 60000 * 2 ** Math.max(0, j.attempts - 1));
+          j.leaseUntil = 0;
+        } else {
+          j.status = "paused";
+          j.reason = "Scheduled messaging needs attention. Check room sources, provider and storage.";
+        }
+        await this.persist(user, room);
+      });
+    } finally {
+      clearTimeout(timer);
+      if (this.jobs.get(key)?.controller === controller)
+        this.jobs.delete(key);
+    }
   }
   async message(userId, input, regenerate = false) {
     const user = this.account(userId), id = roomId(input.roomId), requestId = entityId(input.requestId);
@@ -708,6 +957,178 @@ class MochiService {
       const safeMessage = message.replace(/\b(?:sk-|key-|Bearer\s+)[A-Za-z0-9._-]{8,}\b/gi, "[redacted]").replace(/\s+/g, " ").trim().slice(0, 500);
       this.host.sendToFrontend({ type: "mochi:error", requestId: payload.requestId, message: safeMessage || "Unable to save Mochi room." }, userId);
     }
+  }
+}
+
+// src/mochi/scheduler.ts
+var REGISTRY = "mochi/v1/scheduler-accounts.json";
+var ACCOUNT = "mochi/v1/scheduler.json";
+var HOUR = 3600000;
+
+class MochiScheduler {
+  host;
+  service;
+  now;
+  report;
+  timer;
+  stopped = true;
+  ticking = false;
+  blocked = new Set;
+  serial = Promise.resolve();
+  constructor(host, service, now = Date.now, report = () => {}) {
+    this.host = host;
+    this.service = service;
+    this.now = now;
+    this.report = report;
+    service.backgroundEnabled = (user) => this.enabled(user);
+  }
+  async locked(work) {
+    const task = this.serial.catch(() => {}).then(work);
+    this.serial = task;
+    return task;
+  }
+  async registry() {
+    const storage = this.host.storage;
+    if (!storage?.exists)
+      throw new Error("This host does not support durable scheduler discovery.");
+    const r = await storage.exists(REGISTRY) ? await storage.getJson(REGISTRY) : { version: 1, accounts: [], attempts: [] };
+    if (!r || r.version !== 1 || !Array.isArray(r.accounts) || r.accounts.length > 1000 || new Set(r.accounts).size !== r.accounts.length || !Array.isArray(r.attempts) || r.attempts.length > 20 || r.attempts.some((n) => !Number.isSafeInteger(n) || n < 0))
+      throw new Error("Damaged scheduler registry; it was preserved.");
+    r.accounts.forEach(identifier);
+    return r;
+  }
+  async account(userId) {
+    const user = identifier(userId);
+    const c = await this.host.userStorage.exists(ACCOUNT, user) ? await this.host.userStorage.getJson(ACCOUNT, { userId: user }) : { version: 1, enabled: false, attempts: [] };
+    if (!c || c.version !== 1 || typeof c.enabled !== "boolean" || !Array.isArray(c.attempts) || c.attempts.length > 6 || c.attempts.some((a) => !a || !Number.isSafeInteger(a.at) || a.at < 0 || typeof a.roomId !== "string"))
+      throw new Error("Damaged account scheduling settings; they were preserved.");
+    return c;
+  }
+  async saveAccount(user, c) {
+    await this.host.userStorage.setJson(ACCOUNT + ".pending", c, { userId: user });
+    await this.host.userStorage.move(ACCOUNT + ".pending", ACCOUNT, user);
+  }
+  async saveRegistry(r) {
+    await this.host.storage.setJson(REGISTRY + ".pending", r);
+    await this.host.storage.move(REGISTRY + ".pending", REGISTRY);
+  }
+  async enabled(userId) {
+    return !this.blocked.has(userId) && (await this.account(userId)).enabled;
+  }
+  async configure(userId, enabled) {
+    const user = identifier(userId);
+    if (typeof enabled !== "boolean")
+      throw new Error("Invalid account opt-in.");
+    if (!enabled) {
+      this.blocked.add(user);
+      this.service.abortScheduled(user);
+    }
+    await this.locked(async () => {
+      if (this.host.users)
+        await this.host.users.getRole(user);
+      const r = await this.registry(), c = await this.account(user);
+      if (!r.accounts.includes(user)) {
+        if (r.accounts.length >= 1000)
+          throw new Error("Scheduler account registry is full.");
+        r.accounts.push(user);
+        await this.saveRegistry(r);
+      }
+      c.enabled = enabled;
+      await this.saveAccount(user, c);
+      if (enabled)
+        this.blocked.delete(user);
+    });
+    if (!enabled)
+      for (const room of await this.service.scheduledRooms(user)) {
+        for (const job of room.runtime?.jobs || [])
+          if (!TERMINAL.has(job.status))
+            await this.service.cancelScheduled(user, room.id, job.id);
+      }
+  }
+  async reserve(user, roomId) {
+    return this.locked(async () => {
+      if (this.stopped || !await this.enabled(user))
+        return false;
+      const r = await this.registry(), c = await this.account(user), now = this.now();
+      r.attempts = r.attempts.filter((at) => at > now - HOUR);
+      c.attempts = c.attempts.filter((a) => a.at > now - HOUR);
+      if (r.attempts.length >= 20 || c.attempts.length >= 6 || c.attempts.filter((a) => a.roomId === roomId).length >= 3)
+        return false;
+      r.attempts.push(now);
+      c.attempts.push({ at: now, roomId });
+      await this.saveRegistry(r);
+      await this.saveAccount(user, c);
+      return true;
+    });
+  }
+  async tick() {
+    if (this.stopped || this.ticking)
+      return;
+    this.ticking = true;
+    try {
+      const registry = await this.registry(), work = [];
+      for (const user of registry.accounts) {
+        if (work.length >= 2 || this.stopped)
+          break;
+        try {
+          if (!await this.enabled(user))
+            continue;
+          if (this.host.users)
+            await this.host.users.getRole(user);
+          const rooms = await this.service.scheduledRooms(user);
+          const candidates = rooms.flatMap((room) => ((room.runtime?.enabled) ? room.runtime.jobs : []).filter((j) => !TERMINAL.has(j.status) && j.status !== "paused" && j.nextAttemptAt <= this.now() && (j.status !== "generating" || (j.leaseUntil || 0) <= this.now())).map((job) => ({ room, job }))).sort((a, b) => a.job.dueAt - b.job.dueAt);
+          const candidate = candidates[0];
+          if (candidate)
+            work.push(this.service.dispatchScheduled(user, candidate.room.id, candidate.job.id, this.now, () => this.enabled(user), () => this.reserve(user, candidate.room.id)).catch(() => {
+              this.report("Mochi scheduled work failed safely; records were retained for recovery.");
+            }));
+        } catch {
+          this.report("Mochi scheduler skipped an unavailable account or damaged record; stored data was preserved.");
+        }
+      }
+      await Promise.all(work);
+    } finally {
+      this.ticking = false;
+    }
+  }
+  start(poll = true) {
+    if (!this.stopped)
+      return;
+    this.stopped = false;
+    if (!poll)
+      return;
+    const wake = async () => {
+      try {
+        await this.tick();
+      } catch {
+        this.report("Mochi scheduler could not read its registry; no work was generated.");
+      }
+      if (!this.stopped) {
+        this.timer = setTimeout(wake, 30000);
+        this.timer.unref?.();
+      }
+    };
+    wake();
+  }
+  stop() {
+    this.stopped = true;
+    clearTimeout(this.timer);
+    this.service.abortScheduled();
+  }
+  async handle(payload, userId) {
+    identifier(userId);
+    if (payload.type === "mochi:background_account")
+      await this.configure(userId, payload.enabled);
+    else if (payload.type === "mochi:background_room")
+      await this.service.configureScheduledRoom(userId, payload);
+    else if (payload.type === "mochi:schedule") {
+      if (!await this.enabled(userId))
+        throw new Error("Opt in to background messaging first.");
+      await this.service.schedule(userId, payload, this.now());
+    } else if (payload.type === "mochi:schedule_cancel")
+      await this.service.cancelScheduled(userId, payload.roomId, payload.occurrenceId);
+    else
+      throw new Error("Unsupported scheduling action.");
   }
 }
 
@@ -3931,6 +4352,8 @@ function latestArmedReference(state) {
 
 // src/backend.ts
 var mochi = new MochiService(spindle);
+var mochiScheduler = new MochiScheduler(spindle, mochi, Date.now, (message) => spindle.log.warn(message));
+mochiScheduler.start();
 function stringArray(value, limit, maxLength) {
   return [...new Set((Array.isArray(value) ? value : []).map((entry) => text3(entry, maxLength)).filter(Boolean))].slice(0, limit);
 }
@@ -8993,6 +9416,17 @@ async function applyAction(input, userId, source = "model") {
 }
 async function handleFrontend(payload, userId) {
   if (isRecord2(payload) && typeof payload.type === "string" && payload.type.startsWith("mochi:")) {
+    if (["mochi:background_account", "mochi:background_room", "mochi:schedule", "mochi:schedule_cancel"].includes(payload.type)) {
+      if (!userId)
+        return;
+      try {
+        await mochiScheduler.handle(payload, userId);
+        spindle.sendToFrontend({ type: "mochi:state", requestId: payload.requestId, state: await mochi.state(userId) }, userId);
+      } catch {
+        spindle.sendToFrontend({ type: "mochi:error", requestId: payload.requestId, message: "Unable to update background messaging. Check account opt-in, room sources, due time and storage." }, userId);
+      }
+      return;
+    }
     await mochi.handle(payload, userId);
     return;
   }
