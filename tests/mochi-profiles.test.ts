@@ -21,8 +21,21 @@ test('profile forms preserve long text, explicit persona changes, saved revision
     const f=fixture(),profile=await f.profile(),screen=new MochiProfiles(),sent:any[]=[];screen.state=await f.service.accountsState('alice');screen.start(profile)
     const form=screen.render(false,(type,input)=>sent.push({type,...input}),()=>{},()=>{});dom.window.document.body.append(form)
     const name=form.querySelector<HTMLInputElement>('[aria-label="Profile display name"]')!;name.value='Very long fictional profile name';name.dispatchEvent(new dom.window.Event('input'))
-    form.dispatchEvent(new dom.window.Event('submit',{cancelable:true}));expect(sent[0].revision).toBe(profile.revision);expect(sent[0].persona).toBeUndefined();expect(sent[0].displayName).toBe(name.value)
+    form.dispatchEvent(new dom.window.Event('submit',{cancelable:true}));expect(sent[0].revision).toBe(profile.revision);expect(sent[0].persona).toBeUndefined();expect(sent[0].avatarId).toBeUndefined();expect(sent[0].displayName).toBe(name.value)
     const persona=form.querySelector<HTMLSelectElement>('[aria-label="Profile persona"]')!;persona.value='lumiverse:p2';persona.dispatchEvent(new dom.window.Event('change'));form.dispatchEvent(new dom.window.Event('submit',{cancelable:true}))
     expect(sent[1].persona.sourceId).toBe('p2');expect(screen.draft!.displayName).toBe(name.value);f.scheduler.stop()
   }finally{globalThis.document=before;dom.window.close()}
+})
+
+test('a delayed portrait file read cannot upload after canceling the form or switching drafts',async()=>{
+ const dom=new JSDOM('<body></body>'),before=globalThis.document,beforeReader=globalThis.FileReader;globalThis.document=dom.window.document
+ let reader:any
+ globalThis.FileReader=class{result='data:image/png;base64,AA==';onload:any;readAsDataURL(){reader=this}} as any
+ try{
+  const f=fixture(),screen=new MochiProfiles(),sent:any[]=[];screen.state={...await f.service.accountsState('alice'),canUploadAvatar:true};screen.start()
+  const form=screen.render(false,(type,input)=>sent.push({type,...input}),()=>{},()=>{});dom.window.document.body.append(form)
+  const file=form.querySelector<HTMLInputElement>('input[type=file]')!;Object.defineProperty(file,'files',{value:[{size:1}]});file.dispatchEvent(new dom.window.Event('change'))
+  screen.start();reader.onload();expect(sent).toEqual([])
+  screen.draft=null;form.remove();reader.onload();expect(sent).toEqual([]);f.scheduler.stop()
+ }finally{globalThis.document=before;globalThis.FileReader=beforeReader;dom.window.close()}
 })

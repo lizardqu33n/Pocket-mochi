@@ -34,6 +34,9 @@ export class MochiView {
   private activeAccountId?: string
   private phone?: MochiPhone
   private associations=new Map<string,{accountId:string;revision:number}>()
+  canOpenRoom(id:string|undefined,phone?:MochiPhone):boolean{
+    return !!id&&!!this.state?.rooms.some(r=>r.id===id)&&this.phone?.chatId===phone?.chatId&&this.phone?.characterId===phone?.characterId&&this.phone?.deviceOwnerActorId===phone?.deviceOwnerActorId
+  }
   open(phone?:MochiPhone):void{
     this.leave();this.resetScope();this.phone=phone;this.pickerOpen=true;this.startupOpen=true;this.profilesOpen=false;this.profiles.state=null;this.dispatch('mochi:accounts')
   }
@@ -142,6 +145,8 @@ export class MochiView {
     }
     if (['mochi:notification', 'mochi:notifications', 'mochi:room_updated', 'mochi:job_finished'].includes(payload?.type) &&
         (payload.accountId ?? payload.notification?.accountId ?? payload.room?.accountId) !== this.state?.accountId) return true
+    const eventRoom=payload?.roomId??payload?.notification?.roomId??payload?.room?.id
+    if(eventRoom&&this.associations.has(eventRoom)&&this.associations.get(eventRoom)!.accountId!==this.state?.accountId)return true
     if (payload?.type === 'mochi:room_updated') {
       const room = this.state?.rooms.find(r => r.id === payload.room?.id)
       if (room && payload.room.revision > room.revision && !this.editing && !this.creating) {
@@ -170,7 +175,7 @@ export class MochiView {
     }
     if (payload?.type === 'mochi:notifications') {
       this.acknowledgementRequests.delete(payload.requestId)
-      if (this.state) this.state.notifications = this.mergeNotifications(payload.notifications || [], payload.notificationRevisions || {})
+      if (this.state) this.state.notifications = this.mergeNotifications((payload.notifications || []).filter((n:MochiNotification)=>!this.associations.has(n.roomId)||this.associations.get(n.roomId)!.accountId===this.state?.accountId), payload.notificationRevisions || {})
       this.redraw(); return true
     }
     if (payload?.type === 'mochi:notification' && payload.notification) {

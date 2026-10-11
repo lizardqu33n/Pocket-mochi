@@ -1,5 +1,6 @@
 import {test,expect} from 'bun:test'
 import {fixture} from './mochi-accounts.test.js'
+import {MochiView} from '../src/mochi/view.js'
 
 const path=(id:string)=>'alice:mochi/v1/rooms/'+id+'.json'
 const assignment=(room:any,targetAccountId:string)=>({roomId:room.id,accountId:room.accountId,targetAccountId,revision:room.revision,associationRevision:room.associationRevision||0,confirmed:true,preservePersona:true})
@@ -46,4 +47,19 @@ test('assignment is explicit, account-owned and refuses active generation withou
  release({content:'{"speakerId":"alice_character","text":"Original reply"}'});await run
  expect((await f.service.read('alice',room.id)).messages).toHaveLength(2)
  await f.service.assignRoom('alice',assignment(await f.service.read('alice',room.id),a.id));f.scheduler.stop()
+})
+
+test('stale old-scope notification events cannot reappear after assignment or expose the wrong room',async()=>{
+ const f=fixture(),a=await f.profile(),room=await f.room()
+ await f.service.message('alice',{roomId:room.id,revision:room.revision,requestId:'notice_before_assignment',content:'Keep'})
+ const oldState=await f.service.state('alice'),notice=structuredClone(oldState.notifications![0]),sent:any[]=[]
+ const view=new MochiView(p=>sent.push(p),()=>{},()=>{});view.state=oldState
+ await f.service.assignRoom('alice',assignment(await f.service.read('alice',room.id),a.id))
+ view.receive(f.events.at(-1)!.payload)
+ view.receive({type:'mochi:notification',notification:notice,notificationRevision:999})
+ view.receive({type:'mochi:notifications',notifications:[notice],notificationRevisions:{[room.id]:999}})
+ view.receive({type:'mochi:state',requestId:sent.at(-1).requestId,state:oldState})
+ expect(view.state!.rooms).toEqual([]);expect(view.state!.notifications).toEqual([])
+ const owned=await f.service.state('alice',a.id);expect(owned.notifications![0].roomId).toBe(room.id);expect(owned.notifications![0].accountId).toBe(a.id)
+ view.destroy();f.scheduler.stop()
 })

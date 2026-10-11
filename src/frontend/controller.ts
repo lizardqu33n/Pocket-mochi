@@ -1642,7 +1642,7 @@ class PocketController {
     if (this.currentApp === 'settings' && route.app !== 'settings') this.settingsDraft = null
     this.currentApp = route.app
     if (route.app === 'mochi') {
-      if(enteringMochi){const phone=this.state?this.deviceIdentity():undefined;this.mochi.open(phone?{chatId:phone.chatId,characterId:phone.characterId,deviceOwnerActorId:phone.deviceOwnerActorId}:undefined)}
+      if(enteringMochi){const device=this.state?this.deviceIdentity():undefined;const phone=device?{chatId:device.chatId,characterId:device.characterId,deviceOwnerActorId:device.deviceOwnerActorId}:undefined;if(!this.mochi.canOpenRoom(route.roomId,phone))this.mochi.open(phone)}
       this.mochi.select(route.roomId || '')
       this.render(true)
       return

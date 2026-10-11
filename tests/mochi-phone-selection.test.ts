@@ -6,6 +6,14 @@ import {MochiView}from '../src/mochi/view.js'
 const phoneA={chatId:'chat_a',characterId:'character',deviceOwnerActorId:'persona:chat_a:character'}
 const phoneB={...phoneA,deviceOwnerActorId:'other_actor'}
 const key=(p:typeof phoneA)=>[p.chatId,p.characterId,p.deviceOwnerActorId].map(encodeURIComponent).join('::')
+
+test('known notification room routes preserve their scope only on the originating phone',async()=>{
+ const f=fixture(),a=await f.profile(),room=await f.room(a.id),view=new MochiView(()=>{},()=>{},()=>{})
+ view.open(phoneA);view.state=await f.service.state('alice',a.id)
+ expect(view.canOpenRoom(room.id,{deviceOwnerActorId:phoneA.deviceOwnerActorId,characterId:phoneA.characterId,chatId:phoneA.chatId})).toBe(true)
+ expect(view.canOpenRoom(room.id,phoneB)).toBe(false);expect(view.canOpenRoom('room_'+'f'.repeat(32),phoneA)).toBe(false);expect(view.canOpenRoom(undefined,phoneA)).toBe(false)
+ view.destroy();f.scheduler.stop()
+})
 test('native persisted identity validates semantic phone keys without native writes or RP inference',()=>{
   const raw={chatId:phoneA.chatId,characterId:phoneA.characterId,pocketPersonaActorId:phoneA.deviceOwnerActorId,contacts:[{id:'other_actor'}],discoveredActors:[],roleplayNow:'do not read me'},before=structuredClone(raw)
   expect(storedPhoneKey(phoneA,raw)).toBe(key(phoneA));expect(storedPhoneKey(phoneB,raw)).toBe(key(phoneB));expect(storedPhoneKey({...phoneA,chatId:'foreign'},raw)).toBeUndefined();expect(storedPhoneKey({...phoneA,deviceOwnerActorId:'unknown'},raw)).toBeUndefined();expect(raw).toEqual(before)

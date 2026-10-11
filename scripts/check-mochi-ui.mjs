@@ -4,6 +4,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
+import {checkMochiAccounts} from './check-mochi-accounts-ui.mjs'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
 const require = createRequire(import.meta.url)
@@ -27,13 +28,13 @@ const host={
  characters:{get:async id=>characters.find(c=>c.id===id),list:async()=>({data:characters})},personas:{get:async()=>null,list:async()=>({data:[]})},permissions:{has:()=>true},
  connections:{get:async()=>({id:'test',model:'synthetic'}),list:async()=>[{id:'test',name:'Simulated connection',model:'synthetic'}]},tokens:{countMessages:async m=>({total_tokens:Math.ceil(JSON.stringify(m).length/4)})},
  generate:{quiet:async r=>{await new Promise(resolve=>setTimeout(resolve,250));serial++;return {content:JSON.stringify({speakerId:r.messages[0].content.includes('required speakerId is "character1"')?'character1':r.messages[0].content.includes('required speakerId is "character2"')?'character2':'character2',text:'Simulated character reply '+serial})}}},
- sendToFrontend:p=>{if(p.notification)p.notification.avatarUrl=demoPortrait;if(p.notifications)for(const n of p.notifications)n.avatarUrl=demoPortrait;if(p.state){for(const c of p.state.characters)c.avatarUrl=demoPortrait;for(const n of p.state.notifications||[])n.avatarUrl=demoPortrait;for(const r of p.state.rooms)for(const m of r.messages)if(m.role==='assistant')m.avatarUrl=demoPortrait;}view.receive(p)}
+ sendToFrontend:p=>{if(p.notification)p.notification.avatarUrl=demoPortrait;if(p.notifications)for(const n of p.notifications)n.avatarUrl=demoPortrait;if(p.state){for(const c of p.state.characters||[])c.avatarUrl=demoPortrait;for(const n of p.state.notifications||[])n.avatarUrl=demoPortrait;for(const r of p.state.rooms||[])for(const m of r.messages)if(m.role==='assistant')m.avatarUrl=demoPortrait;}view.receive(p)}
 };
-const service=new MochiService(host);const createLegacyFixture=service.create.bind(service);service.create=async(user,input)=>{const room=await createLegacyFixture(user,input);return service.update(user,{roomId:room.id,revision:room.revision,title:room.title,characterIds:room.characterIds,settings:{...room.settings,responseMode:undefined}})};
+const service=new MochiService(host);const createLegacyFixture=service.create.bind(service);service.create=async(user,input)=>{const room=await createLegacyFixture(user,input);if(input.accountId)return room;return service.update(user,{roomId:room.id,revision:room.revision,title:room.title,characterIds:room.characterIds,settings:{...room.settings,responseMode:undefined}})};
 const scheduler=new MochiScheduler(host,service);scheduler.start(false);
 const render = () => {const node=view.render();node.classList.add('lumiphone-app-view');document.getElementById('app').replaceChildren(node)};
 const policy={enabled:true,previews:true,visible:true};
-const view = new MochiView(payload => {if(['mochi:background_account','mochi:background_room','mochi:schedule','mochi:schedule_cancel','mochi:presence','mochi:idle'].includes(payload.type)){void scheduler.handle(payload,'synthetic-user').then(async()=>host.sendToFrontend({type:'mochi:state',requestId:payload.requestId,state:await service.state('synthetic-user')})).catch(()=>host.sendToFrontend({type:'mochi:error',requestId:payload.requestId,message:'Scheduling failed'}))}else void service.handle(payload,'synthetic-user')}, render, id => { view.select(id || ''); render(); },()=>policy,n=>showMochiNotification(document.getElementById('phone'),n,policy.previews,()=>view.openRoom(n.roomId)),(notices,rooms)=>reconcileMochiNotifications(document.getElementById('phone'),notices,rooms));
+const view = new MochiView(payload => {if(['mochi:background_account','mochi:background_room','mochi:schedule','mochi:schedule_cancel','mochi:presence','mochi:idle'].includes(payload.type)){void scheduler.handle(payload,'synthetic-user').then(async()=>host.sendToFrontend({type:'mochi:state',requestId:payload.requestId,state:await service.state('synthetic-user',payload.accountId)})).catch(()=>host.sendToFrontend({type:'mochi:error',requestId:payload.requestId,message:'Scheduling failed'}))}else void service.handle(payload,'synthetic-user')}, render, id => { view.select(id || ''); render(); },()=>policy,n=>showMochiNotification(document.getElementById('phone'),n,policy.previews,()=>view.openRoom(n.roomId)),(notices,rooms)=>reconcileMochiNotifications(document.getElementById('phone'),notices,rooms));
 window.__mochiDemo={view,service,host,files,policy,scheduler};
 view.load();
 `)
@@ -42,7 +43,7 @@ assert.equal(build.status, 0, build.stderr)
 await writeFile(resolve(output, 'index.html'), '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mochi simulated preview</title><style>body{margin:0;background:#201a29;font:15px system-ui}#phone{width:min(443px,100%);height:100dvh;max-height:none;margin:auto;border:0;border-radius:0;box-shadow:none}#app{height:100%;width:100%;min-height:0}button{font:inherit}</style><div class="lumiphone-widget-root"><div id="phone" class="lumiphone-shell"><div class="lumiphone-statusbar" aria-hidden="true">Mochi preview</div><div id="app" class="lumiphone-screen"></div><div class="lumiphone-homebar" aria-hidden="true"></div></div></div><script src="view.js"></script>')
 const browser = await playwright.chromium.launch({ headless: true, ...(process.env.POCKET_BROWSER_PATH ? { executablePath: process.env.POCKET_BROWSER_PATH } : {}) })
 try {
-  for (const width of [320, 390, 900]) {
+  for (const width of process.env.POCKET_MOCHI_ACCOUNTS_ONLY ? [] : [320, 390, 900]) {
     const page = await browser.newPage({ viewport: { width, height: 850 }, isMobile: width < 900, hasTouch: width < 900 })
     await page.addInitScript(() => { Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async text => { window.__copied = text } } }) })
     await page.goto(new URL('file:///' + resolve(output, 'index.html').replaceAll('\\', '/')).href)
@@ -340,5 +341,6 @@ try {
     assert.equal(await page.evaluate(()=>JSON.stringify([...window.__mochiDemo.files])),persistedBeforeLayout,'Layout rendering does not change stored names, nicknames, or history')
     await page.close()
   }
-  console.log('Mochi simulated Chromium UI passed at 320px, 390px and 900px. Browser: ' + browser.version())
+  await checkMochiAccounts(browser,output)
+  console.log((process.env.POCKET_MOCHI_ACCOUNTS_ONLY?'Mochi account checks':'Mochi simulated Chromium UI')+' passed at 320px, 390px and 900px. Browser: ' + browser.version())
 } finally { await browser.close() }

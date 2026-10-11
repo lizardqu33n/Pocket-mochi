@@ -439,7 +439,10 @@ class MochiProfiles {
           return;
         }
         const reader = new FileReader;
-        reader.onload = () => send("mochi:account_avatar_upload", { dataUrl: reader.result });
+        reader.onload = () => {
+          if (this.draft === draft && form.isConnected)
+            send("mochi:account_avatar_upload", { dataUrl: reader.result });
+        };
         reader.readAsDataURL(file);
       };
       field("Upload profile portrait", upload);
@@ -467,7 +470,8 @@ class MochiProfiles {
     form.onsubmit = (e) => {
       e.preventDefault();
       const p = draft.persona === "keep" ? undefined : draft.persona === "manual" ? { source: "manual", name: draft.displayName, description: draft.description } : this.state.personas.find((p) => p.source + ":" + p.sourceId === draft.persona);
-      send(draft.id ? "mochi:account_update" : "mochi:account_create", { accountId: draft.id || undefined, revision: draft.revision, displayName: draft.displayName, username: draft.username, persona: p, ...draft.avatarId === "persona" ? p ? {} : { avatarId: saved?.persona.avatarUrl.split("/api/v1/images/")[1] || "" } : { avatarId: draft.avatarId } });
+      const unchangedPortrait = !p && saved && draft.avatarId === (saved.avatarUrl.split("/api/v1/images/")[1] || "");
+      send(draft.id ? "mochi:account_update" : "mochi:account_create", { accountId: draft.id || undefined, revision: draft.revision, displayName: draft.displayName, username: draft.username, persona: p, ...unchangedPortrait ? {} : draft.avatarId === "persona" ? p ? {} : { avatarId: saved?.persona.avatarUrl.split("/api/v1/images/")[1] || "" } : { avatarId: draft.avatarId } });
     };
     return form;
   }
@@ -580,6 +584,9 @@ class MochiView {
   activeAccountId;
   phone;
   associations = new Map;
+  canOpenRoom(id, phone) {
+    return !!id && !!this.state?.rooms.some((r) => r.id === id) && this.phone?.chatId === phone?.chatId && this.phone?.characterId === phone?.characterId && this.phone?.deviceOwnerActorId === phone?.deviceOwnerActorId;
+  }
   open(phone) {
     this.leave();
     this.resetScope();
@@ -804,6 +811,9 @@ class MochiView {
     }
     if (["mochi:notification", "mochi:notifications", "mochi:room_updated", "mochi:job_finished"].includes(payload?.type) && (payload.accountId ?? payload.notification?.accountId ?? payload.room?.accountId) !== this.state?.accountId)
       return true;
+    const eventRoom = payload?.roomId ?? payload?.notification?.roomId ?? payload?.room?.id;
+    if (eventRoom && this.associations.has(eventRoom) && this.associations.get(eventRoom).accountId !== this.state?.accountId)
+      return true;
     if (payload?.type === "mochi:room_updated") {
       const room = this.state?.rooms.find((r) => r.id === payload.room?.id);
       if (room && payload.room.revision > room.revision && !this.editing && !this.creating) {
@@ -842,7 +852,7 @@ class MochiView {
     if (payload?.type === "mochi:notifications") {
       this.acknowledgementRequests.delete(payload.requestId);
       if (this.state)
-        this.state.notifications = this.mergeNotifications(payload.notifications || [], payload.notificationRevisions || {});
+        this.state.notifications = this.mergeNotifications((payload.notifications || []).filter((n) => !this.associations.has(n.roomId) || this.associations.get(n.roomId).accountId === this.state?.accountId), payload.notificationRevisions || {});
       this.redraw();
       return true;
     }
@@ -10339,8 +10349,10 @@ class PocketController {
     this.currentApp = route.app;
     if (route.app === "mochi") {
       if (enteringMochi) {
-        const phone = this.state ? this.deviceIdentity() : undefined;
-        this.mochi.open(phone ? { chatId: phone.chatId, characterId: phone.characterId, deviceOwnerActorId: phone.deviceOwnerActorId } : undefined);
+        const device = this.state ? this.deviceIdentity() : undefined;
+        const phone = device ? { chatId: device.chatId, characterId: device.characterId, deviceOwnerActorId: device.deviceOwnerActorId } : undefined;
+        if (!this.mochi.canOpenRoom(route.roomId, phone))
+          this.mochi.open(phone);
       }
       this.mochi.select(route.roomId || "");
       this.render(true);
