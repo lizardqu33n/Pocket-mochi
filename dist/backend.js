@@ -697,6 +697,9 @@ class MochiService {
   }
   backgroundEnabled = async () => false;
   reserveAutomatic = async () => true;
+  registerResponses = async () => {
+    throw new Error("Durable response scheduling is unavailable; your message is saved.");
+  };
   releaseAutomatic = () => {};
   schedulingWarning = () => {};
   locks = new Map;
@@ -771,9 +774,9 @@ class MochiService {
             job.controller.abort();
       }
   }
-  abortScoped(user, id, accountId, serverOnly = false) {
+  abortScoped(user, id, accountId, serverOnly = false, autonomousOnly = false) {
     const job = this.jobs.get(this.jobKey(user, id));
-    if (job && job.accountId === accountId && (!serverOnly || job.requestId.startsWith("server_")))
+    if (job && job.accountId === accountId && (!serverOnly || job.requestId.startsWith("server_")) && (!autonomousOnly || !job.response))
       job.controller.abort();
   }
   async selectAccount(userId, input) {
@@ -1156,7 +1159,7 @@ class MochiService {
     if (typeof input.enabled !== "boolean")
       throw new Error("Invalid idle opt-in.");
     if (!input.enabled)
-      this.abortScoped(user, id, input.accountId, true);
+      this.abortScoped(user, id, input.accountId, true, true);
     await this.locked(user, id, async () => {
       const room = await this.read(user, id, input.accountId);
       if (room.revision !== input.revision)
@@ -1222,7 +1225,7 @@ class MochiService {
     if (typeof input.enabled !== "boolean")
       throw new Error("Invalid background setting.");
     if (!input.enabled)
-      this.abortScoped(user, id, input.accountId, true);
+      this.abortScoped(user, id, input.accountId, true, true);
     await this.locked(user, id, async () => {
       const room = await this.read(user, id, input.accountId);
       if (input.revision !== room.revision)
@@ -1231,7 +1234,7 @@ class MochiService {
       room.runtime.enabled = input.enabled;
       if (!input.enabled) {
         for (const j of room.runtime.jobs)
-          if (!TERMINAL.has(j.status)) {
+          if (j.kind !== "response" && !TERMINAL.has(j.status)) {
             j.status = "cancelled";
             delete j.draft;
             delete j.additional;
@@ -1240,10 +1243,10 @@ class MochiService {
       await this.persist(user, room);
     });
   }
-  abortScheduled(userId, id, occurrenceId) {
+  abortScheduled(userId, id, occurrenceId, autonomousOnly = false) {
     for (const [key, job] of this.jobs) {
       const [user, room] = JSON.parse(key);
-      if (job.requestId.startsWith("server_") && (!userId || user === userId) && (!id || room === id) && (!occurrenceId || job.requestId === `server_${occurrenceId}`))
+      if (job.requestId.startsWith("server_") && (!autonomousOnly || !job.response) && (!userId || user === userId) && (!id || room === id) && (!occurrenceId || job.requestId === `server_${occurrenceId}`))
         job.controller.abort();
     }
   }
@@ -1272,7 +1275,7 @@ class MochiService {
     let snapshot, generate = false;
     const permitted = async (room) => {
       controller.signal.throwIfAborted();
-      if (!room.runtime?.enabled || !await allowed())
+      if (room.runtime?.jobs.find((j) => j.id === occurrenceId)?.kind !== "response" && (!room.runtime?.enabled || !await allowed()))
         throw new Error("Background messaging is disabled.");
       await validateMochiSources(this.host, room, user);
       if (!this.host.permissions.has("characters"))
@@ -1293,7 +1296,7 @@ class MochiService {
         await this.persist(user, room);
         return;
       }
-      if (!room.runtime.enabled || !await allowed()) {
+      if (j.kind !== "response" && (!room.runtime.enabled || !await allowed())) {
         j.status = "cancelled";
         delete j.draft;
         delete j.additional;
@@ -1343,7 +1346,7 @@ class MochiService {
         j.attempts++;
       } else
         j.deliveryAttempts = (j.deliveryAttempts || 0) + 1;
-      this.jobs.set(key, { requestId, controller, accountId: room.accountId });
+      this.jobs.set(key, { requestId, controller, accountId: room.accountId, response: j.kind === "response" });
       try {
         await this.persist(user, room);
         snapshot = room;
@@ -1361,7 +1364,9 @@ class MochiService {
       await permitted(snapshot);
       if (generate) {
         const j = snapshot.runtime.jobs.find((j) => j.id === occurrenceId);
-        const reply = await generateMochiReply(this.host, snapshot, user, j.responder, controller.signal, eligibleResponders(snapshot, j.responder, now()).filter((c) => now() >= (j.createdAt ?? j.dueAt) + delayFor(snapshot, c, now())), j.kind === "response" && snapshot.settings.responseMode === "natural" && j.responder === "auto");
+        const behaviorEnabled = Boolean(snapshot.settings.aiBehavior && snapshot.runtime.enabled && await allowed());
+        const promptRoom = { ...snapshot, settings: { ...snapshot.settings, aiBehavior: behaviorEnabled } };
+        const reply = await generateMochiReply(this.host, promptRoom, user, j.responder, controller.signal, eligibleResponders(snapshot, j.responder, now()).filter((c) => now() >= (j.createdAt ?? j.dueAt) + delayFor(snapshot, c, now())), j.kind === "response" && snapshot.settings.responseMode === "natural" && j.responder === "auto");
         await this.locked(user, id, async () => {
           const room = await this.readStored(user, id), job = room.runtime?.jobs.find((j) => j.id === occurrenceId);
           await permitted(room);
@@ -1441,7 +1446,7 @@ class MochiService {
         const room = await this.readStored(user, id), j = room.runtime?.jobs.find((j) => j.id === occurrenceId);
         if (!j || j.claim !== claim || TERMINAL.has(j.status))
           return;
-        if (!room.runtime.enabled || !await allowed() || j.revision !== room.revision) {
+        if (j.kind !== "response" && (!room.runtime.enabled || !await allowed()) || j.revision !== room.revision) {
           j.status = "cancelled";
           delete j.draft;
           delete j.additional;
@@ -1520,11 +1525,11 @@ class MochiService {
         await this.persist(user, room);
         this.host.sendToFrontend({ type: "mochi:accepted", requestId, roomId: id }, user);
         const mode = room.settings.responseMode, natural = Boolean(content && mode === "natural" && responder === "auto");
-        let generate = (!content || (mode ? mode !== "manual" && !!room.runtime?.enabled && await this.backgroundEnabled(user) : room.settings.autoReply)) && !controller.signal.aborted;
+        let generate = (!content || mode !== "manual" && room.settings.autoReply) && !controller.signal.aborted;
         if (generate && !regenerate && minimumDelay(room, responder, this.now()) > 0) {
           generate = false;
-          if (!room.runtime?.enabled || !await this.backgroundEnabled(user))
-            throw new Error("This character is unavailable. Enable account and room background messaging to queue delayed replies.");
+          await this.registerResponses(user);
+          room.runtime ||= { version: 1, enabled: false, jobs: [] };
           for (const job of room.runtime.jobs)
             if (job.kind === "response" && !TERMINAL.has(job.status)) {
               job.status = "cancelled";
@@ -1539,9 +1544,10 @@ class MochiService {
         }
         if (generate && regenerate && minimumDelay(room, responder, this.now()) > 0)
           throw new Error("The selected character is unavailable for an immediate reroll.");
+        const allowBehavior = Boolean(room.settings.aiBehavior && room.runtime?.enabled && await this.backgroundEnabled(user));
         if (generate)
           this.jobs.set(key, { requestId, controller, accountId: room.accountId, phoneKey });
-        return { room, responder, generate, natural, targetId, promptRoom: regenerate ? { ...room, messages: room.messages.slice(0, targetIndex) } : room };
+        return { room, responder, generate, natural, targetId, allowBehavior, automatic: !!content, promptRoom: { ...room, settings: { ...room.settings, aiBehavior: allowBehavior }, messages: regenerate ? room.messages.slice(0, targetIndex) : room.messages } };
       });
     }).finally(() => {
       waiting.delete(queued);
@@ -1557,10 +1563,11 @@ class MochiService {
     let automaticReserved = false;
     try {
       await publish(true);
-      if (launched.room.settings.aiBehavior || launched.room.settings.responseMode && input.content) {
-        if (!await this.backgroundEnabled(user))
+      if (launched.allowBehavior || launched.room.settings.responseMode && launched.automatic) {
+        const response = Boolean(launched.automatic && launched.room.settings.responseMode);
+        if (!response && !await this.backgroundEnabled(user))
           throw new Error("Background behavior is disabled.");
-        automaticReserved = await this.reserveAutomatic(user, id);
+        automaticReserved = await this.reserveAutomatic(user, id, response);
         if (!automaticReserved)
           throw new Error("The automatic generation limit was reached.");
       }
@@ -1577,8 +1584,6 @@ class MochiService {
         for (const characterId of current.characterIds)
           if (!await this.host.characters.get(characterId, user))
             throw new Error("A room character is no longer available; the reply was discarded.");
-        if (launched.room.settings.responseMode && input.content && (!current.runtime?.enabled || !await this.backgroundEnabled(user)))
-          throw new Error("Automatic messaging was disabled.");
         if (reply.silent)
           return;
         if (reply.replies.some((r) => delayFor(current, r.character.id, this.now()) > 0))
@@ -1586,7 +1591,7 @@ class MochiService {
         if (delayFor(current, reply.character.id, this.now()) > 0)
           throw new Error("Character presence changed; the immediate reply was discarded.");
         const name = current.settings.characterNames[reply.character.id] || reply.character.name;
-        if (current.settings.aiBehavior) {
+        if (launched.allowBehavior) {
           if (!current.runtime?.enabled || !await this.backgroundEnabled(user))
             throw new Error("Background behavior was disabled; the reply was discarded.");
           if (reply.replies.some((r) => r.behavior.delayMs > 0)) {
@@ -1622,11 +1627,11 @@ class MochiService {
             current.notifications.push(notification);
             current.notificationRevision++;
             notifications.push({ notification, revision: current.notificationRevision });
-            if (current.settings.aiBehavior)
+            if (launched.allowBehavior)
               applyDeliveredStatus(current, r.character.id, r.behavior.status, this.now());
           }
         }
-        if (current.settings.aiBehavior)
+        if (launched.allowBehavior)
           applyDeliveredStatus(current, reply.character.id, reply.behavior.status, this.now());
         current.revision++;
         current.updatedAt = new Date().toISOString();
@@ -1733,7 +1738,8 @@ class MochiScheduler {
     this.now = now;
     this.report = report;
     service.backgroundEnabled = (user) => this.enabled(user);
-    service.reserveAutomatic = (user, room) => this.reserve(user, room);
+    service.reserveAutomatic = (user, room, response) => this.reserve(user, room, response);
+    service.registerResponses = (user) => this.registerResponses(user);
     service.releaseAutomatic = (user, room) => {
       this.slots.delete(JSON.stringify([user, room]));
     };
@@ -1778,7 +1784,7 @@ class MochiScheduler {
       throw new Error("Invalid account opt-in.");
     if (!enabled) {
       this.blocked.add(user);
-      this.service.abortScheduled(user);
+      this.service.abortScheduled(user, undefined, undefined, true);
     }
     await this.locked(async () => {
       if (this.host.users)
@@ -1798,13 +1804,27 @@ class MochiScheduler {
     if (!enabled)
       for (const room of await this.service.scheduledRooms(user)) {
         for (const job of room.runtime?.jobs || [])
-          if (!TERMINAL.has(job.status))
+          if (job.kind !== "response" && !TERMINAL.has(job.status))
             await this.service.cancelScheduled(user, room.id, job.id, room.accountId);
       }
   }
-  async reserve(user, roomId) {
+  async registerResponses(user) {
+    identifier(user);
+    await this.locked(async () => {
+      if (this.host.users)
+        await this.host.users.getRole(user);
+      const r = await this.registry();
+      if (!r.accounts.includes(user)) {
+        if (r.accounts.length >= 1000)
+          throw new Error("Scheduler account registry is full; your message is saved.");
+        r.accounts.push(user);
+        await this.saveRegistry(r);
+      }
+    });
+  }
+  async reserve(user, roomId, response = false) {
     return this.locked(async () => {
-      if (this.stopped || !await this.enabled(user))
+      if (this.stopped || !response && !await this.enabled(user))
         return false;
       if (this.slots.size >= 2 || [...this.slots].some((k) => JSON.parse(k)[0] === user))
         return false;
@@ -1831,18 +1851,18 @@ class MochiScheduler {
         if (work.length >= 2 || this.stopped)
           break;
         try {
-          if (!await this.enabled(user))
-            continue;
+          const autonomous = await this.enabled(user);
           if (this.host.users)
             await this.host.users.getRole(user);
           const rooms = await this.service.scheduledRooms(user);
-          for (const room of rooms)
-            await this.service.prepareIdle(user, room.id, this.now());
+          if (autonomous)
+            for (const room of rooms)
+              await this.service.prepareIdle(user, room.id, this.now());
           const refreshed = await this.service.scheduledRooms(user);
-          const candidates = refreshed.flatMap((room) => ((room.runtime?.enabled) ? room.runtime.jobs : []).filter((j) => dispatchReady(room, j, this.now())).map((job) => ({ room, job }))).sort((a, b) => a.job.dueAt - b.job.dueAt);
+          const candidates = refreshed.flatMap((room) => (room.runtime?.jobs || []).filter((j) => (j.kind === "response" || autonomous && room.runtime?.enabled) && dispatchReady(room, j, this.now())).map((job) => ({ room, job }))).sort((a, b) => a.job.dueAt - b.job.dueAt);
           const candidate = candidates[0];
           if (candidate)
-            work.push(this.service.dispatchScheduled(user, candidate.room.id, candidate.job.id, this.now, () => this.enabled(user), () => this.reserve(user, candidate.room.id)).catch(() => {
+            work.push(this.service.dispatchScheduled(user, candidate.room.id, candidate.job.id, this.now, () => this.enabled(user), () => this.reserve(user, candidate.room.id, candidate.job.kind === "response")).catch(() => {
               this.report("Mochi scheduled work failed safely; records were retained for recovery.");
             }));
         } catch {

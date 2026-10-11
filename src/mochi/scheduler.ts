@@ -15,7 +15,7 @@ export class MochiScheduler {
   private blocked = new Set<string>()
   private slots = new Set<string>()
   private serial: Promise<unknown> = Promise.resolve()
-  constructor(private host: MochiHost, private service: MochiService, private now: () => number = Date.now, private report: (message: string) => void = () => {}) { service.backgroundEnabled = user => this.enabled(user); service.reserveAutomatic = (user,room) => this.reserve(user,room);service.releaseAutomatic=(user,room)=>{this.slots.delete(JSON.stringify([user,room]))};service.schedulingWarning=report }
+  constructor(private host: MochiHost, private service: MochiService, private now: () => number = Date.now, private report: (message: string) => void = () => {}) { service.backgroundEnabled = user => this.enabled(user); service.reserveAutomatic = (user,room,response) => this.reserve(user,room,response);service.registerResponses=user=>this.registerResponses(user);service.releaseAutomatic=(user,room)=>{this.slots.delete(JSON.stringify([user,room]))};service.schedulingWarning=report }
   private async locked<T>(work: () => Promise<T>): Promise<T> {
     const task = this.serial.catch(() => {}).then(work); this.serial = task
     return task
@@ -48,7 +48,7 @@ export class MochiScheduler {
   async configure(userId: string, enabled: unknown): Promise<void> {
     const user = identifier(userId)
     if (typeof enabled !== 'boolean') throw new Error('Invalid account opt-in.')
-    if (!enabled) { this.blocked.add(user); this.service.abortScheduled(user) }
+    if (!enabled) { this.blocked.add(user); this.service.abortScheduled(user,undefined,undefined,true) }
     await this.locked(async () => {
       if (this.host.users) await this.host.users.getRole(user)
       const r = await this.registry(), c = await this.account(user)
@@ -60,12 +60,17 @@ export class MochiScheduler {
       if (enabled) this.blocked.delete(user)
     })
     if (!enabled) for (const room of await this.service.scheduledRooms(user)) {
-      for (const job of room.runtime?.jobs || []) if (!TERMINAL.has(job.status)) await this.service.cancelScheduled(user, room.id, job.id, room.accountId)
+      for (const job of room.runtime?.jobs || []) if (job.kind !== 'response' && !TERMINAL.has(job.status)) await this.service.cancelScheduled(user, room.id, job.id, room.accountId)
     }
   }
-  private async reserve(user: string, roomId: string): Promise<boolean> {
+  /** Discover solicited delayed replies without enabling unsolicited background work. */
+  private async registerResponses(user:string):Promise<void>{
+    identifier(user)
+    await this.locked(async()=>{if(this.host.users)await this.host.users.getRole(user);const r=await this.registry();if(!r.accounts.includes(user)){if(r.accounts.length>=1000)throw new Error('Scheduler account registry is full; your message is saved.');r.accounts.push(user);await this.saveRegistry(r)}})
+  }
+  private async reserve(user: string, roomId: string, response=false): Promise<boolean> {
     return this.locked(async () => {
-      if (this.stopped || !await this.enabled(user)) return false
+      if (this.stopped || (!response && !await this.enabled(user))) return false
       if(this.slots.size>=2||[...this.slots].some(k=>JSON.parse(k)[0]===user)) return false
       const r = await this.registry(), c = await this.account(user), now = this.now()
       // Keep future timestamps too: clock rollback must not reset spending limits.
@@ -87,15 +92,15 @@ export class MochiScheduler {
       for (const user of registry.accounts) {
         if (work.length >= 2 || this.stopped) break
         try {
-          if (!await this.enabled(user)) continue
+          const autonomous=await this.enabled(user)
           if (this.host.users) await this.host.users.getRole(user)
           const rooms = await this.service.scheduledRooms(user)
-          for(const room of rooms) await this.service.prepareIdle(user,room.id,this.now())
+          if(autonomous)for(const room of rooms) await this.service.prepareIdle(user,room.id,this.now())
           const refreshed = await this.service.scheduledRooms(user)
           // At most one opportunity per account per wake, and two globally. No catch-up burst.
-          const candidates = refreshed.flatMap(room => (room.runtime?.enabled ? room.runtime.jobs : []).filter(j => dispatchReady(room,j,this.now())).map(job => ({ room, job }))).sort((a,b) => a.job.dueAt - b.job.dueAt)
+          const candidates = refreshed.flatMap(room => (room.runtime?.jobs || []).filter(j => (j.kind==='response'||(autonomous&&room.runtime?.enabled))&&dispatchReady(room,j,this.now())).map(job => ({ room, job }))).sort((a,b) => a.job.dueAt - b.job.dueAt)
           const candidate = candidates[0]
-          if (candidate) work.push(this.service.dispatchScheduled(user, candidate.room.id, candidate.job.id, this.now, () => this.enabled(user), () => this.reserve(user, candidate.room.id)).catch(() => { this.report('Mochi scheduled work failed safely; records were retained for recovery.') }))
+          if (candidate) work.push(this.service.dispatchScheduled(user, candidate.room.id, candidate.job.id, this.now, () => this.enabled(user), () => this.reserve(user, candidate.room.id,candidate.job.kind==='response')).catch(() => { this.report('Mochi scheduled work failed safely; records were retained for recovery.') }))
         } catch { this.report('Mochi scheduler skipped an unavailable account or damaged record; stored data was preserved.') }
       }
       await Promise.all(work)

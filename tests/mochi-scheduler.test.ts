@@ -191,11 +191,12 @@ test('new user messages coalesce delayed replies into the newest conversation re
   expect(f.calls[0].messages.some((m:any)=>m.content.includes('New question'))).toBe(true)
   expect(saved.runtime!.jobs.filter(j=>j.status==='delivered')).toHaveLength(1);f.scheduler.stop()
 })
-test('offline rerolls and unconsented delayed sends never invoke a provider',async()=>{
+test('offline user replies queue without background consent and do not invoke an ineligible provider',async()=>{
   const f=fixture(),room=await f.create()
   await f.service.configurePresence('alice',{roomId:room.id,revision:room.revision,characterId:'alice_character',presence:{...defaultPresence(),manual:'offline'}})
   await f.scheduler.configure('alice',false)
-  await expect(f.service.message('alice',{roomId:room.id,revision:room.revision,requestId:'unavailable',content:'Saved'})).rejects.toThrow('unavailable')
+  await f.service.message('alice',{roomId:room.id,revision:room.revision,requestId:'unavailable',content:'Saved'})
+  expect((await f.service.read('alice',room.id)).runtime!.jobs[0].status).toBe('queued')
   expect(f.calls).toHaveLength(0);expect((await f.service.read('alice',room.id)).messages).toHaveLength(1);f.scheduler.stop()
 })
 test('one authorized request can defer delivery privately and apply status only after delivery',async()=>{
@@ -255,7 +256,7 @@ test('natural mode uses one provider request for silence or multiple distinct gr
     f.scheduler.stop()
   }
 })
-test('instant/manual modes and account opt-out preserve explicit empty continuation',async()=>{
+test('instant/manual modes distinguish background opt-out from ordinary replies and explicit continuation',async()=>{
   for(const mode of ['instant','manual'] as const) {
     const f=fixture(),room=await f.create(),configured=await f.service.update('alice',{roomId:room.id,revision:room.revision,title:room.title,characterIds:room.characterIds,settings:{...room.settings,responseMode:mode}})
     await f.service.message('alice',{roomId:room.id,revision:configured.revision,requestId:'mode_send',content:'Hello'})
@@ -263,10 +264,10 @@ test('instant/manual modes and account opt-out preserve explicit empty continuat
     await f.scheduler.configure('alice',false)
     let saved=await f.service.read('alice',room.id)
     await f.service.message('alice',{roomId:room.id,revision:saved.revision,requestId:'opted_out',content:'No automatic generation'})
-    expect(f.calls).toHaveLength(mode==='instant'?1:0)
+    expect(f.calls).toHaveLength(mode==='instant'?2:0)
     saved=await f.service.read('alice',room.id)
     await f.service.message('alice',{roomId:room.id,revision:saved.revision,requestId:'explicit',content:''})
-    expect(f.calls).toHaveLength(mode==='instant'?2:1);f.scheduler.stop()
+    expect(f.calls).toHaveLength(mode==='instant'?3:1);f.scheduler.stop()
   }
 })
 test('idle periods allow three deliveries with a shared 90-minute gap and persist across restarts',async()=>{

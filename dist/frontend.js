@@ -1278,16 +1278,16 @@ class MochiView {
         schedule.disabled = this.busy;
         schedule.onclick = () => this.dispatch("mochi:schedule", { roomId: room.id, revision: room.revision, occurrenceId: requestId("scheduled"), dueAt: new Date(due.value).getTime(), responder: this.responders.get(room.id) || "auto" });
         form.append(schedule);
-        for (const job of room.background.jobs) {
-          const row = el("div", "mochi-actions");
-          row.append(el("small", "mochi-muted", `${new Date(job.dueAt).toLocaleString()} · ${job.status}`));
-          const cancelJob = action("Cancel scheduled message", "close");
-          cancelJob.type = "button";
-          cancelJob.disabled = this.busy;
-          cancelJob.onclick = () => this.dispatch("mochi:schedule_cancel", { roomId: room.id, occurrenceId: job.id });
-          row.append(cancelJob);
-          form.append(row);
-        }
+      }
+      for (const job of room.background?.jobs || []) {
+        const row = el("div", "mochi-actions");
+        row.append(el("small", "mochi-muted", `${new Date(job.dueAt).toLocaleString()} · ${job.status}`));
+        const cancelJob = action("Cancel scheduled message", "close");
+        cancelJob.type = "button";
+        cancelJob.disabled = this.busy;
+        cancelJob.onclick = () => this.dispatch("mochi:schedule_cancel", { roomId: room.id, occurrenceId: job.id });
+        row.append(cancelJob);
+        form.append(row);
       }
       for (const [label, key] of [["Total token budget", "contextTokens"], ["Maximum reply tokens", "outputTokens"]]) {
         const input = el("input");
