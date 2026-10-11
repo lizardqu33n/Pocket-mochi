@@ -4,6 +4,7 @@ import { identifier, MAX_JOBS, publicRuntime, scheduleInput, temporaryFailure, T
 import { delayFor, eligibleResponders, minimumDelay, statusFor, validatePresence } from './presence.js'
 import { applyDeliveredStatus } from './behavior.js'
 import { MochiAccounts, fictionalAccountId } from './accounts.js'
+import { phoneContext, type MochiPhone } from './phone-selection.js'
 
 // New implementation. No Character Chatroom source is included.
 export interface MochiHost {
@@ -52,13 +53,15 @@ function validateRoom(value: any, id: string): MochiRoom {
   return value
 }
 export class MochiService {
+  resolvePhone: (user: string, phone: MochiPhone) => Promise<string | undefined> = async()=>undefined
+  private async phoneKey(user:string,input:unknown):Promise<string|undefined>{const phone=phoneContext(input);return phone?this.resolvePhone(user,phone):undefined}
   backgroundEnabled: (userId: string) => Promise<boolean> = async () => false
   reserveAutomatic: (userId: string, roomId: string) => Promise<boolean> = async () => true
   releaseAutomatic: (userId: string, roomId: string) => void = () => {}
   schedulingWarning: (message:string) => void = () => {}
   private locks = new Map<string, Promise<unknown>>()
-  private jobs = new Map<string, { requestId: string; controller: AbortController; accountId?: string }>()
-  private pending = new Map<string, Set<{ requestId: string; controller: AbortController; accountId?: string }>>()
+  private jobs = new Map<string, { requestId: string; controller: AbortController; accountId?: string; phoneKey?: string }>()
+  private pending = new Map<string, Set<{ requestId: string; controller: AbortController; accountId?: string; phoneKey?: string }>>()
   private jobKey(user: string, id: string): string { return JSON.stringify([user, id]) }
   private settings(input: any, ids: string[]): MochiSettings {
     const s = { ...defaultMochiSettings(), ...input }
@@ -77,8 +80,9 @@ export class MochiService {
     this.fictionalAccounts = new MochiAccounts(host, (user, input) => this.persona(user, input), now)
   }
   private account(userId: unknown): string { return text(userId, 180, true) }
-  async accountsState(userId: string) {
+  async accountsState(userId: string, phone?: unknown) {
     const user = identifier(userId), bank = await this.fictionalAccounts.bank(user)
+    const key=await this.phoneKey(user,phone),selection=key?bank.phones?.[key]:undefined
     const associations = new Map(bank.accounts.map(a => [a.id, [] as string[]]))
     const warnings: string[] = []
     for (const file of await this.host.userStorage.list(ROOT, user)) {
@@ -95,12 +99,12 @@ export class MochiService {
     }
     const choices = await this.state(user)
     const avatars = this.host.images && this.host.permissions.has('images') ? (await this.host.images.list({ userId: user, limit: 100, offset: 0, specificity: 'thumbnail' })).data.filter((a: any) => /^image\/(png|jpeg|webp|gif)$/.test(a.mime_type)).map((a: any) => ({ id: entityId(a.id), name: String(a.original_filename || 'Portrait').slice(0,120), url: `/api/v1/images/${entityId(a.id)}` })) : []
-    return { ...bank, accounts: bank.accounts.map(a => ({ ...a, roomIds: associations.get(a.id)!.sort() })), personas: choices.personas, avatars, canUploadAvatar: !!this.host.images && this.host.permissions.has('images'), warnings }
+    return { ...bank, phone: {supported:!!key,preference:key?selection?.preference||'last-used':bank.startupPreference||'last-used',lastAccountId:key?selection?.lastAccountId||'':bank.selectedAccountId}, accounts: bank.accounts.map(a => ({ ...a, roomIds: associations.get(a.id)!.sort() })), personas: choices.personas, avatars, canUploadAvatar: !!this.host.images && this.host.permissions.has('images'), warnings }
   }
-  private abortFictional(userId: string, accountId: string, includeServer: boolean): void {
+  private abortFictional(userId: string, accountId: string, includeServer: boolean, phoneKey?: string): void {
     if (!accountId) return
-    for (const [key, job] of this.jobs) if (JSON.parse(key)[0] === userId && job.accountId === accountId && (includeServer || !job.requestId.startsWith('server_'))) job.controller.abort()
-    for (const [key, queued] of this.pending) if (JSON.parse(key)[0] === userId) for (const job of queued) if (job.accountId === accountId) job.controller.abort()
+    for (const [key, job] of this.jobs) if (JSON.parse(key)[0] === userId && job.accountId === accountId && (phoneKey===undefined||job.phoneKey===phoneKey) && (includeServer || !job.requestId.startsWith('server_'))) job.controller.abort()
+    for (const [key, queued] of this.pending) if (JSON.parse(key)[0] === userId) for (const job of queued) if (job.accountId === accountId&&(phoneKey===undefined||job.phoneKey===phoneKey)) job.controller.abort()
   }
   private abortScoped(user: string, id: string, accountId: unknown, serverOnly = false): void {
     // Job ownership was validated at launch. Do not await disk reads before interrupting a staged commit.
@@ -108,7 +112,8 @@ export class MochiService {
     if (job && job.accountId === accountId && (!serverOnly || job.requestId.startsWith('server_'))) job.controller.abort()
   }
   async selectAccount(userId: string, input: any): Promise<void> {
-    await this.fictionalAccounts.select(userId, input, previous => this.abortFictional(userId, previous, false))
+    const key=await this.phoneKey(userId,input.phone)
+    await this.fictionalAccounts.select(userId, input, previous => this.abortFictional(userId, previous, false,key),key)
   }
   async archiveAccount(userId: string, input: any): Promise<void> {
     await this.fictionalAccounts.archive(userId, input, () => this.abortFictional(userId, input.accountId, true))
@@ -529,9 +534,12 @@ export class MochiService {
   async message(userId: string, input: any, regenerate = false): Promise<void> {
     const user = this.account(userId), id = roomId(input.roomId), requestId = entityId(input.requestId)
     const key = this.jobKey(user, id), controller = new AbortController()
-    const waiting = this.pending.get(key) || new Set<{ requestId: string; controller: AbortController; accountId?: string }>()
-    const queued = { requestId, controller, accountId: input.accountId }; waiting.add(queued); this.pending.set(key, waiting)
-    const launched = await this.locked(user, id, async () => {
+    let phoneKey: string | undefined
+    const waiting = this.pending.get(key) || new Set<{ requestId: string; controller: AbortController; accountId?: string; phoneKey?: string }>()
+    const queued = { requestId, controller, accountId: input.accountId,phoneKey }; waiting.add(queued); this.pending.set(key, waiting)
+    const selectedOnPhone=async()=>{if(phoneKey&&input.accountId&&(await this.fictionalAccounts.bank(user)).phones?.[phoneKey]?.lastAccountId!==input.accountId)throw new Error('The Mochi account on this phone changed; refresh before sending.')}
+    const launched = await this.phoneKey(user,input.phone).then(resolved=>{phoneKey=resolved;queued.phoneKey=resolved;return this.locked(user, id, async () => {
+      await selectedOnPhone()
       const room = await this.read(user, id, input.accountId)
       if (room.receipts!.includes(requestId)) return null
       if (this.jobs.has(key)) throw new Error('A reply is already running in this room. Wait or stop it first.')
@@ -565,9 +573,9 @@ export class MochiService {
         await this.persist(user,room)
       }
       if (generate && regenerate && minimumDelay(room,responder,this.now()) > 0) throw new Error('The selected character is unavailable for an immediate reroll.')
-      if (generate) this.jobs.set(key, { requestId, controller, accountId: room.accountId })
+      if (generate) this.jobs.set(key, { requestId, controller, accountId: room.accountId,phoneKey })
       return { room, responder, generate, natural, targetId, promptRoom: regenerate ? { ...room, messages: room.messages.slice(0, targetIndex) } : room }
-    }).finally(() => { waiting.delete(queued); if (!waiting.size && this.pending.get(key) === waiting) this.pending.delete(key) })
+    })}).finally(() => { waiting.delete(queued); if (!waiting.size && this.pending.get(key) === waiting) this.pending.delete(key) })
     const publish = async (accepted: boolean) => this.host.sendToFrontend({ type: 'mochi:state', requestId, accepted, state: await this.state(user, input.accountId) }, user)
     if (!launched?.generate) { await publish(true); return }
     const timeout = setTimeout(() => controller.abort(), 180000)
@@ -582,6 +590,7 @@ export class MochiService {
       const reply = await generateMochiReply(this.host, launched.promptRoom, user, launched.responder, controller.signal, eligibleResponders(launched.room,launched.responder,this.now()).filter(c=>delayFor(launched.room,c,this.now())===0),launched.natural)
       await this.locked(user, id, async () => {
         controller.signal.throwIfAborted()
+        await selectedOnPhone()
         const current = await this.read(user, id, input.accountId)
         if (current.revision !== launched.room.revision || this.jobs.get(key)?.controller !== controller) throw new Error('The room changed during generation; the reply was discarded.')
         await validateMochiSources(this.host, current, user)
@@ -646,9 +655,10 @@ export class MochiService {
         else if (payload.type === 'mochi:account_select') await this.selectAccount(userId, payload)
         else if (payload.type === 'mochi:account_archive') await this.archiveAccount(userId, payload)
         else if (payload.type === 'mochi:account_restore') await this.fictionalAccounts.restore(userId, payload)
+        else if (payload.type === 'mochi:account_startup') await this.fictionalAccounts.startup(userId,payload,await this.phoneKey(userId,payload.phone))
         else if (payload.type === 'mochi:account_avatar_upload') uploadedAvatarId = await this.fictionalAccounts.uploadAvatar(userId, payload.dataUrl)
         else if (payload.type !== 'mochi:accounts') throw new Error('Unsupported fictional account action.')
-        this.host.sendToFrontend({ type: 'mochi:accounts', requestId: payload.requestId, createdAccountId, uploadedAvatarId, state: await this.accountsState(userId) }, userId)
+        this.host.sendToFrontend({ type: 'mochi:accounts', requestId: payload.requestId, createdAccountId, uploadedAvatarId, state: await this.accountsState(userId,payload.phone) }, userId)
         return
       }
       if (payload.type === 'mochi:send') { await this.message(userId, payload); return }

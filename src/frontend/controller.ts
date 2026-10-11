@@ -1628,6 +1628,7 @@ class PocketController {
   }
 
   private openPocket(routeInput: PocketRoute, pushHistory = true): void {
+    const enteringMochi = this.currentApp !== 'mochi'
     const normalized = normalizePocketRoute(routeInput)
     const route = this.router.navigate(normalized, !pushHistory)
     if (this.currentApp === 'mochi' && route.app !== 'mochi') this.mochi.leave()
@@ -1641,8 +1642,8 @@ class PocketController {
     if (this.currentApp === 'settings' && route.app !== 'settings') this.settingsDraft = null
     this.currentApp = route.app
     if (route.app === 'mochi') {
+      if(enteringMochi){const phone=this.state?this.deviceIdentity():undefined;this.mochi.open(phone?{chatId:phone.chatId,characterId:phone.characterId,deviceOwnerActorId:phone.deviceOwnerActorId}:undefined)}
       this.mochi.select(route.roomId || '')
-      if (!this.mochi.state) this.mochi.load()
       this.render(true)
       return
     }

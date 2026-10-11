@@ -435,6 +435,67 @@ class MochiProfiles {
   }
 }
 
+// src/mochi/account-picker.ts
+function accountPicker(state, busy, choose, create, legacy, startup, manage, refresh) {
+  const page = el("section", "mochi-form mochi-account-picker");
+  page.append(el("h3", "", "Choose your Mochi account"), el("p", "mochi-muted", "Keep each fictional identity and its conversations separate."));
+  if (!state) {
+    page.append(el("p", "", "Loading accounts…"));
+    return page;
+  }
+  if (!state.phone?.supported)
+    page.append(el("p", "mochi-muted", "Phone identity unavailable. Startup preference is shared by your Lumiverse account."));
+  for (const a of state.accounts.filter((a) => !a.archived)) {
+    const card = button("", "mochi-card");
+    card.disabled = busy;
+    card.setAttribute("aria-label", "Use Mochi account " + a.displayName);
+    const avatar = el("span", "mochi-avatar", a.displayName.slice(0, 1));
+    if (a.avatarUrl) {
+      const img = el("img");
+      img.src = a.avatarUrl;
+      img.alt = "";
+      avatar.replaceChildren(img);
+    }
+    const copy = el("span", "mochi-card-copy");
+    copy.append(el("strong", "", a.displayName), el("small", "mochi-muted", (a.username ? "@" + a.username + " · " : "") + a.roomIds.length + " chats"));
+    card.append(avatar, copy);
+    card.onclick = () => choose(a.id);
+    page.append(card);
+  }
+  const preference = el("select");
+  preference.setAttribute("aria-label", "Mochi startup preference");
+  for (const [value, label] of [["last-used", "Open last-used account"], ["picker", "Always show account picker"]]) {
+    const option = el("option", "", label);
+    option.value = value;
+    preference.append(option);
+  }
+  preference.value = state.phone?.preference || "last-used";
+  preference.disabled = busy;
+  preference.onchange = () => startup(preference.value);
+  const label = el("label", "", state.phone?.supported ? "On this Pocket phone" : "Shared startup preference");
+  label.append(preference);
+  page.append(label);
+  const add = button("Create Mochi account", "lp-button mochi-primary");
+  add.disabled = busy;
+  add.onclick = create;
+  page.append(add);
+  const settings = button("Manage Mochi profiles", "lp-button");
+  settings.disabled = busy;
+  settings.onclick = manage;
+  page.append(settings);
+  const reload = button("Refresh accounts", "lp-button");
+  reload.disabled = busy;
+  reload.onclick = refresh;
+  page.append(reload);
+  const old = button("Unassigned legacy chats", "lp-button");
+  old.disabled = busy;
+  old.onclick = legacy;
+  page.append(old);
+  for (const warning of state.warnings)
+    page.append(el("p", "mochi-error", warning));
+  return page;
+}
+
 // src/mochi/types.ts
 var defaultMochiSettings = () => ({ autoReply: true, connectionId: "", contextTokens: 8192, outputTokens: 1200, instructions: "", characterNames: {} });
 var MOCHI_ROOM_ID = /^room_[a-f0-9]{32}$/;
@@ -475,6 +536,61 @@ class MochiView {
   notificationsChanged;
   profiles = new MochiProfiles;
   profilesOpen = false;
+  pickerOpen = false;
+  startupOpen = false;
+  activeAccountId;
+  phone;
+  open(phone) {
+    this.leave();
+    this.resetScope();
+    this.phone = phone;
+    this.pickerOpen = true;
+    this.startupOpen = true;
+    this.profilesOpen = false;
+    this.profiles.state = null;
+    this.dispatch("mochi:accounts");
+  }
+  resetScope() {
+    this.notificationsChanged([], new Set(this.state?.rooms.map((r) => r.id) || []));
+    this.state = null;
+    this.activeAccountId = undefined;
+    this.roomId = "";
+    this.creating = false;
+    this.editing = false;
+    this.draft = null;
+    this.settingsDraft = null;
+    this.notificationsOpen = false;
+    this.busy = false;
+    clearTimeout(this.timeout);
+    this.request = "";
+    this.selectionVersion++;
+    this.notificationRevisions.clear();
+    this.seenNotifications.clear();
+    this.acknowledged.clear();
+    this.acknowledgementRequests.clear();
+    this.ownGenerations.clear();
+  }
+  chooseAccount(id, persist = true) {
+    this.leave();
+    this.resetScope();
+    this.activeAccountId = id;
+    this.profilesOpen = false;
+    if (persist) {
+      this.pickerOpen = true;
+      this.dispatch("mochi:account_select", { accountId: id, revision: this.profiles.state?.revision });
+    } else {
+      this.pickerOpen = false;
+      this.load();
+    }
+  }
+  showPicker() {
+    this.leave();
+    this.resetScope();
+    this.pickerOpen = true;
+    this.startupOpen = false;
+    this.profilesOpen = false;
+    this.dispatch("mochi:accounts");
+  }
   state = null;
   roomId = "";
   creating = false;
@@ -577,7 +693,7 @@ class MochiView {
       this.error = "No response received. Refresh the inbox to check whether your room was saved before trying again.";
       this.redraw();
     }, 30000);
-    this.send({ type, requestId: this.request, accountId: this.state?.accountId, ...values });
+    this.send({ type, requestId: this.request, accountId: this.state?.accountId || this.activeAccountId, ...this.phone ? { phone: this.phone } : {}, ...values });
     this.redraw();
   }
   receive(payload) {
@@ -591,6 +707,25 @@ class MochiView {
         this.profiles.draft.avatarId = payload.uploadedAvatarId;
       else if (this.operation !== "mochi:accounts")
         this.profiles.draft = null;
+      if (this.operation === "mochi:account_select") {
+        const id = payload.state.phone?.lastAccountId || payload.state.selectedAccountId;
+        if (id && payload.state.accounts.some((a) => a.id === id && !a.archived)) {
+          this.chooseAccount(id, false);
+          return true;
+        }
+      }
+      if (payload.createdAccountId && this.pickerOpen) {
+        this.chooseAccount(payload.createdAccountId);
+        return true;
+      }
+      if (this.startupOpen) {
+        this.startupOpen = false;
+        const id = payload.state.phone?.lastAccountId;
+        if (payload.state.phone?.preference === "last-used" && payload.state.accounts.some((a) => a.id === id && !a.archived)) {
+          this.chooseAccount(id, false);
+          return true;
+        }
+      }
       this.redraw();
       return true;
     }
@@ -728,7 +863,7 @@ class MochiView {
     brand.append(mascot);
     header.append(brand);
     const headerActions = el("div", "mochi-actions");
-    if (this.notificationPolicy().enabled) {
+    if (this.notificationPolicy().enabled && !this.pickerOpen && !this.profilesOpen) {
       const bell = action("Mochi notifications", "notifications", true);
       const unread = this.state?.notifications?.filter((n) => !n.read).length || 0;
       bell.dataset.unread = String(unread > 0);
@@ -757,6 +892,23 @@ class MochiView {
         this.profilesOpen = false;
         this.redraw();
       }));
+      return page;
+    }
+    if (this.pickerOpen) {
+      page.append(accountPicker(this.profiles.state, this.busy, (id) => this.chooseAccount(id), () => {
+        this.profiles.start();
+        this.profilesOpen = true;
+        this.redraw();
+      }, () => {
+        this.leave();
+        this.resetScope();
+        this.pickerOpen = false;
+        this.load();
+      }, (preference) => this.dispatch("mochi:account_startup", { preference, revision: this.profiles.state?.revision }), () => {
+        this.profilesOpen = true;
+        this.profiles.draft = null;
+        this.redraw();
+      }, () => this.dispatch("mochi:accounts")));
       return page;
     }
     if (!this.state)
@@ -837,6 +989,9 @@ class MochiView {
     if (this.roomId)
       page.append(el("p", "mochi-error", "This room is unavailable. Refresh or select another room."));
     page.append(el("p", "mochi-muted", "Your independent character rooms."));
+    const change = action("Switch Mochi account", "people");
+    change.onclick = () => this.showPicker();
+    page.append(change);
     const profiles = action("Mochi profiles", "people");
     profiles.disabled = this.busy;
     profiles.onclick = () => {
@@ -10038,6 +10193,7 @@ class PocketController {
     this.openPocket(this.router.home(), false);
   }
   openPocket(routeInput, pushHistory = true) {
+    const enteringMochi = this.currentApp !== "mochi";
     const normalized = normalizePocketRoute(routeInput);
     const route = this.router.navigate(normalized, !pushHistory);
     if (this.currentApp === "mochi" && route.app !== "mochi")
@@ -10054,9 +10210,11 @@ class PocketController {
       this.settingsDraft = null;
     this.currentApp = route.app;
     if (route.app === "mochi") {
+      if (enteringMochi) {
+        const phone = this.state ? this.deviceIdentity() : undefined;
+        this.mochi.open(phone ? { chatId: phone.chatId, characterId: phone.characterId, deviceOwnerActorId: phone.deviceOwnerActorId } : undefined);
+      }
       this.mochi.select(route.roomId || "");
-      if (!this.mochi.state)
-        this.mochi.load();
       this.render(true);
       return;
     }

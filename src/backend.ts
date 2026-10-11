@@ -60,6 +60,7 @@ import { ArrivalIdle } from './backend/arrival-idle.js'
 import { applyTimelineReview, normalizeWeatherOutlook } from './domain/app-review.js'
 import { snapshotActivityClock } from './domain/activity-clock.js'
 import { AppReviews } from './backend/app-reviews.js'
+import { storedPhoneKey } from './mochi/phone-selection.js'
 import { IDENTITY_PROFILES_PATH, normalizeIdentityProfiles, saveIdentityProfile, applyIdentityProfile } from './domain/identity-profiles.js'
 import { assemblePocketContext } from './backend/roleplay-context.js'
 import { narrativeExcerpt, sanitizeNarrativeContent, stripPocketPresentationMarkup } from './backend/narrative-content.js'
@@ -74,6 +75,7 @@ import { createPocketReference, latestArmedReference, referenceForGeneration, se
 
 declare const spindle: import('lumiverse-spindle-types').SpindleAPI
 const mochi = new MochiService(spindle)
+mochi.resolvePhone = async(user,phone)=>storedPhoneKey(phone,await spindle.userStorage.getJson(statePath(phone.chatId,phone.characterId),{userId:user,fallback:null}))
 const mochiScheduler = new MochiScheduler(spindle, mochi, Date.now, message => spindle.log.warn(message))
 mochiScheduler.start()
 

@@ -8,6 +8,7 @@ export interface AccountScreenState extends MochiAccountBank {
   avatars: Array<{id: string; name: string; url: string}>
   canUploadAvatar: boolean
   warnings: string[]
+  phone?: {supported: boolean; preference: 'last-used'|'picker'; lastAccountId: string}
 }
 export class MochiProfiles {
   state: AccountScreenState | null = null

@@ -475,6 +475,18 @@ class MochiAccounts {
     }
     if (bank.selectedAccountId !== "" && !bank.accounts.some((a) => a.id === bank.selectedAccountId && !a.archived))
       throw new Error("Invalid fictional account selection; stored data was preserved.");
+    if (bank.startupPreference !== undefined && !["last-used", "picker"].includes(bank.startupPreference))
+      throw new Error("Invalid startup preference; stored data was preserved.");
+    if (bank.phones !== undefined) {
+      if (!bank.phones || typeof bank.phones !== "object" || Array.isArray(bank.phones) || Object.keys(bank.phones).length > 1000)
+        throw new Error("Damaged phone selections; stored data was preserved.");
+      for (const [key, p] of Object.entries(bank.phones)) {
+        if (key.length > 1700 || key.split("::").length !== 3 || !p || !["last-used", "picker"].includes(p.preference))
+          throw new Error("Invalid saved phone selection; stored data was preserved.");
+        if (p.lastAccountId !== "")
+          fictionalAccountId(p.lastAccountId);
+      }
+    }
     return bank;
   }
   async get(user, id, includeArchived = false) {
@@ -550,18 +562,41 @@ class MochiAccounts {
       return account;
     });
   }
-  async select(user, input, switched) {
+  async select(user, input, switched, phoneKey) {
     await this.guard(user, async () => {
       const bank = await this.bank(user), id = fictionalAccountId(input.accountId);
       if (!bank.accounts.some((a) => a.id === id && !a.archived))
         throw new Error("This fictional account is not available.");
       if (input.revision !== bank.revision)
         throw new Error("Account selection changed elsewhere. Refresh before switching.");
-      const previous = bank.selectedAccountId;
-      bank.selectedAccountId = id;
+      const previous = phoneKey ? bank.phones?.[phoneKey]?.lastAccountId || "" : bank.selectedAccountId;
+      if (phoneKey) {
+        bank.phones ||= {};
+        if (!bank.phones[phoneKey] && Object.keys(bank.phones).length >= 1000)
+          throw new Error("Phone selection limit reached.");
+        bank.phones[phoneKey] = { lastAccountId: id, preference: bank.phones[phoneKey]?.preference || "last-used" };
+      } else
+        bank.selectedAccountId = id;
       await this.save(user, bank);
       if (previous !== id)
         switched(previous);
+    });
+  }
+  async startup(user, input, phoneKey) {
+    await this.guard(user, async () => {
+      const bank = await this.bank(user);
+      if (input.revision !== bank.revision)
+        throw new Error("Startup preference changed elsewhere. Refresh first.");
+      if (!["last-used", "picker"].includes(input.preference))
+        throw new Error("Invalid startup preference.");
+      if (phoneKey) {
+        bank.phones ||= {};
+        if (!bank.phones[phoneKey] && Object.keys(bank.phones).length >= 1000)
+          throw new Error("Phone selection limit reached.");
+        bank.phones[phoneKey] = { lastAccountId: bank.phones[phoneKey]?.lastAccountId || "", preference: input.preference };
+      } else
+        bank.startupPreference = input.preference;
+      await this.save(user, bank);
     });
   }
   async archive(user, input, changed) {
@@ -595,6 +630,24 @@ class MochiAccounts {
       await this.save(user, bank);
     });
   }
+}
+
+// src/mochi/phone-selection.ts
+function phoneContext(value) {
+  if (value === undefined)
+    return;
+  const p = value;
+  if (!p || [p.chatId, p.characterId, p.deviceOwnerActorId].some((v) => typeof v !== "string" || !v || v.length > 180))
+    throw new Error("Invalid Mochi phone identity.");
+  return p;
+}
+function storedPhoneKey(phone, raw) {
+  if (!raw || raw.chatId !== phone.chatId || raw.characterId !== phone.characterId)
+    return;
+  const owner = phone.deviceOwnerActorId;
+  if (owner !== raw.pocketPersonaActorId && ![...Array.isArray(raw.contacts) ? raw.contacts : [], ...Array.isArray(raw.discoveredActors) ? raw.discoveredActors : []].some((a) => a.id === owner))
+    return;
+  return [phone.chatId, phone.characterId, owner].map(encodeURIComponent).join("::");
 }
 
 // src/mochi/service.ts
@@ -633,6 +686,13 @@ class MochiService {
   host;
   makeId;
   now;
+  resolvePhone = async () => {
+    return;
+  };
+  async phoneKey(user, input) {
+    const phone = phoneContext(input);
+    return phone ? this.resolvePhone(user, phone) : undefined;
+  }
   backgroundEnabled = async () => false;
   reserveAutomatic = async () => true;
   releaseAutomatic = () => {};
@@ -671,8 +731,9 @@ class MochiService {
   account(userId) {
     return text(userId, 180, true);
   }
-  async accountsState(userId) {
+  async accountsState(userId, phone) {
     const user = identifier(userId), bank = await this.fictionalAccounts.bank(user);
+    const key = await this.phoneKey(user, phone), selection = key ? bank.phones?.[key] : undefined;
     const associations = new Map(bank.accounts.map((a) => [a.id, []]));
     const warnings = [];
     for (const file of await this.host.userStorage.list(ROOT, user)) {
@@ -693,18 +754,18 @@ class MochiService {
     }
     const choices = await this.state(user);
     const avatars = this.host.images && this.host.permissions.has("images") ? (await this.host.images.list({ userId: user, limit: 100, offset: 0, specificity: "thumbnail" })).data.filter((a) => /^image\/(png|jpeg|webp|gif)$/.test(a.mime_type)).map((a) => ({ id: entityId(a.id), name: String(a.original_filename || "Portrait").slice(0, 120), url: `/api/v1/images/${entityId(a.id)}` })) : [];
-    return { ...bank, accounts: bank.accounts.map((a) => ({ ...a, roomIds: associations.get(a.id).sort() })), personas: choices.personas, avatars, canUploadAvatar: !!this.host.images && this.host.permissions.has("images"), warnings };
+    return { ...bank, phone: { supported: !!key, preference: key ? selection?.preference || "last-used" : bank.startupPreference || "last-used", lastAccountId: key ? selection?.lastAccountId || "" : bank.selectedAccountId }, accounts: bank.accounts.map((a) => ({ ...a, roomIds: associations.get(a.id).sort() })), personas: choices.personas, avatars, canUploadAvatar: !!this.host.images && this.host.permissions.has("images"), warnings };
   }
-  abortFictional(userId, accountId, includeServer) {
+  abortFictional(userId, accountId, includeServer, phoneKey) {
     if (!accountId)
       return;
     for (const [key, job] of this.jobs)
-      if (JSON.parse(key)[0] === userId && job.accountId === accountId && (includeServer || !job.requestId.startsWith("server_")))
+      if (JSON.parse(key)[0] === userId && job.accountId === accountId && (phoneKey === undefined || job.phoneKey === phoneKey) && (includeServer || !job.requestId.startsWith("server_")))
         job.controller.abort();
     for (const [key, queued] of this.pending)
       if (JSON.parse(key)[0] === userId) {
         for (const job of queued)
-          if (job.accountId === accountId)
+          if (job.accountId === accountId && (phoneKey === undefined || job.phoneKey === phoneKey))
             job.controller.abort();
       }
   }
@@ -714,7 +775,8 @@ class MochiService {
       job.controller.abort();
   }
   async selectAccount(userId, input) {
-    await this.fictionalAccounts.select(userId, input, (previous) => this.abortFictional(userId, previous, false));
+    const key = await this.phoneKey(userId, input.phone);
+    await this.fictionalAccounts.select(userId, input, (previous) => this.abortFictional(userId, previous, false, key), key);
   }
   async archiveAccount(userId, input) {
     await this.fictionalAccounts.archive(userId, input, () => this.abortFictional(userId, input.accountId, true));
@@ -1380,73 +1442,83 @@ class MochiService {
   async message(userId, input, regenerate = false) {
     const user = this.account(userId), id = roomId(input.roomId), requestId = entityId(input.requestId);
     const key = this.jobKey(user, id), controller = new AbortController;
+    let phoneKey;
     const waiting = this.pending.get(key) || new Set;
-    const queued = { requestId, controller, accountId: input.accountId };
+    const queued = { requestId, controller, accountId: input.accountId, phoneKey };
     waiting.add(queued);
     this.pending.set(key, waiting);
-    const launched = await this.locked(user, id, async () => {
-      const room = await this.read(user, id, input.accountId);
-      if (room.receipts.includes(requestId))
-        return null;
-      if (this.jobs.has(key))
-        throw new Error("A reply is already running in this room. Wait or stop it first.");
-      if (room.revision !== input.revision)
-        throw new Error("This room changed elsewhere. Refresh before sending again.");
-      const targetId = regenerate ? entityId(input.messageId) : "";
-      if (regenerate && input.confirmed !== true)
-        throw new Error("Confirm reroll first; later messages will remain unchanged.");
-      const targetIndex = regenerate ? this.messageIndex(room, targetId) : -1;
-      const target = regenerate ? room.messages[targetIndex] : null;
-      if (target && (target.role !== "assistant" || !target.characterId))
-        throw new Error("Only character messages can be regenerated.");
-      const content = regenerate ? "" : text(input.content ?? "", 32000);
-      const responder = target ? entityId(target.characterId) : input.responder === "auto" || !input.responder ? "auto" : entityId(input.responder);
-      if (responder !== "auto" && !room.characterIds.includes(responder))
-        throw new Error("The selected responder is not in this room.");
-      if (content)
-        room.messages.push({ id: crypto.randomUUID(), role: "user", content, name: room.persona.name, avatarUrl: room.persona.avatarUrl, createdAt: new Date().toISOString(), requestId });
-      if (content && room.runtime?.idle) {
-        const idle = room.runtime.idle;
-        idle.periodId = requestId;
-        idle.startedAt = this.now();
-        idle.delivered = 0;
-        idle.opportunities = 0;
-        idle.nextDueAt = Math.max(this.now() + 5400000, idle.lastDeliveredAt + 5400000);
-        for (const j of room.runtime.jobs)
-          if ((j.kind === "idle" || j.kind === "response") && !TERMINAL.has(j.status)) {
-            j.status = "cancelled";
-            delete j.draft;
-            delete j.additional;
-          }
-      }
-      room.receipts.push(requestId);
-      room.revision++;
-      room.updatedAt = new Date().toISOString();
-      await this.persist(user, room);
-      this.host.sendToFrontend({ type: "mochi:accepted", requestId, roomId: id }, user);
-      const mode = room.settings.responseMode, natural = Boolean(content && mode === "natural" && responder === "auto");
-      let generate = (!content || (mode ? mode !== "manual" && !!room.runtime?.enabled && await this.backgroundEnabled(user) : room.settings.autoReply)) && !controller.signal.aborted;
-      if (generate && !regenerate && minimumDelay(room, responder, this.now()) > 0) {
-        generate = false;
-        if (!room.runtime?.enabled || !await this.backgroundEnabled(user))
-          throw new Error("This character is unavailable. Enable account and room background messaging to queue delayed replies.");
-        for (const job of room.runtime.jobs)
-          if (job.kind === "response" && !TERMINAL.has(job.status)) {
-            job.status = "cancelled";
-            delete job.draft;
-            delete job.additional;
-          }
-        if (room.runtime.jobs.length >= MAX_JOBS || room.runtime.jobs.filter((j) => !TERMINAL.has(j.status)).length >= 4)
-          throw new Error("The delayed-response queue is full; your user message is saved.");
-        const now = this.now(), delay = minimumDelay(room, responder, now), dueAt = now + (Number.isFinite(delay) ? delay : 0);
-        room.runtime.jobs.push({ id: `response_${requestId}`, kind: "response", createdAt: now, dueAt, expiresAt: now + 86400000 + (Number.isFinite(delay) ? delay : 0), revision: room.revision, responder, status: "queued", attempts: 0, nextAttemptAt: dueAt });
+    const selectedOnPhone = async () => {
+      if (phoneKey && input.accountId && (await this.fictionalAccounts.bank(user)).phones?.[phoneKey]?.lastAccountId !== input.accountId)
+        throw new Error("The Mochi account on this phone changed; refresh before sending.");
+    };
+    const launched = await this.phoneKey(user, input.phone).then((resolved) => {
+      phoneKey = resolved;
+      queued.phoneKey = resolved;
+      return this.locked(user, id, async () => {
+        await selectedOnPhone();
+        const room = await this.read(user, id, input.accountId);
+        if (room.receipts.includes(requestId))
+          return null;
+        if (this.jobs.has(key))
+          throw new Error("A reply is already running in this room. Wait or stop it first.");
+        if (room.revision !== input.revision)
+          throw new Error("This room changed elsewhere. Refresh before sending again.");
+        const targetId = regenerate ? entityId(input.messageId) : "";
+        if (regenerate && input.confirmed !== true)
+          throw new Error("Confirm reroll first; later messages will remain unchanged.");
+        const targetIndex = regenerate ? this.messageIndex(room, targetId) : -1;
+        const target = regenerate ? room.messages[targetIndex] : null;
+        if (target && (target.role !== "assistant" || !target.characterId))
+          throw new Error("Only character messages can be regenerated.");
+        const content = regenerate ? "" : text(input.content ?? "", 32000);
+        const responder = target ? entityId(target.characterId) : input.responder === "auto" || !input.responder ? "auto" : entityId(input.responder);
+        if (responder !== "auto" && !room.characterIds.includes(responder))
+          throw new Error("The selected responder is not in this room.");
+        if (content)
+          room.messages.push({ id: crypto.randomUUID(), role: "user", content, name: room.persona.name, avatarUrl: room.persona.avatarUrl, createdAt: new Date().toISOString(), requestId });
+        if (content && room.runtime?.idle) {
+          const idle = room.runtime.idle;
+          idle.periodId = requestId;
+          idle.startedAt = this.now();
+          idle.delivered = 0;
+          idle.opportunities = 0;
+          idle.nextDueAt = Math.max(this.now() + 5400000, idle.lastDeliveredAt + 5400000);
+          for (const j of room.runtime.jobs)
+            if ((j.kind === "idle" || j.kind === "response") && !TERMINAL.has(j.status)) {
+              j.status = "cancelled";
+              delete j.draft;
+              delete j.additional;
+            }
+        }
+        room.receipts.push(requestId);
+        room.revision++;
+        room.updatedAt = new Date().toISOString();
         await this.persist(user, room);
-      }
-      if (generate && regenerate && minimumDelay(room, responder, this.now()) > 0)
-        throw new Error("The selected character is unavailable for an immediate reroll.");
-      if (generate)
-        this.jobs.set(key, { requestId, controller, accountId: room.accountId });
-      return { room, responder, generate, natural, targetId, promptRoom: regenerate ? { ...room, messages: room.messages.slice(0, targetIndex) } : room };
+        this.host.sendToFrontend({ type: "mochi:accepted", requestId, roomId: id }, user);
+        const mode = room.settings.responseMode, natural = Boolean(content && mode === "natural" && responder === "auto");
+        let generate = (!content || (mode ? mode !== "manual" && !!room.runtime?.enabled && await this.backgroundEnabled(user) : room.settings.autoReply)) && !controller.signal.aborted;
+        if (generate && !regenerate && minimumDelay(room, responder, this.now()) > 0) {
+          generate = false;
+          if (!room.runtime?.enabled || !await this.backgroundEnabled(user))
+            throw new Error("This character is unavailable. Enable account and room background messaging to queue delayed replies.");
+          for (const job of room.runtime.jobs)
+            if (job.kind === "response" && !TERMINAL.has(job.status)) {
+              job.status = "cancelled";
+              delete job.draft;
+              delete job.additional;
+            }
+          if (room.runtime.jobs.length >= MAX_JOBS || room.runtime.jobs.filter((j) => !TERMINAL.has(j.status)).length >= 4)
+            throw new Error("The delayed-response queue is full; your user message is saved.");
+          const now = this.now(), delay = minimumDelay(room, responder, now), dueAt = now + (Number.isFinite(delay) ? delay : 0);
+          room.runtime.jobs.push({ id: `response_${requestId}`, kind: "response", createdAt: now, dueAt, expiresAt: now + 86400000 + (Number.isFinite(delay) ? delay : 0), revision: room.revision, responder, status: "queued", attempts: 0, nextAttemptAt: dueAt });
+          await this.persist(user, room);
+        }
+        if (generate && regenerate && minimumDelay(room, responder, this.now()) > 0)
+          throw new Error("The selected character is unavailable for an immediate reroll.");
+        if (generate)
+          this.jobs.set(key, { requestId, controller, accountId: room.accountId, phoneKey });
+        return { room, responder, generate, natural, targetId, promptRoom: regenerate ? { ...room, messages: room.messages.slice(0, targetIndex) } : room };
+      });
     }).finally(() => {
       waiting.delete(queued);
       if (!waiting.size && this.pending.get(key) === waiting)
@@ -1471,6 +1543,7 @@ class MochiService {
       const reply = await generateMochiReply(this.host, launched.promptRoom, user, launched.responder, controller.signal, eligibleResponders(launched.room, launched.responder, this.now()).filter((c) => delayFor(launched.room, c, this.now()) === 0), launched.natural);
       await this.locked(user, id, async () => {
         controller.signal.throwIfAborted();
+        await selectedOnPhone();
         const current = await this.read(user, id, input.accountId);
         if (current.revision !== launched.room.revision || this.jobs.get(key)?.controller !== controller)
           throw new Error("The room changed during generation; the reply was discarded.");
@@ -1567,11 +1640,13 @@ class MochiService {
           await this.archiveAccount(userId, payload);
         else if (payload.type === "mochi:account_restore")
           await this.fictionalAccounts.restore(userId, payload);
+        else if (payload.type === "mochi:account_startup")
+          await this.fictionalAccounts.startup(userId, payload, await this.phoneKey(userId, payload.phone));
         else if (payload.type === "mochi:account_avatar_upload")
           uploadedAvatarId = await this.fictionalAccounts.uploadAvatar(userId, payload.dataUrl);
         else if (payload.type !== "mochi:accounts")
           throw new Error("Unsupported fictional account action.");
-        this.host.sendToFrontend({ type: "mochi:accounts", requestId: payload.requestId, createdAccountId, uploadedAvatarId, state: await this.accountsState(userId) }, userId);
+        this.host.sendToFrontend({ type: "mochi:accounts", requestId: payload.requestId, createdAccountId, uploadedAvatarId, state: await this.accountsState(userId, payload.phone) }, userId);
         return;
       }
       if (payload.type === "mochi:send") {
@@ -5018,6 +5093,7 @@ function latestArmedReference(state) {
 
 // src/backend.ts
 var mochi = new MochiService(spindle);
+mochi.resolvePhone = async (user, phone) => storedPhoneKey(phone, await spindle.userStorage.getJson(statePath(phone.chatId, phone.characterId), { userId: user, fallback: null }));
 var mochiScheduler = new MochiScheduler(spindle, mochi, Date.now, (message) => spindle.log.warn(message));
 mochiScheduler.start();
 function stringArray(value, limit, maxLength) {

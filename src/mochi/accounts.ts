@@ -10,6 +10,8 @@ export interface MochiAccount {
 }
 export interface MochiAccountBank {
   version: 1; ownerId: string; revision: number; selectedAccountId: string; accounts: MochiAccount[]
+  startupPreference?: 'last-used' | 'picker'
+  phones?: Record<string, {lastAccountId: string; preference: 'last-used'|'picker'}>
 }
 export function fictionalAccountId(value: unknown): string {
   if (typeof value !== 'string' || !/^account_[a-f0-9]{32}$/.test(value)) throw new Error('Invalid fictional account identifier.')
@@ -55,6 +57,8 @@ export class MochiAccounts {
       for (const date of [account.createdAt, account.updatedAt]) if (typeof date !== 'string' || !Number.isFinite(Date.parse(date))) throw new Error('Invalid fictional account metadata; stored data was preserved.')
     }
     if (bank.selectedAccountId !== '' && !bank.accounts.some(a => a.id === bank.selectedAccountId && !a.archived)) throw new Error('Invalid fictional account selection; stored data was preserved.')
+    if(bank.startupPreference!==undefined&&!['last-used','picker'].includes(bank.startupPreference))throw new Error('Invalid startup preference; stored data was preserved.')
+    if(bank.phones!==undefined){if(!bank.phones||typeof bank.phones!=='object'||Array.isArray(bank.phones)||Object.keys(bank.phones).length>1000)throw new Error('Damaged phone selections; stored data was preserved.');for(const [key,p]of Object.entries(bank.phones)){if(key.length>1700||key.split('::').length!==3||!p||!['last-used','picker'].includes(p.preference))throw new Error('Invalid saved phone selection; stored data was preserved.');if(p.lastAccountId!=='')fictionalAccountId(p.lastAccountId)}}
     return bank
   }
   async get(user: string, id: unknown, includeArchived = false): Promise<MochiAccount> {
@@ -110,15 +114,19 @@ export class MochiAccounts {
       await this.save(user, bank); return account
     })
   }
-  async select(user: string, input: any, switched: (previous: string) => void): Promise<void> {
+  async select(user: string, input: any, switched: (previous: string) => void, phoneKey?: string): Promise<void> {
     await this.guard(user, async () => {
       const bank = await this.bank(user), id = fictionalAccountId(input.accountId)
       if (!bank.accounts.some(a => a.id === id && !a.archived)) throw new Error('This fictional account is not available.')
       if (input.revision !== bank.revision) throw new Error('Account selection changed elsewhere. Refresh before switching.')
-      const previous = bank.selectedAccountId
-      bank.selectedAccountId = id; await this.save(user, bank)
+      const previous = phoneKey ? bank.phones?.[phoneKey]?.lastAccountId || '' : bank.selectedAccountId
+      if(phoneKey){bank.phones||={};if(!bank.phones[phoneKey]&&Object.keys(bank.phones).length>=1000)throw new Error('Phone selection limit reached.');bank.phones[phoneKey]={lastAccountId:id,preference:bank.phones[phoneKey]?.preference||'last-used'}}else bank.selectedAccountId = id
+      await this.save(user, bank)
       if (previous !== id) switched(previous)
     })
+  }
+  async startup(user:string,input:any,phoneKey?:string):Promise<void>{
+    await this.guard(user,async()=>{const bank=await this.bank(user);if(input.revision!==bank.revision)throw new Error('Startup preference changed elsewhere. Refresh first.');if(!['last-used','picker'].includes(input.preference))throw new Error('Invalid startup preference.');if(phoneKey){bank.phones||={};if(!bank.phones[phoneKey]&&Object.keys(bank.phones).length>=1000)throw new Error('Phone selection limit reached.');bank.phones[phoneKey]={lastAccountId:bank.phones[phoneKey]?.lastAccountId||'',preference:input.preference}}else bank.startupPreference=input.preference;await this.save(user,bank)})
   }
   async archive(user: string, input: any, changed: () => void): Promise<void> {
     await this.guard(user, async () => {
