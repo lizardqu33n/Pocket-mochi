@@ -12,7 +12,7 @@ export interface MochiMessage {
   editedAt?: string
   previousVersions?: Array<{ content: string; name: string; avatarUrl: string; savedAt: string }>
 }
-export interface MochiNotification { id: string; roomId: string; messageId: string; title: string; roomTitle: string; body: string; avatarUrl: string; createdAt: string; read: boolean }
+export interface MochiNotification { id: string; roomId: string; messageId: string; title: string; roomTitle: string; body: string; avatarUrl: string; createdAt: string; read: boolean; accountId?: string }
 export interface MochiSettings {
   aiBehavior?: boolean
   responseMode?: 'natural' | 'instant' | 'manual'
@@ -22,6 +22,7 @@ export interface MochiSettings {
 export const defaultMochiSettings = (): MochiSettings => ({ autoReply: true, connectionId: '', contextTokens: 8192, outputTokens: 1200, instructions: '', characterNames: {} })
 export interface MochiRoom {
   version: 1
+  accountId?: string
   id: string
   revision: number
   title: string
@@ -38,6 +39,7 @@ export interface MochiRoom {
   background?: import('./scheduling.js').PublicRuntime
 }
 export interface MochiState {
+  accountId?: string
   backgroundEnabled?: boolean
   rooms: MochiRoom[]
   characters: MochiCharacter[]

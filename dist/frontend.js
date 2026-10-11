@@ -381,7 +381,7 @@ class MochiView {
     this.sheets.clear();
     const generationRequestId = this.ownGenerations.get(this.roomId);
     if (generationRequestId)
-      this.send({ type: "mochi:cancel", roomId: this.roomId, generationRequestId });
+      this.send({ type: "mochi:cancel", accountId: this.state?.accountId, roomId: this.roomId, generationRequestId });
   }
   destroy() {
     this.leave();
@@ -407,10 +407,12 @@ class MochiView {
       this.error = "No response received. Refresh the inbox to check whether your room was saved before trying again.";
       this.redraw();
     }, 30000);
-    this.send({ type, requestId: this.request, ...values });
+    this.send({ type, requestId: this.request, accountId: this.state?.accountId, ...values });
     this.redraw();
   }
   receive(payload) {
+    if (["mochi:notification", "mochi:notifications", "mochi:room_updated", "mochi:job_finished"].includes(payload?.type) && (payload.accountId ?? payload.notification?.accountId ?? payload.room?.accountId) !== this.state?.accountId)
+      return true;
     if (payload?.type === "mochi:room_updated") {
       const room = this.state?.rooms.find((r) => r.id === payload.room?.id);
       if (room && payload.room.revision > room.revision && !this.editing && !this.creating) {
@@ -1098,7 +1100,7 @@ class MochiView {
     unread.forEach((n) => this.acknowledged.add(n.id));
     const idForRequest = requestId("mochi_read");
     this.acknowledgementRequests.set(idForRequest, unread.map((n) => n.id));
-    this.send({ type: "mochi:notification_read", requestId: idForRequest, roomId: id, notificationIds: unread.map((n) => n.id) });
+    this.send({ type: "mochi:notification_read", requestId: idForRequest, accountId: this.state?.accountId, roomId: id, notificationIds: unread.map((n) => n.id) });
   }
   openRoom(id) {
     this.notificationsOpen = false;
@@ -1221,7 +1223,7 @@ class MochiView {
     const stop = action("Stop reply", "stop", true);
     stop.disabled = !job;
     stop.hidden = !job;
-    stop.onclick = () => this.send({ type: "mochi:cancel", roomId: room.id, generationRequestId: job });
+    stop.onclick = () => this.send({ type: "mochi:cancel", accountId: this.state?.accountId, roomId: room.id, generationRequestId: job });
     form.onsubmit = (event) => {
       event.preventDefault();
       if (!this.busy && !job)

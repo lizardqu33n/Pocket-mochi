@@ -4762,7 +4762,7 @@ async function handleFrontend(payload: unknown, userId?: string): Promise<void> 
       if (!userId) return
       try {
         await mochiScheduler.handle(payload, userId)
-        spindle.sendToFrontend({ type: 'mochi:state', requestId: payload.requestId, state: await mochi.state(userId) }, userId)
+        spindle.sendToFrontend({ type: 'mochi:state', requestId: payload.requestId, state: await mochi.state(userId, payload.accountId) }, userId)
       } catch { spindle.sendToFrontend({ type: 'mochi:error', requestId: payload.requestId, message: 'Unable to update background messaging. Check account opt-in, room sources, due time and storage.' }, userId) }
       return
     }

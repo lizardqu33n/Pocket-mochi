@@ -60,7 +60,7 @@ export class MochiScheduler {
       if (enabled) this.blocked.delete(user)
     })
     if (!enabled) for (const room of await this.service.scheduledRooms(user)) {
-      for (const job of room.runtime?.jobs || []) if (!TERMINAL.has(job.status)) await this.service.cancelScheduled(user, room.id, job.id)
+      for (const job of room.runtime?.jobs || []) if (!TERMINAL.has(job.status)) await this.service.cancelScheduled(user, room.id, job.id, room.accountId)
     }
   }
   private async reserve(user: string, roomId: string): Promise<boolean> {
@@ -121,7 +121,7 @@ export class MochiScheduler {
       await this.service.schedule(userId, payload, this.now())
     } else if (payload.type === 'mochi:presence') await this.service.configurePresence(userId,payload)
     else if(payload.type==='mochi:idle') await this.service.configureIdle(userId,payload)
-    else if (payload.type === 'mochi:schedule_cancel') await this.service.cancelScheduled(userId, payload.roomId, payload.occurrenceId)
+    else if (payload.type === 'mochi:schedule_cancel') await this.service.cancelScheduled(userId, payload.roomId, payload.occurrenceId, payload.accountId)
     else throw new Error('Unsupported scheduling action.')
   }
 }
