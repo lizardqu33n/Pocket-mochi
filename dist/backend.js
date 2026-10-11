@@ -334,6 +334,21 @@ class MochiService {
     room.receipts ||= [];
     if (!Array.isArray(room.receipts) || room.receipts.some((id) => typeof id !== "string"))
       throw new Error("Invalid saved send receipts.");
+    room.notifications ||= [];
+    if (!Array.isArray(room.notifications) || room.notifications.some((n) => !n || n.roomId !== id || typeof n.read !== "boolean" || typeof n.messageId !== "string" || n.id !== n.messageId))
+      throw new Error("Invalid saved Mochi notifications; the file was preserved.");
+    const noticeIds = new Set;
+    for (const n of room.notifications) {
+      entityId(n.id);
+      text(n.title, 120, true);
+      text(n.roomTitle, 120, true);
+      text(n.body, 220);
+      text(n.avatarUrl, 500);
+      text(n.createdAt, 80, true);
+      if (noticeIds.has(n.id) || !room.messages.some((m) => m?.id === n.messageId && m.role === "assistant"))
+        throw new Error("Invalid saved notification reference; the file was preserved.");
+      noticeIds.add(n.id);
+    }
     return room;
   }
   async persist(user, room, signal) {
@@ -385,7 +400,7 @@ class MochiService {
       if (await this.host.userStorage.exists(pathFor(id), user))
         throw new Error("Room identifier collision; retry creation.");
       const now = new Date().toISOString();
-      const room = { version: 1, id, revision: 1, title: text(input.title, 120, true), characterIds: await this.membership(user, input.characterIds), persona: await this.persona(user, input.persona), messages: [], createdAt: now, updatedAt: now, settings: defaultMochiSettings(), receipts: [] };
+      const room = { version: 1, id, revision: 1, title: text(input.title, 120, true), characterIds: await this.membership(user, input.characterIds), persona: await this.persona(user, input.persona), messages: [], createdAt: now, updatedAt: now, settings: defaultMochiSettings(), receipts: [], notifications: [] };
       await this.persist(user, room);
       return room;
     });
@@ -446,7 +461,7 @@ class MochiService {
       if (job)
         jobs[room.id] = job.requestId;
     }
-    return { rooms: rooms.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)), characters: characters.map((c) => ({ id: c.id, name: c.name, avatarUrl: c.image_id ? `/api/v1/images/${c.image_id}` : "" })), personas: choices, warnings, connections, jobs };
+    return { rooms: rooms.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)), characters: characters.map((c) => ({ id: c.id, name: c.name, avatarUrl: c.image_id ? `/api/v1/images/${c.image_id}` : "" })), personas: choices, warnings, connections, jobs, notifications: rooms.flatMap((r) => r.notifications || []).sort((a, b) => b.createdAt.localeCompare(a.createdAt)) };
   }
   async cancel(userId, id, requestId) {
     const user = this.account(userId);
@@ -457,7 +472,65 @@ class MochiService {
     else
       await this.read(user, id);
   }
-  async message(userId, input) {
+  async acknowledge(userId, input) {
+    const user = this.account(userId), id = roomId(input.roomId);
+    if (input.notificationId !== undefined)
+      entityId(input.notificationId);
+    await this.locked(user, id, async () => {
+      const room = await this.read(user, id);
+      let changed = false;
+      for (const n of room.notifications)
+        if (!n.read && (!input.notificationId || n.id === input.notificationId)) {
+          n.read = true;
+          changed = true;
+        }
+      if (changed)
+        await this.persist(user, room);
+    });
+  }
+  async action(userId, input) {
+    const user = this.account(userId), id = roomId(input.roomId), requestId = entityId(input.requestId), messageId = entityId(input.messageId);
+    if (!["edit", "delete"].includes(input.action))
+      throw new Error("Unsupported message action.");
+    if (input.action === "delete" && input.confirmed !== true)
+      throw new Error("Confirm message deletion first.");
+    const content = input.action === "edit" ? text(input.content, 32000, true) : "";
+    await this.locked(user, id, async () => {
+      const room = await this.read(user, id);
+      if (room.receipts.includes(requestId))
+        return;
+      if (room.revision !== input.revision)
+        throw new Error("This room changed elsewhere. Refresh before changing a message.");
+      const index = this.messageIndex(room, messageId), message = room.messages[index];
+      if (input.action === "edit") {
+        room.messages[index] = { ...message, content, editedAt: new Date().toISOString(), previousVersions: [...message.previousVersions || [], this.previousVersion(message)] };
+        for (const n of room.notifications)
+          if (n.messageId === messageId)
+            n.body = content.slice(0, 220);
+      } else {
+        room.messages.splice(index, 1);
+        room.notifications = room.notifications.filter((n) => n.messageId !== messageId);
+      }
+      this.jobs.get(this.jobKey(user, id))?.controller.abort();
+      room.receipts.push(requestId);
+      room.revision++;
+      room.updatedAt = new Date().toISOString();
+      await this.persist(user, room);
+    });
+  }
+  messageIndex(room, id) {
+    const matches = room.messages.map((m, i) => m?.id === id ? i : -1).filter((i) => i >= 0);
+    if (matches.length !== 1)
+      throw new Error("This message is unavailable or has an ambiguous identifier.");
+    const m = room.messages[matches[0]];
+    if (!["user", "assistant"].includes(m.role) || typeof m.content !== "string" || m.previousVersions !== undefined && !Array.isArray(m.previousVersions))
+      throw new Error("Unsupported message; history was preserved.");
+    return matches[0];
+  }
+  previousVersion(m) {
+    return { content: m.content, name: m.name, avatarUrl: m.avatarUrl, savedAt: new Date().toISOString() };
+  }
+  async message(userId, input, regenerate = false) {
     const user = this.account(userId), id = roomId(input.roomId), requestId = entityId(input.requestId);
     const key = this.jobKey(user, id), controller = new AbortController;
     const launched = await this.locked(user, id, async () => {
@@ -468,8 +541,15 @@ class MochiService {
         throw new Error("A reply is already running in this room. Wait or stop it first.");
       if (room.revision !== input.revision)
         throw new Error("This room changed elsewhere. Refresh before sending again.");
-      const content = text(input.content ?? "", 32000);
-      const responder = input.responder === "auto" || !input.responder ? "auto" : entityId(input.responder);
+      const targetId = regenerate ? entityId(input.messageId) : "";
+      if (regenerate && input.confirmed !== true)
+        throw new Error("Confirm reroll first; later messages will remain unchanged.");
+      const targetIndex = regenerate ? this.messageIndex(room, targetId) : -1;
+      const target = regenerate ? room.messages[targetIndex] : null;
+      if (target && (target.role !== "assistant" || !target.characterId))
+        throw new Error("Only character messages can be regenerated.");
+      const content = regenerate ? "" : text(input.content ?? "", 32000);
+      const responder = target ? entityId(target.characterId) : input.responder === "auto" || !input.responder ? "auto" : entityId(input.responder);
       if (responder !== "auto" && !room.characterIds.includes(responder))
         throw new Error("The selected responder is not in this room.");
       if (content)
@@ -481,7 +561,7 @@ class MochiService {
       const generate = !content || room.settings.autoReply;
       if (generate)
         this.jobs.set(key, { requestId, controller });
-      return { room, responder, generate };
+      return { room, responder, generate, targetId, promptRoom: regenerate ? { ...room, messages: room.messages.slice(0, targetIndex) } : room };
     });
     const publish = async (accepted) => this.host.sendToFrontend({ type: "mochi:state", requestId, accepted, state: await this.state(user) }, user);
     if (!launched?.generate) {
@@ -491,7 +571,7 @@ class MochiService {
     const timeout = setTimeout(() => controller.abort(), 180000);
     try {
       await publish(true);
-      const reply = await generateMochiReply(this.host, launched.room, user, launched.responder, controller.signal);
+      const reply = await generateMochiReply(this.host, launched.promptRoom, user, launched.responder, controller.signal);
       await this.locked(user, id, async () => {
         controller.signal.throwIfAborted();
         const current = await this.read(user, id);
@@ -501,16 +581,31 @@ class MochiService {
         if (!await this.host.characters.get(reply.character.id, user))
           throw new Error("The responder is no longer available.");
         const name = current.settings.characterNames[reply.character.id] || reply.character.name;
-        current.messages.push({ id: crypto.randomUUID(), role: "assistant", characterId: reply.character.id, name, avatarUrl: reply.character.image_id ? `/api/v1/images/${entityId(reply.character.image_id)}` : "", content: reply.text, createdAt: new Date().toISOString(), requestId });
+        let notification;
+        if (launched.targetId) {
+          const index = this.messageIndex(current, launched.targetId), previous = current.messages[index];
+          current.messages[index] = { ...previous, content: reply.text, editedAt: new Date().toISOString(), previousVersions: [...previous.previousVersions || [], this.previousVersion(previous)] };
+          for (const n of current.notifications)
+            if (n.messageId === previous.id)
+              n.body = reply.text.slice(0, 220);
+        } else {
+          const message = { id: crypto.randomUUID(), role: "assistant", characterId: reply.character.id, name, avatarUrl: reply.character.image_id ? `/api/v1/images/${entityId(reply.character.image_id)}` : "", content: reply.text, createdAt: new Date().toISOString(), requestId };
+          current.messages.push(message);
+          notification = { id: message.id, messageId: message.id, roomId: id, roomTitle: current.title, title: name, body: message.content.slice(0, 220), avatarUrl: message.avatarUrl, createdAt: message.createdAt, read: false };
+          current.notifications.push(notification);
+        }
         current.revision++;
         current.updatedAt = new Date().toISOString();
         controller.signal.throwIfAborted();
         await this.persist(user, current, controller.signal);
+        if (notification)
+          this.host.sendToFrontend({ type: "mochi:notification", notification }, user);
       });
     } finally {
       clearTimeout(timeout);
       if (this.jobs.get(key)?.controller === controller)
         this.jobs.delete(key);
+      this.host.sendToFrontend({ type: "mochi:job_finished", roomId: id, requestId }, user);
       await publish(false);
     }
   }
@@ -523,6 +618,17 @@ class MochiService {
         await this.message(userId, payload);
         return;
       }
+      if (payload.type === "mochi:regenerate") {
+        await this.message(userId, payload, true);
+        return;
+      }
+      if (payload.type === "mochi:message_action")
+        await this.action(userId, payload);
+      else if (payload.type === "mochi:notification_read") {
+        await this.acknowledge(userId, payload);
+        this.host.sendToFrontend({ type: "mochi:notifications", requestId: payload.requestId, notifications: (await this.state(userId)).notifications }, userId);
+        return;
+      }
       if (payload.type === "mochi:cancel") {
         await this.cancel(userId, payload.roomId, payload.generationRequestId);
         return;
@@ -531,7 +637,7 @@ class MochiService {
         selectedRoomId = (await this.create(userId, payload)).id;
       else if (payload.type === "mochi:update")
         selectedRoomId = (await this.update(userId, payload)).id;
-      else if (payload.type !== "mochi:list")
+      else if (payload.type !== "mochi:list" && payload.type !== "mochi:message_action")
         throw new Error("Unsupported Mochi action.");
       this.host.sendToFrontend({ type: "mochi:state", requestId: payload.requestId, selectedRoomId, state: await this.state(userId) }, userId);
     } catch (error) {

@@ -6,6 +6,7 @@ import { MochiView } from '../src/mochi/view.js'
 import { JSDOM } from 'jsdom'
 import { buildMochiPrompt } from '../src/mochi/generation.js'
 import { defaultMochiSettings } from '../src/mochi/types.js'
+import { notificationBody, showMochiNotification } from '../src/mochi/notifications.js'
 
 function fixture() {
   const files = new Map<string, unknown>(), writes: string[] = [], responses: any[] = []
@@ -47,6 +48,173 @@ function messagingFixture() {
   }
   return { ...f, requests, create }
 }
+test('message actions preserve IDs, earlier versions, later history and deduplicate retries', async () => {
+  const f = messagingFixture(), room = await f.create({ autoReply: false })
+  await f.service.message('alice', { roomId: room.id, revision: room.revision, requestId: 'action_seed', content: 'Original user' })
+  let saved = await f.service.read('alice', room.id), message = saved.messages[0] as any
+  const edit = { roomId: room.id, revision: saved.revision, requestId: 'edit_once', messageId: message.id, action: 'edit', content: 'Edited user' }
+  await f.service.action('alice', edit)
+  await f.service.action('alice', edit)
+  saved = await f.service.read('alice', room.id)
+  expect(saved.messages).toHaveLength(1)
+  expect(saved.messages[0]).toMatchObject({ id: message.id, content: 'Edited user', name: 'Stable Alice', previousVersions: [{ content: 'Original user', name: 'Stable Alice', avatarUrl: '', savedAt: expect.any(String) }] })
+  await expect(f.service.action('alice', { ...edit, requestId: 'stale_edit' })).rejects.toThrow('changed')
+  await expect(f.service.action('bob', { ...edit, requestId: 'foreign_edit' })).rejects.toThrow('account')
+  await expect(f.service.action('alice', { ...edit, revision: saved.revision, requestId: 'empty_edit', content: '' })).rejects.toThrow()
+  await expect(f.service.action('alice', { ...edit, revision: saved.revision, requestId: 'path_edit', messageId: '../bad' })).rejects.toThrow('identifier')
+  await expect(f.service.action('alice', { ...edit, revision: saved.revision, requestId: 'missing_edit', messageId: 'unknown' })).rejects.toThrow('unavailable')
+  const remove = { ...edit, revision: saved.revision, requestId: 'delete_once', action: 'delete' }
+  await expect(f.service.action('alice', remove)).rejects.toThrow('Confirm')
+  await f.service.action('alice', { ...remove, confirmed: true })
+  await f.service.action('alice', { ...remove, confirmed: true })
+  expect((await f.service.read('alice', room.id)).messages).toHaveLength(0)
+})
+
+test('earlier reply rerolls use prior context, archive original text and preserve later messages exactly', async () => {
+  const f = messagingFixture(), room = await f.create()
+  await f.service.message('alice', { roomId: room.id, revision: room.revision, requestId: 'reroll_seed', content: 'Before target' })
+  let saved = await f.service.read('alice', room.id), target = saved.messages[1] as any
+  await f.service.message('alice', { roomId: room.id, revision: saved.revision, requestId: 'later_seed', content: 'Later content must not enter prompt' })
+  saved = await f.service.read('alice', room.id); const later = structuredClone(saved.messages.slice(2))
+  const input = { roomId: room.id, revision: saved.revision, messageId: target.id, requestId: 'reroll_once', confirmed: true }
+  await expect(f.service.message('bob', input, true)).rejects.toThrow('account')
+  await expect(f.service.message('alice', { ...input, confirmed: false }, true)).rejects.toThrow('Confirm')
+  await expect(f.service.message('alice', { ...input, messageId: (saved.messages[0] as any).id }, true)).rejects.toThrow('Only character')
+  f.host.generate!.quiet = async request => { f.requests.push(request); return { content: '{"speakerId":"c1","text":"Rerolled reply"}' } }
+  await f.service.message('alice', input, true)
+  await new MochiService(f.host).message('alice', input, true)
+  saved = await f.service.read('alice', room.id)
+  expect(saved.messages).toHaveLength(4)
+  expect(saved.messages[1]).toMatchObject({ id: target.id, createdAt: target.createdAt, name: target.name, avatarUrl: target.avatarUrl, content: 'Rerolled reply', previousVersions: [{ content: target.content, name: target.name, avatarUrl: target.avatarUrl, savedAt: expect.any(String) }] })
+  expect(saved.messages.slice(2)).toEqual(later)
+  expect(JSON.stringify(f.requests.at(-1).messages)).toContain('Before target')
+  expect(JSON.stringify(f.requests.at(-1).messages)).not.toContain(target.content)
+  expect(JSON.stringify(f.requests.at(-1).messages)).not.toContain('Later content')
+  expect(saved.notifications).toHaveLength(2)
+  expect(f.responses.filter(r => r.payload.type === 'mochi:notification')).toHaveLength(2)
+})
+
+test('concurrent actions reject conflicts and edits/deletes cancel stale rerolls without losing later history', async () => {
+  for (const action of ['edit', 'delete']) {
+    const f = messagingFixture(), room = await f.create()
+    await f.service.message('alice', { roomId: room.id, revision: room.revision, requestId: 'concurrency_seed', content: 'Hello' })
+    let saved = await f.service.read('alice', room.id), target = saved.messages[1] as any
+    let release!: (v: any) => void
+    f.host.generate!.quiet = async () => new Promise(resolve => { release = resolve })
+    const pending = f.service.message('alice', { roomId: room.id, revision: saved.revision, requestId: 'pending_reroll', messageId: target.id, confirmed: true }, true).catch(e => e)
+    for (let i = 0; i < 100 && !release; i++) await new Promise(resolve => setTimeout(resolve, 1))
+    saved = await f.service.read('alice', room.id)
+    const input = { roomId: room.id, revision: saved.revision, requestId: 'concurrent_a', messageId: target.id, action, content: 'Manual edit wins', confirmed: true }
+    const results = await Promise.allSettled([f.service.action('alice', input), f.service.action('alice', { ...input, requestId: 'concurrent_b' })])
+    expect(results.filter(r => r.status === 'fulfilled')).toHaveLength(1)
+    await expect(f.service.message('alice', { roomId: room.id, revision: saved.revision + 1, requestId: 'overlap', content: '' })).rejects.toThrow('already running')
+    release({ content: '{"speakerId":"c1","text":"Stale reply"}' }); await pending
+    saved = await f.service.read('alice', room.id)
+    expect(JSON.stringify(saved.messages)).not.toContain('Stale reply')
+    expect(saved.messages).toHaveLength(action === 'edit' ? 2 : 1)
+    if (action === 'edit') expect((saved.messages[1] as any).content).toBe('Manual edit wins')
+    expect((await f.service.state('alice')).jobs).toEqual({})
+  }
+})
+
+test('notifications persist only for new assistant messages, stay account scoped, and reads do not disrupt generation', async () => {
+  const f = messagingFixture(), room = await f.create({ autoReply: false })
+  await f.service.message('alice', { roomId: room.id, revision: room.revision, requestId: 'notice_user', content: 'User' })
+  let saved = await f.service.read('alice', room.id)
+  expect(saved.notifications).toHaveLength(0)
+  await f.service.message('alice', { roomId: room.id, revision: saved.revision, requestId: 'notice_reply', content: '' })
+  saved = await f.service.read('alice', room.id); const notice = saved.notifications![0]
+  expect(notice).toMatchObject({ title: 'Character', roomId: room.id, messageId: (saved.messages[1] as any).id, read: false })
+  expect((await f.service.state('bob')).notifications).toEqual([])
+  await expect(f.service.acknowledge('bob', { roomId: room.id })).rejects.toThrow('account')
+  await expect(f.service.acknowledge('alice', { roomId: room.id, notificationId: '../bad' })).rejects.toThrow()
+  let release!: (v: any) => void
+  f.host.generate!.quiet = async () => new Promise(resolve => { release = resolve })
+  const pending = f.service.message('alice', { roomId: room.id, revision: saved.revision, requestId: 'notice_delayed', content: '' })
+  for (let i = 0; i < 100 && !release; i++) await new Promise(resolve => setTimeout(resolve, 1))
+  const revision = (await f.service.read('alice', room.id)).revision
+  await f.service.acknowledge('alice', { roomId: room.id })
+  expect((await f.service.read('alice', room.id)).revision).toBe(revision)
+  release({ content: '{"speakerId":"c1","text":"Next message"}' }); await pending
+  saved = await f.service.read('alice', room.id)
+  expect(saved.notifications![0].read).toBe(true)
+  expect(saved.notifications![1].read).toBe(false)
+  expect((await new MochiService(f.host).state('alice')).notifications).toHaveLength(2)
+  await f.service.action('alice', { roomId: room.id, revision: saved.revision, messageId: notice.messageId, requestId: 'notice_delete', action: 'delete', confirmed: true })
+  expect((await f.service.state('alice')).notifications).toHaveLength(1)
+})
+
+test('failed action writes preserve committed messages and legacy room reads require no migration', async () => {
+  for (const fail of ['failWrite', 'failMove'] as const) {
+    const f = messagingFixture(), room = await f.create({ autoReply: false })
+    await f.service.message('alice', { roomId: room.id, revision: room.revision, requestId: 'failure_seed', content: 'Keep committed history' })
+    const saved = await f.service.read('alice', room.id), path = `alice:mochi/v1/rooms/${room.id}.json`
+    const legacy: any = structuredClone(saved); delete legacy.notifications; f.files.set(path, legacy)
+    const writes = f.writes.length
+    expect((await f.service.read('alice', room.id)).notifications).toEqual([])
+    expect(f.writes).toHaveLength(writes)
+    f[fail]()
+    await expect(f.service.action('alice', { roomId: room.id, revision: saved.revision, requestId: 'failure_action', messageId: (saved.messages[0] as any).id, action: 'edit', content: 'Do not commit this' })).rejects.toThrow()
+    expect((await f.service.read('alice', room.id)).messages).toEqual(saved.messages)
+    expect(f.files.get(path)).toEqual(legacy)
+  }
+})
+
+test('reroll cancellation and provider failures retain the original reply and do not create notices', async () => {
+  const f = messagingFixture(), room = await f.create()
+  await f.service.message('alice', { roomId: room.id, revision: room.revision, requestId: 'cancel_reroll_seed', content: 'Hello' })
+  let saved = await f.service.read('alice', room.id), target = structuredClone(saved.messages[1]) as any
+  let release!: (v: any) => void
+  f.host.generate!.quiet = async () => new Promise(resolve => { release = resolve })
+  const pending = f.service.message('alice', { roomId: room.id, revision: saved.revision, requestId: 'cancel_reroll', messageId: target.id, confirmed: true }, true).catch(e=>e)
+  for (let i=0;i<100&&!release;i++) await new Promise(resolve=>setTimeout(resolve,1))
+  await f.service.cancel('alice', room.id, 'cancel_reroll'); release({content:'{"speakerId":"c1","text":"Discarded"}'}); await pending
+  saved = await f.service.read('alice',room.id); expect(saved.messages[1]).toEqual(target)
+  expect(saved.notifications).toHaveLength(1)
+  f.host.generate!.quiet=async()=>({content:'invalid JSON'})
+  await expect(f.service.message('alice', {roomId:room.id,revision:saved.revision,requestId:'bad_reroll',messageId:target.id,confirmed:true},true)).rejects.toThrow('invalid message JSON')
+  saved=await f.service.read('alice',room.id); expect(saved.messages[1]).toEqual(target)
+  f.host.connections!.get=async()=>null
+  await expect(f.service.message('alice',{roomId:room.id,revision:saved.revision,requestId:'unowned_reroll',messageId:target.id,confirmed:true},true)).rejects.toThrow('account')
+  expect((await f.service.read('alice',room.id)).messages[1]).toEqual(target)
+  expect(f.responses.filter(r=>r.payload.type==='mochi:notification')).toHaveLength(1)
+})
+
+test('notification UI respects visibility/previews, deduplicates events, routes rooms and clears superseded jobs', async () => {
+  const dom = new JSDOM('<body><div id="shell"></div></body>'), before = globalThis.document
+  globalThis.document = dom.window.document
+  try {
+    const f = messagingFixture(), room = await f.create(), sent: any[] = [], notified: any[] = [], routes: any[] = []
+    let policy = { enabled: true, previews: false, visible: false }
+    const view = new MochiView(p => sent.push(p), () => {}, id => routes.push(id), () => policy, n => notified.push(n))
+    view.load(); view.receive({ type: 'mochi:state', requestId: sent[0].requestId, state: await f.service.state('alice') })
+    const n = { id: 'notice1', roomId: room.id, messageId: 'notice1', title: 'Real character', roomTitle: room.title, body: 'Private preview', avatarUrl: '', createdAt: new Date().toISOString(), read: false }
+    view.receive({ type: 'mochi:notification', notification: n }); view.receive({ type: 'mochi:notification', notification: n })
+    expect(notified).toHaveLength(1)
+    expect(notificationBody(n, false)).toBe('New character message')
+    expect(notificationBody(n, true)).toBe('Private preview')
+    const dismiss = showMochiNotification(document.getElementById('shell')!, n, false, () => view.openRoom(n.roomId))
+    const toast = document.querySelector<HTMLButtonElement>('.mochi-notification-toast')!
+    expect(toast.textContent).toContain('Real character')
+    expect(toast.textContent).not.toContain('Private preview')
+    toast.click(); dismiss(); expect(routes.at(-1)).toBe(room.id)
+    expect(sent.find(p => p.type === 'mochi:notification_read')).toMatchObject({ type: 'mochi:notification_read', roomId: room.id })
+    expect(sent.at(-1).type).toBe('mochi:list')
+    policy = { enabled: false, previews: false, visible: false }
+    view.receive({ type: 'mochi:notification', notification: { ...n, id: 'notice2' } })
+    expect(notified).toHaveLength(1)
+    expect(view.render().querySelector('[aria-label="Mochi notifications"]')).toBeNull()
+    policy = {enabled:true,previews:true,visible:true}
+    view.receive({type:'mochi:notification',notification:{...n,id:'visible_notice',messageId:'visible_notice'}})
+    expect(notified).toHaveLength(1)
+    expect(sent.filter(p=>p.type==='mochi:notification_read')).toHaveLength(2)
+    view.state!.jobs = { [room.id]: 'old_generation' }
+    view.receive({ type: 'mochi:job_finished', roomId: room.id, requestId: 'wrong_generation' }); expect(view.state!.jobs[room.id]).toBe('old_generation')
+    view.receive({ type: 'mochi:job_finished', roomId: room.id, requestId: 'old_generation' }); expect(view.state!.jobs[room.id]).toBeUndefined()
+    view.destroy()
+  } finally { globalThis.document = before; dom.window.close() }
+})
+
 test('user send and direct reply persist independently; duplicate receipts survive restarts', async () => {
   const f = messagingFixture(), room = await f.create()
   const input = { roomId: room.id, revision: room.revision, requestId: 'send_one', content: 'Hello', responder: 'auto', chatId: 'native-secret' }
@@ -64,6 +232,7 @@ test('user send and direct reply persist independently; duplicate receipts survi
   saved = await f.service.read('alice', room.id)
   expect(saved.messages).toHaveLength(2)
   expect(f.requests).toHaveLength(1)
+  expect(f.responses.filter(r=>r.payload.type==='mochi:notification')).toHaveLength(1)
 })
 test('automatic replies can be disabled; empty continuation creates only a character message', async () => {
   const f = messagingFixture(), room = await f.create({ autoReply: false })

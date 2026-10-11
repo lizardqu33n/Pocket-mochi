@@ -1930,10 +1930,29 @@ try {
   backendReceiver({ ...firstState, reason: 'persona_changed' })
   assert.match(dockRoot.querySelector('.mochi-view').textContent, /Stable room persona/, 'RP refresh must retain the independent view and snapshot')
   assert.ok(dockRoot.querySelector('.mochi-view textarea[aria-label="Message"]'), 'Mochi has an independent message composer')
+  dockRoot.querySelector('.lumiphone-homebar button').click()
+  Object.defineProperty(dom.window.document, 'hidden', { configurable: true, value: false })
+  backendReceiver({ ...firstState, preferences: { ...firstState.preferences, notifyMessages: true, notificationPreviews: false } })
+  const notice = { id: 'synthetic_notice', messageId: 'synthetic_notice', roomId: response.selectedRoomId, roomTitle: 'Independent room', title: 'Actual character', body: 'Hidden private preview', avatarUrl: '', createdAt: new Date().toISOString(), read: false }
+  backendReceiver({ type: 'mochi:notification', notification: notice })
+  backendReceiver({ type: 'mochi:notification', notification: notice })
+  const toast = dockRoot.querySelector('.mochi-notification-toast')
+  assert.ok(toast, 'Mochi can notify while Pocket home is visible')
+  assert.match(toast.textContent, /Actual character/)
+  assert.doesNotMatch(toast.textContent, /Hidden private preview/)
+  assert.equal(dockRoot.querySelectorAll('.mochi-notification-toast').length, 1, 'Notification events deduplicate')
+  toast.click()
+  assert.ok(dockRoot.querySelector('.mochi-view textarea[aria-label="Message"]'), 'Mochi notification opens its independent room')
+  assert.equal(dockRoot.querySelector('select[aria-label="Select room"]').value, response.selectedRoomId)
+  assert.equal(frontendSends.at(-1).type, 'mochi:list', 'Notification route refreshes Mochi without native RP requests')
+  await frontendHandler(frontendSends.at(-1), 'user-a')
+  backendReceiver(frontendMessages.at(-1))
   assert.deepEqual([...storage.entries()], beforeMochiPhones, 'Mochi must not write existing phones or preferences')
 } finally {
   spindle.userStorage = mochiStorage; spindle.chats.getActive = mochiActive
   spindle.personas.list = mochiPersonasList
+  delete dom.window.document.hidden
+  backendReceiver(firstState)
   dockRoot.querySelector('.lumiphone-homebar button').click()
 }
 await exportVisual('home', dockRoot)

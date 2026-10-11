@@ -8,12 +8,13 @@ import { spawnSync } from 'node:child_process'
 const root = fileURLToPath(new URL('../', import.meta.url))
 const require = createRequire(import.meta.url)
 const playwright = require(require.resolve('playwright', { paths: [process.env.POCKET_PLAYWRIGHT_ROOT || root] }))
-const output = resolve(root, 'tmp/mochi-ui')
+const output = resolve(root, 'tmp/mochi03-ui')
 await mkdir(output, { recursive: true })
 // Only synthetic data. This exercises the production view without any host or provider.
 await writeFile(resolve(output, 'entry.ts'), `
 import { MochiView } from ${JSON.stringify(resolve(root, 'src/mochi/view.ts'))};
 import { MochiService } from ${JSON.stringify(resolve(root, 'src/mochi/service.ts'))};
+import { showMochiNotification } from ${JSON.stringify(resolve(root, 'src/mochi/notifications.ts'))};
 import { PHONE_STYLES } from ${JSON.stringify(resolve(root, 'src/styles.ts'))};
 const style = document.createElement('style'); style.textContent = PHONE_STYLES; document.head.append(style);
 const files = new Map(); let serial=0;
@@ -24,11 +25,13 @@ const host={
  characters:{get:async id=>characters.find(c=>c.id===id),list:async()=>({data:characters})},personas:{get:async()=>null,list:async()=>({data:[]})},permissions:{has:()=>true},
  connections:{get:async()=>({id:'test',model:'synthetic'}),list:async()=>[{id:'test',name:'Simulated connection',model:'synthetic'}]},tokens:{countMessages:async m=>({total_tokens:Math.ceil(JSON.stringify(m).length/4)})},
  generate:{quiet:async r=>{await new Promise(resolve=>setTimeout(resolve,250));serial++;return {content:JSON.stringify({speakerId:r.messages[0].content.includes('required speakerId is "character1"')?'character1':r.messages[0].content.includes('required speakerId is "character2"')?'character2':'character2',text:'Simulated character reply '+serial})}}},
- sendToFrontend:p=>{if(p.state){for(const c of p.state.characters)c.avatarUrl=demoPortrait;for(const r of p.state.rooms)for(const m of r.messages)if(m.role==='assistant')m.avatarUrl=demoPortrait;}view.receive(p)}
+ sendToFrontend:p=>{if(p.notification)p.notification.avatarUrl=demoPortrait;if(p.notifications)for(const n of p.notifications)n.avatarUrl=demoPortrait;if(p.state){for(const c of p.state.characters)c.avatarUrl=demoPortrait;for(const n of p.state.notifications||[])n.avatarUrl=demoPortrait;for(const r of p.state.rooms)for(const m of r.messages)if(m.role==='assistant')m.avatarUrl=demoPortrait;}view.receive(p)}
 };
 const service=new MochiService(host);
 const render = () => {const node=view.render();node.classList.add('lumiphone-app-view');document.getElementById('app').replaceChildren(node)};
-const view = new MochiView(payload => {void service.handle(payload,'synthetic-user')}, render, id => { view.select(id || ''); render(); });
+const policy={enabled:true,previews:true,visible:true};
+const view = new MochiView(payload => {void service.handle(payload,'synthetic-user')}, render, id => { view.select(id || ''); render(); },()=>policy,n=>showMochiNotification(document.getElementById('phone'),n,policy.previews,()=>view.openRoom(n.roomId)));
+window.__mochiDemo={view,service,host,files,policy};
 view.load();
 `)
 const build = spawnSync('bun', ['build', resolve(output, 'entry.ts'), '--target=browser', '--outfile=' + resolve(output, 'view.js')], { cwd: root, encoding: 'utf8' })
@@ -38,6 +41,7 @@ const browser = await playwright.chromium.launch({ headless: true, ...(process.e
 try {
   for (const width of [320, 390, 900]) {
     const page = await browser.newPage({ viewport: { width, height: 850 } })
+    await page.addInitScript(() => { Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async text => { window.__copied = text } } }) })
     await page.goto(new URL('file:///' + resolve(output, 'index.html').replaceAll('\\', '/')).href)
     await page.getByRole('button', { name: 'New room', exact: true }).click()
     assert.ok(await page.locator('.mochi-view').evaluate(n => n.getBoundingClientRect().width >= 300), 'Mochi must fill the available handset width')
@@ -112,17 +116,97 @@ try {
     await page.getByRole('button', { name: 'Room inbox', exact: true }).click()
     await page.waitForTimeout(400)
     await page.getByRole('button', { name: /My independent room.*Stable persona/ }).click()
+    await page.getByRole('button', { name: 'Refresh', exact: true }).waitFor({ state: 'visible' })
     assert.equal(await page.locator('.mochi-message[data-role=assistant]').count(), 2, 'leaving a room must cancel its late response')
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'thread and composer must not overflow')
     await page.screenshot({ path: resolve(output, 'room-' + width + '.png') })
+    await page.getByRole('button', { name: 'Room participants', exact: true }).click()
+    await page.getByRole('dialog', { name: 'Room participants', exact: true }).waitFor()
+    assert.equal(await page.getByRole('dialog').locator('.mochi-member').count(), 2)
+    await page.getByRole('button', { name: 'Done', exact: true }).click()
+    const original = page.locator('.mochi-message[data-role=user]').first()
+    const originalId = await original.getAttribute('data-message-id')
+    await original.getByRole('button', { name: 'Actions for Stable persona', exact: true }).click()
+    await page.getByRole('button', { name: 'Copy message', exact: true }).focus()
+    await page.getByRole('button', { name: 'Copy message', exact: true }).press('Enter')
+    assert.equal(await page.evaluate(() => window.__copied.trim()), 'Hello from my independent room')
+    await page.evaluate(() => { navigator.clipboard.writeText=async()=>{throw new Error('Synthetic clipboard failure')} })
+    await original.getByRole('button', { name: 'Actions for Stable persona', exact: true }).click()
+    await page.getByRole('button', { name: 'Copy message', exact: true }).click()
+    await page.getByText('Clipboard is unavailable. Select the message text to copy it.', { exact: true }).waitFor()
+    assert.equal(await page.locator('.mochi-message').count(), 4, 'Clipboard failures must not alter history')
+    await page.evaluate(() => { navigator.clipboard.writeText=async text=>{window.__copied=text} })
+    await original.getByRole('button', { name: 'Actions for Stable persona', exact: true }).click()
+    await page.getByRole('button', { name: 'Edit message', exact: true }).click()
+    await page.getByLabel('Edit message text', { exact: true }).fill('Edited greeting')
+    await page.screenshot({ path: resolve(output, 'edit-' + width + '.png') })
+    await page.getByRole('button', { name: 'Save message', exact: true }).click()
+    await page.getByText('Edited greeting', { exact: true }).waitFor()
+    assert.equal(await page.locator('.mochi-message[data-role=user]').first().getAttribute('data-message-id'), originalId)
+    const target = page.locator('.mochi-message[data-role=assistant]').first()
+    const targetId = await target.getAttribute('data-message-id')
+    await page.getByLabel('Message', { exact: true }).fill('Draft stays during reroll')
+    await target.getByRole('button', { name: 'Actions for Room nickname', exact: true }).click()
+    await page.screenshot({ path: resolve(output, 'actions-' + width + '.png') })
+    await page.getByRole('button', { name: 'Regenerate message', exact: true }).click()
+    await page.getByText(/Later messages stay unchanged and may no longer fit/).waitFor()
+    await page.getByRole('button', { name: 'Confirm reroll', exact: true }).click()
+    await page.waitForFunction(id => {const m=window.__mochiDemo.view.state.rooms[0].messages.find(m=>m.id===id);return m.previousVersions?.length===1}, targetId)
+    assert.equal(await page.locator('.mochi-message[data-role=assistant]').count(), 2)
+    assert.equal(await page.getByLabel('Message', { exact: true }).inputValue(), 'Draft stays during reroll')
+    const toDelete = page.locator('.mochi-message[data-role=user]').last()
+    await toDelete.getByRole('button', { name: 'Actions for Stable persona', exact: true }).click()
+    await page.getByRole('button', { name: 'Delete message', exact: true }).click()
+    await page.getByRole('button', { name: 'Done', exact: true }).click()
+    assert.equal(await page.locator('.mochi-message[data-role=user]').count(), 2, 'Dismissing confirmation must preserve message')
+    await toDelete.getByRole('button', { name: 'Actions for Stable persona', exact: true }).click()
+    await page.getByRole('button', { name: 'Delete message', exact: true }).click()
+    await page.getByRole('button', { name: 'Confirm delete', exact: true }).click()
+    await page.waitForFunction(() => document.querySelectorAll('.mochi-message[data-role=user]').length===1)
+    await page.getByLabel('Message', { exact: true }).fill('')
+    await page.getByRole('button', { name: 'Mochi notifications', exact: true }).click()
+    assert.equal(await page.locator('.mochi-notification-list .mochi-card').count(), 2, 'Rerolls must not create new notifications')
+    await page.screenshot({ path: resolve(output, 'notifications-' + width + '.png') })
+    await page.evaluate(() => { window.__mochiDemo.policy.previews=false;window.__mochiDemo.view.receive({type:'mochi:notifications',notifications:window.__mochiDemo.view.state.notifications}) })
+    assert.equal(await page.getByText('New character message', { exact: true }).count(), 2)
+    await page.locator('.mochi-notification-list .mochi-card').first().click()
+    await page.getByLabel('Select room', { exact: true }).waitFor()
+    assert.equal(await page.getByLabel('Select room', { exact: true }).inputValue(), await page.evaluate(() => window.__mochiDemo.view.roomId))
+    assert.ok(await page.locator('.mochi-message-actions').evaluateAll(nodes=>nodes.every(n=>{const r=n.getBoundingClientRect();return r.width>=44&&r.height>=44})), 'Message actions must be touch-friendly')
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth<=innerWidth), true, 'Message actions and headers must not overflow')
+    await page.screenshot({ path: resolve(output, 'refined-room-' + width + '.png') })
     await page.locator('#phone').evaluate(n => n.dataset.theme='porcelain')
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'Light host theme must also fit')
     await page.screenshot({ path: resolve(output, 'room-light-' + width + '.png') })
     await page.locator('#phone').evaluate(n => n.dataset.theme='dark')
     await page.getByRole('button', { name: 'Room inbox', exact: true }).click()
     await page.getByRole('button', { name: /My independent room.*Stable persona/ }).waitFor()
-    assert.equal(await page.locator('.mochi-preview').textContent(), 'Stable persona: Manual-only message', 'Inbox preview comes from the saved last message')
+    assert.equal(await page.locator('.mochi-preview').textContent(), 'Long character name for mobile wrapping: Simulated character reply 2', 'Inbox preview comes from the saved last message after deletion')
     await page.screenshot({ path: resolve(output, 'inbox-' + width + '.png') })
+    const firstRoomId = await page.evaluate(() => window.__mochiDemo.view.state.rooms.find(r=>r.title==='My independent room').id)
+    await page.getByRole('button', { name: 'New room', exact: true }).click()
+    await page.getByLabel('Room name', { exact: true }).fill('Second room with a long title for narrow handsets')
+    await page.getByRole('button', { name: 'Second character', exact: true }).click()
+    await page.getByRole('button', { name: 'Create room', exact: true }).click()
+    await page.getByLabel('Select room', { exact: true }).waitFor()
+    await page.getByLabel('Message', { exact: true }).fill('Second room draft')
+    const secondRoomId = await page.getByLabel('Select room', { exact: true }).inputValue()
+    await page.getByLabel('Select room', { exact: true }).selectOption(firstRoomId)
+    await page.getByText('Edited greeting', { exact: true }).waitFor()
+    assert.equal(await page.getByLabel('Message', { exact: true }).inputValue(), '')
+    await page.getByLabel('Select room', { exact: true }).selectOption(secondRoomId)
+    assert.equal(await page.getByLabel('Message', { exact: true }).inputValue(), 'Second room draft', 'Room selector preserves each composer draft')
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth<=innerWidth), true, 'Long room titles must not overflow the header')
+    await page.screenshot({ path: resolve(output, 'selector-' + width + '.png') })
+    await page.evaluate(async id => { const { service, policy }=window.__mochiDemo;policy.visible=false;policy.previews=true;const room=await service.read('synthetic-user',id);await service.message('synthetic-user',{roomId:id,revision:room.revision,requestId:'synthetic_external_notice',content:'',responder:'character2'}) }, firstRoomId)
+    await page.locator('.mochi-notification-toast').waitFor()
+    assert.ok((await page.locator('.mochi-notification-toast').textContent()).includes('Room nickname · My independent room'))
+    await page.evaluate(() => { const {view}=window.__mochiDemo;view.receive({type:'mochi:notification',notification:view.state.notifications[0]}) })
+    assert.equal(await page.locator('.mochi-notification-toast').count(), 1, 'Repeated events must not create duplicate toasts')
+    await page.screenshot({ path: resolve(output, 'notification-toast-' + width + '.png') })
+    await page.locator('.mochi-notification-toast').click()
+    await page.waitForFunction(id=>document.querySelector('select[aria-label="Select room"]')?.value===id,firstRoomId)
+    assert.equal(await page.getByLabel('Select room', {exact:true}).inputValue(),firstRoomId,'Toast opens the correct room')
     await page.close()
   }
   console.log('Mochi simulated Chromium UI passed at 320px, 390px and 900px. Browser: ' + browser.version())

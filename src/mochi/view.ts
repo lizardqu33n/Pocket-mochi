@@ -1,12 +1,15 @@
 import { button, el, requestId } from '../frontend/shared.js'
 import { POCKET_ICONS } from '../frontend/components/icons.js'
 import { MOCHI_STYLES } from './styles.js'
+import { showPocketSheet } from '../frontend/components/ui.js'
+import { notificationBody, type MochiNotificationPolicy } from './notifications.js'
 
 function action(label: string, icon: string, compact = false): HTMLButtonElement {
   const node = button('', `lp-button${compact ? ' mochi-icon-button' : ''}`)
   node.setAttribute('aria-label', label); node.title = label
   const glyph = el('span'); glyph.setAttribute('aria-hidden', 'true')
-  glyph.innerHTML = POCKET_ICONS[icon] || `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icon === 'stop' ? '<rect x="6" y="6" width="12" height="12" rx="2"/>' : '<path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-2l2 2M4 17l2 2a7 7 0 0 0 12-2"/>'}</svg>`
+  const extra: Record<string, string> = { stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>', copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4H4v12h4"/>', edit: '<path d="m15 4 5 5-11 11H4v-5L15 4Z M12 7l5 5"/>', more: '<path d="M5 12h.01M12 12h.01M19 12h.01"/>', people: '<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6M18 15a5 5 0 0 1 3 5"/>' }
+  glyph.innerHTML = POCKET_ICONS[icon] || `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${extra[icon] || '<path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-2l2 2M4 17l2 2a7 7 0 0 0 12-2"/>'}</svg>`
   node.append(glyph); if (!compact) node.append(el('span', '', label))
   return node
 }
@@ -15,7 +18,7 @@ function portrait(name: string, url = ''): HTMLSpanElement {
   if (url) { const img = el('img'); img.src = url; img.alt = ''; node.replaceChildren(img) }
   return node
 }
-import { defaultMochiSettings, type MochiMessage, type MochiRoom, type MochiSettings, type MochiState } from './types.js'
+import { defaultMochiSettings, type MochiMessage, type MochiNotification, type MochiRoom, type MochiSettings, type MochiState } from './types.js'
 
 export class MochiView {
   state: MochiState | null = null
@@ -24,6 +27,13 @@ export class MochiView {
   editing = false
   busy = false
   error = ''
+  private feedback = ''
+  private notificationsOpen = false
+  private seenNotifications = new Set<string>()
+  private acknowledged = new Set<string>()
+  private acknowledgementRequests = new Map<string, string[]>()
+  private sheets = new Set<() => void>()
+  private operation = ''
   private request = ''
   private drafts = new Map<string, string>()
   private responders = new Map<string, string>()
@@ -34,12 +44,15 @@ export class MochiView {
   private draftRevision = 0
   private timeout: ReturnType<typeof setTimeout> | undefined
   private draft: { title: string; characterIds: string[]; persona: string; name: string; description: string } | null = null
-  constructor(private send: (payload: unknown) => void, private redraw: () => void, private navigate: (roomId?: string) => void) {}
+  constructor(private send: (payload: unknown) => void, private redraw: () => void, private navigate: (roomId?: string) => void,
+    private notificationPolicy: () => MochiNotificationPolicy = () => ({ enabled: true, previews: true, visible: true }),
+    private notify: (n: MochiNotification) => void = () => {}) {}
   load(): void { this.dispatch('mochi:list') }
   select(id: string): void {
     if (this.roomId !== id) { this.leave(); this.selectionVersion++; this.roomId = id; this.creating = false; this.editing = false; this.draft = null; this.settingsDraft = null }
   }
   leave(): void {
+    for (const dismiss of this.sheets) dismiss(); this.sheets.clear()
     const generationRequestId = this.ownGenerations.get(this.roomId)
     if (generationRequestId) this.send({ type: 'mochi:cancel', roomId: this.roomId, generationRequestId })
   }
@@ -48,8 +61,9 @@ export class MochiView {
     if (this.busy) return
     this.request = requestId('mochi')
     this.requestVersion = this.selectionVersion
-    if (type === 'mochi:send') this.ownGenerations.set(this.roomId, this.request)
-    this.busy = true; this.error = ''
+    if (type === 'mochi:send' || type === 'mochi:regenerate') this.ownGenerations.set(this.roomId, this.request)
+    this.operation = type
+    this.busy = true; this.error = ''; this.feedback = ''
     clearTimeout(this.timeout)
     this.timeout = setTimeout(() => {
       this.busy = false
@@ -60,6 +74,32 @@ export class MochiView {
     this.redraw()
   }
   receive(payload: any): boolean {
+    if (payload?.type === 'mochi:error' && this.acknowledgementRequests.has(payload.requestId)) {
+      for (const id of this.acknowledgementRequests.get(payload.requestId)!) this.acknowledged.delete(id)
+      this.acknowledgementRequests.delete(payload.requestId)
+      this.error = 'Unable to mark notifications as read. Refresh to try again.'; this.redraw(); return true
+    }
+    if (payload?.type === 'mochi:job_finished') {
+      const jobs = this.state?.jobs
+      if (jobs && jobs[payload.roomId] === payload.requestId) delete jobs[payload.roomId]
+      if (this.ownGenerations.get(payload.roomId) === payload.requestId) this.ownGenerations.delete(payload.roomId)
+      this.redraw(); return true
+    }
+    if (payload?.type === 'mochi:notifications') {
+      this.acknowledgementRequests.delete(payload.requestId)
+      if (this.state) this.state.notifications = payload.notifications
+      this.redraw(); return true
+    }
+    if (payload?.type === 'mochi:notification' && payload.notification) {
+      const n = payload.notification as MochiNotification
+      if (this.seenNotifications.has(n.id) || this.state?.notifications?.some(saved => saved.id === n.id)) return true
+      this.seenNotifications.add(n.id)
+      if (this.state) this.state.notifications = [n, ...(this.state.notifications || []).filter(item => item.id !== n.id)]
+      const policy = this.notificationPolicy()
+      if (policy.visible && this.roomId === n.roomId && !this.editing && !this.creating && !this.notificationsOpen) this.markNotifications(n.roomId)
+      else if (policy.enabled) this.notify(n)
+      this.redraw(); return true
+    }
     if (payload?.type !== 'mochi:state' && payload?.type !== 'mochi:error') return false
     if (payload.requestId !== this.request) return true
     clearTimeout(this.timeout)
@@ -67,7 +107,7 @@ export class MochiView {
     if (payload.type === 'mochi:error') { if (this.requestVersion === this.selectionVersion) this.error = String(payload.message) }
     else {
       this.state = payload.state
-      if (payload.accepted && this.ownGenerations.get(this.roomId) === payload.requestId) this.drafts.set(this.roomId, '')
+      if (payload.accepted && this.operation === 'mochi:send' && this.ownGenerations.get(this.roomId) === payload.requestId) this.drafts.set(this.roomId, '')
       for (const [id, request] of this.ownGenerations) if (this.state && this.state.jobs?.[id] !== request) this.ownGenerations.delete(id)
       if (payload.selectedRoomId && this.requestVersion === this.selectionVersion) {
         this.creating = false; this.editing = false; this.draft = null
@@ -76,6 +116,7 @@ export class MochiView {
       }
     }
     this.redraw()
+    if (this.notificationPolicy().visible && this.roomId && !this.editing && !this.creating && !this.notificationsOpen) this.markNotifications(this.roomId)
     return true
   }
   render(): HTMLDivElement {
@@ -83,21 +124,33 @@ export class MochiView {
     const style = el('style')
     style.textContent = MOCHI_STYLES
     page.append(style)
-    const header = el('header'); const brand = el('div', 'mochi-brand'); brand.append(el('h2', '', 'Mochi')); const sparkle = el('span'); sparkle.innerHTML = POCKET_ICONS.sparkle; sparkle.setAttribute('aria-hidden', 'true'); brand.append(sparkle); header.append(brand)
+    const header = el('header'); const brand = el('div', 'mochi-brand'); brand.append(el('h2', '', 'Mochi')); const sparkle = el('span'); sparkle.innerHTML = POCKET_ICONS.sparkle; sparkle.setAttribute('aria-hidden', 'true'); brand.append(sparkle, el('span', 'mochi-standalone', 'Standalone')); header.append(brand)
     const refresh = action('Refresh', 'refresh', true); refresh.disabled = this.busy
-    refresh.onclick = () => this.load(); header.append(refresh); page.append(header)
+    refresh.onclick = () => this.load(); const headerActions = el('div', 'mochi-actions')
+    if (this.notificationPolicy().enabled) {
+      const bell = action('Mochi notifications', 'notifications', true); bell.dataset.unread = String(Boolean(this.state?.notifications?.some(n => !n.read)))
+      bell.onclick = () => { this.leave(); this.notificationsOpen = !this.notificationsOpen; this.redraw(); if (!this.state) this.load() }; headerActions.append(bell)
+    }
+    headerActions.append(refresh); header.append(headerActions); page.append(header)
     if (this.error) { const error = el('p', 'mochi-error', this.error); error.setAttribute('role', 'alert'); page.append(error) }
     if (!this.state) return page
+    if (this.feedback) { const status = el('p', 'mochi-muted', this.feedback); status.setAttribute('role', 'status'); page.append(status) }
     for (const warning of this.state.warnings) page.append(el('p', 'mochi-error', warning))
+    if (this.notificationsOpen && this.notificationPolicy().enabled) { page.append(this.notificationList()); return page }
     const room = this.state.rooms.find(room => room.id === this.roomId)
     if (this.creating || this.editing) { page.append(this.form(this.editing ? room : undefined)); return page }
     if (room) {
       const roomHeader = el('div', 'mochi-room-header')
-      const info = el('div', 'mochi-room-info'); info.append(el('h3', '', room.title), el('p', 'mochi-muted', `${room.characterIds.length} ${room.characterIds.length === 1 ? 'character' : 'characters'}`), el('p', 'mochi-muted', `You are ${room.persona.name}`))
+      const info = el('div', 'mochi-room-info'), selector = el('select', 'mochi-room-selector'); selector.setAttribute('aria-label', 'Select room')
+      for (const r of this.state.rooms) { const option = el('option', '', r.title); option.value = r.id; selector.append(option) }; selector.value = room.id
+      selector.onchange = () => this.openRoom(selector.value)
+      info.append(selector, el('p', 'mochi-muted', `${room.characterIds.length} ${room.characterIds.length === 1 ? 'character' : 'characters'}`), el('p', 'mochi-muted', `You are ${room.persona.name}`))
       const controls = el('div', 'mochi-actions')
       const inbox = action('Room inbox', 'back', true); inbox.onclick = () => { this.select(''); this.navigate() }
       const edit = action('Room settings', 'settings', true); edit.onclick = () => { this.leave(); this.editing = true; this.draft = null; this.settingsDraft = null; this.redraw() }
-      controls.append(inbox, edit); roomHeader.append(info, controls); page.append(roomHeader)
+      const participants = action('Room participants', 'people', true); participants.onclick = () => { const content = el('div', 'mochi-participants'); for (const id of room.characterIds) { const c = this.state?.characters.find(c => c.id === id); const name = room.settings?.characterNames[id] || c?.name || 'Unavailable character'; const row = el('div', 'mochi-member'); row.append(portrait(name, c?.avatarUrl), el('span', '', name)); content.append(row) }; this.sheet(participants, 'Room participants', content) }
+      controls.append(participants, edit); roomHeader.append(info, controls); page.append(roomHeader)
+      headerActions.prepend(inbox)
       const members = el('div', 'mochi-member-strip')
       for (const id of room.characterIds) {
         const character = this.state.characters.find(c => c.id === id)
@@ -121,7 +174,7 @@ export class MochiView {
       const last = room.messages.at(-1) as MochiMessage | undefined
       copy.append(el('span', 'mochi-preview', last?.content ? `${last.name}: ${last.content}` : 'Start a conversation'))
       row.append(avatars, copy)
-      row.onclick = () => { this.select(room.id); this.navigate(room.id) }; page.append(row)
+      row.onclick = () => this.openRoom(room.id); page.append(row)
     }
     return page
   }
@@ -183,18 +236,73 @@ export class MochiView {
     const thread = el('div', 'mochi-thread'); thread.setAttribute('role', 'log'); thread.setAttribute('aria-label', 'Room messages')
     thread.dataset.pocketThread = 'mochi'
     globalThis.requestAnimationFrame?.(() => { thread.scrollTop = thread.scrollHeight })
+    let previous: MochiMessage | undefined
     for (const raw of room.messages) {
       const message = raw as MochiMessage
       const row = el('div', 'mochi-message'); row.dataset.role = message.role
+      row.dataset.messageId = message.id
+      const elapsed = previous ? Date.parse(message.createdAt) - Date.parse(previous.createdAt) : Infinity
+      row.dataset.grouped = String(Boolean(previous && previous.role === message.role && previous.characterId === message.characterId && previous.name === message.name && elapsed >= 0 && elapsed < 300000))
+      previous = message
       const avatar = el('span', 'mochi-message-avatar', message.name?.slice(0, 1) || '?')
       if (message.avatarUrl) { const image = el('img'); image.src = message.avatarUrl; image.alt = ''; avatar.replaceChildren(image) }
       const body = el('div', 'mochi-message-body')
       const time = el('time', '', new Date(message.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })); time.dateTime = message.createdAt
-      body.append(el('strong', 'mochi-message-name', message.name || 'Unknown'), el('div', 'mochi-bubble', message.content || ''), time)
+      body.append(el('strong', 'mochi-message-name', message.name || 'Unknown'), el('div', 'mochi-bubble', message.content || ''))
+      const meta = el('div', 'mochi-message-meta'); meta.append(time)
+      if (message.editedAt) meta.append(el('small', 'mochi-muted', 'Edited'))
+      const more = action(`Actions for ${message.name || 'message'}`, 'more', true); more.classList.add('mochi-message-actions'); more.onclick = () => this.messageActions(more, room, message)
+      meta.append(more); body.append(meta)
       row.append(avatar, body); thread.append(row)
     }
     if (this.state?.jobs?.[room.id]) { const status = el('p', 'mochi-muted', 'Character is replying…'); status.setAttribute('role', 'status'); thread.append(status) }
     return thread
+  }
+  private sheet(anchor: HTMLElement, title: string, content: HTMLElement): ReturnType<typeof showPocketSheet> {
+    const sheet = showPocketSheet(anchor, title, content)
+    if (sheet) { this.sheets.add(sheet.dismiss); content.closest('dialog')?.addEventListener('close', () => this.sheets.delete(sheet.dismiss), { once: true }) }
+    return sheet
+  }
+  private messageActions(anchor: HTMLElement, room: MochiRoom, message: MochiMessage): void {
+    const revision = room.revision, content = el('div', 'mochi-action-panel')
+    const sheet = this.sheet(anchor, 'Message actions', content)
+    const copy = action('Copy message', 'copy'); copy.onclick = async () => {
+      try { await navigator.clipboard.writeText(message.content); this.feedback = 'Message copied.'; sheet?.dismiss(); this.redraw() }
+      catch { this.error = 'Clipboard is unavailable. Select the message text to copy it.'; sheet?.dismiss(); this.redraw() }
+    }
+    const edit = action('Edit message', 'edit'); edit.disabled = this.busy
+    edit.onclick = () => {
+      const label = el('label', '', 'Message text'), input = el('textarea'); input.value = message.content; input.rows = 5; input.maxLength = 32000; input.required = true; input.setAttribute('aria-label', 'Edit message text'); label.append(input)
+      const save = action('Save message', 'edit'); save.onclick = () => { if (!input.value.trim()) { input.focus(); return }; this.dispatch('mochi:message_action', { roomId: room.id, revision, messageId: message.id, action: 'edit', content: input.value }); sheet?.dismiss() }
+      content.replaceChildren(label, el('p', 'mochi-muted', 'Later messages stay unchanged. The previous text is retained in room storage.'), save)
+    }
+    const remove = action('Delete message', 'trash'); remove.disabled = this.busy; remove.onclick = () => {
+      const confirm = action('Confirm delete', 'trash'); confirm.onclick = () => { this.dispatch('mochi:message_action', { roomId: room.id, revision, messageId: message.id, action: 'delete', confirmed: true }); sheet?.dismiss() }
+      content.replaceChildren(el('p', '', 'Delete this saved message? Only this message and its prior versions will be removed. Later messages stay unchanged. This cannot be undone.'), confirm)
+    }
+    content.append(copy, edit, remove)
+    if (message.role === 'assistant') {
+      const reroll = action('Regenerate message', 'refresh'); reroll.disabled = this.busy || Boolean(this.state?.jobs?.[room.id])
+      reroll.onclick = () => { const confirm = action('Confirm reroll', 'refresh'); confirm.onclick = () => { this.dispatch('mochi:regenerate', { roomId: room.id, revision, messageId: message.id, confirmed: true }); sheet?.dismiss() }; content.replaceChildren(el('p', '', 'Reroll using the conversation before this reply? The previous text is retained. Later messages stay unchanged and may no longer fit the new reply.'), confirm) }
+      content.append(reroll)
+    }
+  }
+  private markNotifications(id: string): void {
+    const unread = this.state?.notifications?.filter(n => n.roomId === id && !n.read && !this.acknowledged.has(n.id)) || []
+    if (!unread.length) return
+    unread.forEach(n => this.acknowledged.add(n.id))
+    const idForRequest = requestId('mochi_read')
+    this.acknowledgementRequests.set(idForRequest, unread.map(n => n.id))
+    this.send({ type: 'mochi:notification_read', requestId: idForRequest, roomId: id })
+  }
+  openRoom(id: string): void { this.notificationsOpen = false; this.select(id); this.navigate(id); this.markNotifications(id); this.load() }
+  private notificationList(): HTMLDivElement {
+    const list = el('div', 'mochi-notification-list'); list.append(el('h3', '', 'Mochi notifications'))
+    const entries = this.state?.notifications || []
+    if (!entries.length) list.append(el('p', 'mochi-muted', 'No character notifications yet.'))
+    for (const n of entries) { const row = button('', 'mochi-card'); const copy = el('div', 'mochi-card-copy'); copy.append(el('strong', '', `${n.title} · ${n.roomTitle}`), el('span', 'mochi-preview', notificationBody(n, this.notificationPolicy().previews)), el('small', 'mochi-muted', n.read ? 'Read' : 'New')); row.append(portrait(n.title, n.avatarUrl), copy); row.onclick = () => this.openRoom(n.roomId); list.append(row) }
+    const back = action('Back to rooms', 'back'); back.onclick = () => { this.notificationsOpen = false; this.redraw() }; list.append(back)
+    return list
   }
   private composer(room: MochiRoom): HTMLFormElement {
     const form = el('form', 'mochi-composer')

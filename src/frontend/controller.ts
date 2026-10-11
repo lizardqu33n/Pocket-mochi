@@ -1,6 +1,8 @@
 import { POCKET_ICONS as ICONS } from './components/icons.js'
 import { GALLERY_PAGE_SIZE } from '../domain/gallery-page.js'
 import { MochiView } from '../mochi/view.js'
+import { showMochiNotification } from '../mochi/notifications.js'
+import type { MochiNotification } from '../mochi/types.js'
 import { VoiceMessagePlayer } from './components/voice-message.js'
 import type {
   CalendarEvent,
@@ -125,7 +127,9 @@ class PocketController {
   private clock: HTMLSpanElement
   private expanded = false
   private currentApp: PhoneApp = 'home'
-  private mochi = new MochiView(payload => this.ctx.sendToBackend(payload), () => { if (this.currentApp === 'mochi') this.render(false) }, roomId => this.openPocket({ app: 'mochi', roomId }))
+  private dismissMochiNotification: (() => void) | undefined
+  private mochi = new MochiView(payload => this.ctx.sendToBackend(payload), () => { if (this.currentApp === 'mochi') this.render(false) }, roomId => this.openPocket({ app: 'mochi', roomId }),
+    () => ({ enabled: this.preferences.notifyMessages, previews: this.preferences.notificationPreviews, visible: this.expanded && this.currentApp === 'mochi' && !document.hidden }), n => this.showMochiNotification(n))
   private state: PhoneState | null = null
   private preferences: DevicePreferences = defaultPreferences()
   private settingsDraft: DevicePreferences | null = null
@@ -316,6 +320,7 @@ class PocketController {
   }
 
   destroy(): void {
+    this.dismissMochiNotification?.()
     this.mochi.destroy()
     this.voicePlayer.stop()
     this.setupModalDismiss?.()
@@ -979,7 +984,9 @@ class PocketController {
         if (!conversation || conversation.availability.state !== 'local') this.manualMessageOverrides.delete(conversationId)
       }
       this.jevKeyConfigured = payload.jevKeyConfigured === true
-      this.preferences = normalizePreferences(payload.preferences || this.preferences)
+      const nextPreferences = normalizePreferences(payload.preferences || this.preferences)
+      if (nextPreferences.notifyMessages !== this.preferences.notifyMessages || nextPreferences.notificationPreviews !== this.preferences.notificationPreviews) this.dismissMochiNotification?.()
+      this.preferences = nextPreferences
       applyPocketTouchScroll(this.mobileWidget, this.preferences.nativeTouchScrollMode)
       if (payload.reason === 'import' || payload.reason === 'reset_preferences' || payload.reason === 'preferences') this.settingsDraft = structuredClone(this.preferences)
       this.caps = payload.capabilities || this.caps
@@ -1438,6 +1445,7 @@ class PocketController {
     const normalized = normalizePreferences(next)
     if (this.settingsDraft) Object.assign(this.settingsDraft, structuredClone(normalized))
     else this.settingsDraft = structuredClone(normalized)
+    if (normalized.notifyMessages !== this.preferences.notifyMessages || normalized.notificationPreviews !== this.preferences.notificationPreviews) this.dismissMochiNotification?.()
     this.preferences = normalized
     applyPocketTouchScroll(this.mobileWidget, normalized.nativeTouchScrollMode)
     this.applyAppearance()
@@ -1449,6 +1457,13 @@ class PocketController {
     this.settingsSaveTimer = window.setTimeout(() => {
       this.send('lumiphone:save_preferences', { preferences: this.settingsDraft || this.preferences })
     }, 240)
+  }
+
+  private showMochiNotification(notification: MochiNotification): void {
+    if (!this.preferences.notifyMessages || !this.expanded || document.hidden) return
+    if (this.shell.querySelector('.lp-floating-notification:not(.mochi-notification-toast)')) return
+    this.dismissMochiNotification?.()
+    this.dismissMochiNotification = showMochiNotification(this.shell, notification, this.preferences.notificationPreviews, () => this.mochi.openRoom(notification.roomId))
   }
 
   private showIncomingNotification(notification: PhoneNotification): void {
@@ -1541,6 +1556,7 @@ class PocketController {
   }
 
   private close(): void {
+    this.dismissMochiNotification?.()
     this.mochi.leave()
     this.voicePlayer.stop()
     if (!this.widget && !this.dockPanel && !this.mobileWidget) return

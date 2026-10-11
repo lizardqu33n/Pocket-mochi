@@ -63,6 +63,8 @@ function requestId(prefix = "req") {
 
 // src/mochi/styles.ts
 var MOCHI_STYLES = `
+.mochi-message-meta{display:flex;gap:8px;align-items:center;max-width:100%;min-height:44px}.mochi-message[data-grouped=true]{margin-top:-8px}.mochi-view .mochi-room-header{grid-template-columns:minmax(0,1fr) 96px}
+.mochi-standalone{font-size:10px;font-weight:600;border:1px solid color-mix(in srgb,var(--mochi-accent) 45%,transparent);border-radius:99px;padding:4px 8px;color:var(--mochi-accent);letter-spacing:0}.mochi-view .mochi-room-selector{font-weight:650;border-radius:99px;color:inherit;background:color-mix(in srgb,var(--mochi-accent) 7%,var(--mochi-surface));padding:9px 10px;font-size:14px}.mochi-brand{gap:6px!important}.mochi-view .mochi-message-actions{width:44px;height:44px;min-height:44px;margin-top:-3px;background:transparent;border-color:transparent}.mochi-action-panel,.mochi-participants,.mochi-notification-list{display:grid;gap:12px}.mochi-action-panel :is(button,textarea){width:100%}.mochi-action-panel textarea{min-height:110px;border:1px solid var(--lp-border);border-radius:12px;padding:12px;background:var(--lp-bg);color:var(--lp-text);font:inherit;resize:vertical}.mochi-action-panel .lp-button{display:flex;align-items:center;gap:10px;justify-content:center;min-height:44px}.mochi-action-panel svg{width:20px;height:20px}.mochi-view [data-unread=true]{box-shadow:inset 0 0 0 2px var(--mochi-accent)}.mochi-notification-toast .mochi-notification-avatar{width:32px;height:32px;border-radius:50%;overflow:hidden;flex:none;display:grid;place-items:center;background:var(--lp-surface-2)}.mochi-notification-avatar img{width:100%;height:100%;object-fit:cover}.mochi-notification-toast strong,.mochi-notification-toast span{overflow-wrap:anywhere}.mochi-notification-toast{max-width:calc(100% - 24px)}.mochi-message[data-grouped=true] .mochi-message-avatar{visibility:hidden}
 .mochi-view [hidden]{display:none!important}
 .mochi-view{width:100%;flex:1}
 .mochi-view{--mochi-accent:color-mix(in srgb,var(--lp-accent,#a99bff) 35%,#b7a0e8);--mochi-surface:var(--lp-bg,var(--lumiverse-bg,#17151d));--mochi-border:var(--lp-border,#ffffff18);color:var(--lp-text,var(--lumiverse-text,#f7f5ff));background:var(--mochi-surface);font:inherit;line-height:1.45;padding:16px;display:flex;flex-direction:column;gap:14px;overflow:auto;height:100%;min-width:0;box-sizing:border-box;container-type:inline-size}
@@ -74,8 +76,157 @@ var MOCHI_STYLES = `
 .mochi-picker{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.mochi-choice{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:8px;min-width:0;padding:12px 6px;border:1px solid transparent;border-radius:14px;background:transparent;font-size:12px!important;line-height:1.35;overflow-wrap:anywhere;text-align:center}.mochi-choice>span:last-child{width:100%;min-width:0}.mochi-choice[aria-pressed=true]{border-color:var(--mochi-accent);background:color-mix(in srgb,var(--mochi-accent) 12%,var(--mochi-surface))}.mochi-choice[aria-pressed=true]::after{content:'✓';position:absolute;right:5px;top:5px;border-radius:50%;width:18px;height:18px;background:var(--mochi-accent);color:#21182e;font-size:12px}.mochi-avatar,.mochi-message-avatar{display:flex;align-items:center;justify-content:center;width:48px;height:48px;flex:none;border-radius:50%;background:color-mix(in srgb,var(--mochi-accent) 18%,var(--mochi-surface));border:1px solid color-mix(in srgb,var(--mochi-accent) 35%,var(--mochi-border));overflow:hidden;color:var(--mochi-accent);font-weight:650}.mochi-avatar img,.mochi-message-avatar img{width:100%;height:100%;object-fit:cover}
 .mochi-thread{display:flex;flex-direction:column;gap:18px;flex:1;min-height:160px;overflow-y:auto;overscroll-behavior:contain;padding:4px 0 10px}.mochi-message{display:flex;gap:8px;align-items:flex-start;min-width:0}.mochi-message[data-role=user]{flex-direction:row-reverse}.mochi-message-avatar{width:32px;height:32px;font-size:12px;margin-top:2px}.mochi-message-body{max-width:min(86%,calc(100% - 40px));min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:5px}.mochi-message[data-role=user] .mochi-message-body{align-items:flex-end}.mochi-message-name{font-size:12px;font-weight:650;overflow-wrap:anywhere}.mochi-bubble{width:fit-content;max-width:100%;background:color-mix(in srgb,var(--lp-text,#fff) 7%,var(--mochi-surface));border:1px solid var(--mochi-border);border-radius:12px;padding:10px 12px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.5}.mochi-message[data-role=user] .mochi-bubble{background:color-mix(in srgb,var(--mochi-accent) 24%,var(--mochi-surface));border-color:color-mix(in srgb,var(--mochi-accent) 28%,var(--mochi-border))}.mochi-message time{font-size:10px;color:var(--lp-muted,#a9a3b5)}
 .mochi-composer{position:sticky;bottom:0;flex-shrink:0;background:var(--mochi-surface);padding:10px 0 max(4px,env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--mochi-border)}.mochi-composer-row{display:flex;gap:8px;align-items:flex-end}.mochi-composer textarea{flex:1;min-height:44px;max-height:112px;resize:none;border-radius:18px;padding:11px 13px}.mochi-composer select{font-size:12px;min-height:36px;padding:7px 10px}.mochi-composer-hint{font-size:10px;color:var(--lp-muted,#a9a3b5)}.mochi-view>header,.mochi-room-header,.mochi-member-strip{flex-shrink:0}
-@container (max-width:320px){.mochi-picker{grid-template-columns:repeat(2,minmax(0,1fr))}.mochi-room-header{gap:6px}.mochi-member-strip{gap:6px}}
+@container (max-width:320px){.mochi-picker{grid-template-columns:repeat(2,minmax(0,1fr))}.mochi-room-header{gap:6px}.mochi-member-strip{gap:6px}.mochi-standalone{display:none}.mochi-view header .mochi-actions{gap:4px}}
 `;
+
+// src/frontend/components/ui.ts
+function classes(...values) {
+  return values.filter(Boolean).join(" ");
+}
+function identityBlock(options) {
+  const root = el("div", classes("lp-identity", options.prominent && "lp-identity-prominent", options.centered && "lp-identity-centered", options.className));
+  const line = el("div", "lp-identity-line");
+  line.appendChild(el("strong", "lp-identity-name", options.name));
+  if (options.meta)
+    line.appendChild(el("span", "lp-identity-meta", options.meta));
+  root.appendChild(line);
+  if (options.description)
+    root.appendChild(el("p", "lp-identity-description", options.description));
+  return root;
+}
+function statusBadge(label, tone = "neutral") {
+  const node = el("span", "lp-status-badge", label);
+  node.dataset.tone = tone;
+  return node;
+}
+function actionGroup(className = "") {
+  return el("div", classes("lp-actions", className));
+}
+function sectionBlock(label, help = "", className = "") {
+  const section = el("section", classes("lp-section", className));
+  const head = el("header", "lp-section-head");
+  head.appendChild(el("div", "lp-section-label", label));
+  if (help)
+    head.appendChild(el("p", "lp-section-help", help));
+  const body = el("div", "lp-section-body");
+  section.append(head, body);
+  return { section, body };
+}
+function fieldBlock(label, control, help = "") {
+  const field = el("label", "lp-field");
+  field.appendChild(el("span", "lp-field-label", label));
+  field.appendChild(control);
+  if (help)
+    field.appendChild(el("span", "lp-field-help", help));
+  return field;
+}
+function controlRow(label, control, help = "") {
+  const row = el("label", "lp-card lp-control-row");
+  const copy = el("span", "lp-control-copy");
+  copy.appendChild(el("span", "lp-control-label", label));
+  if (help)
+    copy.appendChild(el("span", "lp-control-help", help));
+  row.append(copy, control);
+  return row;
+}
+function disclosure(label, ...children) {
+  const root = el("details", "lp-disclosure");
+  root.append(el("summary", "", label), ...children);
+  return root;
+}
+function showPocketSheet(anchor, title, content) {
+  const parent = anchor.closest(".lumiphone-shell") || anchor.closest('[role="dialog"]') || anchor.parentElement;
+  if (!parent)
+    return;
+  const dialog = el("dialog", "lp-sheet");
+  const panel = el("div", "lp-sheet-panel");
+  const heading = el("h2", "lp-title", title);
+  dialog.setAttribute("aria-label", title);
+  const close = el("button", "lp-button lp-sheet-close", "Done");
+  close.type = "button";
+  const home = content.parentNode;
+  const marker = document.createComment("sheet content");
+  home?.insertBefore(marker, content);
+  const dismiss = () => dialog.close();
+  close.addEventListener("click", dismiss);
+  dialog.addEventListener("click", (event) => {
+    if (event.target === dialog)
+      dismiss();
+  });
+  dialog.addEventListener("close", () => {
+    if (home)
+      marker.replaceWith(content);
+    dialog.remove();
+    if (anchor.isConnected)
+      anchor.focus();
+  }, { once: true });
+  panel.append(heading, content, close);
+  dialog.append(panel);
+  parent.append(dialog);
+  const bounds = parent.getBoundingClientRect();
+  if (parent.matches(".lumiphone-shell")) {
+    const layoutWidth = parent.offsetWidth;
+    const zoom = layoutWidth && bounds.width ? bounds.width / layoutWidth : 1;
+    const layoutPx = (pixels) => pixels / zoom;
+    dialog.style.position = "fixed";
+    dialog.style.margin = "0";
+    dialog.style.left = `${layoutPx(bounds.left + 12)}px`;
+    dialog.style.top = "auto";
+    dialog.style.bottom = `${layoutPx(Math.max(12, window.innerHeight - bounds.bottom + 24))}px`;
+    dialog.style.width = `${layoutPx(Math.max(0, bounds.width - 24))}px`;
+    dialog.style.maxHeight = `${layoutPx(Math.max(120, bounds.height - 70))}px`;
+  }
+  dialog.showModal();
+  return { dismiss };
+}
+function outgoingSurface(accent) {
+  const hex = /^#([0-9a-f]{6})$/i.exec(accent)?.[1] || "8b7dff";
+  let rgb = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  const luminance = () => rgb.map((v) => v / 255).map((v) => v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4).reduce((sum, v, i) => sum + v * [0.2126, 0.7152, 0.0722][i], 0);
+  while (luminance() > 0.16)
+    rgb = rgb.map((v) => Math.floor(v * 0.95));
+  return "#" + rgb.map((v) => v.toString(16).padStart(2, "0")).join("");
+}
+function avatarColor(identity) {
+  const hash = Array.from(identity).reduce((n, c) => n * 31 + c.charCodeAt(0) >>> 0, 0);
+  return `hsl(${hash % 360} 27% 34%)`;
+}
+
+// src/mochi/notifications.ts
+function notificationBody(n, previews) {
+  return previews ? n.body : "New character message";
+}
+function showMochiNotification(shell, n, previews, open) {
+  const toast = button("", "lp-floating-notification mochi-notification-toast");
+  toast.setAttribute("role", "status");
+  const portrait = el("span", "mochi-notification-avatar", n.title.slice(0, 1));
+  portrait.style.cssText = "width:32px;height:32px;border-radius:50%;overflow:hidden;flex:none;display:grid;place-items:center;background:var(--lp-surface-2)";
+  if (n.avatarUrl) {
+    const image = el("img");
+    image.src = n.avatarUrl;
+    image.alt = "";
+    image.style.cssText = "width:100%;height:100%;object-fit:cover";
+    portrait.replaceChildren(image);
+  }
+  const copy = el("span", "lp-grow");
+  copy.append(el("strong", "", `${n.title} · ${n.roomTitle}`), el("span", "", notificationBody(n, previews)));
+  toast.append(portrait, copy);
+  toast.onclick = () => {
+    open();
+    dismiss();
+  };
+  shell.append(toast);
+  toast.style.maxWidth = "calc(100% - 24px)";
+  toast.style.gridTemplateColumns = "32px minmax(0,1fr)";
+  copy.style.minWidth = "0";
+  copy.firstElementChild.style.overflowWrap = "anywhere";
+  const timer = setTimeout(() => toast.remove(), 6000);
+  const dismiss = () => {
+    clearTimeout(timer);
+    toast.remove();
+  };
+  return dismiss;
+}
 
 // src/mochi/types.ts
 var defaultMochiSettings = () => ({ autoReply: true, connectionId: "", contextTokens: 8192, outputTokens: 1200, instructions: "", characterNames: {} });
@@ -88,7 +239,8 @@ function action(label, icon, compact = false) {
   node.title = label;
   const glyph = el("span");
   glyph.setAttribute("aria-hidden", "true");
-  glyph.innerHTML = POCKET_ICONS[icon] || `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icon === "stop" ? '<rect x="6" y="6" width="12" height="12" rx="2"/>' : '<path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-2l2 2M4 17l2 2a7 7 0 0 0 12-2"/>'}</svg>`;
+  const extra = { stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>', copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4H4v12h4"/>', edit: '<path d="m15 4 5 5-11 11H4v-5L15 4Z M12 7l5 5"/>', more: '<path d="M5 12h.01M12 12h.01M19 12h.01"/>', people: '<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6M18 15a5 5 0 0 1 3 5"/>' };
+  glyph.innerHTML = POCKET_ICONS[icon] || `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${extra[icon] || '<path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-2l2 2M4 17l2 2a7 7 0 0 0 12-2"/>'}</svg>`;
   node.append(glyph);
   if (!compact)
     node.append(el("span", "", label));
@@ -110,12 +262,21 @@ class MochiView {
   send;
   redraw;
   navigate;
+  notificationPolicy;
+  notify;
   state = null;
   roomId = "";
   creating = false;
   editing = false;
   busy = false;
   error = "";
+  feedback = "";
+  notificationsOpen = false;
+  seenNotifications = new Set;
+  acknowledged = new Set;
+  acknowledgementRequests = new Map;
+  sheets = new Set;
+  operation = "";
   request = "";
   drafts = new Map;
   responders = new Map;
@@ -126,10 +287,12 @@ class MochiView {
   draftRevision = 0;
   timeout;
   draft = null;
-  constructor(send, redraw, navigate) {
+  constructor(send, redraw, navigate, notificationPolicy = () => ({ enabled: true, previews: true, visible: true }), notify = () => {}) {
     this.send = send;
     this.redraw = redraw;
     this.navigate = navigate;
+    this.notificationPolicy = notificationPolicy;
+    this.notify = notify;
   }
   load() {
     this.dispatch("mochi:list");
@@ -146,6 +309,9 @@ class MochiView {
     }
   }
   leave() {
+    for (const dismiss of this.sheets)
+      dismiss();
+    this.sheets.clear();
     const generationRequestId = this.ownGenerations.get(this.roomId);
     if (generationRequestId)
       this.send({ type: "mochi:cancel", roomId: this.roomId, generationRequestId });
@@ -159,10 +325,12 @@ class MochiView {
       return;
     this.request = requestId("mochi");
     this.requestVersion = this.selectionVersion;
-    if (type === "mochi:send")
+    if (type === "mochi:send" || type === "mochi:regenerate")
       this.ownGenerations.set(this.roomId, this.request);
+    this.operation = type;
     this.busy = true;
     this.error = "";
+    this.feedback = "";
     clearTimeout(this.timeout);
     this.timeout = setTimeout(() => {
       this.busy = false;
@@ -173,6 +341,45 @@ class MochiView {
     this.redraw();
   }
   receive(payload) {
+    if (payload?.type === "mochi:error" && this.acknowledgementRequests.has(payload.requestId)) {
+      for (const id of this.acknowledgementRequests.get(payload.requestId))
+        this.acknowledged.delete(id);
+      this.acknowledgementRequests.delete(payload.requestId);
+      this.error = "Unable to mark notifications as read. Refresh to try again.";
+      this.redraw();
+      return true;
+    }
+    if (payload?.type === "mochi:job_finished") {
+      const jobs = this.state?.jobs;
+      if (jobs && jobs[payload.roomId] === payload.requestId)
+        delete jobs[payload.roomId];
+      if (this.ownGenerations.get(payload.roomId) === payload.requestId)
+        this.ownGenerations.delete(payload.roomId);
+      this.redraw();
+      return true;
+    }
+    if (payload?.type === "mochi:notifications") {
+      this.acknowledgementRequests.delete(payload.requestId);
+      if (this.state)
+        this.state.notifications = payload.notifications;
+      this.redraw();
+      return true;
+    }
+    if (payload?.type === "mochi:notification" && payload.notification) {
+      const n = payload.notification;
+      if (this.seenNotifications.has(n.id) || this.state?.notifications?.some((saved) => saved.id === n.id))
+        return true;
+      this.seenNotifications.add(n.id);
+      if (this.state)
+        this.state.notifications = [n, ...(this.state.notifications || []).filter((item) => item.id !== n.id)];
+      const policy = this.notificationPolicy();
+      if (policy.visible && this.roomId === n.roomId && !this.editing && !this.creating && !this.notificationsOpen)
+        this.markNotifications(n.roomId);
+      else if (policy.enabled)
+        this.notify(n);
+      this.redraw();
+      return true;
+    }
     if (payload?.type !== "mochi:state" && payload?.type !== "mochi:error")
       return false;
     if (payload.requestId !== this.request)
@@ -184,7 +391,7 @@ class MochiView {
         this.error = String(payload.message);
     } else {
       this.state = payload.state;
-      if (payload.accepted && this.ownGenerations.get(this.roomId) === payload.requestId)
+      if (payload.accepted && this.operation === "mochi:send" && this.ownGenerations.get(this.roomId) === payload.requestId)
         this.drafts.set(this.roomId, "");
       for (const [id, request] of this.ownGenerations)
         if (this.state && this.state.jobs?.[id] !== request)
@@ -198,6 +405,8 @@ class MochiView {
       }
     }
     this.redraw();
+    if (this.notificationPolicy().visible && this.roomId && !this.editing && !this.creating && !this.notificationsOpen)
+      this.markNotifications(this.roomId);
     return true;
   }
   render() {
@@ -211,12 +420,26 @@ class MochiView {
     const sparkle = el("span");
     sparkle.innerHTML = POCKET_ICONS.sparkle;
     sparkle.setAttribute("aria-hidden", "true");
-    brand.append(sparkle);
+    brand.append(sparkle, el("span", "mochi-standalone", "Standalone"));
     header.append(brand);
     const refresh = action("Refresh", "refresh", true);
     refresh.disabled = this.busy;
     refresh.onclick = () => this.load();
-    header.append(refresh);
+    const headerActions = el("div", "mochi-actions");
+    if (this.notificationPolicy().enabled) {
+      const bell = action("Mochi notifications", "notifications", true);
+      bell.dataset.unread = String(Boolean(this.state?.notifications?.some((n) => !n.read)));
+      bell.onclick = () => {
+        this.leave();
+        this.notificationsOpen = !this.notificationsOpen;
+        this.redraw();
+        if (!this.state)
+          this.load();
+      };
+      headerActions.append(bell);
+    }
+    headerActions.append(refresh);
+    header.append(headerActions);
     page.append(header);
     if (this.error) {
       const error = el("p", "mochi-error", this.error);
@@ -225,8 +448,17 @@ class MochiView {
     }
     if (!this.state)
       return page;
+    if (this.feedback) {
+      const status = el("p", "mochi-muted", this.feedback);
+      status.setAttribute("role", "status");
+      page.append(status);
+    }
     for (const warning of this.state.warnings)
       page.append(el("p", "mochi-error", warning));
+    if (this.notificationsOpen && this.notificationPolicy().enabled) {
+      page.append(this.notificationList());
+      return page;
+    }
     const room = this.state.rooms.find((room) => room.id === this.roomId);
     if (this.creating || this.editing) {
       page.append(this.form(this.editing ? room : undefined));
@@ -234,8 +466,16 @@ class MochiView {
     }
     if (room) {
       const roomHeader = el("div", "mochi-room-header");
-      const info = el("div", "mochi-room-info");
-      info.append(el("h3", "", room.title), el("p", "mochi-muted", `${room.characterIds.length} ${room.characterIds.length === 1 ? "character" : "characters"}`), el("p", "mochi-muted", `You are ${room.persona.name}`));
+      const info = el("div", "mochi-room-info"), selector = el("select", "mochi-room-selector");
+      selector.setAttribute("aria-label", "Select room");
+      for (const r of this.state.rooms) {
+        const option = el("option", "", r.title);
+        option.value = r.id;
+        selector.append(option);
+      }
+      selector.value = room.id;
+      selector.onchange = () => this.openRoom(selector.value);
+      info.append(selector, el("p", "mochi-muted", `${room.characterIds.length} ${room.characterIds.length === 1 ? "character" : "characters"}`), el("p", "mochi-muted", `You are ${room.persona.name}`));
       const controls = el("div", "mochi-actions");
       const inbox = action("Room inbox", "back", true);
       inbox.onclick = () => {
@@ -250,9 +490,22 @@ class MochiView {
         this.settingsDraft = null;
         this.redraw();
       };
-      controls.append(inbox, edit);
+      const participants = action("Room participants", "people", true);
+      participants.onclick = () => {
+        const content = el("div", "mochi-participants");
+        for (const id of room.characterIds) {
+          const c = this.state?.characters.find((c) => c.id === id);
+          const name = room.settings?.characterNames[id] || c?.name || "Unavailable character";
+          const row = el("div", "mochi-member");
+          row.append(portrait(name, c?.avatarUrl), el("span", "", name));
+          content.append(row);
+        }
+        this.sheet(participants, "Room participants", content);
+      };
+      controls.append(participants, edit);
       roomHeader.append(info, controls);
       page.append(roomHeader);
+      headerActions.prepend(inbox);
       const members = el("div", "mochi-member-strip");
       for (const id of room.characterIds) {
         const character = this.state.characters.find((c) => c.id === id);
@@ -291,10 +544,7 @@ class MochiView {
       const last = room.messages.at(-1);
       copy.append(el("span", "mochi-preview", last?.content ? `${last.name}: ${last.content}` : "Start a conversation"));
       row.append(avatars, copy);
-      row.onclick = () => {
-        this.select(room.id);
-        this.navigate(room.id);
-      };
+      row.onclick = () => this.openRoom(room.id);
       page.append(row);
     }
     return page;
@@ -450,10 +700,15 @@ class MochiView {
     globalThis.requestAnimationFrame?.(() => {
       thread.scrollTop = thread.scrollHeight;
     });
+    let previous;
     for (const raw of room.messages) {
       const message = raw;
       const row = el("div", "mochi-message");
       row.dataset.role = message.role;
+      row.dataset.messageId = message.id;
+      const elapsed = previous ? Date.parse(message.createdAt) - Date.parse(previous.createdAt) : Infinity;
+      row.dataset.grouped = String(Boolean(previous && previous.role === message.role && previous.characterId === message.characterId && previous.name === message.name && elapsed >= 0 && elapsed < 300000));
+      previous = message;
       const avatar = el("span", "mochi-message-avatar", message.name?.slice(0, 1) || "?");
       if (message.avatarUrl) {
         const image = el("img");
@@ -464,7 +719,16 @@ class MochiView {
       const body = el("div", "mochi-message-body");
       const time = el("time", "", new Date(message.createdAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }));
       time.dateTime = message.createdAt;
-      body.append(el("strong", "mochi-message-name", message.name || "Unknown"), el("div", "mochi-bubble", message.content || ""), time);
+      body.append(el("strong", "mochi-message-name", message.name || "Unknown"), el("div", "mochi-bubble", message.content || ""));
+      const meta = el("div", "mochi-message-meta");
+      meta.append(time);
+      if (message.editedAt)
+        meta.append(el("small", "mochi-muted", "Edited"));
+      const more = action(`Actions for ${message.name || "message"}`, "more", true);
+      more.classList.add("mochi-message-actions");
+      more.onclick = () => this.messageActions(more, room, message);
+      meta.append(more);
+      body.append(meta);
       row.append(avatar, body);
       thread.append(row);
     }
@@ -474,6 +738,114 @@ class MochiView {
       thread.append(status);
     }
     return thread;
+  }
+  sheet(anchor, title, content) {
+    const sheet = showPocketSheet(anchor, title, content);
+    if (sheet) {
+      this.sheets.add(sheet.dismiss);
+      content.closest("dialog")?.addEventListener("close", () => this.sheets.delete(sheet.dismiss), { once: true });
+    }
+    return sheet;
+  }
+  messageActions(anchor, room, message) {
+    const revision = room.revision, content = el("div", "mochi-action-panel");
+    const sheet = this.sheet(anchor, "Message actions", content);
+    const copy = action("Copy message", "copy");
+    copy.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(message.content);
+        this.feedback = "Message copied.";
+        sheet?.dismiss();
+        this.redraw();
+      } catch {
+        this.error = "Clipboard is unavailable. Select the message text to copy it.";
+        sheet?.dismiss();
+        this.redraw();
+      }
+    };
+    const edit = action("Edit message", "edit");
+    edit.disabled = this.busy;
+    edit.onclick = () => {
+      const label = el("label", "", "Message text"), input = el("textarea");
+      input.value = message.content;
+      input.rows = 5;
+      input.maxLength = 32000;
+      input.required = true;
+      input.setAttribute("aria-label", "Edit message text");
+      label.append(input);
+      const save = action("Save message", "edit");
+      save.onclick = () => {
+        if (!input.value.trim()) {
+          input.focus();
+          return;
+        }
+        this.dispatch("mochi:message_action", { roomId: room.id, revision, messageId: message.id, action: "edit", content: input.value });
+        sheet?.dismiss();
+      };
+      content.replaceChildren(label, el("p", "mochi-muted", "Later messages stay unchanged. The previous text is retained in room storage."), save);
+    };
+    const remove = action("Delete message", "trash");
+    remove.disabled = this.busy;
+    remove.onclick = () => {
+      const confirm = action("Confirm delete", "trash");
+      confirm.onclick = () => {
+        this.dispatch("mochi:message_action", { roomId: room.id, revision, messageId: message.id, action: "delete", confirmed: true });
+        sheet?.dismiss();
+      };
+      content.replaceChildren(el("p", "", "Delete this saved message? Only this message and its prior versions will be removed. Later messages stay unchanged. This cannot be undone."), confirm);
+    };
+    content.append(copy, edit, remove);
+    if (message.role === "assistant") {
+      const reroll = action("Regenerate message", "refresh");
+      reroll.disabled = this.busy || Boolean(this.state?.jobs?.[room.id]);
+      reroll.onclick = () => {
+        const confirm = action("Confirm reroll", "refresh");
+        confirm.onclick = () => {
+          this.dispatch("mochi:regenerate", { roomId: room.id, revision, messageId: message.id, confirmed: true });
+          sheet?.dismiss();
+        };
+        content.replaceChildren(el("p", "", "Reroll using the conversation before this reply? The previous text is retained. Later messages stay unchanged and may no longer fit the new reply."), confirm);
+      };
+      content.append(reroll);
+    }
+  }
+  markNotifications(id) {
+    const unread = this.state?.notifications?.filter((n) => n.roomId === id && !n.read && !this.acknowledged.has(n.id)) || [];
+    if (!unread.length)
+      return;
+    unread.forEach((n) => this.acknowledged.add(n.id));
+    const idForRequest = requestId("mochi_read");
+    this.acknowledgementRequests.set(idForRequest, unread.map((n) => n.id));
+    this.send({ type: "mochi:notification_read", requestId: idForRequest, roomId: id });
+  }
+  openRoom(id) {
+    this.notificationsOpen = false;
+    this.select(id);
+    this.navigate(id);
+    this.markNotifications(id);
+    this.load();
+  }
+  notificationList() {
+    const list = el("div", "mochi-notification-list");
+    list.append(el("h3", "", "Mochi notifications"));
+    const entries = this.state?.notifications || [];
+    if (!entries.length)
+      list.append(el("p", "mochi-muted", "No character notifications yet."));
+    for (const n of entries) {
+      const row = button("", "mochi-card");
+      const copy = el("div", "mochi-card-copy");
+      copy.append(el("strong", "", `${n.title} · ${n.roomTitle}`), el("span", "mochi-preview", notificationBody(n, this.notificationPolicy().previews)), el("small", "mochi-muted", n.read ? "Read" : "New"));
+      row.append(portrait(n.title, n.avatarUrl), copy);
+      row.onclick = () => this.openRoom(n.roomId);
+      list.append(row);
+    }
+    const back = action("Back to rooms", "back");
+    back.onclick = () => {
+      this.notificationsOpen = false;
+      this.redraw();
+    };
+    list.append(back);
+    return list;
   }
   composer(room) {
     const form = el("form", "mochi-composer");
@@ -1763,119 +2135,6 @@ function refreshIdentityProfileControls(root, profiles, failed = false) {
     }
     delete panel.dataset.identityRequest;
   }
-}
-
-// src/frontend/components/ui.ts
-function classes(...values) {
-  return values.filter(Boolean).join(" ");
-}
-function identityBlock(options) {
-  const root = el("div", classes("lp-identity", options.prominent && "lp-identity-prominent", options.centered && "lp-identity-centered", options.className));
-  const line = el("div", "lp-identity-line");
-  line.appendChild(el("strong", "lp-identity-name", options.name));
-  if (options.meta)
-    line.appendChild(el("span", "lp-identity-meta", options.meta));
-  root.appendChild(line);
-  if (options.description)
-    root.appendChild(el("p", "lp-identity-description", options.description));
-  return root;
-}
-function statusBadge(label, tone = "neutral") {
-  const node = el("span", "lp-status-badge", label);
-  node.dataset.tone = tone;
-  return node;
-}
-function actionGroup(className = "") {
-  return el("div", classes("lp-actions", className));
-}
-function sectionBlock(label, help = "", className = "") {
-  const section = el("section", classes("lp-section", className));
-  const head = el("header", "lp-section-head");
-  head.appendChild(el("div", "lp-section-label", label));
-  if (help)
-    head.appendChild(el("p", "lp-section-help", help));
-  const body = el("div", "lp-section-body");
-  section.append(head, body);
-  return { section, body };
-}
-function fieldBlock(label, control, help = "") {
-  const field = el("label", "lp-field");
-  field.appendChild(el("span", "lp-field-label", label));
-  field.appendChild(control);
-  if (help)
-    field.appendChild(el("span", "lp-field-help", help));
-  return field;
-}
-function controlRow(label, control, help = "") {
-  const row = el("label", "lp-card lp-control-row");
-  const copy = el("span", "lp-control-copy");
-  copy.appendChild(el("span", "lp-control-label", label));
-  if (help)
-    copy.appendChild(el("span", "lp-control-help", help));
-  row.append(copy, control);
-  return row;
-}
-function disclosure(label, ...children) {
-  const root = el("details", "lp-disclosure");
-  root.append(el("summary", "", label), ...children);
-  return root;
-}
-function showPocketSheet(anchor, title, content) {
-  const parent = anchor.closest(".lumiphone-shell") || anchor.closest('[role="dialog"]') || anchor.parentElement;
-  if (!parent)
-    return;
-  const dialog = el("dialog", "lp-sheet");
-  const panel = el("div", "lp-sheet-panel");
-  const heading = el("h2", "lp-title", title);
-  dialog.setAttribute("aria-label", title);
-  const close = el("button", "lp-button lp-sheet-close", "Done");
-  close.type = "button";
-  const home = content.parentNode;
-  const marker = document.createComment("sheet content");
-  home?.insertBefore(marker, content);
-  const dismiss = () => dialog.close();
-  close.addEventListener("click", dismiss);
-  dialog.addEventListener("click", (event) => {
-    if (event.target === dialog)
-      dismiss();
-  });
-  dialog.addEventListener("close", () => {
-    if (home)
-      marker.replaceWith(content);
-    dialog.remove();
-    if (anchor.isConnected)
-      anchor.focus();
-  }, { once: true });
-  panel.append(heading, content, close);
-  dialog.append(panel);
-  parent.append(dialog);
-  const bounds = parent.getBoundingClientRect();
-  if (parent.matches(".lumiphone-shell")) {
-    const layoutWidth = parent.offsetWidth;
-    const zoom = layoutWidth && bounds.width ? bounds.width / layoutWidth : 1;
-    const layoutPx = (pixels) => pixels / zoom;
-    dialog.style.position = "fixed";
-    dialog.style.margin = "0";
-    dialog.style.left = `${layoutPx(bounds.left + 12)}px`;
-    dialog.style.top = "auto";
-    dialog.style.bottom = `${layoutPx(Math.max(12, window.innerHeight - bounds.bottom + 24))}px`;
-    dialog.style.width = `${layoutPx(Math.max(0, bounds.width - 24))}px`;
-    dialog.style.maxHeight = `${layoutPx(Math.max(120, bounds.height - 70))}px`;
-  }
-  dialog.showModal();
-  return { dismiss };
-}
-function outgoingSurface(accent) {
-  const hex = /^#([0-9a-f]{6})$/i.exec(accent)?.[1] || "8b7dff";
-  let rgb = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
-  const luminance = () => rgb.map((v) => v / 255).map((v) => v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4).reduce((sum, v, i) => sum + v * [0.2126, 0.7152, 0.0722][i], 0);
-  while (luminance() > 0.16)
-    rgb = rgb.map((v) => Math.floor(v * 0.95));
-  return "#" + rgb.map((v) => v.toString(16).padStart(2, "0")).join("");
-}
-function avatarColor(identity) {
-  const hash = Array.from(identity).reduce((n, c) => n * 31 + c.charCodeAt(0) >>> 0, 0);
-  return `hsl(${hash % 360} 27% 34%)`;
 }
 
 // src/frontend/components/wallpaper-gallery.ts
@@ -7552,10 +7811,11 @@ class PocketController {
   clock;
   expanded = false;
   currentApp = "home";
+  dismissMochiNotification;
   mochi = new MochiView((payload) => this.ctx.sendToBackend(payload), () => {
     if (this.currentApp === "mochi")
       this.render(false);
-  }, (roomId) => this.openPocket({ app: "mochi", roomId }));
+  }, (roomId) => this.openPocket({ app: "mochi", roomId }), () => ({ enabled: this.preferences.notifyMessages, previews: this.preferences.notificationPreviews, visible: this.expanded && this.currentApp === "mochi" && !document.hidden }), (n) => this.showMochiNotification(n));
   state = null;
   preferences = defaultPreferences();
   settingsDraft = null;
@@ -7763,6 +8023,7 @@ class PocketController {
     this.refresh();
   }
   destroy() {
+    this.dismissMochiNotification?.();
     this.mochi.destroy();
     this.voicePlayer.stop();
     this.setupModalDismiss?.();
@@ -8467,7 +8728,10 @@ class PocketController {
           this.manualMessageOverrides.delete(conversationId);
       }
       this.jevKeyConfigured = payload.jevKeyConfigured === true;
-      this.preferences = normalizePreferences(payload.preferences || this.preferences);
+      const nextPreferences = normalizePreferences(payload.preferences || this.preferences);
+      if (nextPreferences.notifyMessages !== this.preferences.notifyMessages || nextPreferences.notificationPreviews !== this.preferences.notificationPreviews)
+        this.dismissMochiNotification?.();
+      this.preferences = nextPreferences;
       applyPocketTouchScroll(this.mobileWidget, this.preferences.nativeTouchScrollMode);
       if (payload.reason === "import" || payload.reason === "reset_preferences" || payload.reason === "preferences")
         this.settingsDraft = structuredClone(this.preferences);
@@ -9046,6 +9310,8 @@ class PocketController {
       Object.assign(this.settingsDraft, structuredClone(normalized));
     else
       this.settingsDraft = structuredClone(normalized);
+    if (normalized.notifyMessages !== this.preferences.notifyMessages || normalized.notificationPreviews !== this.preferences.notificationPreviews)
+      this.dismissMochiNotification?.();
     this.preferences = normalized;
     applyPocketTouchScroll(this.mobileWidget, normalized.nativeTouchScrollMode);
     this.applyAppearance();
@@ -9059,6 +9325,14 @@ class PocketController {
     this.settingsSaveTimer = window.setTimeout(() => {
       this.send("lumiphone:save_preferences", { preferences: this.settingsDraft || this.preferences });
     }, 240);
+  }
+  showMochiNotification(notification) {
+    if (!this.preferences.notifyMessages || !this.expanded || document.hidden)
+      return;
+    if (this.shell.querySelector(".lp-floating-notification:not(.mochi-notification-toast)"))
+      return;
+    this.dismissMochiNotification?.();
+    this.dismissMochiNotification = showMochiNotification(this.shell, notification, this.preferences.notificationPreviews, () => this.mochi.openRoom(notification.roomId));
   }
   showIncomingNotification(notification) {
     if (this.state && !notificationBelongsToDevice(this.state, this.currentDeviceOwnerActorId(), notification.deviceOwnerActorId))
@@ -9142,6 +9416,7 @@ class PocketController {
     });
   }
   close() {
+    this.dismissMochiNotification?.();
     this.mochi.leave();
     this.voicePlayer.stop();
     if (!this.widget && !this.dockPanel && !this.mobileWidget)
