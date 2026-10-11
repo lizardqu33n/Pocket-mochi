@@ -557,8 +557,8 @@ test('Mochi view retains selected room/persona across unrelated Pocket state eve
     expect(view.receive({ type: 'lumiphone:state', reason: 'chat_switched', state: { chatId: 'other', pocketPersona: { displayName: 'Other' } } })).toBe(false)
     expect(view.roomId).toBe(room.id)
     const element = view.render()
-    expect(element.textContent).toContain('Stable Alice')
+    expect(element.querySelector('textarea[aria-label="Message"]')?.getAttribute('aria-description')).toContain('Stable Alice')
     expect(element.querySelectorAll('textarea[aria-label="Message"]').length).toBe(1)
-    expect(element.textContent).toContain('Send')
+    expect(element.querySelector('button[aria-label="Send"]')).not.toBeNull()
   } finally { globalThis.document = previous; dom.window.close() }
 })

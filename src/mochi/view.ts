@@ -146,17 +146,19 @@ export class MochiView {
     const style = el('style')
     style.textContent = MOCHI_STYLES
     page.append(style)
-    const header = el('header'); const brand = el('div', 'mochi-brand'); brand.append(el('h2', '', 'Mochi'), el('span', 'mochi-standalone', 'Standalone'))
+    const header = el('header'); const brand = el('div', 'mochi-brand')
+    const wordmark = el('h2'); wordmark.setAttribute('aria-label', 'Mochi')
+    const letters = el('span', '', 'Moch'), lastLetter = el('span', 'mochi-wordmark-i', 'ı')
+    letters.setAttribute('aria-hidden', 'true'); lastLetter.setAttribute('aria-hidden', 'true'); wordmark.append(letters, lastLetter); brand.append(wordmark)
     // Original static illustration, drawn here without any external source asset.
     const mascot = el('span', 'mochi-mascot'); mascot.setAttribute('aria-hidden', 'true'); mascot.innerHTML = '<svg viewBox="0 0 64 48" fill="none"><path d="M5 33C5 23 17 7 32 7s27 16 27 26c0 8-12 11-27 11S5 41 5 33Z" fill="#f8e4ef" stroke="#d9abc4" stroke-width="2"/><ellipse cx="17" cy="32" rx="5" ry="3" fill="#eea6c1"/><ellipse cx="47" cy="32" rx="5" ry="3" fill="#eea6c1"/><circle cx="24" cy="27" r="2.5" fill="#443242"/><circle cx="40" cy="27" r="2.5" fill="#443242"/><path d="M28 30q2 4 4 0q2 4 4 0" stroke="#443242" stroke-width="2" stroke-linecap="round"/></svg>'; brand.append(mascot); header.append(brand)
-    const refresh = action('Refresh', 'refresh', true); refresh.disabled = this.busy
-    refresh.onclick = () => this.load(); const headerActions = el('div', 'mochi-actions')
+    const headerActions = el('div', 'mochi-actions')
     if (this.notificationPolicy().enabled) {
       const bell = action('Mochi notifications', 'notifications', true); const unread = this.state?.notifications?.filter(n => !n.read).length || 0; bell.dataset.unread = String(unread > 0); bell.title = `Mochi notifications · ${unread} unread`; if (unread) bell.append(el('span', 'mochi-unread-count', String(unread)))
       bell.onclick = () => { this.leave(); this.notificationsOpen = !this.notificationsOpen; this.redraw(); if (!this.state) this.load() }; headerActions.append(bell)
       bell.setAttribute('aria-description', `${unread} unread notifications`)
     }
-    headerActions.append(refresh); header.append(headerActions); page.append(header)
+    header.append(headerActions, mascot); page.append(header)
     if (this.error) { const error = el('p', 'mochi-error', this.error); error.setAttribute('role', 'alert'); page.append(error) }
     if (!this.state) return page
     if (this.feedback) { const status = el('p', 'mochi-muted', this.feedback); status.setAttribute('role', 'status'); page.append(status) }
@@ -169,21 +171,21 @@ export class MochiView {
       const info = el('div', 'mochi-room-info'), selector = el('select', 'mochi-room-selector'); selector.setAttribute('aria-label', 'Select room')
       for (const r of this.state.rooms) { const option = el('option', '', r.title); option.value = r.id; selector.append(option) }; selector.value = room.id
       selector.onchange = () => this.openRoom(selector.value)
-      info.append(selector, el('p', 'mochi-muted', `${room.characterIds.length} ${room.characterIds.length === 1 ? 'character' : 'characters'}`), el('p', 'mochi-muted', `You are ${room.persona.name}`))
+      selector.title = room.title
+      const roomSelector = el('div', 'mochi-room-select')
+      const groupIcon = el('span', 'mochi-room-select-icon'); groupIcon.setAttribute('aria-hidden', 'true'); groupIcon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6M18 15a5 5 0 0 1 3 5"/></svg>'
+      roomSelector.append(groupIcon, selector)
+      const roomMeta = el('p', 'mochi-room-meta', `${room.characterIds.length} ${room.characterIds.length === 1 ? 'participant' : 'participants'} · active now`)
+      // Requested temporary visual convention, not a persisted presence state.
+      roomMeta.title = 'Temporary presence display; live status is not tracked.'
+      info.append(roomSelector, roomMeta)
       const controls = el('div', 'mochi-actions')
       const inbox = action('Room inbox', 'back', true); inbox.onclick = () => { this.select(''); this.navigate() }
       const edit = action('Room settings', 'settings', true); edit.onclick = () => { this.leave(); this.editing = true; this.draft = null; this.settingsDraft = null; this.redraw() }
       const participants = action('Room participants', 'people', true); participants.onclick = () => { const content = el('div', 'mochi-participants'); for (const id of room.characterIds) { const c = this.state?.characters.find(c => c.id === id); const name = room.settings?.characterNames[id] || c?.name || 'Unavailable character'; const row = el('div', 'mochi-member'); row.append(portrait(name, c?.avatarUrl), el('span', '', name)); content.append(row) }; this.sheet(participants, 'Room participants', content) }
-      controls.append(participants, edit); roomHeader.append(info, controls); page.append(roomHeader)
+      participants.title = 'Room participants'; controls.append(participants, edit); roomHeader.append(info, controls); page.append(roomHeader)
       headerActions.prepend(inbox)
-      const members = el('div', 'mochi-member-strip')
-      for (const id of room.characterIds) {
-        const character = this.state.characters.find(c => c.id === id)
-        const name = room.settings?.characterNames[id] || character?.name || 'Unavailable character'
-        const card = el('div', 'mochi-member'); card.append(portrait(name, character?.avatarUrl), el('span', '', name))
-        members.append(card)
-      }
-      page.append(members, this.thread(room), this.composer(room))
+      page.append(this.thread(room), this.composer(room))
       return page
     }
     if (this.roomId) page.append(el('p', 'mochi-error', 'This room is unavailable. Refresh or select another room.'))
@@ -271,24 +273,37 @@ export class MochiView {
       previous = message
       const avatar = el('span', 'mochi-message-avatar', message.name?.slice(0, 1) || '?')
       if (message.avatarUrl) { const image = el('img'); image.src = message.avatarUrl; image.alt = ''; avatar.replaceChildren(image) }
+      const avatarFrame = el('span', 'mochi-avatar-frame'); avatarFrame.append(avatar)
+      if (message.role === 'assistant') { const dot = el('span', 'mochi-presence-dot'); dot.setAttribute('aria-hidden', 'true'); dot.title = 'Temporary presence indicator'; avatarFrame.append(dot) }
       const body = el('div', 'mochi-message-body')
       const time = el('time', '', new Date(message.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })); time.dateTime = message.createdAt
-      const meta = el('div', 'mochi-message-meta'); meta.append(el('strong', 'mochi-message-name', message.name || 'Unknown'), time)
-      if (message.editedAt) meta.append(el('small', 'mochi-muted', 'Edited'))
+      const displayName = message.role === 'user' ? 'You' : message.name || 'Unknown'
+      const name = el('strong', 'mochi-message-name', displayName); name.title = message.name || 'Unknown'
+      row.setAttribute('aria-label', `Message from ${message.name || 'Unknown'}`)
+      const heading = el('div', 'mochi-message-heading'); heading.append(name, time)
+      const meta = el('div', 'mochi-message-meta')
       const more = action(`Actions for ${message.name || 'message'}`, 'more', true); more.classList.add('mochi-message-actions'); more.onclick = () => this.messageActions(more, room, message)
-      meta.append(more); body.append(meta, el('div', 'mochi-bubble', message.content || ''))
-      row.append(avatar, body); thread.append(row)
+      const bubble = el('div', 'mochi-bubble', message.content || '')
+      if (message.editedAt) { bubble.title = `Edited ${new Date(message.editedAt).toLocaleString()}`; bubble.setAttribute('aria-description', bubble.title) }
+      meta.append(more); body.append(heading, bubble, meta)
+      row.append(avatarFrame, body); thread.append(row)
     }
     if (this.state?.jobs?.[room.id]) { const status = el('p', 'mochi-muted', 'Character is replying…'); status.setAttribute('role', 'status'); thread.append(status) }
     return thread
   }
   private sheet(anchor: HTMLElement, title: string, content: HTMLElement): ReturnType<typeof showPocketSheet> {
     const sheet = showPocketSheet(anchor, title, content)
-    if (sheet) { this.sheets.add(sheet.dismiss); content.closest('dialog')?.addEventListener('close', () => this.sheets.delete(sheet.dismiss), { once: true }) }
+    if (sheet) { this.sheets.add(sheet.dismiss); content.closest('dialog')?.classList.add('mochi-sheet'); content.closest('dialog')?.addEventListener('close', () => this.sheets.delete(sheet.dismiss), { once: true }) }
     return sheet
   }
   private messageActions(anchor: HTMLElement, room: MochiRoom, message: MochiMessage): void {
     const revision = room.revision, content = el('div', 'mochi-action-panel')
+    const context = el('p', 'mochi-action-context')
+    const author = el('strong', 'mochi-action-author', message.role === 'user' ? 'You' : message.name); author.title = message.name
+    const details = el('small', '', `${new Date(message.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}${message.editedAt ? ` · Edited ${new Date(message.editedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : ''}`)
+    if (message.editedAt) details.title = `Edited ${new Date(message.editedAt).toLocaleString()}`
+    context.append(author, details)
+    content.append(context)
     const sheet = this.sheet(anchor, 'Message actions', content)
     const copy = action('Copy message', 'copy'); copy.onclick = async () => {
       try { await navigator.clipboard.writeText(message.content); this.feedback = 'Message copied.'; sheet?.dismiss(); this.redraw() }
@@ -350,9 +365,22 @@ export class MochiView {
     for (const id of room.characterIds) { const o = el('option', '', room.settings?.characterNames[id] || this.state?.characters.find(c => c.id === id)?.name || id); o.value = id; responder.append(o) }
     const selected = this.responders.get(room.id) || 'auto'
     responder.value = room.characterIds.includes(selected) ? selected : 'auto'
-    responder.onchange = () => this.responders.set(room.id, responder.value)
-    const input = el('textarea'); input.rows = 1; input.maxLength = 32000; input.setAttribute('aria-label', 'Message'); input.placeholder = `Message ${room.title}…`; input.value = this.drafts.get(room.id) || ''
+    const responderField = el('div', 'mochi-responder')
+    const identity = el('span', 'mochi-responder-identity'); identity.setAttribute('aria-hidden', 'true')
+    const showResponder = () => {
+      const character = this.state?.characters.find(c => c.id === responder.value)
+      const name = responder.value === 'auto' ? 'Automatic' : room.settings?.characterNames[responder.value] || character?.name || responder.value
+      const avatar = portrait(name, character?.avatarUrl)
+      if (responder.value === 'auto') avatar.innerHTML = POCKET_ICONS.contacts
+      identity.replaceChildren(avatar, el('span', 'mochi-responder-name', name))
+      responderField.title = `Next responder: ${name}`
+    }
+    showResponder(); responder.onchange = () => { this.responders.set(room.id, responder.value); showResponder() }
+    responderField.append(identity, responder)
+    const input = el('textarea'); input.rows = 1; input.maxLength = 32000; input.setAttribute('aria-label', 'Message'); input.placeholder = 'Message…'; input.value = this.drafts.get(room.id) || ''
     input.dataset.pocketComposer = `mochi_${room.id}`
+    const guidance = `Messaging as ${room.persona.name}. Enter to send; Shift+Enter for a new line. Send empty to continue.`
+    input.setAttribute('aria-description', guidance); input.title = guidance
     input.oninput = () => { this.drafts.set(room.id, input.value); input.style.height = 'auto'; input.style.height = `${Math.min(input.scrollHeight, 112)}px` }
     input.onkeydown = event => { if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) { event.preventDefault(); form.requestSubmit() } }
     const job = this.state?.jobs?.[room.id]
@@ -360,7 +388,7 @@ export class MochiView {
     const stop = action('Stop reply', 'stop', true); stop.disabled = !job; stop.hidden = !job; stop.onclick = () => this.send({ type: 'mochi:cancel', roomId: room.id, generationRequestId: job })
     form.onsubmit = event => { event.preventDefault(); if (!this.busy && !job) this.dispatch('mochi:send', { roomId: room.id, revision: room.revision, content: input.value, responder: responder.value }) }
     const actions = el('div', 'mochi-composer-row'); actions.append(input, submit, stop)
-    form.append(responder, actions, el('p', 'mochi-composer-hint', 'Send empty to continue · Shift+Enter for a new line'))
+    form.append(responderField, actions)
     return form
   }
 }
