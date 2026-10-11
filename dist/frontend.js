@@ -269,15 +269,35 @@ function statusFor(room, id, now = Date.now()) {
 
 // src/mochi/profile-screen.ts
 class MochiProfiles {
+  confirmation;
   state = null;
   draft = null;
   start(account) {
-    this.draft = { id: account?.id || "", revision: account?.revision || 0, displayName: account?.displayName || "", username: account?.username || "", persona: account ? "keep" : "manual", description: "", avatarId: account ? account.avatarUrl.split("/api/v1/images/")[1] || "" : "persona" };
+    this.confirmation = undefined;
+    this.draft = { id: account?.id || "", revision: account?.revision || 0, displayName: account?.displayName || "", username: account?.username || "", persona: account ? "keep" : "manual", description: account?.persona.description || "", avatarId: account ? account.avatarUrl.split("/api/v1/images/")[1] || "" : "persona" };
   }
   render(busy, send, redraw, exit) {
     const form = el("form", "mochi-form mochi-profile-screen");
     if (!this.state) {
       form.append(el("p", "", "Loading profiles…"));
+      return form;
+    }
+    if (this.confirmation) {
+      const { kind, account } = this.confirmation;
+      form.append(el("h3", "", kind === "archive" ? "Archive profile?" : "Restore profile?"), el("p", "mochi-muted", kind === "archive" ? `Archive ${account.displayName} and preserve every chat and schedule? Autonomous work will stop while archived.` : `Restore ${account.displayName}? Preserved schedules may resume subject to their expiry and limits.`));
+      const confirm = button(kind === "archive" ? "Confirm archive and preserve chats" : "Confirm restore profile", "lp-button mochi-primary");
+      confirm.disabled = busy;
+      confirm.onclick = () => {
+        send("mochi:account_" + kind, { accountId: account.id, revision: account.revision, confirmed: true, ...kind === "archive" ? { roomPolicy: "preserve" } : {} });
+        this.confirmation = undefined;
+      };
+      const cancel = button("Cancel", "lp-button");
+      cancel.disabled = busy;
+      cancel.onclick = () => {
+        this.confirmation = undefined;
+        redraw();
+      };
+      form.append(confirm, cancel);
       return form;
     }
     if (!this.draft) {
@@ -308,6 +328,15 @@ class MochiProfiles {
           redraw();
         };
         form.append(edit);
+      }
+      for (const account of this.state.accounts.filter((a) => a.archived)) {
+        const restore = button("Restore " + account.displayName, "lp-button");
+        restore.disabled = busy;
+        restore.onclick = () => {
+          this.confirmation = { kind: "restore", account };
+          redraw();
+        };
+        form.append(restore);
       }
       const back = button("Back", "lp-button");
       back.onclick = exit;
@@ -416,6 +445,15 @@ class MochiProfiles {
       field("Upload profile portrait", upload);
     }
     form.append(el("p", "mochi-muted", "Profile changes apply to new chats. Existing chats keep their saved identity and authorship."));
+    if (saved) {
+      const archive = button("Archive profile", "lp-button");
+      archive.disabled = busy;
+      archive.onclick = () => {
+        this.confirmation = { kind: "archive", account: saved };
+        redraw();
+      };
+      form.append(archive);
+    }
     const save = button(busy ? "Saving…" : "Save profile", "lp-button mochi-primary");
     save.type = "submit";
     save.disabled = busy;
@@ -526,6 +564,7 @@ function portrait(name, url = "") {
   }
   return node;
 }
+var stateAccountLabel = (id) => id ? "Account settings" : "Profiles and account settings";
 
 class MochiView {
   send;
@@ -540,6 +579,7 @@ class MochiView {
   startupOpen = false;
   activeAccountId;
   phone;
+  associations = new Map;
   open(phone) {
     this.leave();
     this.resetScope();
@@ -697,6 +737,35 @@ class MochiView {
     this.redraw();
   }
   receive(payload) {
+    if (payload?.type === "mochi:room_assigned") {
+      const previous = this.associations.get(payload.roomId);
+      if (previous && previous.revision >= payload.associationRevision)
+        return true;
+      this.associations.set(payload.roomId, { accountId: payload.accountId, revision: payload.associationRevision });
+      if (this.state && (this.state.accountId === payload.sourceAccountId || this.state.accountId === payload.accountId)) {
+        const isSource = this.state.accountId === payload.sourceAccountId;
+        if (isSource) {
+          this.state.rooms = this.state.rooms.filter((r) => r.id !== payload.roomId);
+          this.state.notifications = this.state.notifications?.filter((n) => n.roomId !== payload.roomId);
+          this.notificationsChanged([], new Set([payload.roomId]));
+          if (this.roomId === payload.roomId) {
+            this.leave();
+            this.roomId = "";
+            this.editing = false;
+            this.settingsDraft = null;
+            this.draft = null;
+            this.navigate();
+          }
+        }
+        if (!this.creating && !this.editing) {
+          this.busy = false;
+          clearTimeout(this.timeout);
+          this.dispatch("mochi:list");
+        } else
+          this.redraw();
+      }
+      return true;
+    }
     if (payload?.type === "mochi:accounts") {
       if (payload.requestId !== this.request)
         return true;
@@ -716,6 +785,10 @@ class MochiView {
       }
       if (payload.createdAccountId && this.pickerOpen) {
         this.chooseAccount(payload.createdAccountId);
+        return true;
+      }
+      if (this.state?.accountId && !payload.state.accounts.some((a) => a.id === this.state?.accountId && !a.archived)) {
+        this.showPicker();
         return true;
       }
       if (this.startupOpen) {
@@ -802,6 +875,14 @@ class MochiView {
       if (this.requestVersion === this.selectionVersion)
         this.error = String(payload.message);
     } else {
+      payload.state.rooms = payload.state.rooms.filter((r) => {
+        const known = this.associations.get(r.id);
+        return !known || known.accountId === payload.state.accountId && (r.associationRevision || 0) >= known.revision;
+      });
+      payload.state.notifications = (payload.state.notifications || []).filter((n) => {
+        const known = this.associations.get(n.roomId);
+        return !known || known.accountId === payload.state.accountId;
+      });
       const notifications = this.mergeNotifications(payload.state.notifications || [], Object.fromEntries(payload.state.rooms.map((r) => [r.id, r.notificationRevision || 0])));
       this.state = { ...payload.state, notifications };
       for (const [id, request] of this.ownGenerations)
@@ -992,12 +1073,16 @@ class MochiView {
     const change = action("Switch Mochi account", "people");
     change.onclick = () => this.showPicker();
     page.append(change);
-    const profiles = action("Mochi profiles", "people");
+    const profiles = action(stateAccountLabel(this.state.accountId), "people");
     profiles.disabled = this.busy;
     profiles.onclick = () => {
       this.leave();
       this.profilesOpen = true;
-      this.profiles.draft = null;
+      const current = this.profiles.state?.accounts.find((a) => a.id === this.state?.accountId);
+      if (current)
+        this.profiles.start(current);
+      else
+        this.profiles.draft = null;
       this.dispatch("mochi:accounts");
     };
     page.append(profiles);
@@ -1084,8 +1169,11 @@ class MochiView {
       draft.persona = persona.value;
       this.redraw();
     };
-    field("Your identity in this room", persona);
-    if (draft.persona === "manual") {
+    if (!state.accountId)
+      field("Your identity in this room", persona);
+    else
+      form.append(el("p", "mochi-muted", `Saved chat identity: ${room?.persona.name || this.profiles.state?.accounts.find((a) => a.id === state.accountId)?.displayName || "Account profile"}. Profile settings are separate from chat settings.`));
+    if (draft.persona === "manual" && !state.accountId) {
       const name = el("input");
       name.required = true;
       name.maxLength = 120;
@@ -1282,6 +1370,8 @@ class MochiView {
         field(`Room name for ${state.characters.find((c) => c.id === id)?.name || id}`, input);
       }
     }
+    if (room)
+      form.append(this.assignmentControls(room));
     const save = action(this.busy ? "Saving…" : room ? "Save settings" : "Create room", room ? "settings" : "plus");
     save.classList.add("mochi-primary");
     save.type = "submit";
@@ -1299,10 +1389,48 @@ class MochiView {
     form.append(actions);
     form.onsubmit = (event) => {
       event.preventDefault();
-      const selected = draft.persona === "keep" ? undefined : draft.persona === "manual" ? { source: "manual", name: draft.name, description: draft.description } : state.personas[Number(draft.persona)];
+      const selected = state.accountId ? undefined : draft.persona === "keep" ? undefined : draft.persona === "manual" ? { source: "manual", name: draft.name, description: draft.description } : state.personas[Number(draft.persona)];
       this.dispatch(room ? "mochi:update" : "mochi:create", { roomId: room?.id, revision: room ? this.draftRevision : undefined, title: draft.title, characterIds: draft.characterIds, persona: selected, ...room ? { settings } : {} });
     };
     return form;
+  }
+  assignmentControls(room) {
+    const section = el("section", "mochi-assignment mochi-form");
+    section.append(el("h4", "", "Chat ownership"), el("p", "mochi-muted", `Saved identity: ${room.persona.name}. Assignment keeps this snapshot, all messages and all schedules.`));
+    if (!this.profiles.state) {
+      const load = action("Load profiles for assignment", "people");
+      load.type = "button";
+      load.disabled = this.busy;
+      load.onclick = () => this.dispatch("mochi:accounts");
+      section.append(load);
+      return section;
+    }
+    const select = el("select");
+    select.setAttribute("aria-label", "Assign chat to Mochi account");
+    const empty = el("option", "", "Choose destination account");
+    empty.value = "";
+    select.append(empty);
+    for (const a of this.profiles.state.accounts.filter((a) => !a.archived && a.id !== room.accountId)) {
+      const option = el("option", "", a.displayName + (a.username ? " · @" + a.username : ""));
+      option.value = a.id;
+      select.append(option);
+    }
+    const confirm = el("input");
+    confirm.type = "checkbox";
+    confirm.setAttribute("aria-label", "Keep saved persona and all chat data");
+    const label = el("label", "mochi-toggle", "Keep saved persona and all chat data");
+    label.append(confirm);
+    const assign = action(room.accountId ? "Reassign chat" : "Assign legacy chat", "people");
+    assign.type = "button";
+    assign.disabled = true;
+    const update = () => {
+      assign.disabled = this.busy || !select.value || !confirm.checked;
+    };
+    select.onchange = update;
+    confirm.onchange = update;
+    assign.onclick = () => this.dispatch("mochi:room_assign", { roomId: room.id, revision: room.revision, associationRevision: room.associationRevision || 0, targetAccountId: select.value, confirmed: confirm.checked, preservePersona: confirm.checked });
+    section.append(select, label, assign);
+    return section;
   }
   thread(room) {
     const thread = el("div", "mochi-thread");

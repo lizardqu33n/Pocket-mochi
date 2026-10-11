@@ -11,14 +11,17 @@ export interface AccountScreenState extends MochiAccountBank {
   phone?: {supported: boolean; preference: 'last-used'|'picker'; lastAccountId: string}
 }
 export class MochiProfiles {
+  private confirmation?: {kind:'archive'|'restore';account:MochiAccount}
   state: AccountScreenState | null = null
   draft: { id: string; revision: number; displayName: string; username: string; persona: string; description: string; avatarId: string } | null = null
   start(account?: MochiAccount): void {
-    this.draft = { id: account?.id || '', revision: account?.revision || 0, displayName: account?.displayName || '', username: account?.username || '', persona: account ? 'keep' : 'manual', description: '', avatarId: account ? account.avatarUrl.split('/api/v1/images/')[1] || '' : 'persona' }
+    this.confirmation=undefined
+    this.draft = { id: account?.id || '', revision: account?.revision || 0, displayName: account?.displayName || '', username: account?.username || '', persona: account ? 'keep' : 'manual', description: account?.persona.description||'', avatarId: account ? account.avatarUrl.split('/api/v1/images/')[1] || '' : 'persona' }
   }
   render(busy: boolean, send: (type: string, input?: Record<string,unknown>) => void, redraw: () => void, exit: () => void): HTMLElement {
     const form = el('form', 'mochi-form mochi-profile-screen')
     if (!this.state) { form.append(el('p','','Loading profiles…')); return form }
+    if(this.confirmation){const {kind,account}=this.confirmation;form.append(el('h3','',kind==='archive'?'Archive profile?':'Restore profile?'),el('p','mochi-muted',kind==='archive'?`Archive ${account.displayName} and preserve every chat and schedule? Autonomous work will stop while archived.`:`Restore ${account.displayName}? Preserved schedules may resume subject to their expiry and limits.`));const confirm=button(kind==='archive'?'Confirm archive and preserve chats':'Confirm restore profile','lp-button mochi-primary');confirm.disabled=busy;confirm.onclick=()=>{send('mochi:account_'+kind,{accountId:account.id,revision:account.revision,confirmed:true,...(kind==='archive'?{roomPolicy:'preserve'}:{})});this.confirmation=undefined};const cancel=button('Cancel','lp-button');cancel.disabled=busy;cancel.onclick=()=>{this.confirmation=undefined;redraw()};form.append(confirm,cancel);return form}
     if (!this.draft) {
       form.append(el('h3','','Mochi profiles'),el('p','mochi-muted','Fictional identities owned by your Lumiverse account.'))
       const create=button('New profile','lp-button mochi-primary');create.disabled=busy;create.onclick=()=>{this.start();redraw()};form.append(create)
@@ -27,6 +30,7 @@ export class MochiProfiles {
         const avatar=el('span','mochi-avatar',account.displayName.slice(0,1));if(account.avatarUrl){const img=el('img');img.src=account.avatarUrl;img.alt='';avatar.replaceChildren(img)}
         const copy=el('span','mochi-card-copy');copy.append(el('strong','',account.displayName),el('small','mochi-muted',account.username?'@'+account.username:'No username'));edit.append(avatar,copy);edit.setAttribute('aria-label','Edit profile '+account.displayName);edit.onclick=()=>{this.start(account);redraw()};form.append(edit)
       }
+      for(const account of this.state.accounts.filter(a=>a.archived)){const restore=button('Restore '+account.displayName,'lp-button');restore.disabled=busy;restore.onclick=()=>{this.confirmation={kind:'restore',account};redraw()};form.append(restore)}
       const back=button('Back','lp-button');back.onclick=exit;form.append(back);return form
     }
     const draft=this.draft
@@ -47,6 +51,7 @@ export class MochiProfiles {
     const preview=el('span','mochi-avatar mochi-profile-portrait',draft.displayName.slice(0,1)||'?');if(url){const img=el('img');img.src=url;img.alt='Profile portrait preview';preview.replaceChildren(img)}form.append(preview)
     if(this.state.canUploadAvatar){const upload=el('input');upload.type='file';upload.accept='image/png,image/jpeg,image/webp';upload.disabled=busy;upload.onchange=()=>{const file=upload.files?.[0];if(!file)return;if(file.size>2097152){upload.setCustomValidity('Choose a portrait up to 2 MB.');upload.reportValidity();return}const reader=new FileReader();reader.onload=()=>send('mochi:account_avatar_upload',{dataUrl:reader.result});reader.readAsDataURL(file)};field('Upload profile portrait',upload)}
     form.append(el('p','mochi-muted','Profile changes apply to new chats. Existing chats keep their saved identity and authorship.'))
+    if(saved){const archive=button('Archive profile','lp-button');archive.disabled=busy;archive.onclick=()=>{this.confirmation={kind:'archive',account:saved};redraw()};form.append(archive)}
     const save=button(busy?'Saving…':'Save profile','lp-button mochi-primary');save.type='submit';save.disabled=busy
     const cancel=button('Cancel profile changes','lp-button');cancel.disabled=busy;cancel.onclick=()=>{this.draft=null;redraw()};form.append(save,cancel)
     form.onsubmit=e=>{e.preventDefault();const p=draft.persona==='keep'?undefined:draft.persona==='manual'?{source:'manual',name:draft.displayName,description:draft.description}:this.state!.personas.find(p=>p.source+':'+p.sourceId===draft.persona);send(draft.id?'mochi:account_update':'mochi:account_create',{accountId:draft.id||undefined,revision:draft.revision,displayName:draft.displayName,username:draft.username,persona:p,...(draft.avatarId==='persona'?(p?{}:{avatarId:saved?.persona.avatarUrl.split('/api/v1/images/')[1]||''}):{avatarId:draft.avatarId})})}

@@ -50,6 +50,7 @@ function validateRoom(value: any, id: string): MochiRoom {
   if (value.characterIds.length > 12 || new Set(value.characterIds).size !== value.characterIds.length) throw new Error('Invalid saved room membership.')
   value.characterIds.forEach(entityId)
   if (value.accountId !== undefined) fictionalAccountId(value.accountId)
+  if(value.associationRevision!==undefined&&(!Number.isSafeInteger(value.associationRevision)||value.associationRevision<0))throw new Error('Damaged room association; its file was preserved.')
   return value
 }
 export class MochiService {
@@ -117,6 +118,23 @@ export class MochiService {
   }
   async archiveAccount(userId: string, input: any): Promise<void> {
     await this.fictionalAccounts.archive(userId, input, () => this.abortFictional(userId, input.accountId, true))
+  }
+  async assignRoom(userId:string,input:any):Promise<void>{
+    const user=identifier(userId),id=roomId(input.roomId),target=fictionalAccountId(input.targetAccountId)
+    if(input.confirmed!==true||input.preservePersona!==true)throw new Error('Confirm assignment while preserving the saved persona and all chat data.')
+    await this.locked(user,id,async()=>{
+      const room=await this.read(user,id,input.accountId)
+      await this.fictionalAccounts.get(user,target)
+      if(input.revision!==room.revision||input.associationRevision!==(room.associationRevision||0))throw new Error('The chat or its assignment changed elsewhere. Refresh before assigning.')
+      if(room.accountId===target)throw new Error('This chat already belongs to that account.')
+      if(this.jobs.has(this.jobKey(user,id))||(this.pending.get(this.jobKey(user,id))?.size||0)>0||room.runtime?.jobs.some(j=>j.status==='generating'&&(j.leaseUntil||0)>this.now()))throw new Error('Wait for active generation to finish or stop it before assigning this chat. Saved schedules remain intact.')
+      const sourceAccountId=room.accountId
+      room.accountId=target;room.associationRevision=(room.associationRevision||0)+1
+      for(const notice of room.notifications||[])notice.accountId=target
+      // Ownership-only transaction: content revisions, source persona, receipts and runtime are unchanged.
+      await this.persist(user,room)
+      this.host.sendToFrontend({type:'mochi:room_assigned',roomId:id,sourceAccountId,accountId:target,associationRevision:room.associationRevision},user)
+    })
   }
   private async locked<T>(user: string, id: string, work: () => Promise<T>): Promise<T> {
     return this.fictionalAccounts.guard(user, () => this.roomLocked(user, id, work))
@@ -664,6 +682,7 @@ export class MochiService {
       if (payload.type === 'mochi:send') { await this.message(userId, payload); return }
       if (payload.type === 'mochi:regenerate') { await this.message(userId, payload, true); return }
       if (payload.type === 'mochi:message_action') await this.action(userId, payload)
+      else if(payload.type==='mochi:room_assign')await this.assignRoom(userId,payload)
       else if (payload.type === 'mochi:notification_read') {
         await this.acknowledge(userId, payload)
         const state = await this.state(userId, payload.accountId)
@@ -674,7 +693,7 @@ export class MochiService {
       if (payload.type === 'mochi:cancel') { await this.cancel(userId, payload.roomId, payload.generationRequestId, payload.accountId); return }
       if (payload.type === 'mochi:create') selectedRoomId = (await this.create(userId, payload)).id
       else if (payload.type === 'mochi:update') selectedRoomId = (await this.update(userId, payload)).id
-      else if (payload.type !== 'mochi:list' && payload.type !== 'mochi:message_action' && payload.type !== 'mochi:notification_clear') throw new Error('Unsupported Mochi action.')
+      else if (payload.type !== 'mochi:list' && payload.type !== 'mochi:message_action' && payload.type !== 'mochi:notification_clear' && payload.type !== 'mochi:room_assign') throw new Error('Unsupported Mochi action.')
       this.host.sendToFrontend({ type: 'mochi:state', requestId: payload.requestId, selectedRoomId, state: await this.state(userId, payload.accountId) }, userId)
     } catch (error) {
       const message = error instanceof Error ? error.name === 'AbortError' ? 'Reply stopped. Your messages are saved.' : error.message : 'Unable to save Mochi room.'

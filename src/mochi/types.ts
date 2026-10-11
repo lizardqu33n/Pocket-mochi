@@ -23,6 +23,7 @@ export const defaultMochiSettings = (): MochiSettings => ({ autoReply: true, con
 export interface MochiRoom {
   version: 1
   accountId?: string
+  associationRevision?: number
   id: string
   revision: number
   title: string
