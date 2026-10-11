@@ -29,6 +29,7 @@ export interface MochiRoom {
   settings?: MochiSettings
   receipts?: string[]
   notifications?: MochiNotification[]
+  notificationRevision?: number
   createdAt: string
   updatedAt: string
 }

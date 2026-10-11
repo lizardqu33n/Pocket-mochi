@@ -1,7 +1,7 @@
 import { POCKET_ICONS as ICONS } from './components/icons.js'
 import { GALLERY_PAGE_SIZE } from '../domain/gallery-page.js'
 import { MochiView } from '../mochi/view.js'
-import { showMochiNotification } from '../mochi/notifications.js'
+import { showMochiNotification, reconcileMochiNotifications } from '../mochi/notifications.js'
 import type { MochiNotification } from '../mochi/types.js'
 import { VoiceMessagePlayer } from './components/voice-message.js'
 import type {
@@ -129,7 +129,7 @@ class PocketController {
   private currentApp: PhoneApp = 'home'
   private dismissMochiNotification: (() => void) | undefined
   private mochi = new MochiView(payload => this.ctx.sendToBackend(payload), () => { if (this.currentApp === 'mochi') this.render(false) }, roomId => this.openPocket({ app: 'mochi', roomId }),
-    () => ({ enabled: this.preferences.notifyMessages, previews: this.preferences.notificationPreviews, visible: this.expanded && this.currentApp === 'mochi' && !document.hidden }), n => this.showMochiNotification(n))
+    () => ({ enabled: this.preferences.notifyMessages, previews: this.preferences.notificationPreviews, visible: this.expanded && this.currentApp === 'mochi' && !document.hidden }), n => this.showMochiNotification(n), (notices, rooms) => reconcileMochiNotifications(this.shell, notices, rooms))
   private state: PhoneState | null = null
   private preferences: DevicePreferences = defaultPreferences()
   private settingsDraft: DevicePreferences | null = null

@@ -8,13 +8,13 @@ import { spawnSync } from 'node:child_process'
 const root = fileURLToPath(new URL('../', import.meta.url))
 const require = createRequire(import.meta.url)
 const playwright = require(require.resolve('playwright', { paths: [process.env.POCKET_PLAYWRIGHT_ROOT || root] }))
-const output = resolve(root, 'tmp/mochi03-ui')
+const output = resolve(root, 'tmp/mochi035-ui/after')
 await mkdir(output, { recursive: true })
 // Only synthetic data. This exercises the production view without any host or provider.
 await writeFile(resolve(output, 'entry.ts'), `
 import { MochiView } from ${JSON.stringify(resolve(root, 'src/mochi/view.ts'))};
 import { MochiService } from ${JSON.stringify(resolve(root, 'src/mochi/service.ts'))};
-import { showMochiNotification } from ${JSON.stringify(resolve(root, 'src/mochi/notifications.ts'))};
+import { showMochiNotification, reconcileMochiNotifications } from ${JSON.stringify(resolve(root, 'src/mochi/notifications.ts'))};
 import { PHONE_STYLES } from ${JSON.stringify(resolve(root, 'src/styles.ts'))};
 const style = document.createElement('style'); style.textContent = PHONE_STYLES; document.head.append(style);
 const files = new Map(); let serial=0;
@@ -30,7 +30,7 @@ const host={
 const service=new MochiService(host);
 const render = () => {const node=view.render();node.classList.add('lumiphone-app-view');document.getElementById('app').replaceChildren(node)};
 const policy={enabled:true,previews:true,visible:true};
-const view = new MochiView(payload => {void service.handle(payload,'synthetic-user')}, render, id => { view.select(id || ''); render(); },()=>policy,n=>showMochiNotification(document.getElementById('phone'),n,policy.previews,()=>view.openRoom(n.roomId)));
+const view = new MochiView(payload => {void service.handle(payload,'synthetic-user')}, render, id => { view.select(id || ''); render(); },()=>policy,n=>showMochiNotification(document.getElementById('phone'),n,policy.previews,()=>view.openRoom(n.roomId)),(notices,rooms)=>reconcileMochiNotifications(document.getElementById('phone'),notices,rooms));
 window.__mochiDemo={view,service,host,files,policy};
 view.load();
 `)
@@ -40,7 +40,7 @@ await writeFile(resolve(output, 'index.html'), '<!doctype html><meta charset="ut
 const browser = await playwright.chromium.launch({ headless: true, ...(process.env.POCKET_BROWSER_PATH ? { executablePath: process.env.POCKET_BROWSER_PATH } : {}) })
 try {
   for (const width of [320, 390, 900]) {
-    const page = await browser.newPage({ viewport: { width, height: 850 } })
+    const page = await browser.newPage({ viewport: { width, height: 850 }, isMobile: width < 900, hasTouch: width < 900 })
     await page.addInitScript(() => { Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async text => { window.__copied = text } } }) })
     await page.goto(new URL('file:///' + resolve(output, 'index.html').replaceAll('\\', '/')).href)
     await page.getByRole('button', { name: 'New room', exact: true }).click()
@@ -173,6 +173,12 @@ try {
     await page.getByLabel('Select room', { exact: true }).waitFor()
     assert.equal(await page.getByLabel('Select room', { exact: true }).inputValue(), await page.evaluate(() => window.__mochiDemo.view.roomId))
     assert.ok(await page.locator('.mochi-message-actions').evaluateAll(nodes=>nodes.every(n=>{const r=n.getBoundingClientRect();return r.width>=44&&r.height>=44})), 'Message actions must be touch-friendly')
+    await page.mouse.move(0, 0)
+    assert.equal(await page.locator('.mochi-message-actions').first().evaluate(n=>getComputedStyle(n).opacity), width < 900 ? '0.7' : '0', 'Actions remain discoverable on touch and discreet on desktop')
+    await page.locator('.mochi-message-actions').first().focus()
+    assert.equal(await page.locator('.mochi-message-actions').first().evaluate(n=>getComputedStyle(n).opacity), '1', 'Keyboard focus reveals message actions')
+    await page.getByLabel('Message', {exact:true}).focus()
+    assert.ok(await page.locator('.mochi-message-actions svg').evaluateAll(nodes=>nodes.every(n=>n.getBoundingClientRect().width<=16)), 'Small action glyphs retain large hit targets')
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth<=innerWidth), true, 'Message actions and headers must not overflow')
     await page.screenshot({ path: resolve(output, 'refined-room-' + width + '.png') })
     await page.locator('#phone').evaluate(n => n.dataset.theme='porcelain')
@@ -207,6 +213,42 @@ try {
     await page.locator('.mochi-notification-toast').click()
     await page.waitForFunction(id=>document.querySelector('select[aria-label="Select room"]')?.value===id,firstRoomId)
     assert.equal(await page.getByLabel('Select room', {exact:true}).inputValue(),firstRoomId,'Toast opens the correct room')
+    await page.waitForFunction(()=>window.__mochiDemo.view.state.notifications.every(n=>n.read))
+    const historyBeforeClear = await page.evaluate(async id=>JSON.stringify((await window.__mochiDemo.service.read('synthetic-user',id)).messages),firstRoomId)
+    await page.getByRole('button',{name:'Mochi notifications',exact:true}).click()
+    await page.evaluate(async id=>{const {service}=window.__mochiDemo;const room=await service.read('synthetic-user',id);await service.message('synthetic-user',{roomId:id,revision:room.revision,requestId:'synthetic_unread_for_clear',content:''})},firstRoomId)
+    assert.equal(await page.locator('.mochi-unread-count').textContent(),'1','Counter includes only unread records')
+    const clearHistory = await page.evaluate(async id=>JSON.stringify((await window.__mochiDemo.service.read('synthetic-user',id)).messages),firstRoomId)
+    assert.notEqual(clearHistory,historyBeforeClear,'New reply is saved independently of notices')
+    await page.getByRole('button',{name:'Clear read',exact:true}).click()
+    await page.waitForFunction(()=>document.querySelectorAll('.mochi-notification-entry').length===1&&!window.__mochiDemo.view.busy)
+    assert.equal(await page.locator('.mochi-notification-entry small').textContent(),'New','Clear read keeps unread notifications')
+    assert.equal(await page.locator('.mochi-notification-toast').count(),1,'An unchanged unread toast survives clearing other records')
+    await page.screenshot({path:resolve(output,'notifications-managed-'+width+'.png')})
+    const staleNotice = await page.evaluate(()=>{const {view}=window.__mochiDemo;const n=view.state.notifications[0];return {type:'mochi:notification',notification:n,notificationRevision:view.state.rooms.find(r=>r.id===n.roomId).notificationRevision}})
+    await page.getByRole('button',{name:/Dismiss notification from/}).click()
+    await page.waitForFunction(()=>document.querySelectorAll('.mochi-notification-entry').length===0&&!window.__mochiDemo.view.busy)
+    assert.equal(await page.locator('.mochi-notification-toast').count(),0,'Dismissal retires the matching toast')
+    await page.evaluate(payload=>window.__mochiDemo.view.receive(payload),staleNotice)
+    assert.equal(await page.locator('.mochi-notification-entry').count(),0,'Delayed events cannot resurrect dismissal')
+    assert.equal(await page.evaluate(async id=>JSON.stringify((await window.__mochiDemo.service.read('synthetic-user',id)).messages),firstRoomId),clearHistory,'Clearing and dismissal preserve every saved message')
+    await page.getByRole('button',{name:'Refresh',exact:true}).click()
+    await page.waitForFunction(()=>!window.__mochiDemo.view.busy)
+    assert.equal(await page.locator('.mochi-notification-entry').count(),0,'Dismissal survives refresh')
+    await page.evaluate(async id=>{const {service}=window.__mochiDemo;for(let i=0;i<2;i++){const room=await service.read('synthetic-user',id);await service.message('synthetic-user',{roomId:id,revision:room.revision,requestId:'synthetic_clearall_'+i,content:''})}},firstRoomId)
+    assert.equal(await page.locator('.mochi-unread-count').textContent(),'2')
+    const allHistory=await page.evaluate(async id=>JSON.stringify((await window.__mochiDemo.service.read('synthetic-user',id)).messages),firstRoomId)
+    await page.getByRole('button',{name:'Clear all',exact:true}).click()
+    await page.getByRole('button',{name:'Done',exact:true}).click()
+    assert.equal(await page.locator('.mochi-notification-entry').count(),2,'Closing confirmation preserves unread notifications')
+    await page.getByRole('button',{name:'Clear all',exact:true}).click()
+    await page.getByRole('button',{name:'Confirm clear all',exact:true}).click()
+    await page.waitForFunction(()=>document.querySelectorAll('.mochi-notification-entry').length===0&&!window.__mochiDemo.view.busy)
+    assert.equal(await page.locator('.mochi-unread-count').count(),0)
+    assert.equal(await page.locator('.mochi-notification-toast').count(),0)
+    assert.equal(await page.evaluate(async id=>JSON.stringify((await window.__mochiDemo.service.read('synthetic-user',id)).messages),firstRoomId),allHistory,'Clear all does not delete history')
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'Notification management fits the handset')
+    await page.screenshot({path:resolve(output,'notifications-cleared-'+width+'.png')})
     await page.close()
   }
   console.log('Mochi simulated Chromium UI passed at 320px, 390px and 900px. Browser: ' + browser.version())

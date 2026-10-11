@@ -3,9 +3,20 @@ import type { MochiNotification } from './types.js'
 
 export interface MochiNotificationPolicy { enabled: boolean; previews: boolean; visible: boolean }
 export function notificationBody(n: MochiNotification, previews: boolean): string { return previews ? n.body : 'New character message' }
+const activeNotices = new WeakMap<HTMLElement, MochiNotification>()
+/** Retire read, dismissed or changed toasts within this account's handset only. */
+export function reconcileMochiNotifications(shell: HTMLElement, notices: MochiNotification[], rooms: Set<string>): void {
+  for (const toast of shell.querySelectorAll<HTMLElement>('.mochi-notification-toast')) {
+    const previous = activeNotices.get(toast)
+    if (!previous || !rooms.has(previous.roomId)) continue
+    const current = notices.find(n => n.id === previous.id && n.roomId === previous.roomId)
+    if (!current || current.read || current.body !== previous.body || current.title !== previous.title || current.roomTitle !== previous.roomTitle || current.avatarUrl !== previous.avatarUrl) toast.remove()
+  }
+}
 /** Uses Pocket's in-handset notification surface; never invokes OS/browser push. */
 export function showMochiNotification(shell: HTMLElement, n: MochiNotification, previews: boolean, open: () => void): () => void {
   const toast = button('', 'lp-floating-notification mochi-notification-toast'); toast.setAttribute('role', 'status')
+  activeNotices.set(toast, { ...n })
   const portrait = el('span', 'mochi-notification-avatar', n.title.slice(0, 1))
   // This toast also appears while another Pocket app is open, outside Mochi's scoped stylesheet.
   portrait.style.cssText = 'width:32px;height:32px;border-radius:50%;overflow:hidden;flex:none;display:grid;place-items:center;background:var(--lp-surface-2)'

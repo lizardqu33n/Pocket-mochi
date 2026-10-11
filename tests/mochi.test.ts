@@ -6,7 +6,7 @@ import { MochiView } from '../src/mochi/view.js'
 import { JSDOM } from 'jsdom'
 import { buildMochiPrompt } from '../src/mochi/generation.js'
 import { defaultMochiSettings } from '../src/mochi/types.js'
-import { notificationBody, showMochiNotification } from '../src/mochi/notifications.js'
+import { notificationBody, showMochiNotification, reconcileMochiNotifications } from '../src/mochi/notifications.js'
 
 function fixture() {
   const files = new Map<string, unknown>(), writes: string[] = [], responses: any[] = []
@@ -48,6 +48,107 @@ function messagingFixture() {
   }
   return { ...f, requests, create }
 }
+test('notification dismissal and clear-read preserve messages, unread records and account boundaries', async () => {
+  const f = messagingFixture(), room = await f.create()
+  await f.service.message('alice', { roomId: room.id, revision: room.revision, requestId: 'clear_seed', content: 'Keep history' })
+  let saved = await f.service.read('alice', room.id)
+  await f.service.acknowledge('alice', { roomId: room.id })
+  await f.service.message('alice', { roomId: room.id, revision: saved.revision, requestId: 'clear_second', content: '' })
+  saved = await f.service.read('alice', room.id)
+  const history = structuredClone(saved.messages), selection = { roomId: room.id, notificationIds: saved.notifications!.map(n => n.id) }
+  await expect(f.service.clearNotifications('bob', { action: 'read', rooms: [selection] })).rejects.toThrow('account')
+  await expect(f.service.clearNotifications('alice', { action: 'all', rooms: [selection] })).rejects.toThrow('Confirm')
+  await expect(f.service.clearNotifications('alice', { action: 'dismiss', rooms: [{...selection, notificationIds: ['../invalid']}] })).rejects.toThrow('identifier')
+  await expect(f.service.clearNotifications('alice', { action: 'all', confirmed: true, rooms: [selection, {roomId: 'room_' + 'f'.repeat(32), notificationIds: []}] })).rejects.toThrow('account')
+  expect((await f.service.read('alice', room.id)).notifications).toHaveLength(2)
+  await f.service.clearNotifications('alice', { action: 'read', rooms: [selection] })
+  let remaining = await f.service.read('alice', room.id)
+  expect(remaining.notifications).toHaveLength(1)
+  expect(remaining.notifications![0].read).toBe(false)
+  expect(remaining.messages).toEqual(history); expect(remaining.revision).toBe(saved.revision)
+  await f.service.clearNotifications('alice', { action: 'dismiss', rooms: [{roomId: room.id, notificationIds: [remaining.notifications![0].id]}] })
+  remaining = await f.service.read('alice', room.id)
+  expect(remaining.notifications).toEqual([]); expect(remaining.messages).toEqual(history)
+  expect((await new MochiService(f.host).state('alice')).notifications).toEqual([])
+  await f.service.acknowledge('alice', {roomId: room.id, notificationIds: selection.notificationIds})
+  expect((await f.service.read('alice', room.id)).notifications).toEqual([])
+})
+
+test('clearing a reviewed snapshot preserves concurrent new replies and rerolls cannot resurrect notices', async () => {
+  const f = messagingFixture(), room = await f.create()
+  await f.service.message('alice', {roomId: room.id, revision: room.revision, requestId: 'snapshot_seed', content: 'Hello'})
+  let saved = await f.service.read('alice', room.id), target = saved.messages[1] as any
+  const selection = {roomId: room.id, notificationIds: saved.notifications!.map(n => n.id)}
+  let release!: (value: any) => void
+  f.host.generate!.quiet = async () => new Promise(resolve => { release = resolve })
+  const pending = f.service.message('alice', {roomId: room.id, revision: saved.revision, requestId: 'snapshot_reply', content: ''})
+  for (let i = 0; i < 100 && !release; i++) await new Promise(resolve => setTimeout(resolve, 1))
+  await f.service.clearNotifications('alice', {action: 'all', confirmed: true, rooms: [selection]})
+  release({content: '{"speakerId":"c1","text":"Concurrent new reply"}'}); await pending
+  saved = await f.service.read('alice', room.id)
+  expect(saved.notifications).toHaveLength(1); expect(saved.notifications![0].body).toBe('Concurrent new reply')
+  const later = structuredClone(saved.messages[2])
+  f.host.generate!.quiet = async () => ({content: '{"speakerId":"c1","text":"Rerolled original"}'})
+  await f.service.message('alice', {roomId: room.id, revision: saved.revision, requestId: 'snapshot_reroll', messageId: target.id, confirmed: true}, true)
+  saved = await f.service.read('alice', room.id)
+  expect(saved.messages[2]).toEqual(later); expect(saved.notifications).toHaveLength(1)
+  expect(saved.notifications!.some(n => n.id === target.id)).toBe(false)
+  await f.service.clearNotifications('alice', {action: 'all', confirmed: true, rooms: [selection]})
+  expect((await f.service.read('alice', room.id)).notifications).toHaveLength(1)
+})
+
+test('failed notification replacements preserve committed history and notification records', async () => {
+  for (const fail of ['failWrite', 'failMove'] as const) {
+    const f = messagingFixture(), room = await f.create()
+    await f.service.message('alice', {roomId: room.id, revision: room.revision, requestId: 'failure_notice', content: 'Preserve'})
+    const before = await f.service.read('alice', room.id)
+    f[fail]()
+    await expect(f.service.clearNotifications('alice', {action: 'all', confirmed: true, rooms: [{roomId: room.id, notificationIds: before.notifications!.map(n => n.id)}]})).rejects.toThrow()
+    expect(await f.service.read('alice', room.id)).toEqual(before)
+  }
+})
+
+test('read acknowledgements affect only displayed notifications and validate revision metadata', async () => {
+  const f = messagingFixture(), room = await f.create()
+  await f.service.message('alice', {roomId: room.id, revision: room.revision, requestId: 'read_snapshot', content: 'Hi'})
+  let saved = await f.service.read('alice', room.id), id = saved.notifications![0].id
+  await f.service.message('alice', {roomId: room.id, revision: saved.revision, requestId: 'read_new', content: ''})
+  await f.service.acknowledge('alice', {roomId: room.id, notificationIds: [id]})
+  saved = await f.service.read('alice', room.id)
+  expect(saved.notifications!.map(n => n.read)).toEqual([true, false])
+  await expect(f.service.acknowledge('alice', {roomId: room.id, notificationIds: [id, id]})).rejects.toThrow('Duplicate')
+  const corrupted = {...saved, notificationRevision: -1}, path = `alice:mochi/v1/rooms/${room.id}.json`
+  f.files.set(path, corrupted)
+  await expect(f.service.read('alice', room.id)).rejects.toThrow('revision')
+  expect(f.files.get(path)).toEqual(corrupted)
+})
+
+test('delayed notification events and snapshots cannot restore dismissed records after refresh', async () => {
+  const dom = new JSDOM('<body><div id="shell"></div></body>'), before = globalThis.document
+  globalThis.document = dom.window.document
+  try {
+    const f = messagingFixture(), room = await f.create(), sent: any[] = [], notices: any[] = []
+    await f.service.message('alice', {roomId: room.id, revision: room.revision, requestId: 'stale_notice', content: 'Hello'})
+    const original = await f.service.state('alice'), n = original.notifications![0], revision = original.rooms[0].notificationRevision!
+    await f.service.clearNotifications('alice', {action: 'dismiss', rooms: [{roomId: room.id, notificationIds: [n.id]}]})
+    const view = new MochiView(p => sent.push(p), () => {}, () => {}, () => ({enabled: true, previews: false, visible: false}), n => notices.push(n))
+    view.load(); view.receive({type: 'mochi:state', requestId: sent.at(-1).requestId, state: await f.service.state('alice')})
+    view.receive({type: 'mochi:notifications', notifications: original.notifications, notificationRevisions: {[room.id]: revision}})
+    view.receive({type: 'mochi:notification', notification: n, notificationRevision: revision})
+    expect(view.state!.notifications).toEqual([]); expect(notices).toEqual([])
+    view.load(); view.receive({type: 'mochi:state', requestId: sent.at(-1).requestId, state: original})
+    expect(view.state!.notifications).toEqual([])
+    view.destroy()
+    const shell = document.getElementById('shell')!
+    const dismiss = showMochiNotification(shell, n, false, () => {})
+    expect(shell.textContent).not.toContain(n.body)
+    reconcileMochiNotifications(shell, [], new Set(['another_room']))
+    expect(shell.querySelectorAll('.mochi-notification-toast')).toHaveLength(1)
+    reconcileMochiNotifications(shell, [], new Set([room.id]))
+    expect(shell.querySelectorAll('.mochi-notification-toast')).toHaveLength(0); dismiss()
+  } finally {globalThis.document = before; dom.window.close()}
+})
+
 test('message actions preserve IDs, earlier versions, later history and deduplicate retries', async () => {
   const f = messagingFixture(), room = await f.create({ autoReply: false })
   await f.service.message('alice', { roomId: room.id, revision: room.revision, requestId: 'action_seed', content: 'Original user' })

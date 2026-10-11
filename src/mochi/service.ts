@@ -74,6 +74,8 @@ export class MochiService {
     room.receipts ||= []
     if (!Array.isArray(room.receipts) || room.receipts.some(id => typeof id !== 'string')) throw new Error('Invalid saved send receipts.')
     room.notifications ||= []
+    room.notificationRevision ??= 0
+    if (!Number.isSafeInteger(room.notificationRevision) || room.notificationRevision < 0) throw new Error('Invalid notification revision; the file was preserved.')
     if (!Array.isArray(room.notifications) || room.notifications.some(n => !n || n.roomId !== id || typeof n.read !== 'boolean' || typeof n.messageId !== 'string' || n.id !== n.messageId)) throw new Error('Invalid saved Mochi notifications; the file was preserved.')
     const noticeIds = new Set<string>()
     for (const n of room.notifications) {
@@ -120,7 +122,7 @@ export class MochiService {
     return this.locked(user, id, async () => {
       if (await this.host.userStorage.exists(pathFor(id), user)) throw new Error('Room identifier collision; retry creation.')
       const now = new Date().toISOString()
-      const room: MochiRoom = { version: 1, id, revision: 1, title: text(input.title, 120, true), characterIds: await this.membership(user, input.characterIds), persona: await this.persona(user, input.persona), messages: [], createdAt: now, updatedAt: now, settings: defaultMochiSettings(), receipts: [], notifications: [] }
+      const room: MochiRoom = { version: 1, id, revision: 1, title: text(input.title, 120, true), characterIds: await this.membership(user, input.characterIds), persona: await this.persona(user, input.persona), messages: [], createdAt: now, updatedAt: now, settings: defaultMochiSettings(), receipts: [], notifications: [], notificationRevision: 0 }
       await this.persist(user, room)
       return room
     })
@@ -134,6 +136,8 @@ export class MochiService {
       const settings = this.settings(input.settings ?? saved.settings, ids)
       if (settings.connectionId && !await this.host.connections?.get(settings.connectionId, user)) throw new Error('This connection is not available to your account.')
       const room = { ...saved, title: text(input.title, 120, true), characterIds: ids, settings, persona: input.persona ? await this.persona(user, input.persona) : saved.persona, revision: saved.revision + 1, updatedAt: new Date().toISOString() }
+      for (const n of room.notifications!) n.roomTitle = room.title
+      room.notificationRevision = (saved.notificationRevision || 0) + 1
       this.jobs.get(this.jobKey(user, id))?.controller.abort()
       await this.persist(user, room)
       return room
@@ -179,11 +183,35 @@ export class MochiService {
   async acknowledge(userId: string, input: any): Promise<void> {
     const user = this.account(userId), id = roomId(input.roomId)
     if (input.notificationId !== undefined) entityId(input.notificationId)
+    const ids = input.notificationIds === undefined ? undefined : this.notificationIds(input.notificationIds)
     await this.locked(user, id, async () => {
       const room = await this.read(user, id)
       let changed = false
-      for (const n of room.notifications!) if (!n.read && (!input.notificationId || n.id === input.notificationId)) { n.read = true; changed = true }
-      if (changed) await this.persist(user, room)
+      for (const n of room.notifications!) if (!n.read && (!input.notificationId || n.id === input.notificationId) && (!ids || ids.includes(n.id))) { n.read = true; changed = true }
+      if (changed) { room.notificationRevision!++; await this.persist(user, room) }
+    })
+  }
+  private notificationIds(value: unknown): string[] {
+    if (!Array.isArray(value) || value.length > 10000) throw new Error('Invalid notification selection.')
+    const ids = value.map(entityId)
+    if (new Set(ids).size !== ids.length) throw new Error('Duplicate notification selection.')
+    return ids
+  }
+  /** Remove only the reviewed records; concurrent new replies survive clearing. */
+  async clearNotifications(userId: string, input: any): Promise<void> {
+    const user = this.account(userId)
+    if (!['dismiss', 'read', 'all'].includes(input.action) || !Array.isArray(input.rooms) || input.rooms.length > 10000) throw new Error('Invalid notification action.')
+    if (input.action === 'all' && input.confirmed !== true) throw new Error('Confirm clearing all notifications first.')
+    const selections = input.rooms.map((r: any) => ({ id: roomId(r?.roomId), ids: this.notificationIds(r?.notificationIds) }))
+    if (new Set(selections.map((r: any) => r.id)).size !== selections.length || (input.action === 'dismiss' && (selections.length !== 1 || selections[0].ids.length !== 1))) throw new Error('Invalid notification selection.')
+    // Validate every account-scoped target before performing any writes.
+    for (const r of selections) await this.read(user, r.id)
+    for (const r of selections) await this.locked(user, r.id, async () => {
+      const room = await this.read(user, r.id)
+      const remaining = room.notifications!.filter(n => !r.ids.includes(n.id) || (input.action === 'read' && !n.read))
+      if (remaining.length === room.notifications!.length) return
+      room.notifications = remaining; room.notificationRevision!++
+      await this.persist(user, room)
     })
   }
   async action(userId: string, input: any): Promise<void> {
@@ -202,6 +230,7 @@ export class MochiService {
       } else { room.messages.splice(index, 1); room.notifications = room.notifications!.filter(n => n.messageId !== messageId) }
       this.jobs.get(this.jobKey(user, id))?.controller.abort()
       room.receipts!.push(requestId); room.revision++; room.updatedAt = new Date().toISOString()
+      room.notificationRevision!++
       await this.persist(user, room)
     })
   }
@@ -262,9 +291,10 @@ export class MochiService {
           current.notifications!.push(notification)
         }
         current.revision++; current.updatedAt = new Date().toISOString()
+        current.notificationRevision!++
         controller.signal.throwIfAborted()
         await this.persist(user, current, controller.signal)
-        if (notification) this.host.sendToFrontend({ type: 'mochi:notification', notification }, user)
+        if (notification) this.host.sendToFrontend({ type: 'mochi:notification', notification, notificationRevision: current.notificationRevision }, user)
       })
     } finally {
       clearTimeout(timeout)
@@ -282,13 +312,15 @@ export class MochiService {
       if (payload.type === 'mochi:message_action') await this.action(userId, payload)
       else if (payload.type === 'mochi:notification_read') {
         await this.acknowledge(userId, payload)
-        this.host.sendToFrontend({ type: 'mochi:notifications', requestId: payload.requestId, notifications: (await this.state(userId)).notifications }, userId)
+        const state = await this.state(userId)
+        this.host.sendToFrontend({ type: 'mochi:notifications', requestId: payload.requestId, notifications: state.notifications, notificationRevisions: Object.fromEntries(state.rooms.map(r => [r.id, r.notificationRevision || 0])) }, userId)
         return
       }
+      else if (payload.type === 'mochi:notification_clear') await this.clearNotifications(userId, payload)
       if (payload.type === 'mochi:cancel') { await this.cancel(userId, payload.roomId, payload.generationRequestId); return }
       if (payload.type === 'mochi:create') selectedRoomId = (await this.create(userId, payload)).id
       else if (payload.type === 'mochi:update') selectedRoomId = (await this.update(userId, payload)).id
-      else if (payload.type !== 'mochi:list' && payload.type !== 'mochi:message_action') throw new Error('Unsupported Mochi action.')
+      else if (payload.type !== 'mochi:list' && payload.type !== 'mochi:message_action' && payload.type !== 'mochi:notification_clear') throw new Error('Unsupported Mochi action.')
       this.host.sendToFrontend({ type: 'mochi:state', requestId: payload.requestId, selectedRoomId, state: await this.state(userId) }, userId)
     } catch (error) {
       this.host.sendToFrontend({ type: 'mochi:error', requestId: payload.requestId, message: error instanceof Error ? error.name === 'AbortError' ? 'Reply stopped. Your messages are saved.' : error.message : 'Unable to save Mochi room.' }, userId)
