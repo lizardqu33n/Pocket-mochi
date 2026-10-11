@@ -8,6 +8,7 @@ export interface ScheduledJob {
   draft?: ScheduledDraft; deliveredAt?: number; messageId?: string; reason?: string
   deliveryAttempts?: number
   kind?: 'scheduled' | 'response' | 'idle'; createdAt?: number
+  deliverAt?: number; proposedStatus?: import('./presence.js').PresenceStatus
 }
 export interface RoomRuntime { version: 1; enabled: boolean; jobs: ScheduledJob[]; presence?: Record<string, import('./presence.js').CharacterPresence> }
 export interface PublicRuntime { enabled: boolean; jobs: Array<Pick<ScheduledJob, 'id' | 'dueAt' | 'status' | 'attempts' | 'reason'>>; presence?: Record<string, import('./presence.js').CharacterPresence> }
@@ -27,6 +28,8 @@ export function validateRuntime(value: unknown): RoomRuntime {
       ![j.dueAt,j.expiresAt,j.nextAttemptAt,j.revision,j.attempts].every(Number.isSafeInteger) || j.dueAt < 0 || j.expiresAt < j.dueAt || j.nextAttemptAt < 0 || j.revision < 1 || j.attempts < 0 || j.attempts > 3 ||
       (j.leaseUntil !== undefined && (!Number.isSafeInteger(j.leaseUntil) || j.leaseUntil < 0))) throw new Error('Damaged scheduled job; history was preserved.')
     if (j.deliveryAttempts !== undefined && (!Number.isSafeInteger(j.deliveryAttempts) || j.deliveryAttempts < 0 || j.deliveryAttempts > 3)) throw new Error('Damaged delivery attempts; history was preserved.')
+    if (j.deliverAt !== undefined && (!Number.isSafeInteger(j.deliverAt) || j.deliverAt < 0)) throw new Error('Invalid deferred delivery deadline.')
+    if (j.proposedStatus !== undefined && !['online','away','dnd','offline'].includes(j.proposedStatus)) throw new Error('Invalid deferred presence suggestion.')
     if (j.claim !== undefined) identifier(j.claim)
     if (j.draft && (typeof j.draft.text !== 'string' || !j.draft.text.trim() || j.draft.text.length > 32000 || typeof j.draft.name !== 'string' || j.draft.name.length > 120 || typeof j.draft.avatarUrl !== 'string' || j.draft.avatarUrl.length > 500)) throw new Error('Damaged deferred message; history was preserved.')
     if (j.draft) identifier(j.draft.characterId)

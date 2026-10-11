@@ -3,6 +3,7 @@ import { MochiScheduler } from '../src/mochi/scheduler.js'
 import { MochiService, type MochiHost } from '../src/mochi/service.js'
 import { defaultMochiSettings } from '../src/mochi/types.js'
 import { defaultPresence, statusFor } from '../src/mochi/presence.js'
+import { parseBehavior } from '../src/mochi/behavior.js'
 
 function fixture() {
   const files = new Map<string, any>(), calls: any[] = [], events: any[] = []
@@ -194,4 +195,42 @@ test('offline rerolls and unconsented delayed sends never invoke a provider',asy
   await f.scheduler.configure('alice',false)
   await expect(f.service.message('alice',{roomId:room.id,revision:room.revision,requestId:'unavailable',content:'Saved'})).rejects.toThrow('unavailable')
   expect(f.calls).toHaveLength(0);expect((await f.service.read('alice',room.id)).messages).toHaveLength(1);f.scheduler.stop()
+})
+test('one authorized request can defer delivery privately and apply status only after delivery',async()=>{
+  const f=fixture(),room=await f.create()
+  const configured=await f.service.update('alice',{roomId:room.id,revision:room.revision,title:room.title,characterIds:room.characterIds,settings:{...room.settings,aiBehavior:true}})
+  await f.schedule(configured)
+  f.host.generate!.quiet=async request=>{f.calls.push(request);return {content:JSON.stringify({speakerId:'alice_character',text:'Private later reply',behavior:{delivery:'later',delayMs:60000,status:'offline'}})}}
+  await f.scheduler.tick();expect(f.calls).toHaveLength(1)
+  const pending=await f.service.read('alice',room.id)
+  expect(pending.messages).toEqual([]);expect(pending.notifications).toEqual([]);expect(statusFor(pending,'alice_character',f.now)).toBe('online')
+  expect(JSON.stringify(await f.service.state('alice'))).not.toContain('Private later reply')
+  f.restart();f.advance(60000);await f.scheduler.tick()
+  const delivered=await f.service.read('alice',room.id)
+  expect(f.calls).toHaveLength(1);expect(delivered.messages).toHaveLength(1);expect(statusFor(delivered,'alice_character',f.now)).toBe('offline');f.scheduler.stop()
+})
+test('interactive AI-deferred output survives restart without losing Stop semantics or regenerating',async()=>{
+  const f=fixture(),room=await f.create(),configured=await f.service.update('alice',{roomId:room.id,revision:room.revision,title:room.title,characterIds:room.characterIds,settings:{...room.settings,aiBehavior:true}})
+  f.host.generate!.quiet=async request=>{f.calls.push(request);return {content:JSON.stringify({speakerId:'alice_character',text:'Interactive draft',behavior:{delivery:'later',delayMs:60000}})}}
+  await f.service.message('alice',{roomId:room.id,revision:configured.revision,requestId:'interactive_delay',content:'Hello'})
+  expect((await f.service.read('alice',room.id)).messages).toHaveLength(1)
+  expect(JSON.stringify(await f.service.state('alice'))).not.toContain('Interactive draft')
+  f.restart();f.advance(60000);await f.scheduler.tick();expect(f.calls).toHaveLength(1)
+  expect((await f.service.read('alice',room.id)).messages).toHaveLength(2);f.scheduler.stop()
+})
+test('AI status suggestions cannot override manual locks and malformed metadata falls back safely',async()=>{
+  const f=fixture(),room=await f.create(),configured=await f.service.update('alice',{roomId:room.id,revision:room.revision,title:room.title,characterIds:room.characterIds,settings:{...room.settings,aiBehavior:true}})
+  await f.service.configurePresence('alice',{roomId:room.id,revision:configured.revision,characterId:'alice_character',presence:{...defaultPresence(),manual:'online'}})
+  await f.schedule(configured)
+  f.host.generate!.quiet=async request=>{f.calls.push(request);return {content:'{"speakerId":"alice_character","text":"Reply","behavior":{"delivery":"now","delayMs":0,"status":"offline"}}'}}
+  await f.scheduler.tick();expect(statusFor(await f.service.read('alice',room.id),'alice_character',f.now)).toBe('online');expect(f.calls).toHaveLength(1)
+  for(const bad of [null,[],{delivery:'later',delayMs:Infinity},{delivery:'now',delayMs:1},{delivery:'later',delayMs:86400001},{delivery:'now',delayMs:0,status:'admin'}]) expect(parseBehavior(bad)).toEqual({delayMs:0})
+  f.scheduler.stop()
+})
+test('disabling deferred work erases its private draft without notifications or new provider calls',async()=>{
+  const f=fixture(),room=await f.create(),configured=await f.service.update('alice',{roomId:room.id,revision:room.revision,title:room.title,characterIds:room.characterIds,settings:{...room.settings,aiBehavior:true}})
+  await f.schedule(configured)
+  f.host.generate!.quiet=async request=>{f.calls.push(request);return {content:'{"speakerId":"alice_character","text":"Hidden","behavior":{"delivery":"later","delayMs":60000}}'}}
+  await f.scheduler.tick();await f.scheduler.configure('alice',false);f.advance(60000);f.restart();await f.scheduler.tick()
+  const saved=await f.service.read('alice',room.id);expect(saved.messages).toEqual([]);expect(saved.notifications).toEqual([]);expect(saved.runtime!.jobs[0].draft).toBeUndefined();expect(f.calls).toHaveLength(1);f.scheduler.stop()
 })

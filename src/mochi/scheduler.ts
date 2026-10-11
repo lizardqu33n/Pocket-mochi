@@ -14,7 +14,7 @@ export class MochiScheduler {
   private ticking = false
   private blocked = new Set<string>()
   private serial: Promise<unknown> = Promise.resolve()
-  constructor(private host: MochiHost, private service: MochiService, private now: () => number = Date.now, private report: (message: string) => void = () => {}) { service.backgroundEnabled = user => this.enabled(user) }
+  constructor(private host: MochiHost, private service: MochiService, private now: () => number = Date.now, private report: (message: string) => void = () => {}) { service.backgroundEnabled = user => this.enabled(user); service.reserveAutomatic = (user,room) => this.reserve(user,room) }
   private async locked<T>(work: () => Promise<T>): Promise<T> {
     const task = this.serial.catch(() => {}).then(work); this.serial = task
     return task

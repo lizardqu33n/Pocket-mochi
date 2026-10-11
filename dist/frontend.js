@@ -740,6 +740,14 @@ class MochiView {
       accountBackground.type = "checkbox";
       accountBackground.checked = !!state.backgroundEnabled;
       accountBackground.disabled = this.busy;
+      const aiBehavior = el("input");
+      aiBehavior.type = "checkbox";
+      aiBehavior.checked = !!settings.aiBehavior;
+      aiBehavior.disabled = this.busy || !state.backgroundEnabled || !room.background?.enabled;
+      aiBehavior.onchange = () => {
+        settings.aiBehavior = aiBehavior.checked;
+      };
+      field("Allow AI delivery timing and status suggestions", aiBehavior);
       accountBackground.onchange = () => this.dispatch("mochi:background_account", { enabled: accountBackground.checked });
       field("Allow server-side background messaging for my account", accountBackground);
       const roomBackground = el("input");

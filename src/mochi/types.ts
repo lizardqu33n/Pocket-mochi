@@ -14,6 +14,7 @@ export interface MochiMessage {
 }
 export interface MochiNotification { id: string; roomId: string; messageId: string; title: string; roomTitle: string; body: string; avatarUrl: string; createdAt: string; read: boolean }
 export interface MochiSettings {
+  aiBehavior?: boolean
   autoReply: boolean; connectionId: string; contextTokens: number; outputTokens: number
   instructions: string; characterNames: Record<string, string>
 }

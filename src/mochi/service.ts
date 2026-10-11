@@ -2,6 +2,7 @@ import { roomId, defaultMochiSettings, type MochiSettings, type MochiMessage, ty
 import { generateMochiReply, validateMochiSources } from './generation.js'
 import { identifier, MAX_JOBS, publicRuntime, scheduleInput, temporaryFailure, TERMINAL, validateRuntime, type ScheduledJob } from './scheduling.js'
 import { delayFor, eligibleResponders, minimumDelay, statusFor, validatePresence } from './presence.js'
+import { applyDeliveredStatus } from './behavior.js'
 
 // New implementation. No Character Chatroom source is included.
 export interface MochiHost {
@@ -49,12 +50,14 @@ function validateRoom(value: any, id: string): MochiRoom {
 }
 export class MochiService {
   backgroundEnabled: (userId: string) => Promise<boolean> = async () => false
+  reserveAutomatic: (userId: string, roomId: string) => Promise<boolean> = async () => true
   private locks = new Map<string, Promise<unknown>>()
   private jobs = new Map<string, { requestId: string; controller: AbortController }>()
   private pending = new Map<string, Set<{ requestId: string; controller: AbortController }>>()
   private jobKey(user: string, id: string): string { return JSON.stringify([user, id]) }
   private settings(input: any, ids: string[]): MochiSettings {
     const s = { ...defaultMochiSettings(), ...input }
+    if (s.aiBehavior !== undefined && typeof s.aiBehavior !== 'boolean') throw new Error('Invalid AI behavior setting.')
     if (typeof s.autoReply !== 'boolean' || !Number.isSafeInteger(s.contextTokens) || s.contextTokens < 1024 || s.contextTokens > 131072 || !Number.isSafeInteger(s.outputTokens) || s.outputTokens < 128 || s.outputTokens > 8192 || s.outputTokens + 256 >= s.contextTokens) throw new Error('Invalid message token limits.')
     s.connectionId = s.connectionId ? entityId(s.connectionId) : ''
     s.instructions = text(s.instructions, 6000)
@@ -142,6 +145,7 @@ export class MochiService {
       if (input.revision !== saved.revision) throw new Error('This room changed elsewhere. Refresh before saving again.')
       const ids = await this.membership(user, input.characterIds)
       const settings = this.settings(input.settings ?? saved.settings, ids)
+      if (settings.aiBehavior && (!saved.runtime?.enabled || !await this.backgroundEnabled(user))) throw new Error('Enable account and room background messaging before AI timing suggestions.')
       if (settings.connectionId && !await this.host.connections?.get(settings.connectionId, user)) throw new Error('This connection is not available to your account.')
       const room = { ...saved, title: text(input.title, 120, true), characterIds: ids, settings, persona: input.persona ? await this.persona(user, input.persona) : saved.persona, revision: saved.revision + 1, updatedAt: new Date().toISOString() }
       for (const n of room.notifications!) n.roomTitle = room.title
@@ -336,6 +340,7 @@ export class MochiService {
       const minimum = minimumDelay(room,j.responder,now())
       if (!j.draft && (minimum === Infinity || now() < (j.createdAt ?? j.dueAt) + minimum)) return
       if (j.draft && (statusFor(room,j.draft.characterId,now()) === 'offline' || now() < (j.createdAt ?? j.dueAt) + delayFor(room,j.draft.characterId,now()))) return
+      if (j.draft && (j.deliverAt || 0) > now()) return
       // A generated draft is recoverable without another paid request.
       generate = !j.draft
       if (generate && j.attempts >= 3) { j.status = 'failed'; await this.persist(user, room); return }
@@ -360,11 +365,14 @@ export class MochiService {
           if (!job || job.claim !== claim || job.status !== 'generating' || room.revision !== j.revision) throw new Error('The room changed; scheduled output was discarded.')
           job.draft = { characterId: reply.character.id, text: reply.text, name: room.settings!.characterNames[reply.character.id] || reply.character.name, avatarUrl: reply.character.image_id ? `/api/v1/images/${entityId(reply.character.image_id)}` : '' }
           job.status = 'generated'
+          job.deliverAt = Math.max(now() + reply.behavior.delayMs, (job.createdAt ?? job.dueAt) + delayFor(room,reply.character.id,now()))
+          job.nextAttemptAt = job.deliverAt; job.expiresAt = Math.max(job.expiresAt, job.deliverAt + 3600000); job.proposedStatus = reply.behavior.status
           await this.persist(user, room, controller.signal)
         })
       }
       await this.locked(user, id, async () => {
         const room = await this.read(user, id), j = room.runtime?.jobs.find(j => j.id === occurrenceId)
+        if (j?.draft && (j.deliverAt || 0) > now()) return
         await permitted(room)
         if (!j || j.claim !== claim || j.status !== 'generated' || !j.draft || j.revision !== room.revision || j.expiresAt < now()) throw new Error('The scheduled delivery changed or expired.')
         const draft = j.draft, createdAt = new Date(now()).toISOString(), messageId = crypto.randomUUID()
@@ -375,6 +383,7 @@ export class MochiService {
         room.notifications!.push(notification); room.notificationRevision!++; room.revision++; room.updatedAt = createdAt
         // Completion tombstone is atomic with the message, independent of later deletion.
         j.status = 'delivered'; j.messageId = messageId; j.deliveredAt = now(); delete j.draft
+        applyDeliveredStatus(room,draft.characterId,j.proposedStatus,now()); delete j.proposedStatus
         await this.persist(user, room, controller.signal)
         this.host.sendToFrontend({ type: 'mochi:notification', notification, notificationRevision: room.notificationRevision }, user)
       })
@@ -436,6 +445,7 @@ export class MochiService {
     const timeout = setTimeout(() => controller.abort(), 180000)
     try {
       await publish(true)
+      if (launched.room.settings!.aiBehavior && (!await this.backgroundEnabled(user) || !await this.reserveAutomatic(user,id))) throw new Error('Background behavior is disabled or its generation limit was reached.')
       const reply = await generateMochiReply(this.host, launched.promptRoom, user, launched.responder, controller.signal, eligibleResponders(launched.room,launched.responder,this.now()).filter(c=>delayFor(launched.room,c,this.now())===0))
       await this.locked(user, id, async () => {
         controller.signal.throwIfAborted()
@@ -446,6 +456,18 @@ export class MochiService {
         for (const characterId of current.characterIds) if (!await this.host.characters.get(characterId, user)) throw new Error('A room character is no longer available; the reply was discarded.')
         if (delayFor(current,reply.character.id,this.now()) > 0) throw new Error('Character presence changed; the immediate reply was discarded.')
         const name = current.settings!.characterNames[reply.character.id] || reply.character.name
+        if (current.settings!.aiBehavior) {
+          if (!current.runtime?.enabled || !await this.backgroundEnabled(user)) throw new Error('Background behavior was disabled; the reply was discarded.')
+          if (reply.behavior.delayMs > 0) {
+            if (launched.targetId) throw new Error('Deferred rerolls are unsupported; the original message was preserved.')
+            for (const j of current.runtime.jobs) if (j.kind === 'response' && !TERMINAL.has(j.status)) { j.status='cancelled';delete j.draft }
+            if (current.runtime.jobs.length >= MAX_JOBS || current.runtime.jobs.filter(j=>!TERMINAL.has(j.status)).length >= 4) throw new Error('Deferred queue is full; history was preserved.')
+            const now = this.now(), deliverAt = now + reply.behavior.delayMs
+            current.runtime.jobs.push({id:`deferred_${requestId}`,kind:'response',createdAt:now,dueAt:deliverAt,deliverAt,expiresAt:deliverAt+3600000,revision:current.revision,responder:reply.character.id,status:'generated',attempts:1,nextAttemptAt:deliverAt,proposedStatus:reply.behavior.status,draft:{characterId:reply.character.id,name,avatarUrl:reply.character.image_id ? `/api/v1/images/${entityId(reply.character.image_id)}` : '',text:reply.text}})
+            await this.persist(user,current,controller.signal)
+            return
+          }
+        }
         let notification
         if (launched.targetId) {
           const index = this.messageIndex(current, launched.targetId), previous = current.messages[index] as MochiMessage
@@ -457,6 +479,7 @@ export class MochiService {
           notification = { id: message.id, messageId: message.id, roomId: id, roomTitle: current.title, title: name, body: message.content.slice(0, 220), avatarUrl: message.avatarUrl, createdAt: message.createdAt, read: false }
           current.notifications!.push(notification)
         }
+        if (current.settings!.aiBehavior) applyDeliveredStatus(current,reply.character.id,reply.behavior.status,this.now())
         current.revision++; current.updatedAt = new Date().toISOString()
         current.notificationRevision!++
         controller.signal.throwIfAborted()

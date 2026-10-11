@@ -86,6 +86,8 @@ try {
     await page.waitForFunction(()=>window.__mochiDemo.view.state.backgroundEnabled&&!window.__mochiDemo.view.busy)
     await page.getByLabel('Allow scheduled messages in this room', { exact: true }).check()
     await page.getByLabel('Scheduled message time', { exact: true }).waitFor()
+    await page.getByLabel('Allow AI delivery timing and status suggestions',{exact:true}).check()
+    await page.getByLabel('Allow AI delivery timing and status suggestions',{exact:true}).uncheck()
     await page.getByLabel('Scheduled message time', { exact: true }).fill(await page.evaluate(()=>{const d=new Date(Date.now()+3600000);return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16)}))
     await page.getByRole('button',{name:'Schedule character message',exact:true}).click()
     await page.getByRole('button',{name:'Cancel scheduled message',exact:true}).waitFor()

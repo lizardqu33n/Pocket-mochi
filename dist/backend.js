@@ -173,6 +173,57 @@ async function runPocketGeneration(host, task, requestId, input, userId) {
   }
 }
 
+// src/mochi/presence.ts
+var STATUSES = ["online", "away", "dnd", "offline"];
+function defaultPresence() {
+  return { automatic: "online", manual: null, awayMs: 300000, dndMs: 900000, transitions: [] };
+}
+function validatePresence(value) {
+  const p = value;
+  if (!p || !STATUSES.includes(p.automatic) || p.manual !== null && !STATUSES.includes(p.manual) || ![p.awayMs, p.dndMs].every((n) => Number.isSafeInteger(n) && n >= 0 && n <= 86400000) || !Array.isArray(p.transitions) || p.transitions.length > 16 || p.transitions.some((t) => !t || !Number.isSafeInteger(t.at) || t.at < 0 || !STATUSES.includes(t.status)))
+    throw new Error("Invalid presence settings; stored data was preserved.");
+  return { ...p, transitions: p.transitions.slice().sort((a, b) => a.at - b.at) };
+}
+function statusFor(room, id, now = Date.now()) {
+  const p = room.runtime?.presence?.[id] || room.background?.presence?.[id] || defaultPresence();
+  if (p.manual)
+    return p.manual;
+  return p.transitions.filter((t) => t.at <= now).sort((a, b) => a.at - b.at).at(-1)?.status || p.automatic;
+}
+function delayFor(room, id, now = Date.now()) {
+  const p = room.runtime?.presence?.[id] || room.background?.presence?.[id] || defaultPresence(), s = statusFor(room, id, now);
+  return s === "offline" ? Infinity : s === "away" ? p.awayMs : s === "dnd" ? p.dndMs : 0;
+}
+function eligibleResponders(room, responder, now) {
+  return room.characterIds.filter((id) => (responder === "auto" || responder === id) && statusFor(room, id, now) !== "offline");
+}
+function minimumDelay(room, responder, now) {
+  const candidates = eligibleResponders(room, responder, now);
+  return candidates.length ? Math.min(...candidates.map((id) => delayFor(room, id, now))) : Infinity;
+}
+
+// src/mochi/behavior.ts
+function parseBehavior(value) {
+  if (value === undefined)
+    return { delayMs: 0 };
+  const v = value;
+  if (!v || typeof v !== "object" || Array.isArray(v) || !["now", "later"].includes(v.delivery) || !Number.isSafeInteger(v.delayMs) || v.delayMs < 0 || v.delayMs > 86400000 || v.delivery === "now" && v.delayMs !== 0 || v.status !== undefined && !STATUSES.includes(v.status))
+    return { delayMs: 0 };
+  return { delayMs: v.delayMs, ...v.status === undefined ? {} : { status: v.status } };
+}
+function applyDeliveredStatus(room, characterId, status, now) {
+  if (!status || !room.characterIds.includes(characterId))
+    return;
+  room.runtime ||= { version: 1, enabled: false, jobs: [] };
+  room.runtime.presence ||= {};
+  const p = room.runtime.presence[characterId] || defaultPresence();
+  if (p.manual !== null)
+    return;
+  p.automatic = status;
+  p.transitions = p.transitions.filter((t) => t.at > now);
+  room.runtime.presence[characterId] = p;
+}
+
 // src/mochi/generation.ts
 async function buildMochiPrompt(room, characters, responder, count, signal) {
   const settings = room.settings || defaultMochiSettings();
@@ -182,6 +233,9 @@ ROOM: ${JSON.stringify(room.title)}
 USER IDENTITY: ${JSON.stringify(room.persona)}
 CHARACTERS: ${JSON.stringify(roster)}
 ROOM INSTRUCTIONS: ${settings.instructions}` };
+  if (settings.aiBehavior)
+    system.content += `
+You may optionally include behavior:{"delivery":"now|later","delayMs":0,"status":"online|away|dnd|offline"}. delayMs must be an integer from 0 to 86400000; now requires zero. Status is an optional suggestion for your own character, effective only after delivery. These suggestions cannot override user locks or backend limits.`;
   const history = room.messages.map((raw) => {
     const message = raw;
     if (!message || !["user", "assistant"].includes(message.role) || typeof message.content !== "string")
@@ -254,7 +308,7 @@ async function generateMochiReply(host, room, userId, responder, signal, eligibl
     throw new Error("The model returned an invalid responder.");
   if (typeof parsed.text !== "string" || !parsed.text.trim() || parsed.text.length > 32000)
     throw new Error("The model returned an empty or oversized message.");
-  return { character, text: parsed.text.trim() };
+  return { character, text: parsed.text.trim(), behavior: settings.aiBehavior ? parseBehavior(parsed.behavior) : { delayMs: 0 } };
 }
 
 // src/mochi/scheduling.ts
@@ -277,6 +331,10 @@ function validateRuntime(value) {
       throw new Error("Damaged scheduled job; history was preserved.");
     if (j.deliveryAttempts !== undefined && (!Number.isSafeInteger(j.deliveryAttempts) || j.deliveryAttempts < 0 || j.deliveryAttempts > 3))
       throw new Error("Damaged delivery attempts; history was preserved.");
+    if (j.deliverAt !== undefined && (!Number.isSafeInteger(j.deliverAt) || j.deliverAt < 0))
+      throw new Error("Invalid deferred delivery deadline.");
+    if (j.proposedStatus !== undefined && !["online", "away", "dnd", "offline"].includes(j.proposedStatus))
+      throw new Error("Invalid deferred presence suggestion.");
     if (j.claim !== undefined)
       identifier(j.claim);
     if (j.draft && (typeof j.draft.text !== "string" || !j.draft.text.trim() || j.draft.text.length > 32000 || typeof j.draft.name !== "string" || j.draft.name.length > 120 || typeof j.draft.avatarUrl !== "string" || j.draft.avatarUrl.length > 500))
@@ -301,35 +359,6 @@ function scheduleInput(input, now) {
 function temporaryFailure(error) {
   const message = error instanceof Error ? error.message : String(error);
   return /\b(?:429|502|503|504)\b|rate.?limit|temporar|ECONNRESET|ETIMEDOUT|fetch failed|network|timed? ?out|disk|rename|storage|ENOSPC/i.test(message) && !/credential|API key|permission|not available|not found|decrypt/i.test(message);
-}
-
-// src/mochi/presence.ts
-var STATUSES = ["online", "away", "dnd", "offline"];
-function defaultPresence() {
-  return { automatic: "online", manual: null, awayMs: 300000, dndMs: 900000, transitions: [] };
-}
-function validatePresence(value) {
-  const p = value;
-  if (!p || !STATUSES.includes(p.automatic) || p.manual !== null && !STATUSES.includes(p.manual) || ![p.awayMs, p.dndMs].every((n) => Number.isSafeInteger(n) && n >= 0 && n <= 86400000) || !Array.isArray(p.transitions) || p.transitions.length > 16 || p.transitions.some((t) => !t || !Number.isSafeInteger(t.at) || t.at < 0 || !STATUSES.includes(t.status)))
-    throw new Error("Invalid presence settings; stored data was preserved.");
-  return { ...p, transitions: p.transitions.slice().sort((a, b) => a.at - b.at) };
-}
-function statusFor(room, id, now = Date.now()) {
-  const p = room.runtime?.presence?.[id] || room.background?.presence?.[id] || defaultPresence();
-  if (p.manual)
-    return p.manual;
-  return p.transitions.filter((t) => t.at <= now).sort((a, b) => a.at - b.at).at(-1)?.status || p.automatic;
-}
-function delayFor(room, id, now = Date.now()) {
-  const p = room.runtime?.presence?.[id] || room.background?.presence?.[id] || defaultPresence(), s = statusFor(room, id, now);
-  return s === "offline" ? Infinity : s === "away" ? p.awayMs : s === "dnd" ? p.dndMs : 0;
-}
-function eligibleResponders(room, responder, now) {
-  return room.characterIds.filter((id) => (responder === "auto" || responder === id) && statusFor(room, id, now) !== "offline");
-}
-function minimumDelay(room, responder, now) {
-  const candidates = eligibleResponders(room, responder, now);
-  return candidates.length ? Math.min(...candidates.map((id) => delayFor(room, id, now))) : Infinity;
 }
 
 // src/mochi/service.ts
@@ -367,6 +396,7 @@ class MochiService {
   makeId;
   now;
   backgroundEnabled = async () => false;
+  reserveAutomatic = async () => true;
   locks = new Map;
   jobs = new Map;
   pending = new Map;
@@ -375,6 +405,8 @@ class MochiService {
   }
   settings(input, ids) {
     const s = { ...defaultMochiSettings(), ...input };
+    if (s.aiBehavior !== undefined && typeof s.aiBehavior !== "boolean")
+      throw new Error("Invalid AI behavior setting.");
     if (typeof s.autoReply !== "boolean" || !Number.isSafeInteger(s.contextTokens) || s.contextTokens < 1024 || s.contextTokens > 131072 || !Number.isSafeInteger(s.outputTokens) || s.outputTokens < 128 || s.outputTokens > 8192 || s.outputTokens + 256 >= s.contextTokens)
       throw new Error("Invalid message token limits.");
     s.connectionId = s.connectionId ? entityId(s.connectionId) : "";
@@ -505,6 +537,8 @@ class MochiService {
         throw new Error("This room changed elsewhere. Refresh before saving again.");
       const ids = await this.membership(user, input.characterIds);
       const settings = this.settings(input.settings ?? saved.settings, ids);
+      if (settings.aiBehavior && (!saved.runtime?.enabled || !await this.backgroundEnabled(user)))
+        throw new Error("Enable account and room background messaging before AI timing suggestions.");
       if (settings.connectionId && !await this.host.connections?.get(settings.connectionId, user))
         throw new Error("This connection is not available to your account.");
       const room = { ...saved, title: text(input.title, 120, true), characterIds: ids, settings, persona: input.persona ? await this.persona(user, input.persona) : saved.persona, revision: saved.revision + 1, updatedAt: new Date().toISOString() };
@@ -795,6 +829,8 @@ class MochiService {
         return;
       if (j.draft && (statusFor(room, j.draft.characterId, now()) === "offline" || now() < (j.createdAt ?? j.dueAt) + delayFor(room, j.draft.characterId, now())))
         return;
+      if (j.draft && (j.deliverAt || 0) > now())
+        return;
       generate = !j.draft;
       if (generate && j.attempts >= 3) {
         j.status = "failed";
@@ -840,11 +876,17 @@ class MochiService {
             throw new Error("The room changed; scheduled output was discarded.");
           job.draft = { characterId: reply.character.id, text: reply.text, name: room.settings.characterNames[reply.character.id] || reply.character.name, avatarUrl: reply.character.image_id ? `/api/v1/images/${entityId(reply.character.image_id)}` : "" };
           job.status = "generated";
+          job.deliverAt = Math.max(now() + reply.behavior.delayMs, (job.createdAt ?? job.dueAt) + delayFor(room, reply.character.id, now()));
+          job.nextAttemptAt = job.deliverAt;
+          job.expiresAt = Math.max(job.expiresAt, job.deliverAt + 3600000);
+          job.proposedStatus = reply.behavior.status;
           await this.persist(user, room, controller.signal);
         });
       }
       await this.locked(user, id, async () => {
         const room = await this.read(user, id), j = room.runtime?.jobs.find((j) => j.id === occurrenceId);
+        if (j?.draft && (j.deliverAt || 0) > now())
+          return;
         await permitted(room);
         if (!j || j.claim !== claim || j.status !== "generated" || !j.draft || j.revision !== room.revision || j.expiresAt < now())
           throw new Error("The scheduled delivery changed or expired.");
@@ -862,6 +904,8 @@ class MochiService {
         j.messageId = messageId;
         j.deliveredAt = now();
         delete j.draft;
+        applyDeliveredStatus(room, draft.characterId, j.proposedStatus, now());
+        delete j.proposedStatus;
         await this.persist(user, room, controller.signal);
         this.host.sendToFrontend({ type: "mochi:notification", notification, notificationRevision: room.notificationRevision }, user);
       });
@@ -956,6 +1000,8 @@ class MochiService {
     const timeout = setTimeout(() => controller.abort(), 180000);
     try {
       await publish(true);
+      if (launched.room.settings.aiBehavior && (!await this.backgroundEnabled(user) || !await this.reserveAutomatic(user, id)))
+        throw new Error("Background behavior is disabled or its generation limit was reached.");
       const reply = await generateMochiReply(this.host, launched.promptRoom, user, launched.responder, controller.signal, eligibleResponders(launched.room, launched.responder, this.now()).filter((c) => delayFor(launched.room, c, this.now()) === 0));
       await this.locked(user, id, async () => {
         controller.signal.throwIfAborted();
@@ -971,6 +1017,25 @@ class MochiService {
         if (delayFor(current, reply.character.id, this.now()) > 0)
           throw new Error("Character presence changed; the immediate reply was discarded.");
         const name = current.settings.characterNames[reply.character.id] || reply.character.name;
+        if (current.settings.aiBehavior) {
+          if (!current.runtime?.enabled || !await this.backgroundEnabled(user))
+            throw new Error("Background behavior was disabled; the reply was discarded.");
+          if (reply.behavior.delayMs > 0) {
+            if (launched.targetId)
+              throw new Error("Deferred rerolls are unsupported; the original message was preserved.");
+            for (const j of current.runtime.jobs)
+              if (j.kind === "response" && !TERMINAL.has(j.status)) {
+                j.status = "cancelled";
+                delete j.draft;
+              }
+            if (current.runtime.jobs.length >= MAX_JOBS || current.runtime.jobs.filter((j) => !TERMINAL.has(j.status)).length >= 4)
+              throw new Error("Deferred queue is full; history was preserved.");
+            const now = this.now(), deliverAt = now + reply.behavior.delayMs;
+            current.runtime.jobs.push({ id: `deferred_${requestId}`, kind: "response", createdAt: now, dueAt: deliverAt, deliverAt, expiresAt: deliverAt + 3600000, revision: current.revision, responder: reply.character.id, status: "generated", attempts: 1, nextAttemptAt: deliverAt, proposedStatus: reply.behavior.status, draft: { characterId: reply.character.id, name, avatarUrl: reply.character.image_id ? `/api/v1/images/${entityId(reply.character.image_id)}` : "", text: reply.text } });
+            await this.persist(user, current, controller.signal);
+            return;
+          }
+        }
         let notification;
         if (launched.targetId) {
           const index = this.messageIndex(current, launched.targetId), previous = current.messages[index];
@@ -984,6 +1049,8 @@ class MochiService {
           notification = { id: message.id, messageId: message.id, roomId: id, roomTitle: current.title, title: name, body: message.content.slice(0, 220), avatarUrl: message.avatarUrl, createdAt: message.createdAt, read: false };
           current.notifications.push(notification);
         }
+        if (current.settings.aiBehavior)
+          applyDeliveredStatus(current, reply.character.id, reply.behavior.status, this.now());
         current.revision++;
         current.updatedAt = new Date().toISOString();
         current.notificationRevision++;
@@ -1062,6 +1129,7 @@ class MochiScheduler {
     this.now = now;
     this.report = report;
     service.backgroundEnabled = (user) => this.enabled(user);
+    service.reserveAutomatic = (user, room) => this.reserve(user, room);
   }
   async locked(work) {
     const task = this.serial.catch(() => {}).then(work);
