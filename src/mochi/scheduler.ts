@@ -114,7 +114,8 @@ export class MochiScheduler {
     else if (payload.type === 'mochi:schedule') {
       if (!await this.enabled(userId)) throw new Error('Opt in to background messaging first.')
       await this.service.schedule(userId, payload, this.now())
-    } else if (payload.type === 'mochi:schedule_cancel') await this.service.cancelScheduled(userId, payload.roomId, payload.occurrenceId)
+    } else if (payload.type === 'mochi:presence') await this.service.configurePresence(userId,payload)
+    else if (payload.type === 'mochi:schedule_cancel') await this.service.cancelScheduled(userId, payload.roomId, payload.occurrenceId)
     else throw new Error('Unsupported scheduling action.')
   }
 }

@@ -221,7 +221,7 @@ async function validateMochiSources(host, room, userId) {
   }
   return connection;
 }
-async function generateMochiReply(host, room, userId, responder, signal) {
+async function generateMochiReply(host, room, userId, responder, signal, eligibleIds = room.characterIds) {
   const settings = room.settings || defaultMochiSettings();
   if (!host.tokens?.countMessages)
     throw new Error("This Lumiverse version does not provide the required token counter.");
@@ -233,8 +233,11 @@ async function generateMochiReply(host, room, userId, responder, signal) {
     const c = await host.characters.get(id, userId);
     if (!c)
       throw new Error("A room character is no longer available to your account.");
-    characters.push(c);
+    if (eligibleIds.includes(id))
+      characters.push(c);
   }
+  if (!characters.length)
+    throw new Error("No room character is currently eligible.");
   const speaker = responder === "auto" && characters.length === 1 ? characters[0].id : responder;
   if (speaker !== "auto" && !room.characterIds.includes(speaker))
     throw new Error("The selected responder is not in this room.");
@@ -287,7 +290,7 @@ function validateRuntime(value) {
   return r;
 }
 function publicRuntime(r) {
-  return r ? { enabled: r.enabled, jobs: r.jobs.filter((j) => !TERMINAL.has(j.status)).map(({ id, dueAt, status, attempts, reason }) => ({ id, dueAt, status, attempts, reason })) } : undefined;
+  return r ? { enabled: r.enabled, presence: r.presence, jobs: r.jobs.filter((j) => !TERMINAL.has(j.status)).map(({ id, dueAt, status, attempts, reason }) => ({ id, dueAt, status, attempts, reason })) } : undefined;
 }
 function scheduleInput(input, now) {
   const dueAt = input?.dueAt;
@@ -298,6 +301,35 @@ function scheduleInput(input, now) {
 function temporaryFailure(error) {
   const message = error instanceof Error ? error.message : String(error);
   return /\b(?:429|502|503|504)\b|rate.?limit|temporar|ECONNRESET|ETIMEDOUT|fetch failed|network|timed? ?out|disk|rename|storage|ENOSPC/i.test(message) && !/credential|API key|permission|not available|not found|decrypt/i.test(message);
+}
+
+// src/mochi/presence.ts
+var STATUSES = ["online", "away", "dnd", "offline"];
+function defaultPresence() {
+  return { automatic: "online", manual: null, awayMs: 300000, dndMs: 900000, transitions: [] };
+}
+function validatePresence(value) {
+  const p = value;
+  if (!p || !STATUSES.includes(p.automatic) || p.manual !== null && !STATUSES.includes(p.manual) || ![p.awayMs, p.dndMs].every((n) => Number.isSafeInteger(n) && n >= 0 && n <= 86400000) || !Array.isArray(p.transitions) || p.transitions.length > 16 || p.transitions.some((t) => !t || !Number.isSafeInteger(t.at) || t.at < 0 || !STATUSES.includes(t.status)))
+    throw new Error("Invalid presence settings; stored data was preserved.");
+  return { ...p, transitions: p.transitions.slice().sort((a, b) => a.at - b.at) };
+}
+function statusFor(room, id, now = Date.now()) {
+  const p = room.runtime?.presence?.[id] || room.background?.presence?.[id] || defaultPresence();
+  if (p.manual)
+    return p.manual;
+  return p.transitions.filter((t) => t.at <= now).sort((a, b) => a.at - b.at).at(-1)?.status || p.automatic;
+}
+function delayFor(room, id, now = Date.now()) {
+  const p = room.runtime?.presence?.[id] || room.background?.presence?.[id] || defaultPresence(), s = statusFor(room, id, now);
+  return s === "offline" ? Infinity : s === "away" ? p.awayMs : s === "dnd" ? p.dndMs : 0;
+}
+function eligibleResponders(room, responder, now) {
+  return room.characterIds.filter((id) => (responder === "auto" || responder === id) && statusFor(room, id, now) !== "offline");
+}
+function minimumDelay(room, responder, now) {
+  const candidates = eligibleResponders(room, responder, now);
+  return candidates.length ? Math.min(...candidates.map((id) => delayFor(room, id, now))) : Infinity;
 }
 
 // src/mochi/service.ts
@@ -333,6 +365,7 @@ function validateRoom(value, id) {
 class MochiService {
   host;
   makeId;
+  now;
   backgroundEnabled = async () => false;
   locks = new Map;
   jobs = new Map;
@@ -354,9 +387,10 @@ class MochiService {
         names[id] = text(s.characterNames[id], 120, true);
     return { ...s, characterNames: names };
   }
-  constructor(host, makeId = () => `room_${crypto.randomUUID().replaceAll("-", "")}`) {
+  constructor(host, makeId = () => `room_${crypto.randomUUID().replaceAll("-", "")}`, now = Date.now) {
     this.host = host;
     this.makeId = makeId;
+    this.now = now;
   }
   account(userId) {
     return text(userId, 180, true);
@@ -380,6 +414,11 @@ class MochiService {
     const room = validateRoom(await this.host.userStorage.getJson(path, { userId: user }), id);
     if (room.runtime !== undefined)
       validateRuntime(room.runtime);
+    if (room.runtime?.presence)
+      for (const [id, p] of Object.entries(room.runtime.presence)) {
+        entityId(id);
+        validatePresence(p);
+      }
     room.settings = this.settings(room.settings, room.characterIds);
     room.receipts ||= [];
     if (!Array.isArray(room.receipts) || room.receipts.some((id) => typeof id !== "string"))
@@ -637,6 +676,21 @@ class MochiService {
     }
     return rooms;
   }
+  async configurePresence(userId, input) {
+    const user = identifier(userId), id = roomId(input.roomId), character = entityId(input.characterId), presence = validatePresence(input.presence);
+    this.jobs.get(this.jobKey(user, id))?.controller.abort();
+    await this.locked(user, id, async () => {
+      const room = await this.read(user, id);
+      if (!room.characterIds.includes(character))
+        throw new Error("This character is not in the room.");
+      if (room.revision !== input.revision)
+        throw new Error("Refresh before changing presence.");
+      room.runtime ||= { version: 1, enabled: false, jobs: [] };
+      room.runtime.presence ||= {};
+      room.runtime.presence[character] = presence;
+      await this.persist(user, room);
+    });
+  }
   async schedule(userId, input, now) {
     const user = identifier(userId), spec = scheduleInput(input, now);
     await this.locked(user, spec.roomId, async () => {
@@ -651,7 +705,7 @@ class MochiService {
         return;
       if (room.runtime.jobs.length >= MAX_JOBS || room.runtime.jobs.filter((j) => !TERMINAL.has(j.status)).length >= 4)
         throw new Error("The scheduled queue is full.");
-      room.runtime.jobs.push({ id: spec.id, dueAt: spec.dueAt, expiresAt: spec.dueAt + 3600000, revision: room.revision, responder: spec.responder, status: "queued", attempts: 0, nextAttemptAt: spec.dueAt });
+      room.runtime.jobs.push({ id: spec.id, kind: "scheduled", createdAt: now, dueAt: spec.dueAt, expiresAt: spec.dueAt + 3600000, revision: room.revision, responder: spec.responder, status: "queued", attempts: 0, nextAttemptAt: spec.dueAt });
       await this.persist(user, room);
     });
   }
@@ -736,6 +790,11 @@ class MochiService {
         await this.persist(user, room);
         return;
       }
+      const minimum = minimumDelay(room, j.responder, now());
+      if (!j.draft && (minimum === Infinity || now() < (j.createdAt ?? j.dueAt) + minimum))
+        return;
+      if (j.draft && (statusFor(room, j.draft.characterId, now()) === "offline" || now() < (j.createdAt ?? j.dueAt) + delayFor(room, j.draft.characterId, now())))
+        return;
       generate = !j.draft;
       if (generate && j.attempts >= 3) {
         j.status = "failed";
@@ -773,7 +832,7 @@ class MochiService {
       await permitted(snapshot);
       if (generate) {
         const j = snapshot.runtime.jobs.find((j) => j.id === occurrenceId);
-        const reply = await generateMochiReply(this.host, snapshot, user, j.responder, controller.signal);
+        const reply = await generateMochiReply(this.host, snapshot, user, j.responder, controller.signal, eligibleResponders(snapshot, j.responder, now()).filter((c) => now() >= (j.createdAt ?? j.dueAt) + delayFor(snapshot, c, now())));
         await this.locked(user, id, async () => {
           const room = await this.read(user, id), job = room.runtime?.jobs.find((j) => j.id === occurrenceId);
           await permitted(room);
@@ -790,6 +849,8 @@ class MochiService {
         if (!j || j.claim !== claim || j.status !== "generated" || !j.draft || j.revision !== room.revision || j.expiresAt < now())
           throw new Error("The scheduled delivery changed or expired.");
         const draft = j.draft, createdAt = new Date(now()).toISOString(), messageId = crypto.randomUUID();
+        if (statusFor(room, draft.characterId, now()) === "offline" || now() < (j.createdAt ?? j.dueAt) + delayFor(room, draft.characterId, now()))
+          throw new Error("Presence changed before delivery.");
         const message = { id: messageId, requestId, role: "assistant", characterId: draft.characterId, name: draft.name, avatarUrl: draft.avatarUrl, content: draft.text, createdAt };
         room.messages.push(message);
         const notification = { id: messageId, messageId, roomId: id, roomTitle: room.title, title: draft.name, body: draft.text.slice(0, 220), avatarUrl: draft.avatarUrl, createdAt, read: false };
@@ -860,7 +921,25 @@ class MochiService {
       room.revision++;
       room.updatedAt = new Date().toISOString();
       await this.persist(user, room);
-      const generate = (!content || room.settings.autoReply) && !controller.signal.aborted;
+      this.host.sendToFrontend({ type: "mochi:accepted", requestId, roomId: id }, user);
+      let generate = (!content || room.settings.autoReply) && !controller.signal.aborted;
+      if (generate && !regenerate && minimumDelay(room, responder, this.now()) > 0) {
+        generate = false;
+        if (!room.runtime?.enabled || !await this.backgroundEnabled(user))
+          throw new Error("This character is unavailable. Enable account and room background messaging to queue delayed replies.");
+        for (const job of room.runtime.jobs)
+          if (job.kind === "response" && !TERMINAL.has(job.status)) {
+            job.status = "cancelled";
+            delete job.draft;
+          }
+        if (room.runtime.jobs.length >= MAX_JOBS || room.runtime.jobs.filter((j) => !TERMINAL.has(j.status)).length >= 4)
+          throw new Error("The delayed-response queue is full; your user message is saved.");
+        const now = this.now(), delay = minimumDelay(room, responder, now), dueAt = now + (Number.isFinite(delay) ? delay : 0);
+        room.runtime.jobs.push({ id: `response_${requestId}`, kind: "response", createdAt: now, dueAt, expiresAt: now + 86400000, revision: room.revision, responder, status: "queued", attempts: 0, nextAttemptAt: dueAt });
+        await this.persist(user, room);
+      }
+      if (generate && regenerate && minimumDelay(room, responder, this.now()) > 0)
+        throw new Error("The selected character is unavailable for an immediate reroll.");
       if (generate)
         this.jobs.set(key, { requestId, controller });
       return { room, responder, generate, targetId, promptRoom: regenerate ? { ...room, messages: room.messages.slice(0, targetIndex) } : room };
@@ -877,7 +956,7 @@ class MochiService {
     const timeout = setTimeout(() => controller.abort(), 180000);
     try {
       await publish(true);
-      const reply = await generateMochiReply(this.host, launched.promptRoom, user, launched.responder, controller.signal);
+      const reply = await generateMochiReply(this.host, launched.promptRoom, user, launched.responder, controller.signal, eligibleResponders(launched.room, launched.responder, this.now()).filter((c) => delayFor(launched.room, c, this.now()) === 0));
       await this.locked(user, id, async () => {
         controller.signal.throwIfAborted();
         const current = await this.read(user, id);
@@ -889,6 +968,8 @@ class MochiService {
         for (const characterId of current.characterIds)
           if (!await this.host.characters.get(characterId, user))
             throw new Error("A room character is no longer available; the reply was discarded.");
+        if (delayFor(current, reply.character.id, this.now()) > 0)
+          throw new Error("Character presence changed; the immediate reply was discarded.");
         const name = current.settings.characterNames[reply.character.id] || reply.character.name;
         let notification;
         if (launched.targetId) {
@@ -1125,7 +1206,9 @@ class MochiScheduler {
       if (!await this.enabled(userId))
         throw new Error("Opt in to background messaging first.");
       await this.service.schedule(userId, payload, this.now());
-    } else if (payload.type === "mochi:schedule_cancel")
+    } else if (payload.type === "mochi:presence")
+      await this.service.configurePresence(userId, payload);
+    else if (payload.type === "mochi:schedule_cancel")
       await this.service.cancelScheduled(userId, payload.roomId, payload.occurrenceId);
     else
       throw new Error("Unsupported scheduling action.");
@@ -9416,7 +9499,7 @@ async function applyAction(input, userId, source = "model") {
 }
 async function handleFrontend(payload, userId) {
   if (isRecord2(payload) && typeof payload.type === "string" && payload.type.startsWith("mochi:")) {
-    if (["mochi:background_account", "mochi:background_room", "mochi:schedule", "mochi:schedule_cancel"].includes(payload.type)) {
+    if (["mochi:background_account", "mochi:background_room", "mochi:schedule", "mochi:schedule_cancel", "mochi:presence"].includes(payload.type)) {
       if (!userId)
         return;
       try {

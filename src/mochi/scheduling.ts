@@ -7,9 +7,10 @@ export interface ScheduledJob {
   status: ScheduledStatus; attempts: number; nextAttemptAt: number; claim?: string; leaseUntil?: number
   draft?: ScheduledDraft; deliveredAt?: number; messageId?: string; reason?: string
   deliveryAttempts?: number
+  kind?: 'scheduled' | 'response' | 'idle'; createdAt?: number
 }
-export interface RoomRuntime { version: 1; enabled: boolean; jobs: ScheduledJob[] }
-export interface PublicRuntime { enabled: boolean; jobs: Array<Pick<ScheduledJob, 'id' | 'dueAt' | 'status' | 'attempts' | 'reason'>> }
+export interface RoomRuntime { version: 1; enabled: boolean; jobs: ScheduledJob[]; presence?: Record<string, import('./presence.js').CharacterPresence> }
+export interface PublicRuntime { enabled: boolean; jobs: Array<Pick<ScheduledJob, 'id' | 'dueAt' | 'status' | 'attempts' | 'reason'>>; presence?: Record<string, import('./presence.js').CharacterPresence> }
 export const TERMINAL = new Set<ScheduledStatus>(['delivered', 'cancelled', 'failed', 'missed'])
 export const MAX_JOBS = 10000 // Never evict completion tombstones and silently allow duplicate delivery.
 export function identifier(value: unknown): string {
@@ -35,7 +36,7 @@ export function validateRuntime(value: unknown): RoomRuntime {
   return r
 }
 export function publicRuntime(r?: RoomRuntime): PublicRuntime | undefined {
-  return r ? { enabled: r.enabled, jobs: r.jobs.filter(j => !TERMINAL.has(j.status)).map(({id,dueAt,status,attempts,reason}) => ({id,dueAt,status,attempts,reason})) } : undefined
+  return r ? { enabled: r.enabled, presence: r.presence, jobs: r.jobs.filter(j => !TERMINAL.has(j.status)).map(({id,dueAt,status,attempts,reason}) => ({id,dueAt,status,attempts,reason})) } : undefined
 }
 export function scheduleInput(input: any, now: number): { id: string; roomId: string; responder: string; dueAt: number } {
   const dueAt = input?.dueAt

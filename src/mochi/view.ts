@@ -3,6 +3,7 @@ import { POCKET_ICONS } from '../frontend/components/icons.js'
 import { MOCHI_STYLES } from './styles.js'
 import { showPocketSheet } from '../frontend/components/ui.js'
 import { notificationBody, type MochiNotificationPolicy } from './notifications.js'
+import { defaultPresence, STATUSES, statusFor } from './presence.js'
 
 function action(label: string, icon: string, compact = false): HTMLButtonElement {
   const node = button('', `lp-button${compact ? ' mochi-icon-button' : ''}`)
@@ -79,11 +80,12 @@ export class MochiView {
     this.redraw()
   }
   receive(payload: any): boolean {
-    if (payload?.type === 'mochi:state' && payload.accepted && this.pendingSends.has(payload.requestId)) {
+    if ((payload?.type === 'mochi:accepted' || (payload?.type === 'mochi:state' && payload.accepted)) && this.pendingSends.has(payload.requestId)) {
       const sent = this.pendingSends.get(payload.requestId)!
       if ((this.drafts.get(sent.roomId) || '') === sent.content) this.drafts.set(sent.roomId, '')
       this.pendingSends.delete(payload.requestId)
     }
+    if (payload?.type === 'mochi:accepted') return true
     if (payload?.type === 'mochi:error') this.pendingSends.delete(payload.requestId)
     if (payload?.type === 'mochi:error' && this.acknowledgementRequests.has(payload.requestId)) {
       for (const id of this.acknowledgementRequests.get(payload.requestId)!) this.acknowledged.delete(id)
@@ -182,9 +184,10 @@ export class MochiView {
       const roomSelector = el('div', 'mochi-room-select')
       const groupIcon = el('span', 'mochi-room-select-icon'); groupIcon.setAttribute('aria-hidden', 'true'); groupIcon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6M18 15a5 5 0 0 1 3 5"/></svg>'
       roomSelector.append(groupIcon, selector)
-      const roomMeta = el('p', 'mochi-room-meta', `${room.characterIds.length} ${room.characterIds.length === 1 ? 'participant' : 'participants'} · active now`)
-      // Requested temporary visual convention, not a persisted presence state.
-      roomMeta.title = 'Temporary presence display; live status is not tracked.'
+      const statuses = room.characterIds.map(id=>statusFor(room,id)), online = statuses.filter(s=>s==='online').length
+      const roomMeta = el('p', 'mochi-room-meta', `${room.characterIds.length} ${room.characterIds.length === 1 ? 'participant' : 'participants'} · ${online ? 'active now' : statuses.every(s=>s==='offline') ? 'offline' : 'replies delayed'}`)
+      roomMeta.dataset.status = online ? 'online' : statuses.includes('away') ? 'away' : statuses.includes('dnd') ? 'dnd' : 'offline'
+      roomMeta.title = room.characterIds.map((id,i)=>`${room.settings?.characterNames[id] || this.state?.characters.find(c=>c.id===id)?.name || id}: ${statuses[i]}`).join('\n')
       info.append(roomSelector, roomMeta)
       const controls = el('div', 'mochi-actions')
       const inbox = action('Room inbox', 'back', true); inbox.onclick = () => { this.select(''); this.navigate() }
@@ -268,6 +271,15 @@ export class MochiView {
       }
       const instructions = el('textarea'); instructions.maxLength = 6000; instructions.value = settings.instructions; instructions.oninput = () => { settings.instructions = instructions.value }; field('Room instructions', instructions)
       for (const id of room.characterIds) {
+        const presence = structuredClone(room.background?.presence?.[id] || defaultPresence()), name = state.characters.find(c=>c.id===id)?.name || id
+        const setPresence = () => this.dispatch('mochi:presence',{roomId:room.id,revision:room.revision,characterId:id,presence})
+        const status = el('select'); for (const s of STATUSES) { const option=el('option','',s==='dnd'?'DND':s[0].toUpperCase()+s.slice(1));option.value=s;status.append(option) }
+        status.value=statusFor(room,id);status.disabled=this.busy;status.onchange=()=>{presence.manual=status.value as typeof presence.manual;setPresence()};field(`Status for ${name}`,status)
+        const automatic=el('input');automatic.type='checkbox';automatic.checked=presence.manual===null;automatic.disabled=this.busy;automatic.onchange=()=>{presence.manual=automatic.checked?null:status.value as typeof presence.manual;setPresence()};field(`Automatic status for ${name}`,automatic)
+        for (const [label,key] of [['Away delay (minutes)','awayMs'],['DND delay (minutes)','dndMs']] as const) {const delay=el('input');delay.type='number';delay.min='0';delay.max='1440';delay.value=String(presence[key]/60000);delay.disabled=this.busy;delay.onchange=()=>{presence[key]=Number(delay.value)*60000;setPresence()};field(`${label} for ${name}`,delay)}
+        const next=el('select');for(const s of STATUSES){const option=el('option','',s==='dnd'?'DND':s);option.value=s;next.append(option)};field(`Scheduled status for ${name}`,next)
+        const when=el('input');when.type='datetime-local';field(`Status change time for ${name}`,when)
+        const plan=action(`Schedule status change for ${name}`,'plus');plan.type='button';plan.disabled=this.busy;plan.onclick=()=>{presence.transitions.push({at:new Date(when.value).getTime(),status:next.value as typeof presence.automatic});setPresence()};form.append(plan)
         const input = el('input'); input.maxLength = 120; input.value = settings.characterNames[id] || ''; input.oninput = () => { settings.characterNames[id] = input.value }; field(`Room name for ${state.characters.find(c => c.id === id)?.name || id}`, input)
       }
     }
@@ -296,7 +308,7 @@ export class MochiView {
       const avatar = el('span', 'mochi-message-avatar', message.name?.slice(0, 1) || '?')
       if (message.avatarUrl) { const image = el('img'); image.src = message.avatarUrl; image.alt = ''; avatar.replaceChildren(image) }
       const avatarFrame = el('span', 'mochi-avatar-frame'); avatarFrame.append(avatar)
-      if (message.role === 'assistant') { const dot = el('span', 'mochi-presence-dot'); dot.setAttribute('aria-hidden', 'true'); dot.title = 'Temporary presence indicator'; avatarFrame.append(dot) }
+      if (message.role === 'assistant') { const dot = el('span', 'mochi-presence-dot'); dot.dataset.status = statusFor(room,message.characterId || ''); dot.setAttribute('aria-hidden', 'true'); dot.title = `Character status: ${dot.dataset.status}`; avatarFrame.append(dot) }
       const body = el('div', 'mochi-message-body')
       const time = el('time', '', new Date(message.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })); time.dateTime = message.createdAt
       const displayName = message.role === 'user' ? 'You' : message.name || 'Unknown'

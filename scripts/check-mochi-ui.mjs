@@ -33,7 +33,7 @@ const service=new MochiService(host);
 const scheduler=new MochiScheduler(host,service);scheduler.start(false);
 const render = () => {const node=view.render();node.classList.add('lumiphone-app-view');document.getElementById('app').replaceChildren(node)};
 const policy={enabled:true,previews:true,visible:true};
-const view = new MochiView(payload => {if(['mochi:background_account','mochi:background_room','mochi:schedule','mochi:schedule_cancel'].includes(payload.type)){void scheduler.handle(payload,'synthetic-user').then(async()=>host.sendToFrontend({type:'mochi:state',requestId:payload.requestId,state:await service.state('synthetic-user')})).catch(()=>host.sendToFrontend({type:'mochi:error',requestId:payload.requestId,message:'Scheduling failed'}))}else void service.handle(payload,'synthetic-user')}, render, id => { view.select(id || ''); render(); },()=>policy,n=>showMochiNotification(document.getElementById('phone'),n,policy.previews,()=>view.openRoom(n.roomId)),(notices,rooms)=>reconcileMochiNotifications(document.getElementById('phone'),notices,rooms));
+const view = new MochiView(payload => {if(['mochi:background_account','mochi:background_room','mochi:schedule','mochi:schedule_cancel','mochi:presence'].includes(payload.type)){void scheduler.handle(payload,'synthetic-user').then(async()=>host.sendToFrontend({type:'mochi:state',requestId:payload.requestId,state:await service.state('synthetic-user')})).catch(()=>host.sendToFrontend({type:'mochi:error',requestId:payload.requestId,message:'Scheduling failed'}))}else void service.handle(payload,'synthetic-user')}, render, id => { view.select(id || ''); render(); },()=>policy,n=>showMochiNotification(document.getElementById('phone'),n,policy.previews,()=>view.openRoom(n.roomId)),(notices,rooms)=>reconcileMochiNotifications(document.getElementById('phone'),notices,rooms));
 window.__mochiDemo={view,service,host,files,policy,scheduler};
 view.load();
 `)
@@ -95,6 +95,15 @@ try {
     await page.waitForFunction(()=>!window.__mochiDemo.view.busy&&window.__mochiDemo.view.state.rooms.every(r=>!r.background?.jobs.length))
     await page.getByLabel('Allow server-side background messaging for my account',{exact:true}).uncheck()
     await page.waitForFunction(()=>!window.__mochiDemo.view.busy&&!window.__mochiDemo.view.state.backgroundEnabled)
+    await page.getByLabel('Status for Second character',{exact:true}).selectOption('dnd')
+    await page.waitForFunction(()=>!window.__mochiDemo.view.busy&&window.__mochiDemo.view.state.rooms[0].background.presence.character2.manual==='dnd')
+    assert.equal(await page.getByLabel('Automatic status for Second character',{exact:true}).isChecked(),false,'Selecting a status locks it manually')
+    await page.getByLabel('DND delay (minutes) for Second character',{exact:true}).fill('7')
+    await page.getByLabel('DND delay (minutes) for Second character',{exact:true}).press('Tab')
+    await page.waitForFunction(()=>!window.__mochiDemo.view.busy&&window.__mochiDemo.view.state.rooms[0].background.presence.character2.dndMs===420000)
+    await page.screenshot({path:resolve(output,'presence-'+width+'.png')})
+    await page.getByLabel('Automatic status for Second character',{exact:true}).check()
+    await page.waitForFunction(()=>!window.__mochiDemo.view.busy&&window.__mochiDemo.view.state.rooms[0].background.presence.character2.manual===null)
     await page.screenshot({ path: resolve(output, 'settings-' + width + '.png'), fullPage: true })
     await page.getByRole('button', { name: 'Save settings', exact: true }).scrollIntoViewIfNeeded()
     await page.screenshot({ path: resolve(output, 'settings-bottom-' + width + '.png') })

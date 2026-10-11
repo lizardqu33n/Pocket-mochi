@@ -1,6 +1,7 @@
 import { roomId, defaultMochiSettings, type MochiSettings, type MochiMessage, type MochiPersona, type MochiRoom, type MochiState } from './types.js'
 import { generateMochiReply, validateMochiSources } from './generation.js'
 import { identifier, MAX_JOBS, publicRuntime, scheduleInput, temporaryFailure, TERMINAL, validateRuntime, type ScheduledJob } from './scheduling.js'
+import { delayFor, eligibleResponders, minimumDelay, statusFor, validatePresence } from './presence.js'
 
 // New implementation. No Character Chatroom source is included.
 export interface MochiHost {
@@ -62,7 +63,7 @@ export class MochiService {
     for (const id of ids) if (s.characterNames[id]) names[id] = text(s.characterNames[id], 120, true)
     return { ...s, characterNames: names }
   }
-  constructor(private host: MochiHost, private makeId = () => `room_${crypto.randomUUID().replaceAll('-', '')}`) {}
+  constructor(private host: MochiHost, private makeId = () => `room_${crypto.randomUUID().replaceAll('-', '')}`, private now: () => number = Date.now) {}
   private account(userId: unknown): string { return text(userId, 180, true) }
   private async locked<T>(user: string, id: string, work: () => Promise<T>): Promise<T> {
     const key = JSON.stringify([user, id])
@@ -76,6 +77,7 @@ export class MochiService {
     if (!await this.host.userStorage.exists(path, user)) throw new Error('This room is not available to your account.')
     const room = validateRoom(await this.host.userStorage.getJson(path, { userId: user }), id)
     if (room.runtime !== undefined) validateRuntime(room.runtime)
+    if (room.runtime?.presence) for (const [id,p] of Object.entries(room.runtime.presence)) { entityId(id); validatePresence(p) }
     room.settings = this.settings(room.settings, room.characterIds)
     room.receipts ||= []
     if (!Array.isArray(room.receipts) || room.receipts.some(id => typeof id !== 'string')) throw new Error('Invalid saved send receipts.')
@@ -258,6 +260,18 @@ export class MochiService {
     }
     return rooms
   }
+  async configurePresence(userId: string, input: any): Promise<void> {
+    const user = identifier(userId), id = roomId(input.roomId), character = entityId(input.characterId), presence = validatePresence(input.presence)
+    this.jobs.get(this.jobKey(user,id))?.controller.abort()
+    await this.locked(user,id,async()=>{
+      const room = await this.read(user,id)
+      if (!room.characterIds.includes(character)) throw new Error('This character is not in the room.')
+      if (room.revision !== input.revision) throw new Error('Refresh before changing presence.')
+      room.runtime ||= { version:1,enabled:false,jobs:[] }
+      room.runtime.presence ||= {}; room.runtime.presence[character] = presence
+      await this.persist(user,room)
+    })
+  }
   async schedule(userId: string, input: any, now: number): Promise<void> {
     const user = identifier(userId), spec = scheduleInput(input, now)
     await this.locked(user, spec.roomId, async () => {
@@ -267,7 +281,7 @@ export class MochiService {
       if (spec.responder !== 'auto' && !room.characterIds.includes(spec.responder)) throw new Error('The selected responder is not in this room.')
       if (room.runtime.jobs.some(j => j.id === spec.id)) return
       if (room.runtime.jobs.length >= MAX_JOBS || room.runtime.jobs.filter(j => !TERMINAL.has(j.status)).length >= 4) throw new Error('The scheduled queue is full.')
-      room.runtime.jobs.push({ id: spec.id, dueAt: spec.dueAt, expiresAt: spec.dueAt + 3600000, revision: room.revision, responder: spec.responder, status: 'queued', attempts: 0, nextAttemptAt: spec.dueAt })
+      room.runtime.jobs.push({ id: spec.id, kind: 'scheduled', createdAt: now, dueAt: spec.dueAt, expiresAt: spec.dueAt + 3600000, revision: room.revision, responder: spec.responder, status: 'queued', attempts: 0, nextAttemptAt: spec.dueAt })
       await this.persist(user, room)
     })
   }
@@ -319,6 +333,9 @@ export class MochiService {
       if (j.expiresAt < now() || j.revision !== room.revision) { j.status = j.expiresAt < now() ? 'missed' : 'cancelled'; delete j.draft; await this.persist(user, room); return }
       if (!room.runtime!.enabled || !await allowed()) { j.status = 'cancelled'; delete j.draft; await this.persist(user, room); return }
       if (j.responder !== 'auto' && !room.characterIds.includes(j.responder)) { j.status = 'paused'; j.reason = 'Responder is unavailable.'; await this.persist(user, room); return }
+      const minimum = minimumDelay(room,j.responder,now())
+      if (!j.draft && (minimum === Infinity || now() < (j.createdAt ?? j.dueAt) + minimum)) return
+      if (j.draft && (statusFor(room,j.draft.characterId,now()) === 'offline' || now() < (j.createdAt ?? j.dueAt) + delayFor(room,j.draft.characterId,now()))) return
       // A generated draft is recoverable without another paid request.
       generate = !j.draft
       if (generate && j.attempts >= 3) { j.status = 'failed'; await this.persist(user, room); return }
@@ -336,7 +353,7 @@ export class MochiService {
       await permitted(snapshot)
       if (generate) {
         const j = snapshot.runtime!.jobs.find(j => j.id === occurrenceId)!
-        const reply = await generateMochiReply(this.host, snapshot, user, j.responder, controller.signal)
+        const reply = await generateMochiReply(this.host, snapshot, user, j.responder, controller.signal, eligibleResponders(snapshot,j.responder,now()).filter(c => now() >= (j.createdAt ?? j.dueAt) + delayFor(snapshot!,c,now())))
         await this.locked(user, id, async () => {
           const room = await this.read(user, id), job = room.runtime?.jobs.find(j => j.id === occurrenceId)
           await permitted(room)
@@ -351,6 +368,7 @@ export class MochiService {
         await permitted(room)
         if (!j || j.claim !== claim || j.status !== 'generated' || !j.draft || j.revision !== room.revision || j.expiresAt < now()) throw new Error('The scheduled delivery changed or expired.')
         const draft = j.draft, createdAt = new Date(now()).toISOString(), messageId = crypto.randomUUID()
+        if (statusFor(room,draft.characterId,now()) === 'offline' || now() < (j.createdAt ?? j.dueAt) + delayFor(room,draft.characterId,now())) throw new Error('Presence changed before delivery.')
         const message: MochiMessage = { id: messageId, requestId, role: 'assistant', characterId: draft.characterId, name: draft.name, avatarUrl: draft.avatarUrl, content: draft.text, createdAt }
         room.messages.push(message)
         const notification = { id: messageId, messageId, roomId: id, roomTitle: room.title, title: draft.name, body: draft.text.slice(0, 220), avatarUrl: draft.avatarUrl, createdAt, read: false }
@@ -398,7 +416,18 @@ export class MochiService {
       room.receipts!.push(requestId)
       room.revision++; room.updatedAt = new Date().toISOString()
       await this.persist(user, room)
-      const generate = (!content || room.settings!.autoReply) && !controller.signal.aborted
+      this.host.sendToFrontend({ type:'mochi:accepted', requestId, roomId:id },user)
+      let generate = (!content || room.settings!.autoReply) && !controller.signal.aborted
+      if (generate && !regenerate && minimumDelay(room,responder,this.now()) > 0) {
+        generate = false
+        if (!room.runtime?.enabled || !await this.backgroundEnabled(user)) throw new Error('This character is unavailable. Enable account and room background messaging to queue delayed replies.')
+        for (const job of room.runtime.jobs) if (job.kind === 'response' && !TERMINAL.has(job.status)) { job.status = 'cancelled'; delete job.draft }
+        if (room.runtime.jobs.length >= MAX_JOBS || room.runtime.jobs.filter(j=>!TERMINAL.has(j.status)).length >= 4) throw new Error('The delayed-response queue is full; your user message is saved.')
+        const now = this.now(), delay = minimumDelay(room,responder,now), dueAt = now + (Number.isFinite(delay) ? delay : 0)
+        room.runtime.jobs.push({ id: `response_${requestId}`, kind: 'response', createdAt: now, dueAt, expiresAt: now + 86400000, revision: room.revision, responder, status:'queued', attempts:0, nextAttemptAt:dueAt })
+        await this.persist(user,room)
+      }
+      if (generate && regenerate && minimumDelay(room,responder,this.now()) > 0) throw new Error('The selected character is unavailable for an immediate reroll.')
       if (generate) this.jobs.set(key, { requestId, controller })
       return { room, responder, generate, targetId, promptRoom: regenerate ? { ...room, messages: room.messages.slice(0, targetIndex) } : room }
     }).finally(() => { waiting.delete(queued); if (!waiting.size && this.pending.get(key) === waiting) this.pending.delete(key) })
@@ -407,7 +436,7 @@ export class MochiService {
     const timeout = setTimeout(() => controller.abort(), 180000)
     try {
       await publish(true)
-      const reply = await generateMochiReply(this.host, launched.promptRoom, user, launched.responder, controller.signal)
+      const reply = await generateMochiReply(this.host, launched.promptRoom, user, launched.responder, controller.signal, eligibleResponders(launched.room,launched.responder,this.now()).filter(c=>delayFor(launched.room,c,this.now())===0))
       await this.locked(user, id, async () => {
         controller.signal.throwIfAborted()
         const current = await this.read(user, id)
@@ -415,6 +444,7 @@ export class MochiService {
         await validateMochiSources(this.host, current, user)
         if (!this.host.permissions.has('characters')) throw new Error('Character permission is required.')
         for (const characterId of current.characterIds) if (!await this.host.characters.get(characterId, user)) throw new Error('A room character is no longer available; the reply was discarded.')
+        if (delayFor(current,reply.character.id,this.now()) > 0) throw new Error('Character presence changed; the immediate reply was discarded.')
         const name = current.settings!.characterNames[reply.character.id] || reply.character.name
         let notification
         if (launched.targetId) {

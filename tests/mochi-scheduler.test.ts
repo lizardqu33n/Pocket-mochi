@@ -2,6 +2,7 @@ import { test, expect } from 'bun:test'
 import { MochiScheduler } from '../src/mochi/scheduler.js'
 import { MochiService, type MochiHost } from '../src/mochi/service.js'
 import { defaultMochiSettings } from '../src/mochi/types.js'
+import { defaultPresence, statusFor } from '../src/mochi/presence.js'
 
 function fixture() {
   const files = new Map<string, any>(), calls: any[] = [], events: any[] = []
@@ -23,7 +24,7 @@ function fixture() {
   // Missing optional profile bank must behave like the real host fallback, but corrupt records must throw.
   const getJson=host.userStorage.getJson
   host.userStorage.getJson=async(p,o)=>!files.has(o.userId+':'+p)&&'fallback'in o ? o.fallback : getJson(p,o)
-  let service = new MochiService(host,()=>`room_${(++counter).toString(16).padStart(32,'0')}`)
+  let service = new MochiService(host,()=>`room_${(++counter).toString(16).padStart(32,'0')}`,()=>now)
   let scheduler = new MochiScheduler(host,service,()=>now);scheduler.start(false)
   const create=async(user='alice')=>{
     const input={title:'Independent',characterIds:[user+'_character'],persona:{source:'manual',name:'Stable persona'}}
@@ -34,7 +35,7 @@ function fixture() {
     return service.read(user,room.id)
   }
   const schedule=async(room:any,id='occurrence',user='alice',dueAt=now)=>scheduler.handle({type:'mochi:schedule',roomId:room.id,revision:room.revision,occurrenceId:id,dueAt},user)
-  const restart=()=>{scheduler.stop();service=new MochiService(host);scheduler=new MochiScheduler(host,service,()=>now);scheduler.start(false)}
+  const restart=()=>{scheduler.stop();service=new MochiService(host,undefined,()=>now);scheduler=new MochiScheduler(host,service,()=>now);scheduler.start(false)}
   return {host,files,calls,events,create,schedule,restart,get service(){return service},get scheduler(){return scheduler},get now(){return now},advance:(ms:number)=>{now+=ms},fail:(key:string)=>{failure=key},revoke:()=>{owned=false}}
 }
 
@@ -153,4 +154,44 @@ test('damaged account/room/registry records fail closed and are never replaced w
   const f=fixture(),room=await f.create();await f.schedule(room)
   const key='global:mochi/v1/scheduler-accounts.json',bad={version:999,accounts:['alice'],attempts:[]};f.files.set(key,bad)
   await expect(f.scheduler.tick()).rejects.toThrow('preserved');expect(f.files.get(key)).toEqual(bad);expect(f.calls).toHaveLength(0);f.scheduler.stop()
+})
+test('Away and DND both queue configurable durable delays without polling AI',async()=>{
+  for(const status of ['away','dnd'] as const) {
+    const f=fixture(),room=await f.create(),p={...defaultPresence(),manual:status,awayMs:120000,dndMs:240000}
+    await f.service.configurePresence('alice',{roomId:room.id,revision:room.revision,characterId:'alice_character',presence:p})
+    await f.service.message('alice',{roomId:room.id,revision:room.revision,requestId:'delayed',content:'Wait for me'})
+    await f.scheduler.tick();expect(f.calls).toHaveLength(0)
+    f.restart();f.advance(status==='away'?119999:239999);await f.scheduler.tick();expect(f.calls).toHaveLength(0)
+    f.advance(1);await f.scheduler.tick();expect(f.calls).toHaveLength(1)
+    expect((await f.service.read('alice',room.id)).messages).toHaveLength(2);f.scheduler.stop()
+  }
+})
+test('Offline waits for scheduled eligibility while manual overrides survive restart',async()=>{
+  const f=fixture(),room=await f.create()
+  const p={...defaultPresence(),automatic:'offline' as const,manual:'offline' as const,transitions:[{at:f.now+60000,status:'away' as const},{at:f.now+120000,status:'online' as const}]}
+  await f.service.configurePresence('alice',{roomId:room.id,revision:room.revision,characterId:'alice_character',presence:p})
+  await f.service.message('alice',{roomId:room.id,revision:room.revision,requestId:'offline_response',content:'Hello'})
+  f.advance(180000);f.restart();await f.scheduler.tick();expect(f.calls).toHaveLength(0)
+  let saved=await f.service.read('alice',room.id);expect(statusFor(saved,'alice_character',f.now)).toBe('offline')
+  await f.service.configurePresence('alice',{roomId:room.id,revision:saved.revision,characterId:'alice_character',presence:{...p,manual:null}})
+  await f.scheduler.tick();expect(f.calls).toHaveLength(1);saved=await f.service.read('alice',room.id);expect(saved.messages).toHaveLength(2);f.scheduler.stop()
+})
+test('new user messages coalesce delayed replies into the newest conversation revision',async()=>{
+  const f=fixture(),room=await f.create()
+  await f.service.configurePresence('alice',{roomId:room.id,revision:room.revision,characterId:'alice_character',presence:{...defaultPresence(),manual:'away',awayMs:60000}})
+  await f.service.message('alice',{roomId:room.id,revision:room.revision,requestId:'first',content:'Old question'})
+  const current=await f.service.read('alice',room.id)
+  await f.service.message('alice',{roomId:room.id,revision:current.revision,requestId:'second',content:'New question'})
+  f.advance(60000);await f.scheduler.tick()
+  const saved=await f.service.read('alice',room.id)
+  expect(saved.messages).toHaveLength(3);expect(f.calls).toHaveLength(1)
+  expect(f.calls[0].messages.some((m:any)=>m.content.includes('New question'))).toBe(true)
+  expect(saved.runtime!.jobs.filter(j=>j.status==='delivered')).toHaveLength(1);f.scheduler.stop()
+})
+test('offline rerolls and unconsented delayed sends never invoke a provider',async()=>{
+  const f=fixture(),room=await f.create()
+  await f.service.configurePresence('alice',{roomId:room.id,revision:room.revision,characterId:'alice_character',presence:{...defaultPresence(),manual:'offline'}})
+  await f.scheduler.configure('alice',false)
+  await expect(f.service.message('alice',{roomId:room.id,revision:room.revision,requestId:'unavailable',content:'Saved'})).rejects.toThrow('unavailable')
+  expect(f.calls).toHaveLength(0);expect((await f.service.read('alice',room.id)).messages).toHaveLength(1);f.scheduler.stop()
 })

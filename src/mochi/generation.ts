@@ -37,7 +37,7 @@ export async function validateMochiSources(host: any, room: MochiRoom, userId: s
   }
   return connection
 }
-export async function generateMochiReply(host: any, room: MochiRoom, userId: string, responder: string, signal: AbortSignal): Promise<{ character: any; text: string }> {
+export async function generateMochiReply(host: any, room: MochiRoom, userId: string, responder: string, signal: AbortSignal, eligibleIds = room.characterIds): Promise<{ character: any; text: string }> {
   const settings = room.settings || defaultMochiSettings()
   if (!host.tokens?.countMessages) throw new Error('This Lumiverse version does not provide the required token counter.')
   const connection = await validateMochiSources(host, room, userId)
@@ -46,8 +46,9 @@ export async function generateMochiReply(host: any, room: MochiRoom, userId: str
   for (const id of room.characterIds) {
     const c = await host.characters.get(id, userId)
     if (!c) throw new Error('A room character is no longer available to your account.')
-    characters.push(c)
+    if (eligibleIds.includes(id)) characters.push(c)
   }
+  if (!characters.length) throw new Error('No room character is currently eligible.')
   const speaker = responder === 'auto' && characters.length === 1 ? characters[0].id : responder
   if (speaker !== 'auto' && !room.characterIds.includes(speaker)) throw new Error('The selected responder is not in this room.')
   const messages = await buildMochiPrompt(room, characters, speaker, async messages => (await host.tokens.countMessages(messages, { model: connection.model, userId })).total_tokens, signal)
