@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
 import {checkMochiAccounts} from './check-mochi-accounts-ui.mjs'
 import {checkMochiScheduling} from './check-mochi-scheduling-ui.mjs'
+import {checkMochiWorkspace} from './check-mochi-workspace-ui.mjs'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
 const require = createRequire(import.meta.url)
@@ -15,6 +16,7 @@ await mkdir(output, { recursive: true })
 // Only synthetic data. This exercises the production view without any host or provider.
 await writeFile(resolve(output, 'entry.ts'), `
 import { MochiView } from ${JSON.stringify(resolve(root, 'src/mochi/view.ts'))};
+import { createMochiWorkspace } from ${JSON.stringify(resolve(root, 'src/mochi/workspace.ts'))};
 import { MochiService } from ${JSON.stringify(resolve(root, 'src/mochi/service.ts'))};
 import { MochiScheduler } from ${JSON.stringify(resolve(root, 'src/mochi/scheduler.ts'))};
 import { showMochiNotification, reconcileMochiNotifications } from ${JSON.stringify(resolve(root, 'src/mochi/notifications.ts'))};
@@ -36,7 +38,7 @@ const scheduler=new MochiScheduler(host,service);scheduler.start(false);
 const render = () => {const node=view.render();node.classList.add('lumiphone-app-view');document.getElementById('app').replaceChildren(node)};
 const policy={enabled:true,previews:true,visible:true};
 const view = new MochiView(payload => {if(['mochi:background_account','mochi:background_room','mochi:schedule','mochi:schedule_cancel','mochi:presence','mochi:idle'].includes(payload.type)){void scheduler.handle(payload,'synthetic-user').then(async()=>host.sendToFrontend({type:'mochi:state',requestId:payload.requestId,state:await service.state('synthetic-user',payload.accountId)})).catch(()=>host.sendToFrontend({type:'mochi:error',requestId:payload.requestId,message:'Scheduling failed'}))}else void service.handle(payload,'synthetic-user')}, render, id => { view.select(id || ''); render(); },()=>policy,n=>showMochiNotification(document.getElementById('phone'),n,policy.previews,()=>view.openRoom(n.roomId)),(notices,rooms)=>reconcileMochiNotifications(document.getElementById('phone'),notices,rooms));
-window.__mochiDemo={view,service,host,files,policy,scheduler};
+window.__mochiDemo={view,service,host,files,policy,scheduler,createMochiWorkspace,demoPortrait};
 view.load();
 `)
 const build = spawnSync('bun', ['build', resolve(output, 'entry.ts'), '--target=browser', '--outfile=' + resolve(output, 'view.js')], { cwd: root, encoding: 'utf8' })
@@ -347,5 +349,6 @@ try {
   }
   await checkMochiAccounts(browser,output)
   await checkMochiScheduling(browser,output)
+  await checkMochiWorkspace(browser,output)
   console.log((process.env.POCKET_MOCHI_ACCOUNTS_ONLY?'Mochi account checks':'Mochi simulated Chromium UI')+' passed at 320px, 390px and 900px. Browser: ' + browser.version())
 } finally { await browser.close() }

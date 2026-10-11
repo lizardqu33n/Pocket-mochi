@@ -116,7 +116,7 @@ export class MochiView {
     const generationRequestId = this.ownGenerations.get(this.roomId)
     if (generationRequestId) this.send({ type: 'mochi:cancel', accountId: this.state?.accountId, roomId: this.roomId, generationRequestId })
   }
-  destroy(): void { this.leave(); clearTimeout(this.timeout);clearInterval(this.presenceTimer) }
+  destroy(): void { try { this.leave() } finally { clearTimeout(this.timeout);clearInterval(this.presenceTimer) } }
   private dispatch(type: string, values: Record<string, unknown> = {}): void {
     if (this.busy) return
     this.request = requestId('mochi')
@@ -517,6 +517,8 @@ export class MochiView {
     this.send({ type: 'mochi:notification_read', requestId: idForRequest, accountId: this.state?.accountId, roomId: id, notificationIds: unread.map(n => n.id) })
   }
   openRoom(id: string): void { this.notificationsOpen = false; this.select(id); this.navigate(id); this.markNotifications(id); this.load() }
+  /** Returning to a retained shell view uses the existing read/acknowledgment path. */
+  resume(): void { if (this.notificationPolicy().visible && this.roomId && !this.editing && !this.creating && !this.notificationsOpen) this.markNotifications(this.roomId) }
   private notificationList(): HTMLDivElement {
     const list = el('div', 'mochi-notification-list'); list.append(el('h3', '', 'Mochi notifications'))
     const entries = this.state?.notifications || []
