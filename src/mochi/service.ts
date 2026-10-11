@@ -28,6 +28,10 @@ export interface MochiHost {
 }
 const ROOT = 'mochi/v1/rooms/'
 const pathFor = (id: unknown) => `${ROOT}${roomId(id)}.json`
+function equivalent(a: unknown, b: unknown): boolean {
+  const canonical = (value: any): any => Array.isArray(value) ? value.map(canonical) : value && typeof value === 'object' ? Object.fromEntries(Object.keys(value).sort().filter(k => value[k] !== undefined).map(k => [k, canonical(value[k])])) : value
+  return JSON.stringify(canonical(a)) === JSON.stringify(canonical(b))
+}
 function text(value: unknown, max: number, required = false): string {
   if (typeof value !== 'string' || value.length > max || (required && !value.trim())) throw new Error('Invalid Mochi field.')
   return value.trim()
@@ -62,6 +66,13 @@ export class MochiService {
   releaseAutomatic: (userId: string, roomId: string) => void = () => {}
   schedulingWarning: (message:string) => void = () => {}
   private locks = new Map<string, Promise<unknown>>()
+  // Wire-only ordering; no room schema or durable scheduling records change.
+  private schedulingSession = crypto.randomUUID()
+  private schedulingSequences = new Map<string, number>()
+  private visibleRuntime(user: string, room: MochiRoom) {
+    const background = publicRuntime(room.runtime)
+    return background ? { ...background, snapshot: { session: this.schedulingSession, sequence: this.schedulingSequences.get(this.jobKey(user, room.id)) || 0 } } : undefined
+  }
   private jobs = new Map<string, { requestId: string; controller: AbortController; accountId?: string; phoneKey?: string; response?: boolean }>()
   private pending = new Map<string, Set<{ requestId: string; controller: AbortController; accountId?: string; phoneKey?: string }>>()
   private jobKey(user: string, id: string): string { return JSON.stringify([user, id]) }
@@ -185,6 +196,12 @@ export class MochiService {
     await this.host.userStorage.setJson(`${path}.pending`, room, { userId: user })
     signal?.throwIfAborted()
     await this.host.userStorage.move(`${path}.pending`, path, user)
+    if (room.runtime) {
+      const key = this.jobKey(user, room.id)
+      this.schedulingSequences.set(key, (this.schedulingSequences.get(key) || 0) + 1)
+      try { this.host.sendToFrontend({ type: 'mochi:scheduling_updated', roomId: room.id, accountId: room.accountId, associationRevision: room.associationRevision || 0, roomRevision: room.revision, background: this.visibleRuntime(user, room) }, user) }
+      catch { this.schedulingWarning('Mochi scheduling status could not be published; committed records remain available on refresh.') }
+    }
   }
   private async membership(user: string, value: unknown): Promise<string[]> {
     if (!Array.isArray(value) || !value.length || value.length > 12) throw new Error('Choose 1–12 characters.')
@@ -234,7 +251,9 @@ export class MochiService {
       const settings = this.settings(input.settings ?? saved.settings, ids)
       if (settings.aiBehavior && (!saved.runtime?.enabled || !await this.backgroundEnabled(user))) throw new Error('Enable account and room background messaging before AI timing suggestions.')
       if (settings.connectionId && !await this.host.connections?.get(settings.connectionId, user)) throw new Error('This connection is not available to your account.')
-      const room = { ...saved, title: text(input.title, 120, true), characterIds: ids, settings, persona: input.persona ? await this.persona(user, input.persona) : saved.persona, revision: saved.revision + 1, updatedAt: new Date().toISOString() }
+      const title = text(input.title, 120, true), persona = input.persona ? await this.persona(user, input.persona) : saved.persona
+      if (title === saved.title && equivalent(ids, saved.characterIds) && equivalent(settings, saved.settings) && equivalent(persona, saved.persona)) return saved
+      const room = { ...saved, title, characterIds: ids, settings, persona, revision: saved.revision + 1, updatedAt: new Date().toISOString() }
       for(const j of room.runtime?.jobs || []) if(!TERMINAL.has(j.status)){j.status='cancelled';delete j.draft;delete j.additional}
       for (const n of room.notifications!) n.roomTitle = room.title
       room.notificationRevision = (saved.notificationRevision || 0) + 1
@@ -253,7 +272,10 @@ export class MochiService {
       try {
         const raw: any = await this.host.userStorage.getJson(pathFor(match[1]), { userId: user })
         if (raw?.accountId !== accountId) continue
-        rooms.push(await this.read(user, match[1], accountId))
+        rooms.push(await this.locked(user, match[1], async () => {
+          const room = await this.read(user, match[1], accountId)
+          return { ...room, background: this.visibleRuntime(user, room) }
+        }))
       } catch { warnings.push(`Room ${match[1]} could not be read. Its file was preserved.`) }
     }
     const collect = async (list: (options: any) => Promise<any>) => {
@@ -275,7 +297,7 @@ export class MochiService {
     const connections = this.host.permissions.has('generation') && this.host.connections ? (await this.host.connections.list(user)).map(c => ({ id: c.id, name: c.name || c.model, model: c.model })) : []
     const jobs: Record<string, string> = {}
     for (const room of rooms) { const job = this.jobs.get(this.jobKey(user, room.id)); if (job && !job.requestId.startsWith('server_')) jobs[room.id] = job.requestId }
-    return { accountId: accountId as string | undefined, backgroundEnabled: await this.backgroundEnabled(user), rooms: rooms.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).map(({ runtime, ...room }) => ({ ...room, background: publicRuntime(runtime) })), characters: characters.map(c => ({ id: c.id, name: c.name, avatarUrl: c.image_id ? `/api/v1/images/${c.image_id}` : '' })), personas: choices, warnings, connections, jobs, notifications: rooms.flatMap(r => r.notifications || []).sort((a, b) => b.createdAt.localeCompare(a.createdAt)) }
+    return { accountId: accountId as string | undefined, backgroundEnabled: await this.backgroundEnabled(user), rooms: rooms.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).map(({ runtime, ...room }) => room), characters: characters.map(c => ({ id: c.id, name: c.name, avatarUrl: c.image_id ? `/api/v1/images/${c.image_id}` : '' })), personas: choices, warnings, connections, jobs, notifications: rooms.flatMap(r => r.notifications || []).sort((a, b) => b.createdAt.localeCompare(a.createdAt)) }
   }
   async cancel(userId: string, id: string, requestId: string, accountId?: unknown): Promise<void> {
     const user = this.account(userId)
@@ -533,7 +555,7 @@ export class MochiService {
         await this.persist(user, room, controller.signal)
         for(const event of events) this.host.sendToFrontend({ type: 'mochi:notification', notification:event.notification, notificationRevision:event.revision, accountId: event.notification.accountId }, user)
         const { runtime, ...visible } = room
-        this.host.sendToFrontend({ type: 'mochi:room_updated', room: { ...visible, background: publicRuntime(runtime) } }, user)
+        this.host.sendToFrontend({ type: 'mochi:room_updated', room: { ...visible, background: this.visibleRuntime(user, room) } }, user)
       })
     } catch (error) {
       await this.locked(user, id, async () => {

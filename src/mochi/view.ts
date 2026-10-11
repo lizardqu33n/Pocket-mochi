@@ -7,6 +7,7 @@ import { defaultPresence, STATUSES, statusFor } from './presence.js'
 import { MochiProfiles } from './profile-screen.js'
 import { accountPicker } from './account-picker.js'
 import type { MochiPhone } from './phone-selection.js'
+import { SCHEDULE_LABELS, TERMINAL, type PublicRuntime } from './scheduling.js'
 
 function action(label: string, icon: string, compact = false): HTMLButtonElement {
   const node = button('', `lp-button${compact ? ' mochi-icon-button' : ''}`)
@@ -34,6 +35,21 @@ export class MochiView {
   private activeAccountId?: string
   private phone?: MochiPhone
   private associations=new Map<string,{accountId:string;revision:number}>()
+  private retiredSchedulingSessions = new Map<string, Set<string>>()
+  private schedulingRoot?: HTMLElement
+  private schedulingTime = new Map<string, string>()
+  private mergeScheduling(room: MochiRoom, incoming: PublicRuntime | undefined, revision: number): PublicRuntime | undefined {
+    const current = room.background, next = incoming?.snapshot, prior = current?.snapshot
+    if (revision < room.revision) return current
+    if (prior && !next) return current
+    if (next && prior) {
+      if (next.session === prior.session && next.sequence < prior.sequence) return current
+      const retired = this.retiredSchedulingSessions.get(room.id) || new Set<string>()
+      if (retired.has(next.session)) return current
+      if (next.session !== prior.session) { retired.add(prior.session); this.retiredSchedulingSessions.set(room.id, retired) }
+    }
+    return incoming
+  }
   canOpenRoom(id:string|undefined,phone?:MochiPhone):boolean{
     return !!id&&!!this.state?.rooms.some(r=>r.id===id)&&this.phone?.chatId===phone?.chatId&&this.phone?.characterId===phone?.characterId&&this.phone?.deviceOwnerActorId===phone?.deviceOwnerActorId
   }
@@ -41,6 +57,7 @@ export class MochiView {
     this.leave();this.resetScope();this.phone=phone;this.pickerOpen=true;this.startupOpen=true;this.profilesOpen=false;this.profiles.state=null;this.dispatch('mochi:accounts')
   }
   private resetScope():void{
+    this.retiredSchedulingSessions.clear(); this.schedulingTime.clear(); this.schedulingRoot = undefined
     this.notificationsChanged([],new Set(this.state?.rooms.map(r=>r.id)||[]));this.state=null;this.activeAccountId=undefined;this.roomId='';this.creating=false;this.editing=false;this.draft=null;this.settingsDraft=null;this.notificationsOpen=false;this.busy=false;clearTimeout(this.timeout);this.request='';this.selectionVersion++;this.notificationRevisions.clear();this.seenNotifications.clear();this.acknowledged.clear();this.acknowledgementRequests.clear();this.ownGenerations.clear()
   }
   private chooseAccount(id:string,persist=true):void{
@@ -143,13 +160,26 @@ export class MochiView {
       if(this.startupOpen){this.startupOpen=false;const id=payload.state.phone?.lastAccountId;if(payload.state.phone?.preference==='last-used'&&payload.state.accounts.some((a:any)=>a.id===id&&!a.archived)){this.chooseAccount(id,false);return true}}
       this.redraw();return true
     }
-    if (['mochi:notification', 'mochi:notifications', 'mochi:room_updated', 'mochi:job_finished'].includes(payload?.type) &&
+    if (['mochi:notification', 'mochi:notifications', 'mochi:room_updated', 'mochi:job_finished', 'mochi:scheduling_updated'].includes(payload?.type) &&
         (payload.accountId ?? payload.notification?.accountId ?? payload.room?.accountId) !== this.state?.accountId) return true
     const eventRoom=payload?.roomId??payload?.notification?.roomId??payload?.room?.id
     if(eventRoom&&this.associations.has(eventRoom)&&this.associations.get(eventRoom)!.accountId!==this.state?.accountId)return true
+    if (payload?.type === 'mochi:scheduling_updated') {
+      const room = this.state?.rooms.find(r => r.id === payload.roomId)
+      if (!room || room.accountId !== payload.accountId || (payload.associationRevision || 0) !== (room.associationRevision || 0) || !Number.isSafeInteger(payload.roomRevision) || !payload.background?.snapshot) return true
+      room.background = this.mergeScheduling(room, payload.background, payload.roomRevision)
+      // Refresh only the schedule list while editing; preserve form nodes, focus,
+      // cursor position and unsaved settings. Room/messages are never replaced.
+      if (this.editing && room.id === this.roomId && this.schedulingRoot?.isConnected) {
+        const updated = this.scheduleList(room)
+        this.schedulingRoot.replaceChildren(...Array.from(updated.childNodes))
+      } else this.redraw()
+      return true
+    }
     if (payload?.type === 'mochi:room_updated') {
       const room = this.state?.rooms.find(r => r.id === payload.room?.id)
       if (room && payload.room.revision > room.revision && !this.editing && !this.creating) {
+        payload.room.background = this.mergeScheduling(room, payload.room.background, payload.room.revision)
         Object.assign(room, payload.room)
         this.redraw()
       }
@@ -199,6 +229,10 @@ export class MochiView {
       payload.state.rooms=payload.state.rooms.filter((r:MochiRoom)=>{const known=this.associations.get(r.id);return !known||(known.accountId===payload.state.accountId&&(r.associationRevision||0)>=known.revision)})
       payload.state.notifications=(payload.state.notifications||[]).filter((n:MochiNotification)=>{const known=this.associations.get(n.roomId);return !known||known.accountId===payload.state.accountId})
       const notifications = this.mergeNotifications(payload.state.notifications || [], Object.fromEntries(payload.state.rooms.map((r: MochiRoom) => [r.id, r.notificationRevision || 0])))
+      for (const room of payload.state.rooms as MochiRoom[]) {
+        const previous = this.state?.rooms.find(r => r.id === room.id && r.accountId === room.accountId)
+        if (previous && (previous.associationRevision || 0) === (room.associationRevision || 0)) room.background = this.mergeScheduling(previous, room.background, room.revision)
+      }
       this.state = { ...payload.state, notifications }
       for (const [id, request] of this.ownGenerations) if (this.state && this.state.jobs?.[id] !== request) this.ownGenerations.delete(id)
       if (payload.selectedRoomId && this.requestVersion === this.selectionVersion) {
@@ -347,17 +381,12 @@ export class MochiView {
       roomBackground.onchange = () => this.dispatch('mochi:background_room', { roomId: room.id, revision: room.revision, enabled: roomBackground.checked }); field('Allow scheduled messages in this room', roomBackground)
       const idle=el('input');idle.type='checkbox';idle.checked=!!room.background?.idle?.enabled;idle.disabled=this.busy||(!idle.checked&&(!state.backgroundEnabled||!room.background?.enabled||settings.responseMode==='manual'));idle.onchange=()=>this.dispatch('mochi:idle',{roomId:room.id,revision:room.revision,enabled:idle.checked});field('Allow idle messages (3 per idle period, 90 minutes apart)',idle)
       if (state.backgroundEnabled && room.background?.enabled) {
-        const due = el('input'); due.type = 'datetime-local'; field('Scheduled message time', due)
+        const due = el('input'); due.type = 'datetime-local'; due.value = this.schedulingTime.get(room.id) || ''; due.oninput = () => this.schedulingTime.set(room.id, due.value); field('Scheduled message time', due)
         const schedule = action('Schedule character message', 'plus'); schedule.type = 'button'; schedule.disabled = this.busy
         schedule.onclick = () => this.dispatch('mochi:schedule', { roomId: room.id, revision: room.revision, occurrenceId: requestId('scheduled'), dueAt: new Date(due.value).getTime(), responder: this.responders.get(room.id) || 'auto' })
         form.append(schedule)
       }
-      // Solicited delayed replies can exist while unsolicited scheduling is disabled.
-      for (const job of room.background?.jobs || []) {
-        const row = el('div', 'mochi-actions'); row.append(el('small', 'mochi-muted', `${new Date(job.dueAt).toLocaleString()} · ${job.status}`))
-        const cancelJob = action('Cancel scheduled message', 'close'); cancelJob.type = 'button'; cancelJob.disabled = this.busy
-        cancelJob.onclick = () => this.dispatch('mochi:schedule_cancel', { roomId: room.id, occurrenceId: job.id }); row.append(cancelJob); form.append(row)
-      }
+      this.schedulingRoot = this.scheduleList(room); form.append(this.schedulingRoot)
       for (const [label, key] of [['Total token budget', 'contextTokens'], ['Maximum reply tokens', 'outputTokens']] as const) {
         const input = el('input'); input.type = 'number'; input.value = String(settings[key]); input.oninput = () => { settings[key] = Number(input.value) }; field(label, input)
       }
@@ -386,6 +415,20 @@ export class MochiView {
       this.dispatch(room ? 'mochi:update' : 'mochi:create', { roomId: room?.id, revision: room ? this.draftRevision : undefined, title: draft.title, characterIds: draft.characterIds, persona: selected, ...(room ? { settings } : {}) })
     }
     return form
+  }
+  private scheduleList(room: MochiRoom): HTMLElement {
+    const list = el('section'); list.setAttribute('aria-label', 'Scheduled opportunities'); list.setAttribute('aria-live', 'polite')
+    for (const job of room.background?.jobs || []) {
+      const row = el('div', 'mochi-actions'); row.dataset.scheduleId = job.id; row.dataset.status = job.status
+      const times = [`Due ${new Date(job.dueAt).toLocaleString()}`, ...(job.deliverAt ? [`Delivery ${new Date(job.deliverAt).toLocaleString()}`] : []), ...(job.expiresAt ? [`Expires ${new Date(job.expiresAt).toLocaleString()}`] : [])]
+      row.append(el('small', 'mochi-muted', `${SCHEDULE_LABELS[job.status]} · ${times.join(' · ')}${job.reason ? ` · ${job.reason}` : ''}`))
+      if (!TERMINAL.has(job.status)) {
+        const cancelJob = action('Cancel scheduled message', 'close'); cancelJob.type = 'button'; cancelJob.disabled = this.busy
+        cancelJob.onclick = () => this.dispatch('mochi:schedule_cancel', { roomId: room.id, occurrenceId: job.id }); row.append(cancelJob)
+      }
+      list.append(row)
+    }
+    return list
   }
   private assignmentControls(room:MochiRoom):HTMLElement{
     const section=el('section','mochi-assignment mochi-form');section.append(el('h4','','Chat ownership'),el('p','mochi-muted',`Saved identity: ${room.persona.name}. Assignment keeps this snapshot, all messages and all schedules.`))

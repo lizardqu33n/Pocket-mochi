@@ -5,6 +5,7 @@ import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
 import {checkMochiAccounts} from './check-mochi-accounts-ui.mjs'
+import {checkMochiScheduling} from './check-mochi-scheduling-ui.mjs'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
 const require = createRequire(import.meta.url)
@@ -102,7 +103,10 @@ try {
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'Scheduling controls must not overflow')
     await page.screenshot({path:resolve(output,'scheduler-'+width+'.png')})
     await page.getByRole('button',{name:'Cancel scheduled message',exact:true}).click()
-    await page.waitForFunction(()=>!window.__mochiDemo.view.busy&&window.__mochiDemo.view.state.rooms.every(r=>!r.background?.jobs.length))
+    await page.waitForFunction(()=>!window.__mochiDemo.view.busy&&window.__mochiDemo.view.state.rooms.every(r=>r.background?.jobs.every(j=>j.status==='cancelled')))
+    await page.locator('[aria-label="Scheduled opportunities"] [data-status="cancelled"]').waitFor()
+    assert.equal(await page.getByRole('button',{name:'Cancel scheduled message',exact:true}).count(),0,'Terminal schedules have no cancel action')
+    assert.ok((await page.getByLabel('Scheduled opportunities',{exact:true}).textContent()).includes('Canceled'),'Canceled history remains visible')
     await page.getByLabel('Allow server-side background messaging for my account',{exact:true}).uncheck()
     await page.waitForFunction(()=>!window.__mochiDemo.view.busy&&!window.__mochiDemo.view.state.backgroundEnabled)
     await page.getByLabel('Status for Second character',{exact:true}).selectOption('dnd')
@@ -342,5 +346,6 @@ try {
     await page.close()
   }
   await checkMochiAccounts(browser,output)
+  await checkMochiScheduling(browser,output)
   console.log((process.env.POCKET_MOCHI_ACCOUNTS_ONLY?'Mochi account checks':'Mochi simulated Chromium UI')+' passed at 320px, 390px and 900px. Browser: ' + browser.version())
 } finally { await browser.close() }

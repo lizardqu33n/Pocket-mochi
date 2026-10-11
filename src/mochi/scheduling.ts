@@ -15,7 +15,9 @@ export interface ScheduledJob {
 }
 export interface IdleState { enabled: boolean; periodId: string; startedAt: number; delivered: number; opportunities: number; lastDeliveredAt: number; nextDueAt: number }
 export interface RoomRuntime { version: 1; enabled: boolean; jobs: ScheduledJob[]; presence?: Record<string, import('./presence.js').CharacterPresence>; idle?: IdleState }
-export interface PublicRuntime { enabled: boolean; jobs: Array<Pick<ScheduledJob, 'id' | 'dueAt' | 'status' | 'attempts' | 'reason'>>; presence?: Record<string, import('./presence.js').CharacterPresence>; idle?: IdleState }
+export interface PublicRuntime { enabled: boolean; jobs: Array<Pick<ScheduledJob, 'id' | 'dueAt' | 'status' | 'attempts' | 'reason'> & Partial<Pick<ScheduledJob, 'expiresAt' | 'deliverAt' | 'kind'>>>; presence?: Record<string, import('./presence.js').CharacterPresence>; idle?: IdleState; snapshot?: { session: string; sequence: number } }
+export const SCHEDULE_HISTORY_LIMIT = 20
+export const SCHEDULE_LABELS: Record<ScheduledStatus, string> = { queued: 'Scheduled', generating: 'Generating', generated: 'Waiting to deliver', delivered: 'Delivered', cancelled: 'Canceled', paused: 'Needs attention', failed: 'Failed', missed: 'Expired' }
 export const TERMINAL = new Set<ScheduledStatus>(['delivered', 'cancelled', 'failed', 'missed'])
 export const MAX_JOBS = 10000 // Never evict completion tombstones and silently allow duplicate delivery.
 export function identifier(value: unknown): string {
@@ -49,7 +51,12 @@ export function validateRuntime(value: unknown): RoomRuntime {
   return r
 }
 export function publicRuntime(r?: RoomRuntime): PublicRuntime | undefined {
-  return r ? { enabled: r.enabled, presence: r.presence, idle:r.idle, jobs: r.jobs.filter(j => !TERMINAL.has(j.status)).map(({id,dueAt,deliverAt,status,attempts,reason}) => ({id,dueAt:deliverAt||dueAt,status,attempts,reason})) } : undefined
+  if (!r) return undefined
+  const active = r.jobs.filter(j => !TERMINAL.has(j.status))
+  const history = r.jobs.filter(j => ['cancelled', 'failed', 'missed'].includes(j.status)).slice(-SCHEDULE_HISTORY_LIMIT).reverse()
+  const safeReasons = new Set(['Responder is unavailable.', 'Delivery could not be saved. Deferred content is preserved.', 'Scheduled messaging needs attention. Check room sources, provider and storage.'])
+  return { enabled: r.enabled, presence: r.presence, idle: r.idle, jobs: [...active, ...history].map(({id,dueAt,expiresAt,deliverAt,kind,status,attempts,reason}) => ({id,dueAt,expiresAt,deliverAt,kind,status,attempts,
+    reason: status === 'missed' ? 'The delivery window ended without a message.' : status === 'cancelled' ? 'Canceled explicitly or invalidated by a room change.' : status === 'failed' ? 'The allowed attempts were exhausted.' : safeReasons.has(reason || '') ? reason : undefined })) }
 }
 export function scheduleInput(input: any, now: number): { id: string; roomId: string; responder: string; dueAt: number } {
   const dueAt = input?.dueAt

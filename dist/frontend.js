@@ -542,6 +542,10 @@ function accountPicker(state, busy, choose, create, legacy, startup, manage, ref
 var defaultMochiSettings = () => ({ autoReply: true, connectionId: "", contextTokens: 8192, outputTokens: 1200, instructions: "", characterNames: {} });
 var MOCHI_ROOM_ID = /^room_[a-f0-9]{32}$/;
 
+// src/mochi/scheduling.ts
+var SCHEDULE_LABELS = { queued: "Scheduled", generating: "Generating", generated: "Waiting to deliver", delivered: "Delivered", cancelled: "Canceled", paused: "Needs attention", failed: "Failed", missed: "Expired" };
+var TERMINAL = new Set(["delivered", "cancelled", "failed", "missed"]);
+
 // src/mochi/view.ts
 function action(label, icon, compact = false) {
   const node = button("", `lp-button${compact ? " mochi-icon-button" : ""}`);
@@ -584,6 +588,28 @@ class MochiView {
   activeAccountId;
   phone;
   associations = new Map;
+  retiredSchedulingSessions = new Map;
+  schedulingRoot;
+  schedulingTime = new Map;
+  mergeScheduling(room, incoming, revision) {
+    const current = room.background, next = incoming?.snapshot, prior = current?.snapshot;
+    if (revision < room.revision)
+      return current;
+    if (prior && !next)
+      return current;
+    if (next && prior) {
+      if (next.session === prior.session && next.sequence < prior.sequence)
+        return current;
+      const retired = this.retiredSchedulingSessions.get(room.id) || new Set;
+      if (retired.has(next.session))
+        return current;
+      if (next.session !== prior.session) {
+        retired.add(prior.session);
+        this.retiredSchedulingSessions.set(room.id, retired);
+      }
+    }
+    return incoming;
+  }
   canOpenRoom(id, phone) {
     return !!id && !!this.state?.rooms.some((r) => r.id === id) && this.phone?.chatId === phone?.chatId && this.phone?.characterId === phone?.characterId && this.phone?.deviceOwnerActorId === phone?.deviceOwnerActorId;
   }
@@ -598,6 +624,9 @@ class MochiView {
     this.dispatch("mochi:accounts");
   }
   resetScope() {
+    this.retiredSchedulingSessions.clear();
+    this.schedulingTime.clear();
+    this.schedulingRoot = undefined;
     this.notificationsChanged([], new Set(this.state?.rooms.map((r) => r.id) || []));
     this.state = null;
     this.activeAccountId = undefined;
@@ -809,14 +838,27 @@ class MochiView {
       this.redraw();
       return true;
     }
-    if (["mochi:notification", "mochi:notifications", "mochi:room_updated", "mochi:job_finished"].includes(payload?.type) && (payload.accountId ?? payload.notification?.accountId ?? payload.room?.accountId) !== this.state?.accountId)
+    if (["mochi:notification", "mochi:notifications", "mochi:room_updated", "mochi:job_finished", "mochi:scheduling_updated"].includes(payload?.type) && (payload.accountId ?? payload.notification?.accountId ?? payload.room?.accountId) !== this.state?.accountId)
       return true;
     const eventRoom = payload?.roomId ?? payload?.notification?.roomId ?? payload?.room?.id;
     if (eventRoom && this.associations.has(eventRoom) && this.associations.get(eventRoom).accountId !== this.state?.accountId)
       return true;
+    if (payload?.type === "mochi:scheduling_updated") {
+      const room = this.state?.rooms.find((r) => r.id === payload.roomId);
+      if (!room || room.accountId !== payload.accountId || (payload.associationRevision || 0) !== (room.associationRevision || 0) || !Number.isSafeInteger(payload.roomRevision) || !payload.background?.snapshot)
+        return true;
+      room.background = this.mergeScheduling(room, payload.background, payload.roomRevision);
+      if (this.editing && room.id === this.roomId && this.schedulingRoot?.isConnected) {
+        const updated = this.scheduleList(room);
+        this.schedulingRoot.replaceChildren(...Array.from(updated.childNodes));
+      } else
+        this.redraw();
+      return true;
+    }
     if (payload?.type === "mochi:room_updated") {
       const room = this.state?.rooms.find((r) => r.id === payload.room?.id);
       if (room && payload.room.revision > room.revision && !this.editing && !this.creating) {
+        payload.room.background = this.mergeScheduling(room, payload.room.background, payload.room.revision);
         Object.assign(room, payload.room);
         this.redraw();
       }
@@ -894,6 +936,11 @@ class MochiView {
         return !known || known.accountId === payload.state.accountId;
       });
       const notifications = this.mergeNotifications(payload.state.notifications || [], Object.fromEntries(payload.state.rooms.map((r) => [r.id, r.notificationRevision || 0])));
+      for (const room of payload.state.rooms) {
+        const previous = this.state?.rooms.find((r) => r.id === room.id && r.accountId === room.accountId);
+        if (previous && (previous.associationRevision || 0) === (room.associationRevision || 0))
+          room.background = this.mergeScheduling(previous, room.background, room.revision);
+      }
       this.state = { ...payload.state, notifications };
       for (const [id, request] of this.ownGenerations)
         if (this.state && this.state.jobs?.[id] !== request)
@@ -1272,6 +1319,8 @@ class MochiView {
       if (state.backgroundEnabled && room.background?.enabled) {
         const due = el("input");
         due.type = "datetime-local";
+        due.value = this.schedulingTime.get(room.id) || "";
+        due.oninput = () => this.schedulingTime.set(room.id, due.value);
         field("Scheduled message time", due);
         const schedule = action("Schedule character message", "plus");
         schedule.type = "button";
@@ -1279,16 +1328,8 @@ class MochiView {
         schedule.onclick = () => this.dispatch("mochi:schedule", { roomId: room.id, revision: room.revision, occurrenceId: requestId("scheduled"), dueAt: new Date(due.value).getTime(), responder: this.responders.get(room.id) || "auto" });
         form.append(schedule);
       }
-      for (const job of room.background?.jobs || []) {
-        const row = el("div", "mochi-actions");
-        row.append(el("small", "mochi-muted", `${new Date(job.dueAt).toLocaleString()} · ${job.status}`));
-        const cancelJob = action("Cancel scheduled message", "close");
-        cancelJob.type = "button";
-        cancelJob.disabled = this.busy;
-        cancelJob.onclick = () => this.dispatch("mochi:schedule_cancel", { roomId: room.id, occurrenceId: job.id });
-        row.append(cancelJob);
-        form.append(row);
-      }
+      this.schedulingRoot = this.scheduleList(room);
+      form.append(this.schedulingRoot);
       for (const [label, key] of [["Total token budget", "contextTokens"], ["Maximum reply tokens", "outputTokens"]]) {
         const input = el("input");
         input.type = "number";
@@ -1403,6 +1444,27 @@ class MochiView {
       this.dispatch(room ? "mochi:update" : "mochi:create", { roomId: room?.id, revision: room ? this.draftRevision : undefined, title: draft.title, characterIds: draft.characterIds, persona: selected, ...room ? { settings } : {} });
     };
     return form;
+  }
+  scheduleList(room) {
+    const list = el("section");
+    list.setAttribute("aria-label", "Scheduled opportunities");
+    list.setAttribute("aria-live", "polite");
+    for (const job of room.background?.jobs || []) {
+      const row = el("div", "mochi-actions");
+      row.dataset.scheduleId = job.id;
+      row.dataset.status = job.status;
+      const times = [`Due ${new Date(job.dueAt).toLocaleString()}`, ...job.deliverAt ? [`Delivery ${new Date(job.deliverAt).toLocaleString()}`] : [], ...job.expiresAt ? [`Expires ${new Date(job.expiresAt).toLocaleString()}`] : []];
+      row.append(el("small", "mochi-muted", `${SCHEDULE_LABELS[job.status]} · ${times.join(" · ")}${job.reason ? ` · ${job.reason}` : ""}`));
+      if (!TERMINAL.has(job.status)) {
+        const cancelJob = action("Cancel scheduled message", "close");
+        cancelJob.type = "button";
+        cancelJob.disabled = this.busy;
+        cancelJob.onclick = () => this.dispatch("mochi:schedule_cancel", { roomId: room.id, occurrenceId: job.id });
+        row.append(cancelJob);
+      }
+      list.append(row);
+    }
+    return list;
   }
   assignmentControls(room) {
     const section = el("section", "mochi-assignment mochi-form");
