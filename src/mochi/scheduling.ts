@@ -1,7 +1,7 @@
 import { roomId } from './types.js'
 
 export type ScheduledStatus = 'queued' | 'generating' | 'generated' | 'delivered' | 'cancelled' | 'paused' | 'failed' | 'missed'
-export interface ScheduledDraft { characterId: string; name: string; avatarUrl: string; text: string }
+export interface ScheduledDraft { characterId: string; name: string; avatarUrl: string; text: string; proposedStatus?: import('./presence.js').PresenceStatus }
 export interface ScheduledJob {
   id: string; dueAt: number; expiresAt: number; revision: number; responder: string
   status: ScheduledStatus; attempts: number; nextAttemptAt: number; claim?: string; leaseUntil?: number
@@ -9,9 +9,11 @@ export interface ScheduledJob {
   deliveryAttempts?: number
   kind?: 'scheduled' | 'response' | 'idle'; createdAt?: number
   deliverAt?: number; proposedStatus?: import('./presence.js').PresenceStatus
+  additional?: ScheduledDraft[]; idlePeriodId?: string
 }
-export interface RoomRuntime { version: 1; enabled: boolean; jobs: ScheduledJob[]; presence?: Record<string, import('./presence.js').CharacterPresence> }
-export interface PublicRuntime { enabled: boolean; jobs: Array<Pick<ScheduledJob, 'id' | 'dueAt' | 'status' | 'attempts' | 'reason'>>; presence?: Record<string, import('./presence.js').CharacterPresence> }
+export interface IdleState { enabled: boolean; periodId: string; startedAt: number; delivered: number; opportunities: number; lastDeliveredAt: number; nextDueAt: number }
+export interface RoomRuntime { version: 1; enabled: boolean; jobs: ScheduledJob[]; presence?: Record<string, import('./presence.js').CharacterPresence>; idle?: IdleState }
+export interface PublicRuntime { enabled: boolean; jobs: Array<Pick<ScheduledJob, 'id' | 'dueAt' | 'status' | 'attempts' | 'reason'>>; presence?: Record<string, import('./presence.js').CharacterPresence>; idle?: IdleState }
 export const TERMINAL = new Set<ScheduledStatus>(['delivered', 'cancelled', 'failed', 'missed'])
 export const MAX_JOBS = 10000 // Never evict completion tombstones and silently allow duplicate delivery.
 export function identifier(value: unknown): string {
@@ -22,6 +24,7 @@ export function validateRuntime(value: unknown): RoomRuntime {
   const r = value as RoomRuntime
   if (!r || r.version !== 1 || typeof r.enabled !== 'boolean' || !Array.isArray(r.jobs) || r.jobs.length > MAX_JOBS) throw new Error('Damaged scheduling records; the room file was preserved.')
   const ids = new Set<string>()
+  if (r.idle) { const i=r.idle; identifier(i.periodId); if(typeof i.enabled!=='boolean'||![i.startedAt,i.lastDeliveredAt,i.nextDueAt,i.delivered,i.opportunities].every(n=>Number.isSafeInteger(n)&&n>=0)||i.delivered>3||i.opportunities>3) throw new Error('Invalid idle allowance; room data was preserved.') }
   for (const j of r.jobs) {
     identifier(j.id); identifier(j.responder)
     if (ids.has(j.id) || !['queued','generating','generated','delivered','cancelled','paused','failed','missed'].includes(j.status) ||
@@ -30,6 +33,11 @@ export function validateRuntime(value: unknown): RoomRuntime {
     if (j.deliveryAttempts !== undefined && (!Number.isSafeInteger(j.deliveryAttempts) || j.deliveryAttempts < 0 || j.deliveryAttempts > 3)) throw new Error('Damaged delivery attempts; history was preserved.')
     if (j.deliverAt !== undefined && (!Number.isSafeInteger(j.deliverAt) || j.deliverAt < 0)) throw new Error('Invalid deferred delivery deadline.')
     if (j.proposedStatus !== undefined && !['online','away','dnd','offline'].includes(j.proposedStatus)) throw new Error('Invalid deferred presence suggestion.')
+    if (j.kind !== undefined && !['scheduled','response','idle'].includes(j.kind)) throw new Error('Invalid scheduled job type.')
+    if (j.createdAt !== undefined && (!Number.isSafeInteger(j.createdAt) || j.createdAt < 0)) throw new Error('Invalid job creation time.')
+    if (j.idlePeriodId !== undefined) identifier(j.idlePeriodId)
+    if (j.additional !== undefined && (!Array.isArray(j.additional)||j.additional.length>2||j.additional.some(d=>!d||typeof d.text!=='string'||!d.text.trim()||d.text.length>32000||typeof d.name!=='string'||d.name.length>120||typeof d.avatarUrl!=='string'||d.avatarUrl.length>500))) throw new Error('Invalid deferred group replies.')
+    for(const d of j.additional || []) { identifier(d.characterId); if(d.proposedStatus!==undefined&&!['online','away','dnd','offline'].includes(d.proposedStatus)) throw new Error('Invalid group status suggestion.') }
     if (j.claim !== undefined) identifier(j.claim)
     if (j.draft && (typeof j.draft.text !== 'string' || !j.draft.text.trim() || j.draft.text.length > 32000 || typeof j.draft.name !== 'string' || j.draft.name.length > 120 || typeof j.draft.avatarUrl !== 'string' || j.draft.avatarUrl.length > 500)) throw new Error('Damaged deferred message; history was preserved.')
     if (j.draft) identifier(j.draft.characterId)
@@ -39,7 +47,7 @@ export function validateRuntime(value: unknown): RoomRuntime {
   return r
 }
 export function publicRuntime(r?: RoomRuntime): PublicRuntime | undefined {
-  return r ? { enabled: r.enabled, presence: r.presence, jobs: r.jobs.filter(j => !TERMINAL.has(j.status)).map(({id,dueAt,status,attempts,reason}) => ({id,dueAt,status,attempts,reason})) } : undefined
+  return r ? { enabled: r.enabled, presence: r.presence, idle:r.idle, jobs: r.jobs.filter(j => !TERMINAL.has(j.status)).map(({id,dueAt,deliverAt,status,attempts,reason}) => ({id,dueAt:deliverAt||dueAt,status,attempts,reason})) } : undefined
 }
 export function scheduleInput(input: any, now: number): { id: string; roomId: string; responder: string; dueAt: number } {
   const dueAt = input?.dueAt

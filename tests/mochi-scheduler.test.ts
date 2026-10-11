@@ -136,7 +136,7 @@ test('multiple opted-in accounts retain their own providers, rooms and notificat
 })
 test('budget reservations survive restart and block additional provider calls',async()=>{
   const f=fixture(),room=await f.create();await f.schedule(room)
-  f.files.get('alice:mochi/v1/scheduler.json').attempts=Array.from({length:6},()=>({at:f.now,roomId:room.id}))
+  f.files.get('alice:mochi/v1/scheduler.json').attempts=Array.from({length:60},()=>({at:f.now,roomId:room.id}))
   f.restart();await f.scheduler.tick();expect(f.calls).toHaveLength(0)
   f.scheduler.stop()
 })
@@ -233,4 +233,82 @@ test('disabling deferred work erases its private draft without notifications or 
   f.host.generate!.quiet=async request=>{f.calls.push(request);return {content:'{"speakerId":"alice_character","text":"Hidden","behavior":{"delivery":"later","delayMs":60000}}'}}
   await f.scheduler.tick();await f.scheduler.configure('alice',false);f.advance(60000);f.restart();await f.scheduler.tick()
   const saved=await f.service.read('alice',room.id);expect(saved.messages).toEqual([]);expect(saved.notifications).toEqual([]);expect(saved.runtime!.jobs[0].draft).toBeUndefined();expect(f.calls).toHaveLength(1);f.scheduler.stop()
+})
+test('new rooms default to natural, while legacy settings retain their previous reply behavior',async()=>{
+  const f=fixture(),legacy=await f.create()
+  expect(legacy.settings!.responseMode).toBeUndefined()
+  const fresh=await f.service.create('alice',{title:'New natural',characterIds:['alice_character'],persona:{source:'manual',name:'You'}})
+  expect(fresh.settings!.responseMode).toBe('natural');expect(fresh.runtime).toBeUndefined();f.scheduler.stop()
+})
+test('natural mode uses one provider request for silence or multiple distinct group replies',async()=>{
+  for(const silent of [true,false]) {
+    const f=fixture(),room=await f.create(),get=f.host.characters.get
+    f.host.characters.get=async(id,u)=>id==='second_character'&&u==='alice'?{id,name:'Second'}:get(id,u)
+    const group=await f.service.update('alice',{roomId:room.id,revision:room.revision,title:room.title,characterIds:['alice_character','second_character'],settings:{...room.settings,responseMode:'natural'}})
+    f.host.generate!.quiet=async request=>{f.calls.push(request);return {content:JSON.stringify({messages:silent?[]:[{speakerId:'alice_character',text:'First reply'},{speakerId:'second_character',text:'Second reply'}]})}}
+    await f.service.message('alice',{roomId:room.id,revision:group.revision,requestId:'natural',content:'Hi group'})
+    const saved=await f.service.read('alice',room.id)
+    expect(f.calls).toHaveLength(1);expect(saved.messages).toHaveLength(silent?1:3);expect(saved.notifications).toHaveLength(silent?0:2)
+    expect(f.events.filter(e=>e.payload.type==='mochi:notification').map(e=>e.payload.notificationRevision)).toEqual(silent?[]:[group.notificationRevision!+1,group.notificationRevision!+2])
+    f.scheduler.stop()
+  }
+})
+test('instant/manual modes and account opt-out preserve explicit empty continuation',async()=>{
+  for(const mode of ['instant','manual'] as const) {
+    const f=fixture(),room=await f.create(),configured=await f.service.update('alice',{roomId:room.id,revision:room.revision,title:room.title,characterIds:room.characterIds,settings:{...room.settings,responseMode:mode}})
+    await f.service.message('alice',{roomId:room.id,revision:configured.revision,requestId:'mode_send',content:'Hello'})
+    expect(f.calls).toHaveLength(mode==='instant'?1:0)
+    await f.scheduler.configure('alice',false)
+    let saved=await f.service.read('alice',room.id)
+    await f.service.message('alice',{roomId:room.id,revision:saved.revision,requestId:'opted_out',content:'No automatic generation'})
+    expect(f.calls).toHaveLength(mode==='instant'?1:0)
+    saved=await f.service.read('alice',room.id)
+    await f.service.message('alice',{roomId:room.id,revision:saved.revision,requestId:'explicit',content:''})
+    expect(f.calls).toHaveLength(mode==='instant'?2:1);f.scheduler.stop()
+  }
+})
+test('idle periods allow three deliveries with a shared 90-minute gap and persist across restarts',async()=>{
+  const f=fixture(),room=await f.create();await f.service.configureIdle('alice',{roomId:room.id,revision:room.revision,enabled:true})
+  for(let i=0;i<3;i++) {
+    await f.scheduler.tick();expect(f.calls).toHaveLength(i)
+    f.advance(5400000);f.restart();await f.scheduler.tick();expect(f.calls).toHaveLength(i+1)
+    expect((await f.service.read('alice',room.id)).runtime!.idle!.delivered).toBe(i+1)
+  }
+  f.advance(5400000);f.restart();await f.scheduler.tick();expect(f.calls).toHaveLength(3)
+  const saved=await f.service.read('alice',room.id)
+  expect(saved.runtime!.idle!.opportunities).toBe(3)
+  expect(saved.messages).toHaveLength(3);f.scheduler.stop()
+})
+test('new user messages reset idle allowance but retain the room-wide last-delivery cooldown',async()=>{
+  const f=fixture(),room=await f.create();await f.service.configureIdle('alice',{roomId:room.id,revision:room.revision,enabled:true})
+  f.advance(5400000);await f.scheduler.tick();const saved=await f.service.read('alice',room.id),last=saved.runtime!.idle!.lastDeliveredAt
+  await f.service.update('alice',{roomId:room.id,revision:saved.revision,title:room.title,characterIds:room.characterIds,settings:{...room.settings,autoReply:false}})
+  const updated=await f.service.read('alice',room.id)
+  await f.service.message('alice',{roomId:room.id,revision:updated.revision,requestId:'reset_period',content:'New idle period'})
+  const reset=await f.service.read('alice',room.id)
+  expect(reset.runtime!.idle!.delivered).toBe(0);expect(reset.runtime!.idle!.lastDeliveredAt).toBe(last)
+  f.advance(5399999);await f.scheduler.tick();expect(f.calls).toHaveLength(1)
+  f.advance(1);await f.scheduler.tick();expect(f.calls).toHaveLength(2);f.scheduler.stop()
+})
+test('idle opt-out, Offline presence, failures and downtime do not create retry or catch-up floods',async()=>{
+  const f=fixture(),room=await f.create();await f.service.configureIdle('alice',{roomId:room.id,revision:room.revision,enabled:true})
+  await f.service.configurePresence('alice',{roomId:room.id,revision:room.revision,characterId:'alice_character',presence:{...defaultPresence(),manual:'offline'}})
+  f.advance(5400000);await f.scheduler.tick();expect(f.calls).toHaveLength(0)
+  await f.service.configurePresence('alice',{roomId:room.id,revision:room.revision,characterId:'alice_character',presence:defaultPresence()})
+  f.host.generate!.quiet=async request=>{f.calls.push(request);throw Error('503 temporarily unavailable')}
+  await f.scheduler.tick();expect(f.calls).toHaveLength(1);f.advance(60000);await f.scheduler.tick();expect(f.calls).toHaveLength(1)
+  f.advance(86400000);f.restart();await f.scheduler.tick();expect(f.calls).toHaveLength(1)
+  await f.service.configureIdle('alice',{roomId:room.id,revision:room.revision,enabled:false})
+  f.advance(5400000);await f.scheduler.tick();expect(f.calls).toHaveLength(1);f.scheduler.stop()
+})
+test('natural deferred batches deliver atomically without duplicate calls or notification loss',async()=>{
+  const f=fixture(),room=await f.create(),get=f.host.characters.get
+  f.host.characters.get=async(id,u)=>id==='second_character'&&u==='alice'?{id,name:'Second'}:get(id,u)
+  const group=await f.service.update('alice',{roomId:room.id,revision:room.revision,title:room.title,characterIds:['alice_character','second_character'],settings:{...room.settings,responseMode:'natural',aiBehavior:true}})
+  f.host.generate!.quiet=async request=>{f.calls.push(request);return {content:JSON.stringify({messages:[{speakerId:'alice_character',text:'First private',behavior:{delivery:'later',delayMs:60000}},{speakerId:'second_character',text:'Second private',behavior:{delivery:'later',delayMs:120000}}]})}}
+  await f.service.message('alice',{roomId:room.id,revision:group.revision,requestId:'batch',content:'Hi'})
+  expect(JSON.stringify(await f.service.state('alice'))).not.toContain('private')
+  f.advance(120000);f.restart();await f.scheduler.tick()
+  const saved=await f.service.read('alice',room.id)
+  expect(saved.messages).toHaveLength(3);expect(saved.notifications).toHaveLength(2);expect(f.calls).toHaveLength(1);f.scheduler.stop()
 })

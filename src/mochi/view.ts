@@ -251,11 +251,16 @@ export class MochiView {
       for (const c of state.connections || []) { const o = el('option', '', `${c.name} · ${c.model}`); o.value = c.id; connection.append(o) }
       connection.value = settings.connectionId; connection.onchange = () => { settings.connectionId = connection.value }; field('Generation connection', connection)
       const auto = el('input'); auto.type = 'checkbox'; auto.checked = settings.autoReply; auto.onchange = () => { settings.autoReply = auto.checked }; field('Reply automatically after sending', auto)
+      const mode=el('select');if(settings.responseMode===undefined){const legacy=el('option','','Existing behavior');legacy.value='';mode.append(legacy)}
+      for(const [value,label] of [['natural','Natural group chat'],['instant','Instant replies'],['manual','Manual']] as const){const option=el('option','',label);option.value=value;mode.append(option)}
+      mode.value=settings.responseMode||'';mode.onchange=()=>{if(mode.value)settings.responseMode=mode.value as MochiSettings['responseMode'];else delete settings.responseMode};field('Response mode',mode)
+      auto.disabled=!!settings.responseMode
       const accountBackground = el('input'); accountBackground.type = 'checkbox'; accountBackground.checked = !!state.backgroundEnabled; accountBackground.disabled = this.busy
       const aiBehavior = el('input'); aiBehavior.type='checkbox';aiBehavior.checked=!!settings.aiBehavior;aiBehavior.disabled=this.busy||!state.backgroundEnabled||!room.background?.enabled;aiBehavior.onchange=()=>{settings.aiBehavior=aiBehavior.checked};field('Allow AI delivery timing and status suggestions',aiBehavior)
       accountBackground.onchange = () => this.dispatch('mochi:background_account', { enabled: accountBackground.checked }); field('Allow server-side background messaging for my account', accountBackground)
       const roomBackground = el('input'); roomBackground.type = 'checkbox'; roomBackground.checked = !!room.background?.enabled; roomBackground.disabled = this.busy
       roomBackground.onchange = () => this.dispatch('mochi:background_room', { roomId: room.id, revision: room.revision, enabled: roomBackground.checked }); field('Allow scheduled messages in this room', roomBackground)
+      const idle=el('input');idle.type='checkbox';idle.checked=!!room.background?.idle?.enabled;idle.disabled=this.busy||!state.backgroundEnabled||!room.background?.enabled;idle.onchange=()=>this.dispatch('mochi:idle',{roomId:room.id,revision:room.revision,enabled:idle.checked});field('Allow idle messages (3 per idle period, 90 minutes apart)',idle)
       if (state.backgroundEnabled && room.background?.enabled) {
         const due = el('input'); due.type = 'datetime-local'; field('Scheduled message time', due)
         const schedule = action('Schedule character message', 'plus'); schedule.type = 'button'; schedule.disabled = this.busy

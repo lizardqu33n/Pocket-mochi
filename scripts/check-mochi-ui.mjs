@@ -29,11 +29,11 @@ const host={
  generate:{quiet:async r=>{await new Promise(resolve=>setTimeout(resolve,250));serial++;return {content:JSON.stringify({speakerId:r.messages[0].content.includes('required speakerId is "character1"')?'character1':r.messages[0].content.includes('required speakerId is "character2"')?'character2':'character2',text:'Simulated character reply '+serial})}}},
  sendToFrontend:p=>{if(p.notification)p.notification.avatarUrl=demoPortrait;if(p.notifications)for(const n of p.notifications)n.avatarUrl=demoPortrait;if(p.state){for(const c of p.state.characters)c.avatarUrl=demoPortrait;for(const n of p.state.notifications||[])n.avatarUrl=demoPortrait;for(const r of p.state.rooms)for(const m of r.messages)if(m.role==='assistant')m.avatarUrl=demoPortrait;}view.receive(p)}
 };
-const service=new MochiService(host);
+const service=new MochiService(host);const createLegacyFixture=service.create.bind(service);service.create=async(user,input)=>{const room=await createLegacyFixture(user,input);return service.update(user,{roomId:room.id,revision:room.revision,title:room.title,characterIds:room.characterIds,settings:{...room.settings,responseMode:undefined}})};
 const scheduler=new MochiScheduler(host,service);scheduler.start(false);
 const render = () => {const node=view.render();node.classList.add('lumiphone-app-view');document.getElementById('app').replaceChildren(node)};
 const policy={enabled:true,previews:true,visible:true};
-const view = new MochiView(payload => {if(['mochi:background_account','mochi:background_room','mochi:schedule','mochi:schedule_cancel','mochi:presence'].includes(payload.type)){void scheduler.handle(payload,'synthetic-user').then(async()=>host.sendToFrontend({type:'mochi:state',requestId:payload.requestId,state:await service.state('synthetic-user')})).catch(()=>host.sendToFrontend({type:'mochi:error',requestId:payload.requestId,message:'Scheduling failed'}))}else void service.handle(payload,'synthetic-user')}, render, id => { view.select(id || ''); render(); },()=>policy,n=>showMochiNotification(document.getElementById('phone'),n,policy.previews,()=>view.openRoom(n.roomId)),(notices,rooms)=>reconcileMochiNotifications(document.getElementById('phone'),notices,rooms));
+const view = new MochiView(payload => {if(['mochi:background_account','mochi:background_room','mochi:schedule','mochi:schedule_cancel','mochi:presence','mochi:idle'].includes(payload.type)){void scheduler.handle(payload,'synthetic-user').then(async()=>host.sendToFrontend({type:'mochi:state',requestId:payload.requestId,state:await service.state('synthetic-user')})).catch(()=>host.sendToFrontend({type:'mochi:error',requestId:payload.requestId,message:'Scheduling failed'}))}else void service.handle(payload,'synthetic-user')}, render, id => { view.select(id || ''); render(); },()=>policy,n=>showMochiNotification(document.getElementById('phone'),n,policy.previews,()=>view.openRoom(n.roomId)),(notices,rooms)=>reconcileMochiNotifications(document.getElementById('phone'),notices,rooms));
 window.__mochiDemo={view,service,host,files,policy,scheduler};
 view.load();
 `)
@@ -88,6 +88,13 @@ try {
     await page.getByLabel('Scheduled message time', { exact: true }).waitFor()
     await page.getByLabel('Allow AI delivery timing and status suggestions',{exact:true}).check()
     await page.getByLabel('Allow AI delivery timing and status suggestions',{exact:true}).uncheck()
+    await page.getByLabel('Allow idle messages (3 per idle period, 90 minutes apart)',{exact:true}).check()
+    await page.waitForFunction(()=>!window.__mochiDemo.view.busy&&window.__mochiDemo.view.state.rooms[0].background.idle.enabled)
+    await page.getByLabel('Allow idle messages (3 per idle period, 90 minutes apart)',{exact:true}).uncheck()
+    await page.waitForFunction(()=>!window.__mochiDemo.view.busy&&!window.__mochiDemo.view.state.rooms[0].background.idle.enabled)
+    await page.getByLabel('Response mode',{exact:true}).selectOption('natural')
+    await page.getByLabel('Response mode',{exact:true}).selectOption('manual')
+    await page.getByLabel('Response mode',{exact:true}).selectOption('')
     await page.getByLabel('Scheduled message time', { exact: true }).fill(await page.evaluate(()=>{const d=new Date(Date.now()+3600000);return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16)}))
     await page.getByRole('button',{name:'Schedule character message',exact:true}).click()
     await page.getByRole('button',{name:'Cancel scheduled message',exact:true}).waitFor()

@@ -736,6 +736,26 @@ class MochiView {
         settings.autoReply = auto.checked;
       };
       field("Reply automatically after sending", auto);
+      const mode = el("select");
+      if (settings.responseMode === undefined) {
+        const legacy = el("option", "", "Existing behavior");
+        legacy.value = "";
+        mode.append(legacy);
+      }
+      for (const [value, label] of [["natural", "Natural group chat"], ["instant", "Instant replies"], ["manual", "Manual"]]) {
+        const option = el("option", "", label);
+        option.value = value;
+        mode.append(option);
+      }
+      mode.value = settings.responseMode || "";
+      mode.onchange = () => {
+        if (mode.value)
+          settings.responseMode = mode.value;
+        else
+          delete settings.responseMode;
+      };
+      field("Response mode", mode);
+      auto.disabled = !!settings.responseMode;
       const accountBackground = el("input");
       accountBackground.type = "checkbox";
       accountBackground.checked = !!state.backgroundEnabled;
@@ -756,6 +776,12 @@ class MochiView {
       roomBackground.disabled = this.busy;
       roomBackground.onchange = () => this.dispatch("mochi:background_room", { roomId: room.id, revision: room.revision, enabled: roomBackground.checked });
       field("Allow scheduled messages in this room", roomBackground);
+      const idle = el("input");
+      idle.type = "checkbox";
+      idle.checked = !!room.background?.idle?.enabled;
+      idle.disabled = this.busy || !state.backgroundEnabled || !room.background?.enabled;
+      idle.onchange = () => this.dispatch("mochi:idle", { roomId: room.id, revision: room.revision, enabled: idle.checked });
+      field("Allow idle messages (3 per idle period, 90 minutes apart)", idle);
       if (state.backgroundEnabled && room.background?.enabled) {
         const due = el("input");
         due.type = "datetime-local";

@@ -4758,7 +4758,7 @@ async function applyAction(input: AnyRecord, userId?: string, source: 'model' | 
 
 async function handleFrontend(payload: unknown, userId?: string): Promise<void> {
   if (isRecord(payload) && typeof payload.type === 'string' && payload.type.startsWith('mochi:')) {
-    if (['mochi:background_account', 'mochi:background_room', 'mochi:schedule', 'mochi:schedule_cancel', 'mochi:presence'].includes(payload.type)) {
+    if (['mochi:background_account', 'mochi:background_room', 'mochi:schedule', 'mochi:schedule_cancel', 'mochi:presence', 'mochi:idle'].includes(payload.type)) {
       if (!userId) return
       try {
         await mochiScheduler.handle(payload, userId)
