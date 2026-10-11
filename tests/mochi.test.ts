@@ -149,6 +149,183 @@ test('delayed notification events and snapshots cannot restore dismissed records
   } finally {globalThis.document = before; dom.window.close()}
 })
 
+test('Stop during the accepted user-message write prevents a provider call and preserves the user message', async () => {
+  const f = messagingFixture(), room = await f.create(), other = await f.create()
+  const otherBefore = await f.service.read('alice', other.id)
+  let entered!: () => void, release!: () => void
+  const writing = new Promise<void>(resolve => {entered = resolve}), gate = new Promise<void>(resolve => {release = resolve})
+  const original = f.host.userStorage.setJson
+  f.host.userStorage.setJson = async (path, value, options) => {if (path === `mochi/v1/rooms/${room.id}.json.pending`) {entered(); await gate}; await original(path,value,options)}
+  const pending = f.service.message('alice', {roomId:room.id,revision:room.revision,requestId:'early_stop',content:'Save this user message'})
+  await writing
+  await expect(f.service.cancel('bob',room.id,'early_stop')).rejects.toThrow('account')
+  await f.service.cancel('alice',room.id,'early_stop')
+  release(); await pending
+  expect(f.requests).toHaveLength(0)
+  const saved = await f.service.read('alice',room.id)
+  expect(saved.messages).toHaveLength(1);expect((saved.messages[0] as any).content).toBe('Save this user message')
+  expect(saved.notifications).toEqual([])
+  expect(await f.service.read('alice',other.id)).toEqual(otherBefore)
+})
+
+test('an accepted send after room switching clears only its unchanged originating draft', async () => {
+  const dom = new JSDOM('<body></body>'), before = globalThis.document
+  globalThis.document = dom.window.document
+  try {
+    const f = messagingFixture(), room = await f.create({autoReply:false}), other = await f.create(), sent:any[]=[]
+    const view = new MochiView(p=>sent.push(p),()=>{},()=>{},()=>({enabled:true,previews:true,visible:false}))
+    view.state=await f.service.state('alice');view.select(room.id)
+    const input=view.render().querySelector<HTMLTextAreaElement>('textarea[aria-label="Message"]')!
+    input.value='Original draft';input.dispatchEvent(new dom.window.Event('input'))
+    input.closest('form')!.dispatchEvent(new dom.window.Event('submit',{cancelable:true}))
+    const request=sent.find(p=>p.type==='mochi:send')
+    view.select(other.id)
+    await f.service.message('alice',request)
+    view.receive({type:'mochi:state',requestId:request.requestId,accepted:true,state:await f.service.state('alice')})
+    view.select(room.id)
+    expect(view.render().querySelector<HTMLTextAreaElement>('textarea[aria-label="Message"]')!.value).toBe('')
+    expect((await f.service.read('alice',room.id)).messages).toHaveLength(1)
+    view.destroy()
+  } finally {globalThis.document=before;dom.window.close()}
+})
+
+test('provider failures redact credential-like strings instead of exposing them to the frontend', async () => {
+  const f=messagingFixture(),room=await f.create()
+  const credential='sk-'+'x'.repeat(36)
+  f.host.generate!.quiet=async()=>{throw new Error('Provider rejected Bearer '+credential)}
+  await f.service.handle({type:'mochi:send',roomId:room.id,revision:room.revision,requestId:'credential_failure',content:'Hello'},'alice')
+  const error=f.responses.findLast(r=>r.payload.type==='mochi:error').payload.message
+  expect(error).not.toContain(credential);expect(error).toContain('[redacted]')
+  expect((await f.service.read('alice',room.id)).messages).toHaveLength(1)
+  expect(f.requests).toHaveLength(0)
+})
+
+test('revoking a non-speaking group character during generation discards the reply', async () => {
+  const f=messagingFixture();let owned=true
+  const original=f.host.characters.get
+  f.host.characters.get=async(id,user)=>id==='group_character'&&user==='alice' ? owned ? {id,name:'Group character'} : null : original(id,user)
+  const room=await f.create()
+  const group=await f.service.update('alice',{...f.input,roomId:room.id,revision:room.revision,characterIds:['c1','group_character']})
+  let release!:(value:any)=>void
+  f.host.generate!.quiet=async()=>new Promise(resolve=>{release=resolve})
+  const pending=f.service.message('alice',{roomId:group.id,revision:group.revision,requestId:'revoked_group',content:'Hello',responder:'c1'})
+  for(let i=0;i<100&&!release;i++) await new Promise(resolve=>setTimeout(resolve,1))
+  owned=false;release({content:'{"speakerId":"c1","text":"Must be discarded"}'})
+  await expect(pending).rejects.toThrow('character')
+  const saved=await f.service.read('alice',group.id)
+  expect(saved.messages).toHaveLength(1);expect(saved.notifications).toEqual([])
+})
+
+test('repeated submits and switching, closing or destroying the app during save cannot start late generation', async () => {
+  const dom=new JSDOM('<body></body>'),before=globalThis.document;globalThis.document=dom.window.document
+  try {
+    for(const exit of ['switch','close','destroy']) {
+      const f=messagingFixture(),room=await f.create(),other=await f.create(),sent:any[]=[],pending:Promise<void>[]=[]
+      let entered!:()=>void,release!:()=>void
+      const writing=new Promise<void>(resolve=>{entered=resolve}),gate=new Promise<void>(resolve=>{release=resolve}),original=f.host.userStorage.setJson
+      f.host.userStorage.setJson=async(path,value,options)=>{if(path===`mochi/v1/rooms/${room.id}.json.pending`){entered();await gate};await original(path,value,options)}
+      const view=new MochiView(p=>{sent.push(p);pending.push(f.service.handle(p,'alice'))},()=>{},()=>{},()=>({enabled:true,previews:true,visible:false}))
+      f.host.sendToFrontend=p=>{view.receive(p)}
+      view.state=await f.service.state('alice');view.select(room.id)
+      const input=view.render().querySelector<HTMLTextAreaElement>('textarea[aria-label="Message"]')!
+      input.value='Single saved message';input.dispatchEvent(new dom.window.Event('input'))
+      for(let i=0;i<10;i++) input.closest('form')!.dispatchEvent(new dom.window.Event('submit',{cancelable:true}))
+      await writing
+      if(exit==='switch') view.select(other.id);else if(exit==='close') view.leave();else view.destroy()
+      release();await Promise.all(pending)
+      expect(sent.filter(p=>p.type==='mochi:send')).toHaveLength(1)
+      expect(f.requests).toHaveLength(0)
+      const saved=await f.service.read('alice',room.id)
+      expect(saved.messages).toHaveLength(1);expect(saved.notifications).toEqual([])
+      expect((await f.service.read('alice',other.id)).messages).toEqual([])
+      view.destroy()
+    }
+  } finally {globalThis.document=before;dom.window.close()}
+})
+
+test('late accepted snapshots clear their own old draft without erasing a newer draft or replacing current room state', async () => {
+  const dom=new JSDOM('<body></body>'),before=globalThis.document;globalThis.document=dom.window.document
+  try {
+    for(const changed of [false,true]) {
+      const f=messagingFixture(),room=await f.create({autoReply:false}),sent:any[]=[]
+      const view=new MochiView(p=>sent.push(p),()=>{},()=>{},()=>({enabled:true,previews:true,visible:false}))
+      view.state=await f.service.state('alice');view.select(room.id)
+      const input=view.render().querySelector<HTMLTextAreaElement>('textarea[aria-label="Message"]')!
+      input.value='Already sent';input.dispatchEvent(new dom.window.Event('input'));input.closest('form')!.dispatchEvent(new dom.window.Event('submit',{cancelable:true}))
+      const request=sent[0]
+      if(changed){input.value='New unsent draft';input.dispatchEvent(new dom.window.Event('input'))}
+      await f.service.message('alice',request)
+      const state=await f.service.state('alice')
+      view.receive({type:'mochi:state',requestId:request.requestId,accepted:false,state})
+      view.load();const currentState=view.state
+      view.receive({type:'mochi:state',requestId:request.requestId,accepted:true,state})
+      expect(view.state).toBe(currentState)
+      expect(view.render().querySelector<HTMLTextAreaElement>('textarea[aria-label="Message"]')!.value).toBe(changed?'New unsent draft':'')
+      view.destroy()
+    }
+  } finally {globalThis.document=before;dom.window.close()}
+})
+
+test('simultaneous duplicate and distinct requests append exactly once and do not touch another account', async () => {
+  const f=messagingFixture(),room=await f.create({autoReply:false})
+  const bob=await f.service.create('bob',{title:'Private Bob room',characterIds:['c2'],persona:{source:'manual',name:'Bob'}})
+  const bobBefore=await f.service.read('bob',bob.id)
+  const send={roomId:room.id,revision:room.revision,requestId:'double_send',content:'Once'}
+  const results=await Promise.allSettled([f.service.message('alice',send),f.service.message('alice',send),f.service.message('alice',{...send,requestId:'distinct_stale'})])
+  expect(results.map(r=>r.status)).toEqual(['fulfilled','fulfilled','rejected'])
+  const saved=await f.service.read('alice',room.id)
+  expect(saved.messages).toHaveLength(1);expect(saved.receipts).toEqual(['double_send'])
+  expect(f.requests).toHaveLength(0);expect(await f.service.read('bob',bob.id)).toEqual(bobBefore)
+})
+
+test('prompt construction cannot read active RP or other rooms and follows only the configured source snapshot', async () => {
+  const f=messagingFixture(),room=await f.create({instructions:'ALPHA_ROOM_ONLY'}),other=await f.create({instructions:'OTHER_ROOM_PRIVATE'})
+  await f.service.update('alice',{...f.input,roomId:other.id,revision:other.revision,settings:{...other.settings,autoReply:false}})
+  let otherSaved=await f.service.read('alice',other.id)
+  await f.service.message('alice',{roomId:other.id,revision:otherSaved.revision,requestId:'other_context',content:'OTHER_ROOM_HISTORY'})
+  otherSaved=await f.service.read('alice',other.id)
+  for(const key of ['chats','scene','storyClock','actorMemories']) Object.defineProperty(f.host,key,{get(){throw new Error('RP access is forbidden')}})
+  f.personas.set('alice:p1',{id:'p1',name:'ACTIVE_PERSONA_CHANGED',description:'ACTIVE_RP_DESCRIPTION'})
+  await f.service.message('alice',{roomId:room.id,revision:room.revision,requestId:'isolated_context',content:'ALPHA_HISTORY_ONLY'})
+  const prompt=JSON.stringify(f.requests[0].messages)
+  expect(prompt).toContain('ALPHA_HISTORY_ONLY');expect(prompt).toContain('ALPHA_ROOM_ONLY');expect(prompt).toContain('Stable Alice')
+  for(const secret of ['OTHER_ROOM_HISTORY','OTHER_ROOM_PRIVATE','ACTIVE_PERSONA_CHANGED','ACTIVE_RP_DESCRIPTION'])expect(prompt).not.toContain(secret)
+  expect(await f.service.read('alice',other.id)).toEqual(otherSaved)
+  expect(f.requests).toHaveLength(1);expect(f.requests[0].parameters.max_tokens).toBe(1200)
+})
+
+test('invalid token counts block providers, exact budgets pass, and failed model replies never retry automatically', async () => {
+  for(const tokens of [NaN,Infinity,-1]) {
+    const f=messagingFixture(),room=await f.create()
+    f.host.tokens!.countMessages=async()=>({total_tokens:tokens})
+    await expect(f.service.message('alice',{roomId:room.id,revision:room.revision,requestId:'invalid_count',content:'Keep this'})).rejects.toThrow('token count')
+    expect(f.requests).toHaveLength(0);expect((await f.service.read('alice',room.id)).messages).toHaveLength(1)
+  }
+  const f=messagingFixture(),room=await f.create({autoReply:false});let calls=0
+  f.host.tokens!.countMessages=async()=>({total_tokens:8192-1200-256})
+  f.host.generate!.quiet=async request=>{calls++;expect(request.parameters.max_tokens).toBe(1200);return{content:'',finish_reason:'length'}}
+  await f.service.message('alice',{roomId:room.id,revision:room.revision,requestId:'manual_only',content:'No automatic reply'})
+  expect(calls).toBe(0)
+  const saved=await f.service.read('alice',room.id),input={roomId:room.id,revision:saved.revision,requestId:'failed_empty',content:''}
+  await expect(f.service.message('alice',input)).rejects.toThrow('invalid message JSON')
+  await f.service.message('alice',input)
+  expect(calls).toBe(1);expect((await f.service.read('alice',room.id)).messages).toEqual(saved.messages)
+})
+
+test('malformed settings and orphan pending files never replace committed history or trigger recovery writes', async () => {
+  const f=messagingFixture(),room=await f.create({autoReply:false})
+  await f.service.message('alice',{roomId:room.id,revision:room.revision,requestId:'storage_seed',content:'Committed history'})
+  const saved=await f.service.read('alice',room.id),path=`alice:mochi/v1/rooms/${room.id}.json`
+  f.files.set(path+'.pending',{...saved,messages:[{content:'Uncommitted'}]})
+  const writes=f.writes.length
+  expect((await new MochiService(f.host).state('alice')).rooms[0].messages).toEqual(saved.messages)
+  expect(f.writes).toHaveLength(writes)
+  const damaged={...saved,settings:{...saved.settings,autoReply:'invalid'}};f.files.set(path,damaged)
+  const state=await f.service.state('alice');expect(state.rooms).toEqual([]);expect(state.warnings).toHaveLength(1)
+  await expect(f.service.message('alice',{roomId:room.id,revision:saved.revision,requestId:'corrupt_write',content:'Do not overwrite'})).rejects.toThrow('token limits')
+  expect(f.files.get(path)).toEqual(damaged);expect(f.writes).toHaveLength(writes)
+})
+
 test('message actions preserve IDs, earlier versions, later history and deduplicate retries', async () => {
   const f = messagingFixture(), room = await f.create({ autoReply: false })
   await f.service.message('alice', { roomId: room.id, revision: room.revision, requestId: 'action_seed', content: 'Original user' })

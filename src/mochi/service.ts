@@ -46,6 +46,7 @@ function validateRoom(value: any, id: string): MochiRoom {
 export class MochiService {
   private locks = new Map<string, Promise<unknown>>()
   private jobs = new Map<string, { requestId: string; controller: AbortController }>()
+  private pending = new Map<string, Set<{ requestId: string; controller: AbortController }>>()
   private jobKey(user: string, id: string): string { return JSON.stringify([user, id]) }
   private settings(input: any, ids: string[]): MochiSettings {
     const s = { ...defaultMochiSettings(), ...input }
@@ -176,8 +177,10 @@ export class MochiService {
     const user = this.account(userId)
     roomId(id)
     const job = this.jobs.get(this.jobKey(user, id))
-    if (job?.requestId === requestId) job.controller.abort()
-    else await this.read(user, id)
+    let matched = false
+    if (job?.requestId === requestId) { job.controller.abort(); matched = true }
+    for (const queued of this.pending.get(this.jobKey(user, id)) || []) if (queued.requestId === requestId) { queued.controller.abort(); matched = true }
+    if (!matched) await this.read(user, id)
   }
   /** Only explicit content changes advance revision; notification reads cannot invalidate a reply. */
   async acknowledge(userId: string, input: any): Promise<void> {
@@ -245,6 +248,8 @@ export class MochiService {
   async message(userId: string, input: any, regenerate = false): Promise<void> {
     const user = this.account(userId), id = roomId(input.roomId), requestId = entityId(input.requestId)
     const key = this.jobKey(user, id), controller = new AbortController()
+    const waiting = this.pending.get(key) || new Set<{ requestId: string; controller: AbortController }>()
+    const queued = { requestId, controller }; waiting.add(queued); this.pending.set(key, waiting)
     const launched = await this.locked(user, id, async () => {
       const room = await this.read(user, id)
       if (room.receipts!.includes(requestId)) return null
@@ -262,10 +267,10 @@ export class MochiService {
       room.receipts!.push(requestId)
       room.revision++; room.updatedAt = new Date().toISOString()
       await this.persist(user, room)
-      const generate = !content || room.settings!.autoReply
+      const generate = (!content || room.settings!.autoReply) && !controller.signal.aborted
       if (generate) this.jobs.set(key, { requestId, controller })
       return { room, responder, generate, targetId, promptRoom: regenerate ? { ...room, messages: room.messages.slice(0, targetIndex) } : room }
-    })
+    }).finally(() => { waiting.delete(queued); if (!waiting.size && this.pending.get(key) === waiting) this.pending.delete(key) })
     const publish = async (accepted: boolean) => this.host.sendToFrontend({ type: 'mochi:state', requestId, accepted, state: await this.state(user) }, user)
     if (!launched?.generate) { await publish(true); return }
     const timeout = setTimeout(() => controller.abort(), 180000)
@@ -277,7 +282,8 @@ export class MochiService {
         const current = await this.read(user, id)
         if (current.revision !== launched.room.revision || this.jobs.get(key)?.controller !== controller) throw new Error('The room changed during generation; the reply was discarded.')
         await validateMochiSources(this.host, current, user)
-        if (!await this.host.characters.get(reply.character.id, user)) throw new Error('The responder is no longer available.')
+        if (!this.host.permissions.has('characters')) throw new Error('Character permission is required.')
+        for (const characterId of current.characterIds) if (!await this.host.characters.get(characterId, user)) throw new Error('A room character is no longer available; the reply was discarded.')
         const name = current.settings!.characterNames[reply.character.id] || reply.character.name
         let notification
         if (launched.targetId) {
@@ -323,7 +329,9 @@ export class MochiService {
       else if (payload.type !== 'mochi:list' && payload.type !== 'mochi:message_action' && payload.type !== 'mochi:notification_clear') throw new Error('Unsupported Mochi action.')
       this.host.sendToFrontend({ type: 'mochi:state', requestId: payload.requestId, selectedRoomId, state: await this.state(userId) }, userId)
     } catch (error) {
-      this.host.sendToFrontend({ type: 'mochi:error', requestId: payload.requestId, message: error instanceof Error ? error.name === 'AbortError' ? 'Reply stopped. Your messages are saved.' : error.message : 'Unable to save Mochi room.' }, userId)
+      const message = error instanceof Error ? error.name === 'AbortError' ? 'Reply stopped. Your messages are saved.' : error.message : 'Unable to save Mochi room.'
+      const safeMessage = message.replace(/\b(?:sk-|key-|Bearer\s+)[A-Za-z0-9._-]{8,}\b/gi, '[redacted]').replace(/\s+/g, ' ').trim().slice(0, 500)
+      this.host.sendToFrontend({ type: 'mochi:error', requestId: payload.requestId, message: safeMessage || 'Unable to save Mochi room.' }, userId)
     }
   }
 }

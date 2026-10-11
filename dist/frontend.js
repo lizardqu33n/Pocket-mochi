@@ -310,6 +310,7 @@ class MochiView {
   drafts = new Map;
   responders = new Map;
   ownGenerations = new Map;
+  pendingSends = new Map;
   selectionVersion = 0;
   requestVersion = 0;
   settingsDraft = null;
@@ -357,6 +358,8 @@ class MochiView {
     this.requestVersion = this.selectionVersion;
     if (type === "mochi:send" || type === "mochi:regenerate")
       this.ownGenerations.set(this.roomId, this.request);
+    if (type === "mochi:send")
+      this.pendingSends.set(this.request, { roomId: this.roomId, content: String(values.content ?? "") });
     this.operation = type;
     this.busy = true;
     this.error = "";
@@ -371,6 +374,14 @@ class MochiView {
     this.redraw();
   }
   receive(payload) {
+    if (payload?.type === "mochi:state" && payload.accepted && this.pendingSends.has(payload.requestId)) {
+      const sent = this.pendingSends.get(payload.requestId);
+      if ((this.drafts.get(sent.roomId) || "") === sent.content)
+        this.drafts.set(sent.roomId, "");
+      this.pendingSends.delete(payload.requestId);
+    }
+    if (payload?.type === "mochi:error")
+      this.pendingSends.delete(payload.requestId);
     if (payload?.type === "mochi:error" && this.acknowledgementRequests.has(payload.requestId)) {
       for (const id of this.acknowledgementRequests.get(payload.requestId))
         this.acknowledged.delete(id);
@@ -426,8 +437,6 @@ class MochiView {
     } else {
       const notifications = this.mergeNotifications(payload.state.notifications || [], Object.fromEntries(payload.state.rooms.map((r) => [r.id, r.notificationRevision || 0])));
       this.state = { ...payload.state, notifications };
-      if (payload.accepted && this.operation === "mochi:send" && this.ownGenerations.get(this.roomId) === payload.requestId)
-        this.drafts.set(this.roomId, "");
       for (const [id, request] of this.ownGenerations)
         if (this.state && this.state.jobs?.[id] !== request)
           this.ownGenerations.delete(id);

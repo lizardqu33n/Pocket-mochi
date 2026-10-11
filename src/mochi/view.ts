@@ -40,6 +40,7 @@ export class MochiView {
   private drafts = new Map<string, string>()
   private responders = new Map<string, string>()
   private ownGenerations = new Map<string, string>()
+  private pendingSends = new Map<string, { roomId: string; content: string }>()
   private selectionVersion = 0
   private requestVersion = 0
   private settingsDraft: MochiSettings | null = null
@@ -65,6 +66,7 @@ export class MochiView {
     this.request = requestId('mochi')
     this.requestVersion = this.selectionVersion
     if (type === 'mochi:send' || type === 'mochi:regenerate') this.ownGenerations.set(this.roomId, this.request)
+    if (type === 'mochi:send') this.pendingSends.set(this.request, { roomId: this.roomId, content: String(values.content ?? '') })
     this.operation = type
     this.busy = true; this.error = ''; this.feedback = ''
     clearTimeout(this.timeout)
@@ -77,6 +79,12 @@ export class MochiView {
     this.redraw()
   }
   receive(payload: any): boolean {
+    if (payload?.type === 'mochi:state' && payload.accepted && this.pendingSends.has(payload.requestId)) {
+      const sent = this.pendingSends.get(payload.requestId)!
+      if ((this.drafts.get(sent.roomId) || '') === sent.content) this.drafts.set(sent.roomId, '')
+      this.pendingSends.delete(payload.requestId)
+    }
+    if (payload?.type === 'mochi:error') this.pendingSends.delete(payload.requestId)
     if (payload?.type === 'mochi:error' && this.acknowledgementRequests.has(payload.requestId)) {
       for (const id of this.acknowledgementRequests.get(payload.requestId)!) this.acknowledged.delete(id)
       this.acknowledgementRequests.delete(payload.requestId)
@@ -113,7 +121,6 @@ export class MochiView {
     else {
       const notifications = this.mergeNotifications(payload.state.notifications || [], Object.fromEntries(payload.state.rooms.map((r: MochiRoom) => [r.id, r.notificationRevision || 0])))
       this.state = { ...payload.state, notifications }
-      if (payload.accepted && this.operation === 'mochi:send' && this.ownGenerations.get(this.roomId) === payload.requestId) this.drafts.set(this.roomId, '')
       for (const [id, request] of this.ownGenerations) if (this.state && this.state.jobs?.[id] !== request) this.ownGenerations.delete(id)
       if (payload.selectedRoomId && this.requestVersion === this.selectionVersion) {
         this.creating = false; this.editing = false; this.draft = null
