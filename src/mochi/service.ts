@@ -52,6 +52,7 @@ export class MochiService {
   backgroundEnabled: (userId: string) => Promise<boolean> = async () => false
   reserveAutomatic: (userId: string, roomId: string) => Promise<boolean> = async () => true
   releaseAutomatic: (userId: string, roomId: string) => void = () => {}
+  schedulingWarning: (message:string) => void = () => {}
   private locks = new Map<string, Promise<unknown>>()
   private jobs = new Map<string, { requestId: string; controller: AbortController }>()
   private pending = new Map<string, Set<{ requestId: string; controller: AbortController }>>()
@@ -83,6 +84,10 @@ export class MochiService {
     const room = validateRoom(await this.host.userStorage.getJson(path, { userId: user }), id)
     if (room.runtime !== undefined) validateRuntime(room.runtime)
     if (room.runtime?.presence) for (const [id,p] of Object.entries(room.runtime.presence)) { entityId(id); validatePresence(p) }
+    for(const job of room.runtime?.jobs || []) {
+      const drafts=[...job.draft?[job.draft]:[],...job.additional||[]],ids=drafts.map(d=>d.characterId)
+      if(ids.some(id=>!room.characterIds.includes(id))||new Set(ids).size!==ids.length) throw new Error('Invalid saved deferred membership; room data was preserved.')
+    }
     room.settings = this.settings(room.settings, room.characterIds)
     room.receipts ||= []
     if (!Array.isArray(room.receipts) || room.receipts.some(id => typeof id !== 'string')) throw new Error('Invalid saved send receipts.')
@@ -150,6 +155,7 @@ export class MochiService {
       if (settings.aiBehavior && (!saved.runtime?.enabled || !await this.backgroundEnabled(user))) throw new Error('Enable account and room background messaging before AI timing suggestions.')
       if (settings.connectionId && !await this.host.connections?.get(settings.connectionId, user)) throw new Error('This connection is not available to your account.')
       const room = { ...saved, title: text(input.title, 120, true), characterIds: ids, settings, persona: input.persona ? await this.persona(user, input.persona) : saved.persona, revision: saved.revision + 1, updatedAt: new Date().toISOString() }
+      for(const j of room.runtime?.jobs || []) if(!TERMINAL.has(j.status)){j.status='cancelled';delete j.draft;delete j.additional}
       for (const n of room.notifications!) n.roomTitle = room.title
       room.notificationRevision = (saved.notificationRevision || 0) + 1
       this.jobs.get(this.jobKey(user, id))?.controller.abort()
@@ -262,7 +268,7 @@ export class MochiService {
     const user = identifier(userId), rooms: MochiRoom[] = []
     for (const file of await this.host.userStorage.list(ROOT, user)) {
       const match = /^(room_[a-f0-9]{32})\.json$/.exec(file)
-      if (match) rooms.push(await this.read(user, match[1]))
+      if (match) {try{rooms.push(await this.read(user, match[1]))}catch{this.schedulingWarning('Mochi scheduler skipped a damaged room; its file was preserved.')}}
     }
     return rooms
   }
@@ -328,7 +334,7 @@ export class MochiService {
       if (input.revision !== room.revision) throw new Error('This room changed elsewhere. Refresh before changing background settings.')
       room.runtime ||= { version: 1, enabled: false, jobs: [] }
       room.runtime.enabled = input.enabled
-      if (!input.enabled) for (const j of room.runtime.jobs) if (!TERMINAL.has(j.status)) { j.status = 'cancelled'; delete j.draft }
+      if (!input.enabled) for (const j of room.runtime.jobs) if (!TERMINAL.has(j.status)) { j.status = 'cancelled'; delete j.draft; delete j.additional }
       await this.persist(user, room)
     })
   }
@@ -344,7 +350,7 @@ export class MochiService {
     await this.locked(userId, id, async () => {
       const room = await this.read(userId, id), j = room.runtime?.jobs.find(j => j.id === occurrenceId)
       if (!j || TERMINAL.has(j.status)) return
-      j.status = 'cancelled'; delete j.draft
+      j.status = 'cancelled'; delete j.draft;delete j.additional
       await this.persist(userId, room)
     })
   }
@@ -364,9 +370,9 @@ export class MochiService {
     await this.locked(user, id, async () => {
       const room = await this.read(user, id), j = room.runtime?.jobs.find(j => j.id === occurrenceId)
       if (!j || TERMINAL.has(j.status) || j.status === 'paused' || this.jobs.has(key) || j.nextAttemptAt > now() || (j.status === 'generating' && (j.leaseUntil || 0) > now())) return
-      if (j.expiresAt < now() || j.revision !== room.revision) { j.status = j.expiresAt < now() ? 'missed' : 'cancelled'; delete j.draft; await this.persist(user, room); return }
-      if (!room.runtime!.enabled || !await allowed()) { j.status = 'cancelled'; delete j.draft; await this.persist(user, room); return }
-      if (j.kind === 'idle' && (room.settings!.responseMode==='manual'||!room.runtime!.idle?.enabled || j.idlePeriodId !== room.runtime!.idle.periodId || room.runtime!.idle.delivered >= 3)) { j.status='cancelled';delete j.draft;await this.persist(user,room);return }
+      if (j.expiresAt < now() || j.revision !== room.revision) { j.status = j.expiresAt < now() ? 'missed' : 'cancelled'; delete j.draft; delete j.additional; await this.persist(user, room); return }
+      if (!room.runtime!.enabled || !await allowed()) { j.status = 'cancelled'; delete j.draft; delete j.additional; await this.persist(user, room); return }
+      if (j.kind === 'idle' && (room.settings!.responseMode==='manual'||!room.runtime!.idle?.enabled || j.idlePeriodId !== room.runtime!.idle.periodId || room.runtime!.idle.delivered >= 3)) { j.status='cancelled';delete j.draft;delete j.additional;await this.persist(user,room);return }
       if (j.responder !== 'auto' && !room.characterIds.includes(j.responder)) { j.status = 'paused'; j.reason = 'Responder is unavailable.'; await this.persist(user, room); return }
       const minimum = minimumDelay(room,j.responder,now())
       if (!j.draft && (minimum === Infinity || now() < (j.createdAt ?? j.dueAt) + minimum)) return
@@ -432,12 +438,14 @@ export class MochiService {
         if(j.kind==='idle'){const idle=room.runtime!.idle!;idle.delivered++;idle.lastDeliveredAt=now();idle.nextDueAt=now()+5400000}
         await this.persist(user, room, controller.signal)
         for(const event of events) this.host.sendToFrontend({ type: 'mochi:notification', notification:event.notification, notificationRevision:event.revision }, user)
+        const { runtime, ...visible } = room
+        this.host.sendToFrontend({ type: 'mochi:room_updated', room: { ...visible, background: publicRuntime(runtime) } }, user)
       })
     } catch (error) {
       await this.locked(user, id, async () => {
         const room = await this.read(user, id), j = room.runtime?.jobs.find(j => j.id === occurrenceId)
         if (!j || j.claim !== claim || TERMINAL.has(j.status)) return
-        if (!room.runtime!.enabled || !await allowed() || j.revision !== room.revision) { j.status = 'cancelled'; delete j.draft }
+        if (!room.runtime!.enabled || !await allowed() || j.revision !== room.revision) { j.status = 'cancelled'; delete j.draft; delete j.additional }
         else if (controller.signal.aborted || temporaryFailure(error)) {
           j.status = j.draft ? 'generated' : j.kind !== 'idle' && j.attempts < 3 ? 'queued' : 'failed'
           j.nextAttemptAt = now() + Math.min(900000, 60000 * 2 ** Math.max(0, j.attempts - 1)); j.leaseUntil = 0
@@ -482,10 +490,10 @@ export class MochiService {
       if (generate && !regenerate && minimumDelay(room,responder,this.now()) > 0) {
         generate = false
         if (!room.runtime?.enabled || !await this.backgroundEnabled(user)) throw new Error('This character is unavailable. Enable account and room background messaging to queue delayed replies.')
-        for (const job of room.runtime.jobs) if (job.kind === 'response' && !TERMINAL.has(job.status)) { job.status = 'cancelled'; delete job.draft }
+        for (const job of room.runtime.jobs) if (job.kind === 'response' && !TERMINAL.has(job.status)) { job.status = 'cancelled'; delete job.draft;delete job.additional }
         if (room.runtime.jobs.length >= MAX_JOBS || room.runtime.jobs.filter(j=>!TERMINAL.has(j.status)).length >= 4) throw new Error('The delayed-response queue is full; your user message is saved.')
         const now = this.now(), delay = minimumDelay(room,responder,now), dueAt = now + (Number.isFinite(delay) ? delay : 0)
-        room.runtime.jobs.push({ id: `response_${requestId}`, kind: 'response', createdAt: now, dueAt, expiresAt: now + 86400000, revision: room.revision, responder, status:'queued', attempts:0, nextAttemptAt:dueAt })
+        room.runtime.jobs.push({ id: `response_${requestId}`, kind: 'response', createdAt: now, dueAt, expiresAt: now + 86400000 + (Number.isFinite(delay)?delay:0), revision: room.revision, responder, status:'queued', attempts:0, nextAttemptAt:dueAt })
         await this.persist(user,room)
       }
       if (generate && regenerate && minimumDelay(room,responder,this.now()) > 0) throw new Error('The selected character is unavailable for an immediate reroll.')
@@ -520,7 +528,7 @@ export class MochiService {
           if (!current.runtime?.enabled || !await this.backgroundEnabled(user)) throw new Error('Background behavior was disabled; the reply was discarded.')
           if (reply.replies.some(r=>r.behavior.delayMs > 0)) {
             if (launched.targetId) throw new Error('Deferred rerolls are unsupported; the original message was preserved.')
-            for (const j of current.runtime.jobs) if (j.kind === 'response' && !TERMINAL.has(j.status)) { j.status='cancelled';delete j.draft }
+            for (const j of current.runtime.jobs) if (j.kind === 'response' && !TERMINAL.has(j.status)) { j.status='cancelled';delete j.draft; delete j.additional }
             if (current.runtime.jobs.length >= MAX_JOBS || current.runtime.jobs.filter(j=>!TERMINAL.has(j.status)).length >= 4) throw new Error('Deferred queue is full; history was preserved.')
             const now = this.now(), deliverAt = now + Math.max(...reply.replies.map(r=>r.behavior.delayMs))
             current.runtime.jobs.push({id:`deferred_${requestId}`,kind:'response',createdAt:now,dueAt:deliverAt,deliverAt,expiresAt:deliverAt+3600000,revision:current.revision,responder:reply.character.id,status:'generated',attempts:1,nextAttemptAt:deliverAt,proposedStatus:reply.behavior.status,draft:{characterId:reply.character.id,name,avatarUrl:reply.character.image_id ? `/api/v1/images/${entityId(reply.character.image_id)}` : '',text:reply.text},additional:reply.replies.slice(1).map(r=>({characterId:r.character.id,name:current.settings!.characterNames[r.character.id]||r.character.name,avatarUrl:r.character.image_id?`/api/v1/images/${entityId(r.character.image_id)}`:'',text:r.text,proposedStatus:r.behavior.status}))})

@@ -47,12 +47,24 @@ export class MochiView {
   private settingsDraft: MochiSettings | null = null
   private draftRevision = 0
   private timeout: ReturnType<typeof setTimeout> | undefined
+  private presenceTimer?: ReturnType<typeof setInterval>
+  private presenceRoot?: HTMLElement
   private draft: { title: string; characterIds: string[]; persona: string; name: string; description: string } | null = null
   constructor(private send: (payload: unknown) => void, private redraw: () => void, private navigate: (roomId?: string) => void,
     private notificationPolicy: () => MochiNotificationPolicy = () => ({ enabled: true, previews: true, visible: true }),
     private notify: (n: MochiNotification) => void = () => {},
     private notificationsChanged: (notices: MochiNotification[], rooms: Set<string>) => void = () => {}) {}
-  load(): void { this.dispatch('mochi:list') }
+  load(): void {
+    if(!this.presenceTimer) {this.presenceTimer=setInterval(()=>this.refreshPresence(),30000);(this.presenceTimer as unknown as {unref?:()=>void}).unref?.()}
+    this.dispatch('mochi:list')
+  }
+  private refreshPresence(): void {
+    const room=this.state?.rooms.find(r=>r.id===this.roomId),root=this.presenceRoot
+    if(!room||!root?.isConnected) return
+    for(const dot of root.querySelectorAll<HTMLElement>('.mochi-presence-dot')) {dot.dataset.status=statusFor(room,dot.dataset.characterId||'');dot.title=`Character status: ${dot.dataset.status}`}
+    const meta=root.querySelector<HTMLElement>('.mochi-room-meta'),statuses=room.characterIds.map(id=>statusFor(room,id))
+    if(meta){const online=statuses.includes('online');meta.dataset.status=online?'online':statuses.includes('away')?'away':statuses.includes('dnd')?'dnd':'offline';meta.textContent=`${room.characterIds.length} ${room.characterIds.length===1?'participant':'participants'} · ${online?'active now':statuses.every(s=>s==='offline')?'offline':'replies delayed'}`;meta.title=room.characterIds.map((id,i)=>`${room.settings?.characterNames[id]||this.state?.characters.find(c=>c.id===id)?.name||id}: ${statuses[i]}`).join('\n')}
+  }
   select(id: string): void {
     if (this.roomId !== id) { this.leave(); this.selectionVersion++; this.roomId = id; this.creating = false; this.editing = false; this.draft = null; this.settingsDraft = null }
   }
@@ -61,7 +73,7 @@ export class MochiView {
     const generationRequestId = this.ownGenerations.get(this.roomId)
     if (generationRequestId) this.send({ type: 'mochi:cancel', roomId: this.roomId, generationRequestId })
   }
-  destroy(): void { this.leave(); clearTimeout(this.timeout) }
+  destroy(): void { this.leave(); clearTimeout(this.timeout);clearInterval(this.presenceTimer) }
   private dispatch(type: string, values: Record<string, unknown> = {}): void {
     if (this.busy) return
     this.request = requestId('mochi')
@@ -80,6 +92,14 @@ export class MochiView {
     this.redraw()
   }
   receive(payload: any): boolean {
+    if (payload?.type === 'mochi:room_updated') {
+      const room = this.state?.rooms.find(r => r.id === payload.room?.id)
+      if (room && payload.room.revision > room.revision && !this.editing && !this.creating) {
+        Object.assign(room, payload.room)
+        this.redraw()
+      }
+      return true
+    }
     if ((payload?.type === 'mochi:accepted' || (payload?.type === 'mochi:state' && payload.accepted)) && this.pendingSends.has(payload.requestId)) {
       const sent = this.pendingSends.get(payload.requestId)!
       if ((this.drafts.get(sent.roomId) || '') === sent.content) this.drafts.set(sent.roomId, '')
@@ -151,7 +171,9 @@ export class MochiView {
     return notices
   }
   render(): HTMLDivElement {
+    // Refresh only status attributes/text between renders, preserving composer focus and drafts.
     const page = el('div', 'mochi-view')
+    this.presenceRoot=page
     const style = el('style')
     style.textContent = MOCHI_STYLES
     page.append(style)
@@ -256,11 +278,11 @@ export class MochiView {
       mode.value=settings.responseMode||'';mode.onchange=()=>{if(mode.value)settings.responseMode=mode.value as MochiSettings['responseMode'];else delete settings.responseMode};field('Response mode',mode)
       auto.disabled=!!settings.responseMode
       const accountBackground = el('input'); accountBackground.type = 'checkbox'; accountBackground.checked = !!state.backgroundEnabled; accountBackground.disabled = this.busy
-      const aiBehavior = el('input'); aiBehavior.type='checkbox';aiBehavior.checked=!!settings.aiBehavior;aiBehavior.disabled=this.busy||!state.backgroundEnabled||!room.background?.enabled;aiBehavior.onchange=()=>{settings.aiBehavior=aiBehavior.checked};field('Allow AI delivery timing and status suggestions',aiBehavior)
+      const aiBehavior = el('input'); aiBehavior.type='checkbox';aiBehavior.checked=!!settings.aiBehavior;aiBehavior.disabled=this.busy||(!settings.aiBehavior&&(!state.backgroundEnabled||!room.background?.enabled));aiBehavior.onchange=()=>{settings.aiBehavior=aiBehavior.checked};field('Allow AI delivery timing and status suggestions',aiBehavior)
       accountBackground.onchange = () => this.dispatch('mochi:background_account', { enabled: accountBackground.checked }); field('Allow server-side background messaging for my account', accountBackground)
       const roomBackground = el('input'); roomBackground.type = 'checkbox'; roomBackground.checked = !!room.background?.enabled; roomBackground.disabled = this.busy
       roomBackground.onchange = () => this.dispatch('mochi:background_room', { roomId: room.id, revision: room.revision, enabled: roomBackground.checked }); field('Allow scheduled messages in this room', roomBackground)
-      const idle=el('input');idle.type='checkbox';idle.checked=!!room.background?.idle?.enabled;idle.disabled=this.busy||!state.backgroundEnabled||!room.background?.enabled;idle.onchange=()=>this.dispatch('mochi:idle',{roomId:room.id,revision:room.revision,enabled:idle.checked});field('Allow idle messages (3 per idle period, 90 minutes apart)',idle)
+      const idle=el('input');idle.type='checkbox';idle.checked=!!room.background?.idle?.enabled;idle.disabled=this.busy||(!idle.checked&&(!state.backgroundEnabled||!room.background?.enabled||settings.responseMode==='manual'));idle.onchange=()=>this.dispatch('mochi:idle',{roomId:room.id,revision:room.revision,enabled:idle.checked});field('Allow idle messages (3 per idle period, 90 minutes apart)',idle)
       if (state.backgroundEnabled && room.background?.enabled) {
         const due = el('input'); due.type = 'datetime-local'; field('Scheduled message time', due)
         const schedule = action('Schedule character message', 'plus'); schedule.type = 'button'; schedule.disabled = this.busy
@@ -286,6 +308,7 @@ export class MochiView {
         const next=el('select');for(const s of STATUSES){const option=el('option','',s==='dnd'?'DND':s);option.value=s;next.append(option)};field(`Scheduled status for ${name}`,next)
         const when=el('input');when.type='datetime-local';field(`Status change time for ${name}`,when)
         const plan=action(`Schedule status change for ${name}`,'plus');plan.type='button';plan.disabled=this.busy;plan.onclick=()=>{presence.transitions.push({at:new Date(when.value).getTime(),status:next.value as typeof presence.automatic});setPresence()};form.append(plan)
+        if(presence.transitions.length){const clear=action(`Clear status schedule for ${name}`,'trash');clear.type='button';clear.disabled=this.busy;clear.onclick=()=>{presence.transitions=[];setPresence()};form.append(clear)}
         const input = el('input'); input.maxLength = 120; input.value = settings.characterNames[id] || ''; input.oninput = () => { settings.characterNames[id] = input.value }; field(`Room name for ${state.characters.find(c => c.id === id)?.name || id}`, input)
       }
     }
@@ -314,7 +337,7 @@ export class MochiView {
       const avatar = el('span', 'mochi-message-avatar', message.name?.slice(0, 1) || '?')
       if (message.avatarUrl) { const image = el('img'); image.src = message.avatarUrl; image.alt = ''; avatar.replaceChildren(image) }
       const avatarFrame = el('span', 'mochi-avatar-frame'); avatarFrame.append(avatar)
-      if (message.role === 'assistant') { const dot = el('span', 'mochi-presence-dot'); dot.dataset.status = statusFor(room,message.characterId || ''); dot.setAttribute('aria-hidden', 'true'); dot.title = `Character status: ${dot.dataset.status}`; avatarFrame.append(dot) }
+      if (message.role === 'assistant') { const dot = el('span', 'mochi-presence-dot'); dot.dataset.characterId=message.characterId||'';dot.dataset.status = statusFor(room,message.characterId || ''); dot.setAttribute('aria-hidden', 'true'); dot.title = `Character status: ${dot.dataset.status}`; avatarFrame.append(dot) }
       const body = el('div', 'mochi-message-body')
       const time = el('time', '', new Date(message.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })); time.dateTime = message.createdAt
       const displayName = message.role === 'user' ? 'You' : message.name || 'Unknown'

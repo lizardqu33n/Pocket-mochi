@@ -390,6 +390,16 @@ function temporaryFailure(error) {
   const message = error instanceof Error ? error.message : String(error);
   return /\b(?:429|502|503|504)\b|rate.?limit|temporar|ECONNRESET|ETIMEDOUT|fetch failed|network|timed? ?out|disk|rename|storage|ENOSPC/i.test(message) && !/credential|API key|permission|not available|not found|decrypt/i.test(message);
 }
+function dispatchReady(room, j, now) {
+  if (TERMINAL.has(j.status) || j.status === "paused" || j.nextAttemptAt > now || j.status === "generating" && (j.leaseUntil || 0) > now)
+    return false;
+  if (j.expiresAt < now || j.revision !== room.revision)
+    return true;
+  if (j.draft)
+    return (j.deliverAt || 0) <= now && [j.draft, ...j.additional || []].every((d) => statusFor(room, d.characterId, now) !== "offline" && now >= (j.createdAt ?? j.dueAt) + delayFor(room, d.characterId, now));
+  const delay = minimumDelay(room, j.responder, now);
+  return Number.isFinite(delay) && now >= (j.createdAt ?? j.dueAt) + delay;
+}
 
 // src/mochi/service.ts
 var ROOT = "mochi/v1/rooms/";
@@ -428,6 +438,7 @@ class MochiService {
   backgroundEnabled = async () => false;
   reserveAutomatic = async () => true;
   releaseAutomatic = () => {};
+  schedulingWarning = () => {};
   locks = new Map;
   jobs = new Map;
   pending = new Map;
@@ -484,6 +495,11 @@ class MochiService {
         entityId(id);
         validatePresence(p);
       }
+    for (const job of room.runtime?.jobs || []) {
+      const drafts = [...job.draft ? [job.draft] : [], ...job.additional || []], ids = drafts.map((d) => d.characterId);
+      if (ids.some((id) => !room.characterIds.includes(id)) || new Set(ids).size !== ids.length)
+        throw new Error("Invalid saved deferred membership; room data was preserved.");
+    }
     room.settings = this.settings(room.settings, room.characterIds);
     room.receipts ||= [];
     if (!Array.isArray(room.receipts) || room.receipts.some((id) => typeof id !== "string"))
@@ -575,6 +591,12 @@ class MochiService {
       if (settings.connectionId && !await this.host.connections?.get(settings.connectionId, user))
         throw new Error("This connection is not available to your account.");
       const room = { ...saved, title: text(input.title, 120, true), characterIds: ids, settings, persona: input.persona ? await this.persona(user, input.persona) : saved.persona, revision: saved.revision + 1, updatedAt: new Date().toISOString() };
+      for (const j of room.runtime?.jobs || [])
+        if (!TERMINAL.has(j.status)) {
+          j.status = "cancelled";
+          delete j.draft;
+          delete j.additional;
+        }
       for (const n of room.notifications)
         n.roomTitle = room.title;
       room.notificationRevision = (saved.notificationRevision || 0) + 1;
@@ -738,8 +760,13 @@ class MochiService {
     const user = identifier(userId), rooms = [];
     for (const file of await this.host.userStorage.list(ROOT, user)) {
       const match = /^(room_[a-f0-9]{32})\.json$/.exec(file);
-      if (match)
-        rooms.push(await this.read(user, match[1]));
+      if (match) {
+        try {
+          rooms.push(await this.read(user, match[1]));
+        } catch {
+          this.schedulingWarning("Mochi scheduler skipped a damaged room; its file was preserved.");
+        }
+      }
     }
     return rooms;
   }
@@ -841,6 +868,7 @@ class MochiService {
           if (!TERMINAL.has(j.status)) {
             j.status = "cancelled";
             delete j.draft;
+            delete j.additional;
           }
       }
       await this.persist(user, room);
@@ -864,6 +892,7 @@ class MochiService {
         return;
       j.status = "cancelled";
       delete j.draft;
+      delete j.additional;
       await this.persist(userId, room);
     });
   }
@@ -890,18 +919,21 @@ class MochiService {
       if (j.expiresAt < now() || j.revision !== room.revision) {
         j.status = j.expiresAt < now() ? "missed" : "cancelled";
         delete j.draft;
+        delete j.additional;
         await this.persist(user, room);
         return;
       }
       if (!room.runtime.enabled || !await allowed()) {
         j.status = "cancelled";
         delete j.draft;
+        delete j.additional;
         await this.persist(user, room);
         return;
       }
       if (j.kind === "idle" && (room.settings.responseMode === "manual" || !room.runtime.idle?.enabled || j.idlePeriodId !== room.runtime.idle.periodId || room.runtime.idle.delivered >= 3)) {
         j.status = "cancelled";
         delete j.draft;
+        delete j.additional;
         await this.persist(user, room);
         return;
       }
@@ -1031,6 +1063,8 @@ class MochiService {
         await this.persist(user, room, controller.signal);
         for (const event of events)
           this.host.sendToFrontend({ type: "mochi:notification", notification: event.notification, notificationRevision: event.revision }, user);
+        const { runtime, ...visible } = room;
+        this.host.sendToFrontend({ type: "mochi:room_updated", room: { ...visible, background: publicRuntime(runtime) } }, user);
       });
     } catch (error) {
       await this.locked(user, id, async () => {
@@ -1040,6 +1074,7 @@ class MochiService {
         if (!room.runtime.enabled || !await allowed() || j.revision !== room.revision) {
           j.status = "cancelled";
           delete j.draft;
+          delete j.additional;
         } else if (controller.signal.aborted || temporaryFailure(error)) {
           j.status = j.draft ? "generated" : j.kind !== "idle" && j.attempts < 3 ? "queued" : "failed";
           j.nextAttemptAt = now() + Math.min(900000, 60000 * 2 ** Math.max(0, j.attempts - 1));
@@ -1115,11 +1150,12 @@ class MochiService {
           if (job.kind === "response" && !TERMINAL.has(job.status)) {
             job.status = "cancelled";
             delete job.draft;
+            delete job.additional;
           }
         if (room.runtime.jobs.length >= MAX_JOBS || room.runtime.jobs.filter((j) => !TERMINAL.has(j.status)).length >= 4)
           throw new Error("The delayed-response queue is full; your user message is saved.");
         const now = this.now(), delay = minimumDelay(room, responder, now), dueAt = now + (Number.isFinite(delay) ? delay : 0);
-        room.runtime.jobs.push({ id: `response_${requestId}`, kind: "response", createdAt: now, dueAt, expiresAt: now + 86400000, revision: room.revision, responder, status: "queued", attempts: 0, nextAttemptAt: dueAt });
+        room.runtime.jobs.push({ id: `response_${requestId}`, kind: "response", createdAt: now, dueAt, expiresAt: now + 86400000 + (Number.isFinite(delay) ? delay : 0), revision: room.revision, responder, status: "queued", attempts: 0, nextAttemptAt: dueAt });
         await this.persist(user, room);
       }
       if (generate && regenerate && minimumDelay(room, responder, this.now()) > 0)
@@ -1179,6 +1215,7 @@ class MochiService {
               if (j.kind === "response" && !TERMINAL.has(j.status)) {
                 j.status = "cancelled";
                 delete j.draft;
+                delete j.additional;
               }
             if (current.runtime.jobs.length >= MAX_JOBS || current.runtime.jobs.filter((j) => !TERMINAL.has(j.status)).length >= 4)
               throw new Error("Deferred queue is full; history was preserved.");
@@ -1296,6 +1333,7 @@ class MochiScheduler {
     service.releaseAutomatic = (user, room) => {
       this.slots.delete(JSON.stringify([user, room]));
     };
+    service.schedulingWarning = report;
   }
   async locked(work) {
     const task = this.serial.catch(() => {}).then(work);
@@ -1397,7 +1435,7 @@ class MochiScheduler {
           for (const room of rooms)
             await this.service.prepareIdle(user, room.id, this.now());
           const refreshed = await this.service.scheduledRooms(user);
-          const candidates = refreshed.flatMap((room) => ((room.runtime?.enabled) ? room.runtime.jobs : []).filter((j) => !TERMINAL.has(j.status) && j.status !== "paused" && j.nextAttemptAt <= this.now() && (j.status !== "generating" || (j.leaseUntil || 0) <= this.now())).map((job) => ({ room, job }))).sort((a, b) => a.job.dueAt - b.job.dueAt);
+          const candidates = refreshed.flatMap((room) => ((room.runtime?.enabled) ? room.runtime.jobs : []).filter((j) => dispatchReady(room, j, this.now())).map((job) => ({ room, job }))).sort((a, b) => a.job.dueAt - b.job.dueAt);
           const candidate = candidates[0];
           if (candidate)
             work.push(this.service.dispatchScheduled(user, candidate.room.id, candidate.job.id, this.now, () => this.enabled(user), () => this.reserve(user, candidate.room.id)).catch(() => {

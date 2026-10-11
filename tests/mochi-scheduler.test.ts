@@ -4,6 +4,8 @@ import { MochiService, type MochiHost } from '../src/mochi/service.js'
 import { defaultMochiSettings } from '../src/mochi/types.js'
 import { defaultPresence, statusFor } from '../src/mochi/presence.js'
 import { parseBehavior } from '../src/mochi/behavior.js'
+import { MochiView } from '../src/mochi/view.js'
+import { JSDOM } from 'jsdom'
 
 function fixture() {
   const files = new Map<string, any>(), calls: any[] = [], events: any[] = []
@@ -311,4 +313,95 @@ test('natural deferred batches deliver atomically without duplicate calls or not
   f.advance(120000);f.restart();await f.scheduler.tick()
   const saved=await f.service.read('alice',room.id)
   expect(saved.messages).toHaveLength(3);expect(saved.notifications).toHaveLength(2);expect(f.calls).toHaveLength(1);f.scheduler.stop()
+})
+test('an Offline due room does not starve an eligible room in the same account',async()=>{
+  const f=fixture(),offline=await f.create(),online=await f.create();await f.schedule(offline,'offline');await f.schedule(online,'online')
+  await f.service.configurePresence('alice',{roomId:offline.id,revision:offline.revision,characterId:'alice_character',presence:{...defaultPresence(),manual:'offline'}})
+  await f.scheduler.tick();expect(f.calls).toHaveLength(1)
+  expect((await f.service.read('alice',online.id)).messages).toHaveLength(1);expect((await f.service.read('alice',offline.id)).messages).toEqual([]);f.scheduler.stop()
+})
+test('damaged foreign deferred membership is preserved and cannot starve unrelated rooms',async()=>{
+  const f=fixture(),bad=await f.create(),good=await f.create();await f.schedule(bad,'bad');await f.schedule(good,'good')
+  const key='alice:mochi/v1/rooms/'+bad.id+'.json',stored=f.files.get(key)
+  stored.runtime.jobs[0].status='generated';stored.runtime.jobs[0].draft={characterId:'bob_character',name:'Foreign',avatarUrl:'',text:'Must never deliver'}
+  const original=structuredClone(stored);await f.scheduler.tick()
+  expect(f.files.get(key)).toEqual(original);expect((await f.service.read('alice',good.id)).messages).toHaveLength(1)
+  expect((await f.service.state('alice')).warnings).toHaveLength(1);expect(f.calls).toHaveLength(1);f.scheduler.stop()
+})
+test('removing a deferred group member cancels the batch and keeps the room readable',async()=>{
+  const f=fixture(),room=await f.create(),get=f.host.characters.get
+  f.host.characters.get=async(id,u)=>id==='second_character'&&u==='alice'?{id,name:'Second'}:get(id,u)
+  const group=await f.service.update('alice',{roomId:room.id,revision:room.revision,title:room.title,characterIds:['alice_character','second_character'],settings:{...room.settings,responseMode:'natural',aiBehavior:true}})
+  f.host.generate!.quiet=async request=>{f.calls.push(request);return {content:JSON.stringify({messages:[{speakerId:'alice_character',text:'Private first',behavior:{delivery:'later',delayMs:60000}},{speakerId:'second_character',text:'Private second'}]})}}
+  await f.service.message('alice',{roomId:room.id,revision:group.revision,requestId:'member_batch',content:'Hello'})
+  const pending=await f.service.read('alice',room.id)
+  await f.service.update('alice',{roomId:room.id,revision:pending.revision,title:room.title,characterIds:['alice_character'],settings:pending.settings})
+  f.advance(60000);await f.scheduler.tick();const saved=await f.service.read('alice',room.id)
+  expect(saved.messages).toHaveLength(1);expect(saved.runtime!.jobs[0].draft).toBeUndefined();expect(saved.runtime!.jobs[0].additional).toBeUndefined();expect(f.calls).toHaveLength(1);f.scheduler.stop()
+})
+test('room opt-out during a staged delivery prevents committed output and preserves history',async()=>{
+  const f=fixture(),room=await f.create();await f.schedule(room)
+  let release!:()=>void,ready!:()=>void;const staged=new Promise<void>(r=>{ready=r}),gate=new Promise<void>(r=>{release=r}),original=f.host.userStorage.setJson
+  f.host.userStorage.setJson=async(p,v,o)=>{if(p.endsWith('.pending')&&(v as any)?.runtime?.jobs?.[0]?.status==='delivered'){ready();await gate};await original(p,v,o)}
+  const running=f.scheduler.tick();await staged
+  const cancel=f.service.configureScheduledRoom('alice',{roomId:room.id,revision:room.revision,enabled:false})
+  release();await Promise.all([running,cancel])
+  const saved=await f.service.read('alice',room.id);expect(saved.messages).toEqual([]);expect(saved.notifications).toEqual([]);expect(saved.runtime!.jobs[0].status).toBe('cancelled');f.scheduler.stop()
+})
+test('shared automatic concurrency rejects another room while a provider remains active',async()=>{
+  const f=fixture(),one=await f.create(),two=await f.create()
+  const a=await f.service.update('alice',{roomId:one.id,revision:one.revision,title:one.title,characterIds:one.characterIds,settings:{...one.settings,responseMode:'instant'}})
+  const b=await f.service.update('alice',{roomId:two.id,revision:two.revision,title:two.title,characterIds:two.characterIds,settings:{...two.settings,responseMode:'instant'}})
+  let release!:(r:any)=>void,ready!:()=>void;const started=new Promise<void>(r=>{ready=r})
+  f.host.generate!.quiet=async request=>{f.calls.push(request);ready();return new Promise(r=>{release=r})}
+  const running=f.service.message('alice',{roomId:a.id,revision:a.revision,requestId:'first_slot',content:'One'});await started
+  await expect(f.service.message('alice',{roomId:b.id,revision:b.revision,requestId:'second_slot',content:'Two'})).rejects.toThrow('limit')
+  expect(f.calls).toHaveLength(1);release({content:'{"speakerId":"alice_character","text":"One reply"}'});await running
+  expect((await f.service.read('alice',b.id)).messages).toHaveLength(1);f.scheduler.stop()
+})
+test('maximum configurable DND delay still delivers after timer resolution rather than expiring at its deadline',async()=>{
+  const f=fixture(),room=await f.create();await f.service.configurePresence('alice',{roomId:room.id,revision:room.revision,characterId:'alice_character',presence:{...defaultPresence(),manual:'dnd',dndMs:86400000}})
+  await f.service.message('alice',{roomId:room.id,revision:room.revision,requestId:'long_dnd',content:'Reply tomorrow'})
+  f.advance(86400000+30000);f.restart();await f.scheduler.tick();expect(f.calls).toHaveLength(1)
+  expect((await f.service.read('alice',room.id)).messages).toHaveLength(2);f.scheduler.stop()
+})
+test('natural one-character replies preserve token output limits without an extra selector request',async()=>{
+  const f=fixture(),room=await f.create(),configured=await f.service.update('alice',{roomId:room.id,revision:room.revision,title:room.title,characterIds:room.characterIds,settings:{...room.settings,responseMode:'natural'}})
+  f.host.generate!.quiet=async request=>{f.calls.push(request);return {content:'{"messages":[{"speakerId":"alice_character","text":"DM reply"}]}'}}
+  await f.service.message('alice',{roomId:room.id,revision:configured.revision,requestId:'natural_dm',content:'Hello'})
+  expect(f.calls).toHaveLength(1);expect(f.calls[0].parameters.max_tokens).toBe(1200);expect((await f.service.read('alice',room.id)).messages).toHaveLength(2);f.scheduler.stop()
+})
+test('reconnecting a view hydrates unread notifications created with no frontend attached',async()=>{
+  const f=fixture(),room=await f.create();await f.service.configureIdle('alice',{roomId:room.id,revision:room.revision,enabled:true})
+  f.advance(5400000);await f.scheduler.tick()
+  const view=new MochiView(()=>{},()=>{},()=>{});view.receive({type:'mochi:state',requestId:'',state:await f.service.state('alice')})
+  expect(view.state!.notifications).toHaveLength(1);expect(view.state!.notifications![0].read).toBe(false)
+  expect(view.state!.rooms[0].messages).toHaveLength(1);view.destroy();f.scheduler.stop()
+})
+test('status refresh changes only metadata and dots while retaining the focused composer',async()=>{
+  const dom=new JSDOM('<body></body>'),before=globalThis.document;globalThis.document=dom.window.document
+  try {
+    const f=fixture(),room=await f.create();await f.service.message('alice',{roomId:room.id,revision:room.revision,requestId:'portrait',content:'Hello'})
+    const view=new MochiView(()=>{},()=>{},()=>{});view.state=await f.service.state('alice');view.select(room.id)
+    const root=view.render();dom.window.document.body.append(root)
+    const composer=root.querySelector<HTMLTextAreaElement>('textarea[aria-label="Message"]')!;composer.value='Keep my unsent draft';composer.focus()
+    view.state!.rooms[0].background!.presence={alice_character:{...defaultPresence(),manual:'offline'}}
+    ;(view as any).refreshPresence()
+    expect(root.querySelector<HTMLElement>('.mochi-presence-dot')!.dataset.status).toBe('offline')
+    expect(dom.window.document.activeElement).toBe(composer);expect(composer.value).toBe('Keep my unsent draft');view.destroy();f.scheduler.stop()
+  }finally{globalThis.document=before;dom.window.close()}
+})
+
+test('server delivery updates an open thread without leaking drafts or replacing unsent text',async()=>{
+  const f=fixture(),room=await f.create(),view=new MochiView(()=>{},()=>{},()=>{})
+  view.state=await f.service.state('alice');view.select(room.id)
+  ;(view as any).drafts.set(room.id,'Unsent text')
+  await f.schedule(room);await f.scheduler.tick()
+  const event=f.events.find(e=>e.payload.type==='mochi:room_updated')!
+  expect(event.user).toBe('alice');expect(event.payload.room.runtime).toBeUndefined()
+  view.receive(event.payload)
+  expect(view.state!.rooms[0].messages).toHaveLength(1)
+  expect((view as any).drafts.get(room.id)).toBe('Unsent text')
+  expect(view.state!.rooms[0].background!.jobs).toEqual([])
+  view.destroy();f.scheduler.stop()
 })

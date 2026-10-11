@@ -1,4 +1,6 @@
 import { roomId } from './types.js'
+import type { MochiRoom } from './types.js'
+import { delayFor, minimumDelay, statusFor } from './presence.js'
 
 export type ScheduledStatus = 'queued' | 'generating' | 'generated' | 'delivered' | 'cancelled' | 'paused' | 'failed' | 'missed'
 export interface ScheduledDraft { characterId: string; name: string; avatarUrl: string; text: string; proposedStatus?: import('./presence.js').PresenceStatus }
@@ -58,4 +60,11 @@ export function scheduleInput(input: any, now: number): { id: string; roomId: st
 export function temporaryFailure(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error)
   return /\b(?:429|502|503|504)\b|rate.?limit|temporar|ECONNRESET|ETIMEDOUT|fetch failed|network|timed? ?out|disk|rename|storage|ENOSPC/i.test(message) && !/credential|API key|permission|not available|not found|decrypt/i.test(message)
+}
+export function dispatchReady(room:MochiRoom,j:ScheduledJob,now:number):boolean {
+  if(TERMINAL.has(j.status)||j.status==='paused'||j.nextAttemptAt>now||(j.status==='generating'&&(j.leaseUntil||0)>now)) return false
+  if(j.expiresAt<now||j.revision!==room.revision) return true // cleanup, never generation
+  if(j.draft) return (j.deliverAt||0)<=now&&[j.draft,...j.additional||[]].every(d=>statusFor(room,d.characterId,now)!=='offline'&&now>=(j.createdAt??j.dueAt)+delayFor(room,d.characterId,now))
+  const delay=minimumDelay(room,j.responder,now)
+  return Number.isFinite(delay)&&now>=(j.createdAt??j.dueAt)+delay
 }

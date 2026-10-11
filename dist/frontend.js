@@ -329,6 +329,8 @@ class MochiView {
   settingsDraft = null;
   draftRevision = 0;
   timeout;
+  presenceTimer;
+  presenceRoot;
   draft = null;
   constructor(send, redraw, navigate, notificationPolicy = () => ({ enabled: true, previews: true, visible: true }), notify = () => {}, notificationsChanged = () => {}) {
     this.send = send;
@@ -339,7 +341,28 @@ class MochiView {
     this.notificationsChanged = notificationsChanged;
   }
   load() {
+    if (!this.presenceTimer) {
+      this.presenceTimer = setInterval(() => this.refreshPresence(), 30000);
+      this.presenceTimer.unref?.();
+    }
     this.dispatch("mochi:list");
+  }
+  refreshPresence() {
+    const room = this.state?.rooms.find((r) => r.id === this.roomId), root = this.presenceRoot;
+    if (!room || !root?.isConnected)
+      return;
+    for (const dot of root.querySelectorAll(".mochi-presence-dot")) {
+      dot.dataset.status = statusFor(room, dot.dataset.characterId || "");
+      dot.title = `Character status: ${dot.dataset.status}`;
+    }
+    const meta = root.querySelector(".mochi-room-meta"), statuses = room.characterIds.map((id) => statusFor(room, id));
+    if (meta) {
+      const online = statuses.includes("online");
+      meta.dataset.status = online ? "online" : statuses.includes("away") ? "away" : statuses.includes("dnd") ? "dnd" : "offline";
+      meta.textContent = `${room.characterIds.length} ${room.characterIds.length === 1 ? "participant" : "participants"} · ${online ? "active now" : statuses.every((s) => s === "offline") ? "offline" : "replies delayed"}`;
+      meta.title = room.characterIds.map((id, i) => `${room.settings?.characterNames[id] || this.state?.characters.find((c) => c.id === id)?.name || id}: ${statuses[i]}`).join(`
+`);
+    }
   }
   select(id) {
     if (this.roomId !== id) {
@@ -363,6 +386,7 @@ class MochiView {
   destroy() {
     this.leave();
     clearTimeout(this.timeout);
+    clearInterval(this.presenceTimer);
   }
   dispatch(type, values = {}) {
     if (this.busy)
@@ -387,6 +411,14 @@ class MochiView {
     this.redraw();
   }
   receive(payload) {
+    if (payload?.type === "mochi:room_updated") {
+      const room = this.state?.rooms.find((r) => r.id === payload.room?.id);
+      if (room && payload.room.revision > room.revision && !this.editing && !this.creating) {
+        Object.assign(room, payload.room);
+        this.redraw();
+      }
+      return true;
+    }
     if ((payload?.type === "mochi:accepted" || payload?.type === "mochi:state" && payload.accepted) && this.pendingSends.has(payload.requestId)) {
       const sent = this.pendingSends.get(payload.requestId);
       if ((this.drafts.get(sent.roomId) || "") === sent.content)
@@ -492,6 +524,7 @@ class MochiView {
   }
   render() {
     const page = el("div", "mochi-view");
+    this.presenceRoot = page;
     const style = el("style");
     style.textContent = MOCHI_STYLES;
     page.append(style);
@@ -763,7 +796,7 @@ class MochiView {
       const aiBehavior = el("input");
       aiBehavior.type = "checkbox";
       aiBehavior.checked = !!settings.aiBehavior;
-      aiBehavior.disabled = this.busy || !state.backgroundEnabled || !room.background?.enabled;
+      aiBehavior.disabled = this.busy || !settings.aiBehavior && (!state.backgroundEnabled || !room.background?.enabled);
       aiBehavior.onchange = () => {
         settings.aiBehavior = aiBehavior.checked;
       };
@@ -779,7 +812,7 @@ class MochiView {
       const idle = el("input");
       idle.type = "checkbox";
       idle.checked = !!room.background?.idle?.enabled;
-      idle.disabled = this.busy || !state.backgroundEnabled || !room.background?.enabled;
+      idle.disabled = this.busy || !idle.checked && (!state.backgroundEnabled || !room.background?.enabled || settings.responseMode === "manual");
       idle.onchange = () => this.dispatch("mochi:idle", { roomId: room.id, revision: room.revision, enabled: idle.checked });
       field("Allow idle messages (3 per idle period, 90 minutes apart)", idle);
       if (state.backgroundEnabled && room.background?.enabled) {
@@ -874,6 +907,16 @@ class MochiView {
           setPresence();
         };
         form.append(plan);
+        if (presence.transitions.length) {
+          const clear = action(`Clear status schedule for ${name}`, "trash");
+          clear.type = "button";
+          clear.disabled = this.busy;
+          clear.onclick = () => {
+            presence.transitions = [];
+            setPresence();
+          };
+          form.append(clear);
+        }
         const input = el("input");
         input.maxLength = 120;
         input.value = settings.characterNames[id] || "";
@@ -933,6 +976,7 @@ class MochiView {
       avatarFrame.append(avatar);
       if (message.role === "assistant") {
         const dot = el("span", "mochi-presence-dot");
+        dot.dataset.characterId = message.characterId || "";
         dot.dataset.status = statusFor(room, message.characterId || "");
         dot.setAttribute("aria-hidden", "true");
         dot.title = `Character status: ${dot.dataset.status}`;

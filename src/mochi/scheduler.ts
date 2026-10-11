@@ -1,4 +1,4 @@
-import { identifier, TERMINAL } from './scheduling.js'
+import { dispatchReady, identifier, TERMINAL } from './scheduling.js'
 import { MochiService, type MochiHost } from './service.js'
 
 const REGISTRY = 'mochi/v1/scheduler-accounts.json'
@@ -15,7 +15,7 @@ export class MochiScheduler {
   private blocked = new Set<string>()
   private slots = new Set<string>()
   private serial: Promise<unknown> = Promise.resolve()
-  constructor(private host: MochiHost, private service: MochiService, private now: () => number = Date.now, private report: (message: string) => void = () => {}) { service.backgroundEnabled = user => this.enabled(user); service.reserveAutomatic = (user,room) => this.reserve(user,room);service.releaseAutomatic=(user,room)=>{this.slots.delete(JSON.stringify([user,room]))} }
+  constructor(private host: MochiHost, private service: MochiService, private now: () => number = Date.now, private report: (message: string) => void = () => {}) { service.backgroundEnabled = user => this.enabled(user); service.reserveAutomatic = (user,room) => this.reserve(user,room);service.releaseAutomatic=(user,room)=>{this.slots.delete(JSON.stringify([user,room]))};service.schedulingWarning=report }
   private async locked<T>(work: () => Promise<T>): Promise<T> {
     const task = this.serial.catch(() => {}).then(work); this.serial = task
     return task
@@ -93,7 +93,7 @@ export class MochiScheduler {
           for(const room of rooms) await this.service.prepareIdle(user,room.id,this.now())
           const refreshed = await this.service.scheduledRooms(user)
           // At most one opportunity per account per wake, and two globally. No catch-up burst.
-          const candidates = refreshed.flatMap(room => (room.runtime?.enabled ? room.runtime.jobs : []).filter(j => !TERMINAL.has(j.status) && j.status !== 'paused' && j.nextAttemptAt <= this.now() && (j.status !== 'generating' || (j.leaseUntil || 0) <= this.now())).map(job => ({ room, job }))).sort((a,b) => a.job.dueAt - b.job.dueAt)
+          const candidates = refreshed.flatMap(room => (room.runtime?.enabled ? room.runtime.jobs : []).filter(j => dispatchReady(room,j,this.now())).map(job => ({ room, job }))).sort((a,b) => a.job.dueAt - b.job.dueAt)
           const candidate = candidates[0]
           if (candidate) work.push(this.service.dispatchScheduled(user, candidate.room.id, candidate.job.id, this.now, () => this.enabled(user), () => this.reserve(user, candidate.room.id)).catch(() => { this.report('Mochi scheduled work failed safely; records were retained for recovery.') }))
         } catch { this.report('Mochi scheduler skipped an unavailable account or damaged record; stored data was preserved.') }
