@@ -29,6 +29,19 @@ const stateAccountLabel=(id?:string)=>id?'Account settings':'Profiles and accoun
 import { defaultMochiSettings, type MochiMessage, type MochiNotification, type MochiRoom, type MochiSettings, type MochiState } from './types.js'
 import { MOCHI_DESKTOP_STYLES } from './desktop-styles.js'
 
+type DisplayMessage = Pick<MochiMessage, 'id' | 'role' | 'content' | 'name' | 'createdAt'> & Partial<Pick<MochiMessage, 'avatarUrl' | 'characterId' | 'editedAt'>>
+function isDisplayMessage(value: unknown): value is DisplayMessage {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    && 'id' in value && typeof value.id === 'string' && Boolean(value.id)
+    && 'role' in value && (value.role === 'user' || value.role === 'assistant')
+    && 'content' in value && typeof value.content === 'string'
+    && 'name' in value && typeof value.name === 'string'
+    && 'createdAt' in value && typeof value.createdAt === 'string' && Number.isFinite(Date.parse(value.createdAt))
+    && (!('avatarUrl' in value) || value.avatarUrl === undefined || typeof value.avatarUrl === 'string')
+    && (!('characterId' in value) || value.characterId === undefined || typeof value.characterId === 'string')
+    && (!('editedAt' in value) || value.editedAt === undefined || typeof value.editedAt === 'string')
+}
+
 export class MochiView {
   private destroyed = false
   private desktopHistory = new Map<string, number>()
@@ -349,7 +362,7 @@ export class MochiView {
       const avatars=el('div','mochi-room-avatars')
       for(const id of room.characterIds.slice(0,3)){const c=this.state?.characters.find(c=>c.id===id);avatars.append(portrait(room.settings?.characterNames[id]||c?.name||'?',c?.avatarUrl))}
       const copy=el('div','mochi-desktop-room-copy'),title=el('strong','',room.title);title.title=room.title
-      const last=room.messages.at(-1),preview=last?.content?`${last.name}: ${last.content.slice(0,160)}`:'Start a conversation'
+      const last=room.messages.at(-1),preview=isDisplayMessage(last)?last.content?`${last.name}: ${last.content.slice(0,160)}`:'Start a conversation':room.messages.length?'Message unavailable':'Start a conversation'
       copy.append(title,el('small','',preview.slice(0,180)));row.append(avatars,copy)
       const count=unread.get(room.id)||0
       if(count){const badge=el('span','mochi-desktop-unread',String(count));badge.setAttribute('aria-label',`${count} unread notifications`);row.append(badge)}
@@ -593,10 +606,11 @@ export class MochiView {
     else globalThis.requestAnimationFrame?.(() => { thread.scrollTop = thread.scrollHeight })
     const limit=this.desktopHistory.get(room.id)||100
     const visible=desktop?room.messages.slice(-limit):room.messages
-    if(desktop){thread.dataset.firstMessageId=visible[0]?.id||'';if(room.messages.length>limit){const earlier=button('Show earlier messages','lp-button');earlier.onclick=()=>{this.desktopHistory.set(room.id,limit+100);this.redraw()};thread.append(earlier)}}
-    let previous: MochiMessage | undefined
+    if(desktop){const first=visible[0];thread.dataset.firstMessageId=isDisplayMessage(first)?first.id:'';if(room.messages.length>limit){const earlier=button('Show earlier messages','lp-button');earlier.onclick=()=>{this.desktopHistory.set(room.id,limit+100);this.redraw()};thread.append(earlier)}}
+    let previous: DisplayMessage | undefined
     for (const raw of visible) {
-      const message = raw as MochiMessage
+      if(!isDisplayMessage(raw)){thread.append(el('p','mochi-message-unavailable','Message unavailable. Saved record preserved.'));previous=undefined;continue}
+      const message = raw
       const row = el('div', 'mochi-message'); row.dataset.role = message.role
       row.dataset.messageId = message.id
       const elapsed = previous ? Date.parse(message.createdAt) - Date.parse(previous.createdAt) : Infinity
@@ -627,7 +641,7 @@ export class MochiView {
     if (sheet) { this.sheets.add(sheet.dismiss); content.closest('dialog')?.classList.add('mochi-sheet'); content.closest('dialog')?.addEventListener('close', () => this.sheets.delete(sheet.dismiss), { once: true }) }
     return sheet
   }
-  private messageActions(anchor: HTMLElement, room: MochiRoom, message: MochiMessage): void {
+  private messageActions(anchor: HTMLElement, room: MochiRoom, message: DisplayMessage): void {
     const revision = room.revision, content = el('div', 'mochi-action-panel')
     const context = el('p', 'mochi-action-context')
     const author = el('strong', 'mochi-action-author', message.role === 'user' ? 'You' : message.name); author.title = message.name

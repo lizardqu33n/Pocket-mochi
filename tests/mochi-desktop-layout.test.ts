@@ -106,3 +106,23 @@ test('desktop: refresh preserves composer focus, scroll position and selected ro
     expect(h.session.view.roomId).toBe(h.room.id);expect(h.listeners.size).toBe(1)
   }finally{h.cleanup()}
 })
+
+test('desktop: unknown message records remain stored and cannot crash preview, anchor or actions',()=>{
+  const h=fixture()
+  try{
+    const valid=structuredClone(h.room.messages[0])
+    h.room.messages=[null,42,'unexpected',[],{}, {...valid,content:17}, {...valid,name:{}}, {...valid,id:9}, {...valid,role:'system'}, {...valid,createdAt:'invalid'}, {...valid,avatarUrl:[]}, {...valid,characterId:12}, {...valid,editedAt:{}}, valid, undefined]
+    const before=structuredClone(h.room.messages)
+    h.desktop.refresh();h.complete()
+    expect(document.querySelector('.mochi-desktop-room-copy small')!.textContent).toBe('Message unavailable')
+    h.choose(h.room.id)
+    expect(document.querySelectorAll('.mochi-message')).toHaveLength(1)
+    expect(document.querySelectorAll('.mochi-message-unavailable')).toHaveLength(14)
+    expect(document.querySelector('.mochi-thread')!.getAttribute('data-first-message-id')).toBe('')
+    expect(document.querySelectorAll('.mochi-message-actions')).toHaveLength(1)
+    expect(h.session.view.state!.rooms[0].messages).toEqual(before)
+    h.room.messages=[valid];h.desktop.refresh();h.complete()
+    expect(document.querySelector('.mochi-desktop-room-copy small')!.textContent).toBe(`${valid.name}: ${valid.content}`)
+    expect(document.querySelector('.mochi-thread')!.getAttribute('data-first-message-id')).toBe(valid.id)
+  }finally{h.cleanup()}
+})
