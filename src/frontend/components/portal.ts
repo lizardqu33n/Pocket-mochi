@@ -10,7 +10,7 @@ const artwork = {
 export class PocketPortal {
   readonly root = el('section', 'pocket-portal lumiphone-device-drawer')
   private destination: Destination = 'home'
-  constructor(private phones: () => HTMLElement, private mochi: () => HTMLElement, private startMochi: () => void, private mochiNavigation?: {back: (exit: () => void, anchor: HTMLElement) => void; home: (exit: () => void, anchor: HTMLElement) => void}) {
+  constructor(private phones: () => HTMLElement, private mochi: () => HTMLElement, private startMochi: () => void, private mochiNavigation?: {back: (exit: () => void, anchor: HTMLElement) => void; home: (exit: () => void, anchor: HTMLElement) => void; window?: () => void}) {
     this.root.setAttribute('aria-label', 'Pocket portal')
     this.render()
   }
@@ -31,6 +31,7 @@ export class PocketPortal {
     const home = button('Pocket /', 'pocket-portal-home'); home.title='Return to Pocket portal';home.onclick = () => {const exit=()=>this.show('home');if(this.destination==='mochi'&&this.mochiNavigation)this.mochiNavigation.home(exit,home);else exit()}
     if(this.destination!=='home'){const back=button('← Back','pocket-portal-back');back.setAttribute('aria-label',this.destination==='mochi'?'Back in Mochi':'Back to portal');back.onclick=()=>{const exit=()=>this.show('home');if(this.destination==='mochi'&&this.mochiNavigation)this.mochiNavigation.back(exit,back);else exit()};nav.append(back)}
     nav.append(home, el('span', '', this.destination === 'home' ? 'online' : this.destination === 'phones' ? 'devices' : 'mochi'))
+    if(this.mochiNavigation?.window){const windowButton=button('Mochi window','pocket-portal-back');windowButton.setAttribute('aria-label','Open Mochi window');windowButton.onclick=this.mochiNavigation.window;nav.append(windowButton)}
     const body = el('div', 'pocket-portal-body')
     if (this.destination === 'home') {
       const title = el('h2', '', 'A little closer.'); title.tabIndex = -1

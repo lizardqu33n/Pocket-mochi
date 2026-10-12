@@ -4,10 +4,12 @@ import { reconcileMochiNotifications, showMochiNotification, type MochiNotificat
 export interface MochiWorkspaceOptions {
   root: HTMLElement
   /** Pass the original context methods, without rebinding/wrapping them. */
-  transport: MochiTransport
+  transport?: MochiTransport
   notificationPolicy: () => Pick<MochiNotificationPolicy, 'enabled' | 'previews'>
   /** For hosts whose transport wrapper cannot retain context method identity. */
   session?: MochiSession
+  onVisibilityChange?: (visible: boolean) => void
+  onDispose?: () => void
 }
 export interface MochiWorkspace {
   readonly apiVersion: 1
@@ -21,7 +23,8 @@ export interface MochiWorkspace {
 
 /** Compatibility surface: shares the authenticated session, never another view. */
 export function createMochiWorkspace(options: MochiWorkspaceOptions): MochiWorkspace {
-  const session = options.session || getMochiSession(options.transport)
+  if (!options.session && !options.transport) throw new Error('An authenticated Mochi session or transport is required.')
+  const session = options.session || getMochiSession(options.transport!)
   session.assertActive()
   const view = session.view, frame = document.createElement('section')
   frame.className = 'mochi-workspace'; frame.setAttribute('aria-label', 'Mochi workspace'); frame.hidden = true
@@ -54,8 +57,8 @@ export function createMochiWorkspace(options: MochiWorkspaceOptions): MochiWorks
     notify: (notice, open) => { if (!visible()) return; dismissNotice?.(); dismissNotice = showMochiNotification(frame, notice, policy().previews, open) },
     reconcile: (notices, rooms) => reconcileMochiNotifications(frame, notices, rooms),
     dismiss: () => { dismissNotice?.(); dismissNotice = undefined },
-    ownership: active => { opened = active; frame.hidden = !active; if (active) render() },
-    disposed: () => { destroyed = true; opened = false; frame.remove() },
+    ownership: active => { opened = active; frame.hidden = !active; options.onVisibilityChange?.(active); if (active) render() },
+    disposed: () => { if (destroyed) return; destroyed = true; opened = false; frame.remove(); options.onDispose?.() },
   }
   const detach = session.attach(surface)
   const ensureActive = () => { if (destroyed) throw new Error('This Mochi workspace is destroyed.'); session.assertActive() }

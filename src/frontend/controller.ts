@@ -2,6 +2,7 @@ import { POCKET_ICONS as ICONS } from './components/icons.js'
 import { GALLERY_PAGE_SIZE } from '../domain/gallery-page.js'
 import { MochiView } from '../mochi/view.js'
 import { getMochiSession, type MochiSession, type MochiSurface } from '../mochi/session.js'
+import { createMochiWindow, type MochiWindow, type MochiWindowUI } from '../mochi/window.js'
 import { PocketPortal } from './components/portal.js'
 import { showMochiNotification, reconcileMochiNotifications } from '../mochi/notifications.js'
 import type { MochiNotification } from '../mochi/types.js'
@@ -132,6 +133,7 @@ class PocketController {
   private currentApp: PhoneApp = 'home'
   private portal?: PocketPortal
   private mochiSession: MochiSession
+  private mochiWindow?: MochiWindow
   private mochiSurface!: MochiSurface
   private dismissMochiNotification: (() => void) | undefined
   private mochi: MochiView
@@ -512,9 +514,21 @@ class PocketController {
   private renderDrawerLanding(): void {
     if (!this.portal) this.portal = new PocketPortal(() => this.renderPhoneChoices(), () => this.mochiSession.owns(this.mochiSurface)?this.mochi.render('choices'):el('div'), () => {
       this.mochiSession.activate(this.mochiSurface)
-    }, {back:(exit,anchor)=>this.mochi.back(exit,anchor),home:(exit,anchor)=>this.mochi.exitPortal(exit,anchor)})
+    }, {back:(exit,anchor)=>this.mochi.back(exit,anchor),home:(exit,anchor)=>this.mochi.exitPortal(exit,anchor),window:()=>this.openMochiWindow()})
     if (!this.drawer.root.contains(this.portal.root)) this.drawer.root.replaceChildren(this.portal.root)
     this.portal.refresh()
+  }
+
+  private openMochiWindow(): void {
+    try {
+      // The inspected host geometry API extends the older published typings.
+      this.mochiWindow ||= createMochiWindow(this.ctx.ui as unknown as MochiWindowUI, this.mochiSession,
+        () => ({enabled:this.preferences.notifyMessages,previews:this.preferences.notificationPreviews}))
+      this.mochiWindow.open()
+    } catch {
+      this.showError('Mochi window is unavailable on this host. Use the Pocket portal.')
+      this.openMochiPortal()
+    }
   }
 
   private openMochiPortal(): void {
