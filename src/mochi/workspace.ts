@@ -10,6 +10,7 @@ export interface MochiWorkspaceOptions {
   session?: MochiSession
   onVisibilityChange?: (visible: boolean) => void
   onDispose?: () => void
+  presentation?: 'messenger'
 }
 export interface MochiWorkspace {
   readonly apiVersion: 1
@@ -28,6 +29,7 @@ export function createMochiWorkspace(options: MochiWorkspaceOptions): MochiWorks
   session.assertActive()
   const view = session.view, frame = document.createElement('section')
   frame.className = 'mochi-workspace'; frame.setAttribute('aria-label', 'Mochi workspace'); frame.hidden = true
+  if(options.presentation)frame.dataset.presentation=options.presentation
   const style = document.createElement('style')
   style.textContent = '.mochi-workspace{display:flex;flex-direction:column;width:100%;height:100%;min-width:0;min-height:0;overflow:hidden;box-sizing:border-box}.mochi-workspace[hidden]{display:none!important}.mochi-workspace>.mochi-view{min-height:0}'
   frame.append(style); options.root.append(frame)
@@ -41,11 +43,24 @@ export function createMochiWorkspace(options: MochiWorkspaceOptions): MochiWorks
     const focused = frame.contains(document.activeElement) ? document.activeElement as HTMLInputElement | HTMLTextAreaElement : null
     const label = focused?.getAttribute('aria-label')
     const selection = focused && ['TEXTAREA', 'INPUT'].includes(focused.tagName) ? [focused.selectionStart, focused.selectionEnd] : null
-    const node = view.render(); node.classList.add('lumiphone-app-view')
+    const oldThread=frame.querySelector<HTMLElement>('.mochi-thread'),oldList=frame.querySelector<HTMLElement>('.mochi-desktop-rooms')
+    const scroll=oldThread?{room:oldThread.dataset.roomId,first:oldThread.dataset.firstMessageId,top:oldThread.scrollTop,height:oldThread.scrollHeight,bottom:oldThread.scrollHeight-oldThread.clientHeight-oldThread.scrollTop<72}:undefined
+    const listScroll=oldList?.scrollTop||0
+    const node = options.presentation==='messenger'?view.renderDesktop():view.render(); node.classList.add('lumiphone-app-view')
     const old = frame.querySelector(':scope > .mochi-view')
     if (old) old.replaceWith(node); else frame.append(node)
+    if(options.presentation==='messenger'){
+      const thread=node.querySelector<HTMLElement>('.mochi-thread'),list=node.querySelector<HTMLElement>('.mochi-desktop-rooms')
+      if(list)list.scrollTop=listScroll
+      if(thread)thread.scrollTop=!scroll||scroll.room!==thread.dataset.roomId||scroll.bottom?thread.scrollHeight:scroll.top+(scroll.first!==thread.dataset.firstMessageId?thread.scrollHeight-scroll.height:0)
+    }
     if (label) {
-      const replacement = Array.from(node.querySelectorAll<HTMLInputElement>('[aria-label]')).find(n => n.tagName === focused!.tagName && n.getAttribute('aria-label') === label)
+      let replacement = Array.from(node.querySelectorAll<HTMLInputElement>('[aria-label]')).find(n => n.tagName === focused!.tagName && n.getAttribute('aria-label') === label)
+      if(options.presentation==='messenger'){
+        if(label.startsWith('Open conversation:'))replacement=node.querySelector<HTMLInputElement>('[aria-label="Message"]')||replacement
+        else if(label==='Back to conversations')replacement=node.querySelector<HTMLInputElement>('.mochi-desktop-room')||node.querySelector<HTMLInputElement>('.mochi-desktop-list [aria-label="New room"]')||replacement
+        if(replacement&&typeof replacement.checkVisibility==='function'&&!replacement.checkVisibility({visibilityProperty:true}))replacement=Array.from(node.querySelectorAll<HTMLInputElement>('.mochi-desktop-main input,.mochi-desktop-main textarea,.mochi-desktop-main button')).find(candidate=>!candidate.closest('[hidden]')&&candidate.checkVisibility({visibilityProperty:true}))
+      }
       replacement?.focus({preventScroll:true})
       if (replacement && selection?.[0] != null && selection[1] != null) replacement.setSelectionRange(selection[0], selection[1])
     }

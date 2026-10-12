@@ -37,7 +37,7 @@ export function createMochiWindow(ui: MochiWindowUI, session: MochiSession,
     const limit = bounds(), width = Math.min(limit.width,Math.max(Math.min(320,limit.width),rect.width)), height = Math.min(limit.height,Math.max(Math.min(420,limit.height),rect.height))
     return {width,height,x:Math.max(8,Math.min(rect.x,limit.width+8-width)),y:Math.max(8,Math.min(rect.y,limit.height+8-height))}
   }
-  let rect = clamp({x:64,y:64,width:560,height:720})
+  let rect = clamp({x:64,y:64,width:840,height:720})
   const options = {width:rect.width,height:rect.height,initialPosition:{x:rect.x,y:rect.y},chromeless:true,snapToEdge:false,resizable:false,persistGeometry:false,touchScrollMode:'native' as const,tooltip:'Mochi'}
   const widget: SpindleFloatWidgetHandle = ui.createFloatWidget(options)
   let disposed = false, resizeCleanup: (()=>void)|undefined, dragCleanup: (()=>void)|undefined
@@ -67,7 +67,7 @@ export function createMochiWindow(ui: MochiWindowUI, session: MochiSession,
     if(typeof disposeResize!=='function')throw new Error('Unsupported resize-controller lifecycle. Use the Pocket portal.')
     resizeCleanup=disposeResize
     dragCleanup=widget.onDragEnd(position=>{rect={...rect,...position}})
-    workspace=createMochiWorkspace({root:body,session,notificationPolicy,
+    workspace=createMochiWorkspace({root:body,session,notificationPolicy,presentation:'messenger',
       onVisibilityChange:visible=>{if(!disposed)widget.setVisible(visible)},onDispose:cleanup})
     close.addEventListener('click',()=>workspace.close())
     grip.addEventListener('keydown',event=>{

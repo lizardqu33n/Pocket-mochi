@@ -27,9 +27,11 @@ function portrait(name: string, url = ''): HTMLSpanElement {
 }
 const stateAccountLabel=(id?:string)=>id?'Account settings':'Profiles and account settings'
 import { defaultMochiSettings, type MochiMessage, type MochiNotification, type MochiRoom, type MochiSettings, type MochiState } from './types.js'
+import { MOCHI_DESKTOP_STYLES } from './desktop-styles.js'
 
 export class MochiView {
   private destroyed = false
+  private desktopHistory = new Map<string, number>()
   private profiles = new MochiProfiles()
   private profilesOpen = false
   private pickerOpen = false
@@ -59,6 +61,7 @@ export class MochiView {
     this.leave();this.resetScope();this.phone=phone;this.pickerOpen=true;this.startupOpen=true;this.profilesOpen=false;this.profiles.state=null;this.dispatch('mochi:accounts')
   }
   private resetScope():void{
+    this.desktopHistory.clear()
     this.retiredSchedulingSessions.clear(); this.schedulingTime.clear(); this.schedulingRoot = undefined
     this.notificationsChanged([],new Set(this.state?.rooms.map(r=>r.id)||[]));this.state=null;this.activeAccountId=undefined;this.roomId='';this.creating=false;this.editing=false;this.draft=null;this.settingsDraft=null;this.notificationsOpen=false;this.busy=false;clearTimeout(this.timeout);this.request='';this.selectionVersion++;this.notificationRevisions.clear();this.seenNotifications.clear();this.acknowledged.clear();this.acknowledgementRequests.clear();this.ownGenerations.clear()
   }
@@ -330,7 +333,49 @@ export class MochiView {
     this.notificationsChanged(notices, accepted)
     return notices
   }
-  render(surface: 'all' | 'choices' | 'chat' = 'all', configure: () => void = () => {}): HTMLDivElement {
+  renderDesktop(): HTMLDivElement {
+    const page=el('div','mochi-view mochi-desktop')
+    page.dataset.mode=this.pickerOpen||this.profilesOpen||!this.state?'account':this.creating||this.editing||this.notificationsOpen?'detail':this.roomId?'chat':'list'
+    const sidebar=el('nav','mochi-desktop-list');sidebar.setAttribute('aria-label','Conversations')
+    const heading=el('div','mochi-desktop-list-head');heading.append(el('h3','','Conversations'))
+    const account=this.profiles.state?.accounts.find(a=>a.id===this.state?.accountId)
+    const identity=el('div','mochi-desktop-account',account?.displayName||'Legacy chats');identity.title=identity.textContent||'';heading.append(identity)
+    if(this.state)heading.append(this.inboxControls())
+    const rooms=el('div','mochi-desktop-rooms');const unread=new Map<string,number>()
+    for(const notice of this.state?.notifications||[])if(!notice.read)unread.set(notice.roomId,(unread.get(notice.roomId)||0)+1)
+    for(const room of this.state?.rooms||[]){
+      const row=button('','mochi-desktop-room');row.setAttribute('aria-label',`Open conversation: ${room.title}`)
+      if(room.id===this.roomId)row.setAttribute('aria-current','true')
+      const avatars=el('div','mochi-room-avatars')
+      for(const id of room.characterIds.slice(0,3)){const c=this.state?.characters.find(c=>c.id===id);avatars.append(portrait(room.settings?.characterNames[id]||c?.name||'?',c?.avatarUrl))}
+      const copy=el('div','mochi-desktop-room-copy'),title=el('strong','',room.title);title.title=room.title
+      const last=room.messages.at(-1),preview=last?.content?`${last.name}: ${last.content.slice(0,160)}`:'Start a conversation'
+      copy.append(title,el('small','',preview.slice(0,180)));row.append(avatars,copy)
+      const count=unread.get(room.id)||0
+      if(count){const badge=el('span','mochi-desktop-unread',String(count));badge.setAttribute('aria-label',`${count} unread notifications`);row.append(badge)}
+      row.onclick=()=>this.exitPortal(()=>this.openRoom(room.id),row)
+      rooms.append(row)
+    }
+    if(this.state&&!this.state.rooms.length)rooms.append(el('p','mochi-muted','No conversations yet. Create a room to get started.'))
+    sidebar.append(heading,rooms)
+    const main=el('section','mochi-desktop-main');main.setAttribute('aria-label','Conversation and settings')
+    const back=el('div','mochi-desktop-back'),backButton=button('← Conversations');backButton.setAttribute('aria-label','Back to conversations')
+    back.hidden=this.pickerOpen||!this.state
+    backButton.onclick=()=>this.exitPortal(()=>{this.notificationsOpen=false;this.select('');this.redraw()},backButton);back.append(backButton)
+    main.append(back,this.render('desktop'))
+    const style=el('style');style.textContent=MOCHI_DESKTOP_STYLES;page.append(sidebar,main,style)
+    return page
+  }
+  private inboxControls(): HTMLElement {
+    const controls=el('div','mochi-inbox-actions')
+    const change=action('Switch Mochi account','people');change.onclick=()=>this.exitPortal(()=>this.showPicker(),change);controls.append(change)
+    const profiles=action(stateAccountLabel(this.state?.accountId),'people');profiles.disabled=this.busy
+    profiles.onclick=()=>this.exitPortal(()=>{this.leave();this.profilesOpen=true;const current=this.profiles.state?.accounts.find(a=>a.id===this.state?.accountId);if(current)this.profiles.start(current);else this.profiles.draft=null;this.dispatch('mochi:accounts')},profiles);controls.append(profiles)
+    const create=action('New room','plus');create.disabled=this.busy;create.onclick=()=>this.exitPortal(()=>{this.creating=true;this.draft=null;this.refreshChoices();this.redraw()},create);controls.append(create)
+    if(this.notificationPolicy().enabled){const notices=action('Mochi notifications','notifications',true),unread=this.state?.notifications?.filter(n=>!n.read).length||0;notices.title=`Mochi notifications · ${unread} unread`;notices.setAttribute('aria-description',`${unread} unread notifications`);notices.onclick=()=>this.exitPortal(()=>{this.leave();this.notificationsOpen=!this.notificationsOpen;this.redraw()},notices);controls.append(notices)}
+    return controls
+  }
+  render(surface: 'all' | 'choices' | 'chat' | 'desktop' = 'all', configure: () => void = () => {}): HTMLDivElement {
     if (this.destroyed) return el('div', 'mochi-view')
     // Refresh only status attributes/text between renders, preserving composer focus and drafts.
     const page = el('div', 'mochi-view')
@@ -344,7 +389,7 @@ export class MochiView {
     wordmark.innerHTML = '<svg viewBox="0 0 88 32" aria-hidden="true" focusable="false" style="width:88px;height:32px;display:block"><text x="0" y="26" fill="currentColor" font-family="Inter,ui-sans-serif,system-ui,sans-serif" font-size="27" font-weight="700" letter-spacing="-1">Moch</text><path d="M76 16v10" stroke="currentColor" stroke-width="4"/><path d="M76 12c-2-2-6-4-6-7a3.3 3.3 0 0 1 6-2 3.3 3.3 0 0 1 6 2c0 3-4 5-6 7Z" fill="var(--mochi-accent,currentColor)"/></svg>'
     brand.append(wordmark); header.append(brand)
     const headerActions = el('div', 'mochi-actions')
-    if (surface !== 'chat' && this.notificationPolicy().enabled && !this.pickerOpen && !this.profilesOpen) {
+    if (surface !== 'chat' && surface !== 'desktop' && this.notificationPolicy().enabled && !this.pickerOpen && !this.profilesOpen) {
       const bell = action('Mochi notifications', 'notifications', true); const unread = this.state?.notifications?.filter(n => !n.read).length || 0; bell.dataset.unread = String(unread > 0); bell.title = `Mochi notifications · ${unread} unread`; if (unread) bell.append(el('span', 'mochi-unread-count', String(unread)))
       bell.onclick = () => { this.leave(); this.notificationsOpen = !this.notificationsOpen; this.redraw(); if (!this.state) this.load() }; headerActions.append(bell)
       bell.setAttribute('aria-description', `${unread} unread notifications`)
@@ -391,10 +436,12 @@ export class MochiView {
       controls.append(menu); roomHeader.append(info, controls); page.append(roomHeader)
       if (surface === 'chat') roomHeader.classList.add('mochi-chat-heading')
       else headerActions.prepend(inbox)
-      page.append(this.thread(room), this.composer(room))
+      if(surface==='desktop')page.dataset.conversation='true'
+      page.append(this.thread(room,surface==='desktop'), this.composer(room))
       return page
     }
     if (this.roomId && !room) page.append(el('p', 'mochi-error', 'This room is unavailable. Refresh or select another room.'))
+    if(surface==='desktop'){page.append(el('p','mochi-card',this.state.rooms.length?'Select a conversation to start messaging.':'Create your first conversation from the list.'));return page}
     page.append(el('p', 'mochi-muted', 'Your independent character rooms.'))
     const inboxActions=el('div','mochi-inbox-actions');page.append(inboxActions)
     const change=action('Switch Mochi account','people');change.onclick=()=>this.showPicker();inboxActions.append(change)
@@ -538,12 +585,17 @@ export class MochiView {
     assign.onclick=()=>this.dispatch('mochi:room_assign',{roomId:room.id,revision:room.revision,associationRevision:room.associationRevision||0,targetAccountId:select.value,confirmed:confirm.checked,preservePersona:confirm.checked})
     section.append(select,label,assign);return section
   }
-  private thread(room: MochiRoom): HTMLDivElement {
+  private thread(room: MochiRoom, desktop = false): HTMLDivElement {
     const thread = el('div', 'mochi-thread'); thread.setAttribute('role', 'log'); thread.setAttribute('aria-label', 'Room messages')
     thread.dataset.pocketThread = 'mochi'
-    globalThis.requestAnimationFrame?.(() => { thread.scrollTop = thread.scrollHeight })
+    thread.dataset.roomId=room.id
+    if(desktop)thread.tabIndex=0
+    else globalThis.requestAnimationFrame?.(() => { thread.scrollTop = thread.scrollHeight })
+    const limit=this.desktopHistory.get(room.id)||100
+    const visible=desktop?room.messages.slice(-limit):room.messages
+    if(desktop){thread.dataset.firstMessageId=visible[0]?.id||'';if(room.messages.length>limit){const earlier=button('Show earlier messages','lp-button');earlier.onclick=()=>{this.desktopHistory.set(room.id,limit+100);this.redraw()};thread.append(earlier)}}
     let previous: MochiMessage | undefined
-    for (const raw of room.messages) {
+    for (const raw of visible) {
       const message = raw as MochiMessage
       const row = el('div', 'mochi-message'); row.dataset.role = message.role
       row.dataset.messageId = message.id
