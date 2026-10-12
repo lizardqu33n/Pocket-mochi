@@ -1,6 +1,7 @@
 import { button, el, requestId } from '../frontend/shared.js'
 import { POCKET_ICONS } from '../frontend/components/icons.js'
 import { MOCHI_STYLES } from './styles.js'
+import { mochiModelPicker, type MochiModelChoices } from './models.js'
 import { showPocketSheet } from '../frontend/components/ui.js'
 import { notificationBody, type MochiNotificationPolicy } from './notifications.js'
 import { defaultPresence, STATUSES, statusFor } from './presence.js'
@@ -87,6 +88,19 @@ export class MochiView {
   private pendingSends = new Map<string, { roomId: string; content: string }>()
   private selectionVersion = 0
   private requestVersion = 0
+  private modelControllers = new Set<AbortController>()
+  private modelChoices = new Map<string,MochiModelChoices>()
+  private choicesRequest = ''
+  private choicesVersion = 0
+  private choicesTimeout?: ReturnType<typeof setTimeout>
+  private refreshChoices(): void {
+    this.choicesRequest=requestId('mochi_choices');this.choicesVersion=this.selectionVersion
+    clearTimeout(this.choicesTimeout)
+    this.choicesTimeout=setTimeout(()=>{this.choicesRequest=''},30000)
+    this.send({type:'mochi:choices',requestId:this.choicesRequest,accountId:this.state?.accountId||this.activeAccountId})
+  }
+  private settingsSections = new Set<string>()
+  private formBaseline = ''
   private settingsDraft: MochiSettings | null = null
   private draftRevision = 0
   private timeout: ReturnType<typeof setTimeout> | undefined
@@ -97,6 +111,37 @@ export class MochiView {
     private notificationPolicy: () => MochiNotificationPolicy = () => ({ enabled: true, previews: true, visible: true }),
     private notify: (n: MochiNotification) => void = () => {},
     private notificationsChanged: (notices: MochiNotification[], rooms: Set<string>) => void = () => {}) {}
+  hasUnsavedChanges(): boolean {
+    if (this.profilesOpen) return this.profiles.hasUnsavedChanges()
+    return !!(this.creating || this.editing) && !!this.draft && JSON.stringify([this.draft,this.settingsDraft]) !== this.formBaseline
+  }
+  private confirmNavigation(next: () => void, anchor: HTMLElement): void {
+    if (!this.hasUnsavedChanges()) { next(); return }
+    const content=el('div','mochi-action-panel')
+    content.append(el('p','','You have unsaved changes. Discard them and leave this screen?'))
+    const keep=action('Keep editing','edit'),discard=action('Discard changes','back')
+    content.append(keep,discard)
+    const sheet=this.sheet(anchor,'Unsaved changes',content)
+    content.closest('dialog')?.classList.add('mochi-unsaved-sheet')
+    keep.onclick=()=>sheet?.dismiss()
+    discard.onclick=()=>{sheet?.dismiss();next()}
+  }
+  exitPortal(next: () => void, anchor: HTMLElement): void {
+    this.confirmNavigation(()=>{this.creating=false;this.editing=false;this.draft=null;this.settingsDraft=null;this.profiles.draft=null;this.profilesOpen=false;next()},anchor)
+  }
+  back(exit: () => void, anchor: HTMLElement): void {
+    if (this.busy) return
+    const next=()=>{
+      if(this.profilesOpen){if(this.profiles.draft)this.profiles.draft=null;else this.profilesOpen=false}
+      else if(this.creating||this.editing){this.creating=false;this.editing=false;this.draft=null;this.settingsDraft=null}
+      else if(this.notificationsOpen)this.notificationsOpen=false
+      else if(this.pickerOpen){exit();return}
+      else if(this.roomId)this.select('')
+      else {this.showPicker();return}
+      this.redraw()
+    }
+    this.confirmNavigation(next,anchor)
+  }
   load(): void {
     if(!this.presenceTimer) {this.presenceTimer=setInterval(()=>this.refreshPresence(),30000);(this.presenceTimer as unknown as {unref?:()=>void}).unref?.()}
     this.dispatch('mochi:list')
@@ -116,7 +161,7 @@ export class MochiView {
     const generationRequestId = this.ownGenerations.get(this.roomId)
     if (generationRequestId) this.send({ type: 'mochi:cancel', accountId: this.state?.accountId, roomId: this.roomId, generationRequestId })
   }
-  destroy(): void { try { this.leave() } finally { clearTimeout(this.timeout);clearInterval(this.presenceTimer) } }
+  destroy(): void { try { this.leave() } finally { clearTimeout(this.timeout);clearTimeout(this.choicesTimeout);clearInterval(this.presenceTimer);for(const controller of this.modelControllers)controller.abort();this.modelControllers.clear() } }
   private dispatch(type: string, values: Record<string, unknown> = {}): void {
     if (this.busy) return
     this.request = requestId('mochi')
@@ -135,6 +180,13 @@ export class MochiView {
     this.redraw()
   }
   receive(payload: any): boolean {
+    if(payload?.requestId===this.choicesRequest&&this.choicesRequest&&(payload.type==='mochi:choices'||payload.type==='mochi:error')){
+      clearTimeout(this.choicesTimeout);this.choicesRequest=''
+      if(this.choicesVersion!==this.selectionVersion)return true
+      if(payload.type==='mochi:error')this.error=String(payload.message)
+      else {if(this.state){this.state.personas=payload.personas;this.state.characters=payload.characters;this.state.connections=payload.connections}if(this.profiles.state)this.profiles.state.personas=payload.personas}
+      this.redraw();return true
+    }
     if(payload?.type==='mochi:room_assigned'){
       const previous=this.associations.get(payload.roomId)
       if(previous&&previous.revision>=payload.associationRevision)return true
@@ -261,36 +313,39 @@ export class MochiView {
     this.notificationsChanged(notices, accepted)
     return notices
   }
-  render(): HTMLDivElement {
+  render(surface: 'all' | 'choices' | 'chat' = 'all', configure: () => void = () => {}): HTMLDivElement {
     // Refresh only status attributes/text between renders, preserving composer focus and drafts.
     const page = el('div', 'mochi-view')
-    this.presenceRoot=page
+    page.dataset.surface = surface
+    if (surface !== 'choices') this.presenceRoot=page
     const style = el('style')
     style.textContent = MOCHI_STYLES
     page.append(style)
     const header = el('header'); const brand = el('div', 'mochi-brand')
-    const wordmark = el('h2'); wordmark.setAttribute('aria-label', 'Mochi')
-    const letters = el('span', '', 'Moch'), lastLetter = el('span', 'mochi-wordmark-i', 'ı')
-    letters.setAttribute('aria-hidden', 'true'); lastLetter.setAttribute('aria-hidden', 'true'); wordmark.append(letters, lastLetter); brand.append(wordmark)
-    // Original static illustration, drawn here without any external source asset.
-    const mascot = el('span', 'mochi-mascot'); mascot.setAttribute('aria-hidden', 'true'); mascot.innerHTML = '<svg viewBox="0 0 64 48" fill="none"><path d="M5 33C5 23 17 7 32 7s27 16 27 26c0 8-12 11-27 11S5 41 5 33Z" fill="#f8e4ef" stroke="#d9abc4" stroke-width="2"/><ellipse cx="17" cy="32" rx="5" ry="3" fill="#eea6c1"/><ellipse cx="47" cy="32" rx="5" ry="3" fill="#eea6c1"/><circle cx="24" cy="27" r="2.5" fill="#443242"/><circle cx="40" cy="27" r="2.5" fill="#443242"/><path d="M28 30q2 4 4 0q2 4 4 0" stroke="#443242" stroke-width="2" stroke-linecap="round"/></svg>'; brand.append(mascot); header.append(brand)
+    const wordmark = el('h2', 'mochi-wordmark'); wordmark.setAttribute('aria-label', 'Mochi')
+    wordmark.innerHTML = '<svg viewBox="0 0 88 32" aria-hidden="true" focusable="false" style="width:88px;height:32px;display:block"><text x="0" y="26" fill="currentColor" font-family="Inter,ui-sans-serif,system-ui,sans-serif" font-size="27" font-weight="700" letter-spacing="-1">Moch</text><path d="M76 16v10" stroke="currentColor" stroke-width="4"/><path d="M76 12c-2-2-6-4-6-7a3.3 3.3 0 0 1 6-2 3.3 3.3 0 0 1 6 2c0 3-4 5-6 7Z" fill="var(--mochi-accent,currentColor)"/></svg>'
+    brand.append(wordmark); header.append(brand)
     const headerActions = el('div', 'mochi-actions')
-    if (this.notificationPolicy().enabled && !this.pickerOpen && !this.profilesOpen) {
+    if (surface !== 'chat' && this.notificationPolicy().enabled && !this.pickerOpen && !this.profilesOpen) {
       const bell = action('Mochi notifications', 'notifications', true); const unread = this.state?.notifications?.filter(n => !n.read).length || 0; bell.dataset.unread = String(unread > 0); bell.title = `Mochi notifications · ${unread} unread`; if (unread) bell.append(el('span', 'mochi-unread-count', String(unread)))
       bell.onclick = () => { this.leave(); this.notificationsOpen = !this.notificationsOpen; this.redraw(); if (!this.state) this.load() }; headerActions.append(bell)
       bell.setAttribute('aria-description', `${unread} unread notifications`)
     }
-    header.append(headerActions, mascot); page.append(header)
+    header.append(headerActions); page.append(header)
+    if (surface === 'chat' && (!this.state?.rooms.some(room => room.id === this.roomId) || this.pickerOpen || this.profilesOpen)) {
+      page.append(el('p', 'mochi-muted', 'Choose a conversation in the Pocket portal.'))
+      const choose = action('Choose conversation', 'back'); choose.onclick = configure; page.append(choose); return page
+    }
     if (this.error) { const error = el('p', 'mochi-error', this.error); error.setAttribute('role', 'alert'); page.append(error) }
-    if(this.profilesOpen){page.append(this.profiles.render(this.busy,(type,input)=>this.dispatch(type,input),()=>this.redraw(),()=>{this.profilesOpen=false;this.redraw()}));return page}
-    if(this.pickerOpen){page.append(accountPicker(this.profiles.state,this.busy,id=>this.chooseAccount(id),()=>{this.profiles.start();this.profilesOpen=true;this.redraw()},()=>{this.leave();this.resetScope();this.pickerOpen=false;this.load()},preference=>this.dispatch('mochi:account_startup',{preference,revision:this.profiles.state?.revision}),()=>{this.profilesOpen=true;this.profiles.draft=null;this.redraw()},()=>this.dispatch('mochi:accounts')));return page}
+    if(this.profilesOpen){page.append(this.profiles.render(this.busy,(type,input)=>this.dispatch(type,input),()=>this.redraw(),()=>{this.profilesOpen=false;this.redraw()},(next,anchor)=>this.confirmNavigation(next,anchor),()=>this.refreshChoices()));return page}
+    if(this.pickerOpen){page.append(accountPicker(this.profiles.state,this.busy,id=>this.chooseAccount(id),()=>{this.profiles.start();this.profilesOpen=true;this.refreshChoices();this.redraw()},()=>{this.leave();this.resetScope();this.pickerOpen=false;this.load()},preference=>this.dispatch('mochi:account_startup',{preference,revision:this.profiles.state?.revision}),()=>{this.profilesOpen=true;this.profiles.draft=null;this.redraw()},()=>this.dispatch('mochi:accounts')));return page}
     if (!this.state) return page
     if (this.feedback) { const status = el('p', 'mochi-muted', this.feedback); status.setAttribute('role', 'status'); page.append(status) }
     for (const warning of this.state.warnings) page.append(el('p', 'mochi-error', warning))
-    if (this.notificationsOpen && this.notificationPolicy().enabled) { page.append(this.notificationList()); return page }
+    if (surface !== 'chat' && this.notificationsOpen && this.notificationPolicy().enabled) { page.append(this.notificationList()); return page }
     const room = this.state.rooms.find(room => room.id === this.roomId)
-    if (this.creating || this.editing) { page.append(this.form(this.editing ? room : undefined)); return page }
-    if (room) {
+    if (surface !== 'chat' && (this.creating || this.editing)) { page.append(this.form(this.editing ? room : undefined)); return page }
+    if (room && surface !== 'choices') {
       const roomHeader = el('div', 'mochi-room-header')
       const info = el('div', 'mochi-room-info'), selector = el('select', 'mochi-room-selector'); selector.setAttribute('aria-label', 'Select room')
       for (const r of this.state.rooms) { const option = el('option', '', r.title); option.value = r.id; selector.append(option) }; selector.value = room.id
@@ -306,19 +361,28 @@ export class MochiView {
       info.append(roomSelector, roomMeta)
       const controls = el('div', 'mochi-actions')
       const inbox = action('Room inbox', 'back', true); inbox.onclick = () => { this.select(''); this.navigate() }
-      const edit = action('Room settings', 'settings', true); edit.onclick = () => { this.leave(); this.editing = true; this.draft = null; this.settingsDraft = null; this.redraw() }
-      const participants = action('Room participants', 'people', true); participants.onclick = () => { const content = el('div', 'mochi-participants'); for (const id of room.characterIds) { const c = this.state?.characters.find(c => c.id === id); const name = room.settings?.characterNames[id] || c?.name || 'Unavailable character'; const row = el('div', 'mochi-member'); row.append(portrait(name, c?.avatarUrl), el('span', '', name)); content.append(row) }; this.sheet(participants, 'Room participants', content) }
-      participants.title = 'Room participants'; controls.append(participants, edit); roomHeader.append(info, controls); page.append(roomHeader)
-      headerActions.prepend(inbox)
+      const openSettings = () => { this.leave(); this.editing = true; this.draft = null; this.settingsDraft = null; if (surface === 'chat') configure(); this.refreshChoices(); this.redraw() }
+      const menu=el('details','lp-conversation-menu'), more=el('summary','lp-nav-action','⋯')
+      more.setAttribute('aria-label','Room options')
+      const menuSheet=el('div','lp-conversation-menu-sheet')
+      const menuAction=(label:string,callback:()=>void)=>{const item=button(label,'lp-conversation-menu-action');item.setAttribute('aria-label',label);item.addEventListener('click',()=>{menu.open=false;callback()});return item}
+      menuSheet.append(menuAction('Participants',()=>{const members=el('div','mochi-participants');for(const id of room.characterIds){const c=this.state?.characters.find(c=>c.id===id),name=room.settings?.characterNames[id]||c?.name||'Unavailable character';const row=el('div','mochi-member');row.append(portrait(name,c?.avatarUrl),el('span','',name));members.append(row)}this.sheet(roomHeader,'Room participants',members);members.closest('dialog')?.addEventListener('close',()=>{if(more.isConnected)more.focus()},{once:true})}),menuAction('Settings',openSettings))
+      menu.append(more,menuSheet)
+      menu.addEventListener('keydown',event=>{if(event.key==='Escape'){menu.open=false;more.focus();event.stopPropagation()}})
+      menu.addEventListener('focusout',event=>{if(event.relatedTarget&&!menu.contains(event.relatedTarget as Node))menu.open=false})
+      controls.append(menu); roomHeader.append(info, controls); page.append(roomHeader)
+      if (surface === 'chat') roomHeader.classList.add('mochi-chat-heading')
+      else headerActions.prepend(inbox)
       page.append(this.thread(room), this.composer(room))
       return page
     }
-    if (this.roomId) page.append(el('p', 'mochi-error', 'This room is unavailable. Refresh or select another room.'))
+    if (this.roomId && !room) page.append(el('p', 'mochi-error', 'This room is unavailable. Refresh or select another room.'))
     page.append(el('p', 'mochi-muted', 'Your independent character rooms.'))
-    const change=action('Switch Mochi account','people');change.onclick=()=>this.showPicker();page.append(change)
-    const profiles=action(stateAccountLabel(this.state.accountId),'people');profiles.disabled=this.busy;profiles.onclick=()=>{this.leave();this.profilesOpen=true;const current=this.profiles.state?.accounts.find(a=>a.id===this.state?.accountId);if(current)this.profiles.start(current);else this.profiles.draft=null;this.dispatch('mochi:accounts')};page.append(profiles)
+    const inboxActions=el('div','mochi-inbox-actions');page.append(inboxActions)
+    const change=action('Switch Mochi account','people');change.onclick=()=>this.showPicker();inboxActions.append(change)
+    const profiles=action(stateAccountLabel(this.state.accountId),'people');profiles.disabled=this.busy;profiles.onclick=()=>{this.leave();this.profilesOpen=true;const current=this.profiles.state?.accounts.find(a=>a.id===this.state?.accountId);if(current)this.profiles.start(current);else this.profiles.draft=null;this.dispatch('mochi:accounts')};inboxActions.append(profiles)
     const create = action('New room', 'plus'); create.classList.add('mochi-primary'); create.disabled = this.busy
-    create.onclick = () => { this.creating = true; this.draft = null; this.redraw() }; page.append(create)
+    create.onclick = () => { this.creating = true; this.draft = null; this.refreshChoices(); this.redraw() }; inboxActions.append(create)
     if (!this.state.rooms.length) page.append(el('p', 'mochi-card', 'No rooms yet. Choose your characters and the identity you want to use.'))
     for (const room of this.state.rooms) {
       const row = button('', 'mochi-card')
@@ -328,19 +392,25 @@ export class MochiView {
       const last = room.messages.at(-1) as MochiMessage | undefined
       copy.append(el('span', 'mochi-preview', last?.content ? `${last.name}: ${last.content}` : 'Start a conversation'))
       row.append(avatars, copy)
+      if (room.id === this.roomId) row.setAttribute('aria-current', 'true')
       row.onclick = () => this.openRoom(room.id); page.append(row)
     }
     return page
   }
   private form(room?: MochiRoom): HTMLFormElement {
     const state = this.state!
-    if (!this.draft) this.draftRevision = room?.revision || 0
+    const freshDraft = !this.draft
+    if (freshDraft) this.draftRevision = room?.revision || 0
     this.draft ||= { title: room?.title || '', characterIds: [...room?.characterIds || []], persona: room ? 'keep' : 'manual', name: room?.persona.name || 'You', description: room?.persona.description || '' }
     const draft = this.draft
     this.settingsDraft ||= structuredClone(room?.settings || defaultMochiSettings())
     const settings = this.settingsDraft
+    if (freshDraft) this.formBaseline = JSON.stringify([draft,settings])
     const form = el('form', 'mochi-form'); form.append(el('h3', '', room ? 'Room settings' : 'New room'))
-    const field = (label: string, input: HTMLElement) => { input.setAttribute('aria-label', label); const node = el('label', input.tagName === 'INPUT' && (input as HTMLInputElement).type === 'checkbox' ? 'mochi-toggle' : '', label); node.append(input); form.append(node) }
+    let group: HTMLElement = form
+    const section = (title: string, collapsed = false) => { const node=el(collapsed?'details':'fieldset','mochi-settings-section');node.append(el(collapsed?'summary':'legend','',title));if(collapsed){const details=node as HTMLDetailsElement;details.open=this.settingsSections.has(title);details.ontoggle=()=>{if(details.open)this.settingsSections.add(title);else this.settingsSections.delete(title)}}form.append(node);group=node;return node }
+    section('Conversation')
+    const field = (label: string, input: HTMLElement) => { input.setAttribute('aria-label', label); const node = el('label', input.tagName === 'INPUT' && (input as HTMLInputElement).type === 'checkbox' ? 'mochi-toggle' : '', label); node.append(input); group.append(node) }
     const title = el('input'); title.required = true; title.maxLength = 120; title.value = draft.title
     title.oninput = () => { draft.title = title.value }; field('Room name', title)
     const picker = el('div', 'mochi-picker'); picker.setAttribute('role', 'group'); picker.setAttribute('aria-label', 'Room characters')
@@ -351,29 +421,35 @@ export class MochiView {
       choice.onclick = () => { draft.characterIds = draft.characterIds.includes(character.id) ? draft.characterIds.filter(id => id !== character.id) : [...draft.characterIds, character.id]; choice.setAttribute('aria-pressed', String(draft.characterIds.includes(character.id))) }
       picker.append(choice)
     }
-    form.append(el('p', '', 'Choose 1–12 characters'), picker)
+    group.append(el('p', 'mochi-muted', 'Choose 1–12 characters'), picker)
     const persona = el('select')
     const option = (value: string, label: string) => { const o = el('option', '', label); o.value = value; persona.append(o) }
     if (room) option('keep', `Keep saved identity: ${room.persona.name}`)
     option('manual', 'Custom identity')
-    state.personas.forEach((p, i) => option(String(i), `${p.name} (${p.source === 'pocket' ? 'Pocket profile' : 'Lumiverse persona'})`))
+    state.personas.forEach(p => option(p.source+':'+p.sourceId, `${p.name} (${p.source === 'pocket' ? 'Pocket profile' : 'Lumiverse persona'})`))
     persona.value = draft.persona; persona.onchange = () => { draft.persona = persona.value; this.redraw() }
     if(!state.accountId)field('Your identity in this room',persona)
-    else form.append(el('p','mochi-muted',`Saved chat identity: ${room?.persona.name||this.profiles.state?.accounts.find(a=>a.id===state.accountId)?.displayName||'Account profile'}. Profile settings are separate from chat settings.`))
+    else group.append(el('p','mochi-muted',`Saved chat identity: ${room?.persona.name||this.profiles.state?.accounts.find(a=>a.id===state.accountId)?.displayName||'Account profile'}. Profile settings are separate from chat settings.`))
     if (draft.persona === 'manual'&&!state.accountId) {
       const name = el('input'); name.required = true; name.maxLength = 120; name.value = draft.name; name.oninput = () => { draft.name = name.value }; field('Your name', name)
       const description = el('textarea'); description.maxLength = 12000; description.rows = 3; description.value = draft.description; description.oninput = () => { draft.description = description.value }; field('Identity description', description)
     }
     if (room) {
+      section('Connection & replies')
       const connection = el('select')
       const empty = el('option', '', 'Choose connection'); empty.value = ''; connection.append(empty)
       for (const c of state.connections || []) { const o = el('option', '', `${c.name} · ${c.model}`); o.value = c.id; connection.append(o) }
-      connection.value = settings.connectionId; connection.onchange = () => { settings.connectionId = connection.value }; field('Generation connection', connection)
+      if(settings.connectionId&&!state.connections?.some(c=>c.id===settings.connectionId)){const missing=el('option','','Unavailable connection');missing.value=settings.connectionId;connection.append(missing)}
+      connection.value = settings.connectionId; connection.onchange = () => { settings.connectionId = connection.value; delete settings.model; this.redraw() }; field('Generation connection', connection)
+      const refresh=button('Refresh connections & personas','lp-button mochi-secondary-action');refresh.onclick=()=>this.refreshChoices();group.append(refresh)
+      group.append(mochiModelPicker(settings.connectionId,state.connections?.find(c=>c.id===settings.connectionId)?.model||'',settings.model||'',value=>{if(value)settings.model=value;else delete settings.model},this.modelChoices,this.modelControllers))
       const auto = el('input'); auto.type = 'checkbox'; auto.checked = settings.autoReply; auto.onchange = () => { settings.autoReply = auto.checked }; field('Reply automatically after sending', auto)
       const mode=el('select');if(settings.responseMode===undefined){const legacy=el('option','','Existing behavior');legacy.value='';mode.append(legacy)}
       for(const [value,label] of [['natural','Natural group chat'],['instant','Instant replies'],['manual','Manual']] as const){const option=el('option','',label);option.value=value;mode.append(option)}
       mode.value=settings.responseMode||'';mode.onchange=()=>{if(mode.value)settings.responseMode=mode.value as MochiSettings['responseMode'];else delete settings.responseMode};field('Response mode',mode)
       auto.disabled=!!settings.responseMode
+      section('Background messaging',true)
+      group.append(el('p','mochi-muted','These controls apply immediately. Scheduled and idle messages can generate replies while you are away.'))
       const accountBackground = el('input'); accountBackground.type = 'checkbox'; accountBackground.checked = !!state.backgroundEnabled; accountBackground.disabled = this.busy
       const aiBehavior = el('input'); aiBehavior.type='checkbox';aiBehavior.checked=!!settings.aiBehavior;aiBehavior.disabled=this.busy||(!settings.aiBehavior&&(!state.backgroundEnabled||!room.background?.enabled));aiBehavior.onchange=()=>{settings.aiBehavior=aiBehavior.checked};field('Allow AI delivery timing and status suggestions',aiBehavior)
       accountBackground.onchange = () => this.dispatch('mochi:background_account', { enabled: accountBackground.checked }); field('Allow server-side background messaging for my account', accountBackground)
@@ -384,14 +460,17 @@ export class MochiView {
         const due = el('input'); due.type = 'datetime-local'; due.value = this.schedulingTime.get(room.id) || ''; due.oninput = () => this.schedulingTime.set(room.id, due.value); field('Scheduled message time', due)
         const schedule = action('Schedule character message', 'plus'); schedule.type = 'button'; schedule.disabled = this.busy
         schedule.onclick = () => this.dispatch('mochi:schedule', { roomId: room.id, revision: room.revision, occurrenceId: requestId('scheduled'), dueAt: new Date(due.value).getTime(), responder: this.responders.get(room.id) || 'auto' })
-        form.append(schedule)
+        group.append(schedule)
       }
-      this.schedulingRoot = this.scheduleList(room); form.append(this.schedulingRoot)
+      this.schedulingRoot = this.scheduleList(room); group.append(this.schedulingRoot)
+      section('Context & token limits',true)
       for (const [label, key] of [['Total token budget', 'contextTokens'], ['Maximum reply tokens', 'outputTokens']] as const) {
         const input = el('input'); input.type = 'number'; input.value = String(settings[key]); input.oninput = () => { settings[key] = Number(input.value) }; field(label, input)
       }
       const instructions = el('textarea'); instructions.maxLength = 6000; instructions.value = settings.instructions; instructions.oninput = () => { settings.instructions = instructions.value }; field('Room instructions', instructions)
       for (const id of room.characterIds) {
+        section((state.characters.find(c=>c.id===id)?.name||id)+' · presence & room name',true)
+        group.append(el('p','mochi-muted','Presence and schedule changes apply immediately.'))
         const presence = structuredClone(room.background?.presence?.[id] || defaultPresence()), name = state.characters.find(c=>c.id===id)?.name || id
         const setPresence = () => this.dispatch('mochi:presence',{roomId:room.id,revision:room.revision,characterId:id,presence})
         const status = el('select'); for (const s of STATUSES) { const option=el('option','',s==='dnd'?'DND':s[0].toUpperCase()+s.slice(1));option.value=s;status.append(option) }
@@ -400,18 +479,18 @@ export class MochiView {
         for (const [label,key] of [['Away delay (minutes)','awayMs'],['DND delay (minutes)','dndMs']] as const) {const delay=el('input');delay.type='number';delay.min='0';delay.max='1440';delay.value=String(presence[key]/60000);delay.disabled=this.busy;delay.onchange=()=>{presence[key]=Number(delay.value)*60000;setPresence()};field(`${label} for ${name}`,delay)}
         const next=el('select');for(const s of STATUSES){const option=el('option','',s==='dnd'?'DND':s);option.value=s;next.append(option)};field(`Scheduled status for ${name}`,next)
         const when=el('input');when.type='datetime-local';field(`Status change time for ${name}`,when)
-        const plan=action(`Schedule status change for ${name}`,'plus');plan.type='button';plan.disabled=this.busy;plan.onclick=()=>{presence.transitions.push({at:new Date(when.value).getTime(),status:next.value as typeof presence.automatic});setPresence()};form.append(plan)
-        if(presence.transitions.length){const clear=action(`Clear status schedule for ${name}`,'trash');clear.type='button';clear.disabled=this.busy;clear.onclick=()=>{presence.transitions=[];setPresence()};form.append(clear)}
+        const plan=action(`Schedule status change for ${name}`,'plus');plan.type='button';plan.disabled=this.busy;plan.onclick=()=>{presence.transitions.push({at:new Date(when.value).getTime(),status:next.value as typeof presence.automatic});setPresence()};group.append(plan)
+        if(presence.transitions.length){const clear=action(`Clear status schedule for ${name}`,'trash');clear.type='button';clear.disabled=this.busy;clear.onclick=()=>{presence.transitions=[];setPresence()};group.append(clear)}
         const input = el('input'); input.maxLength = 120; input.value = settings.characterNames[id] || ''; input.oninput = () => { settings.characterNames[id] = input.value }; field(`Room name for ${state.characters.find(c => c.id === id)?.name || id}`, input)
       }
     }
-    if(room)form.append(this.assignmentControls(room))
+    if(room){section('Chat ownership',true);group.append(this.assignmentControls(room))}
     const save = action(this.busy ? 'Saving…' : room ? 'Save settings' : 'Create room', room ? 'settings' : 'plus'); save.classList.add('mochi-primary'); save.type = 'submit'; save.disabled = this.busy
-    const cancel = action('Cancel', 'back'); cancel.disabled = this.busy; cancel.onclick = () => { this.creating = false; this.editing = false; this.draft = null; this.redraw() }
+    const cancel = action('Cancel', 'back'); cancel.disabled = this.busy; cancel.onclick = () => this.confirmNavigation(() => { this.creating = false; this.editing = false; this.draft = null; this.settingsDraft = null; this.redraw() },cancel)
     const actions = el('div', 'mochi-actions'); actions.append(save, cancel); form.append(actions)
     form.onsubmit = event => {
       event.preventDefault()
-      const selected = state.accountId ? undefined : draft.persona === 'keep' ? undefined : draft.persona === 'manual' ? { source: 'manual', name: draft.name, description: draft.description } : state.personas[Number(draft.persona)]
+      const selected = state.accountId ? undefined : draft.persona === 'keep' ? undefined : draft.persona === 'manual' ? { source: 'manual', name: draft.name, description: draft.description } : state.personas.find(p=>p.source+':'+p.sourceId===draft.persona)
       this.dispatch(room ? 'mochi:update' : 'mochi:create', { roomId: room?.id, revision: room ? this.draftRevision : undefined, title: draft.title, characterIds: draft.characterIds, persona: selected, ...(room ? { settings } : {}) })
     }
     return form
@@ -495,7 +574,7 @@ export class MochiView {
     edit.onclick = () => {
       const label = el('label', '', 'Message text'), input = el('textarea'); input.value = message.content; input.rows = 5; input.maxLength = 32000; input.required = true; input.setAttribute('aria-label', 'Edit message text'); label.append(input)
       const save = action('Save message', 'edit'); save.onclick = () => { if (!input.value.trim()) { input.focus(); return }; this.dispatch('mochi:message_action', { roomId: room.id, revision, messageId: message.id, action: 'edit', content: input.value }); sheet?.dismiss() }
-      content.replaceChildren(label, el('p', 'mochi-muted', 'Later messages stay unchanged. The previous text is retained in room storage.'), save)
+      content.replaceChildren(label, el('p', 'mochi-muted', 'Later messages stay unchanged. The previous text is retained in room storage.'), save); input.focus()
     }
     const remove = action('Delete message', 'trash'); remove.disabled = this.busy; remove.onclick = () => {
       const confirm = action('Confirm delete', 'trash'); confirm.onclick = () => { this.dispatch('mochi:message_action', { roomId: room.id, revision, messageId: message.id, action: 'delete', confirmed: true }); sheet?.dismiss() }

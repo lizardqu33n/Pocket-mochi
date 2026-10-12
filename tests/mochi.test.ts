@@ -48,6 +48,33 @@ function messagingFixture() {
   }
   return { ...f, requests, create }
 }
+
+test('choice refresh reads current Lumiverse sources without changing room snapshots', async () => {
+  const f=messagingFixture(),room=await f.create(),before=f.writes.length
+  f.personas.set('alice:p1',{id:'p1',name:'Renamed persona',description:'New source text'})
+  f.host.connections!.list=async()=>[{id:'new',name:'New connection',model:'new-model'}]
+  await f.service.handle({type:'mochi:choices',requestId:'refresh'},'alice')
+  const result=f.responses.at(-1)!.payload as any
+  expect(result.type).toBe('mochi:choices')
+  expect(result.requestId).toBe('refresh')
+  expect(result.personas[0].name).toBe('Renamed persona')
+  expect(result.connections[0].id).toBe('new')
+  expect(f.writes.length).toBe(before)
+  expect((await f.service.read('alice',room.id)).persona.name).toBe('Stable Alice')
+})
+
+test('room model override persists and drives both token counting and provider dispatch', async () => {
+  const f=messagingFixture(),models:string[]=[]
+  f.host.tokens!.countMessages=async(_,options)=>{models.push(options.model);return {total_tokens:100}}
+  const room=await f.create({model:'room-specific-model'})
+  expect((await f.service.read('alice',room.id)).settings!.model).toBe('room-specific-model')
+  await f.service.message('alice',{roomId:room.id,revision:room.revision,requestId:'override',content:'Hello'})
+  expect(models).toEqual(['room-specific-model'])
+  expect(f.requests[0].parameters.model).toBe('room-specific-model')
+  expect(f.requests[0].connection_id).toBe('conn1')
+  const saved=await f.service.read('alice',room.id)
+  await expect(f.service.update('alice',{...f.input,roomId:room.id,revision:saved.revision,settings:{...saved.settings,model:42}})).rejects.toThrow('Invalid Mochi field')
+})
 test('notification dismissal and clear-read preserve messages, unread records and account boundaries', async () => {
   const f = messagingFixture(), room = await f.create()
   await f.service.message('alice', { roomId: room.id, revision: room.revision, requestId: 'clear_seed', content: 'Keep history' })

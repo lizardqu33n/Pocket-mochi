@@ -75,7 +75,8 @@ test('close/return and unrelated RP/phone updates preserve selected room, settin
     h.workspace.close(); h.workspace.open(); h.workspace.open()
     expect(h.root.querySelector('[aria-label="Message"]')).toBe(composer)
     expect(composer.value).toBe('Unsent composer draft')
-    h.click('Room settings')
+    h.root.querySelector<HTMLElement>('summary[aria-label="Room options"]')!.click()
+    h.click('Settings');await h.flush()
     const instructions = h.root.querySelector<HTMLTextAreaElement>('[aria-label="Room instructions"]')!
     instructions.value = 'Unsaved room settings'; instructions.dispatchEvent(new h.dom.window.Event('input'))
     const count = h.sent.length

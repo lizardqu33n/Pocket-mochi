@@ -55,8 +55,8 @@ export async function generateMochiReply(host: any, room: MochiRoom, userId: str
   if (!characters.length) throw new Error('No room character is currently eligible.')
   const speaker = responder === 'auto' && characters.length === 1 ? characters[0].id : responder
   if (speaker !== 'auto' && !room.characterIds.includes(speaker)) throw new Error('The selected responder is not in this room.')
-  const messages = await buildMochiPrompt(room, characters, speaker, async messages => (await host.tokens.countMessages(messages, { model: connection.model, userId })).total_tokens, signal, natural)
-  const response = await callPocketProvider(host, { messages, connection_id: settings.connectionId, userId, signal, reasoning: { source: 'off' }, parameters: { max_tokens: settings.outputTokens, temperature: 0.8 } })
+  const messages = await buildMochiPrompt(room, characters, speaker, async messages => (await host.tokens.countMessages(messages, { model: settings.model || connection.model, userId })).total_tokens, signal, natural)
+  const response = await callPocketProvider(host, { messages, connection_id: settings.connectionId, userId, signal, reasoning: { source: 'off' }, parameters: { max_tokens: settings.outputTokens, temperature: 0.8, ...(settings.model ? { model: settings.model } : {}) } })
   let parsed: any
   try { parsed = JSON.parse(String(response.content).trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')) } catch { throw new Error('The model returned invalid message JSON. Try continuing again.') }
   const rows = natural && Array.isArray(parsed?.messages) ? parsed.messages : [parsed]

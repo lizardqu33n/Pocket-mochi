@@ -298,8 +298,8 @@ async function generateMochiReply(host, room, userId, responder, signal, eligibl
   const speaker = responder === "auto" && characters.length === 1 ? characters[0].id : responder;
   if (speaker !== "auto" && !room.characterIds.includes(speaker))
     throw new Error("The selected responder is not in this room.");
-  const messages = await buildMochiPrompt(room, characters, speaker, async (messages) => (await host.tokens.countMessages(messages, { model: connection.model, userId })).total_tokens, signal, natural);
-  const response = await callPocketProvider(host, { messages, connection_id: settings.connectionId, userId, signal, reasoning: { source: "off" }, parameters: { max_tokens: settings.outputTokens, temperature: 0.8 } });
+  const messages = await buildMochiPrompt(room, characters, speaker, async (messages) => (await host.tokens.countMessages(messages, { model: settings.model || connection.model, userId })).total_tokens, signal, natural);
+  const response = await callPocketProvider(host, { messages, connection_id: settings.connectionId, userId, signal, reasoning: { source: "off" }, parameters: { max_tokens: settings.outputTokens, temperature: 0.8, ...settings.model ? { model: settings.model } : {} } });
   let parsed;
   try {
     parsed = JSON.parse(String(response.content).trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, ""));
@@ -742,6 +742,8 @@ class MochiService {
     if (typeof s.autoReply !== "boolean" || !Number.isSafeInteger(s.contextTokens) || s.contextTokens < 1024 || s.contextTokens > 131072 || !Number.isSafeInteger(s.outputTokens) || s.outputTokens < 128 || s.outputTokens > 8192 || s.outputTokens + 256 >= s.contextTokens)
       throw new Error("Invalid message token limits.");
     s.connectionId = s.connectionId ? entityId(s.connectionId) : "";
+    if (s.model !== undefined)
+      s.model = text(s.model, 500);
     s.instructions = text(s.instructions, 6000);
     const names = {};
     if (!s.characterNames || typeof s.characterNames !== "object" || Array.isArray(s.characterNames))
@@ -1716,6 +1718,11 @@ class MochiService {
         else if (payload.type !== "mochi:accounts")
           throw new Error("Unsupported fictional account action.");
         this.host.sendToFrontend({ type: "mochi:accounts", requestId: payload.requestId, createdAccountId, uploadedAvatarId, state: await this.accountsState(userId, payload.phone) }, userId);
+        return;
+      }
+      if (payload.type === "mochi:choices") {
+        const state = await this.state(userId, payload.accountId);
+        this.host.sendToFrontend({ type: "mochi:choices", requestId: payload.requestId, personas: state.personas, characters: state.characters, connections: state.connections }, userId);
         return;
       }
       if (payload.type === "mochi:send") {
@@ -10244,6 +10251,11 @@ async function applyAction(input, userId, source = "model") {
 }
 async function handleFrontend(payload, userId) {
   if (isRecord2(payload) && typeof payload.type === "string" && payload.type.startsWith("mochi:")) {
+    if (payload.type === "mochi:open_shell") {
+      if (userId)
+        await spindle.ui.closeDrawer({ userId });
+      return;
+    }
     if (["mochi:background_account", "mochi:background_room", "mochi:schedule", "mochi:schedule_cancel", "mochi:presence", "mochi:idle"].includes(payload.type)) {
       if (!userId)
         return;

@@ -82,6 +82,7 @@ export class MochiService {
     if (s.responseMode !== undefined && !['natural','instant','manual'].includes(s.responseMode)) throw new Error('Invalid response mode.')
     if (typeof s.autoReply !== 'boolean' || !Number.isSafeInteger(s.contextTokens) || s.contextTokens < 1024 || s.contextTokens > 131072 || !Number.isSafeInteger(s.outputTokens) || s.outputTokens < 128 || s.outputTokens > 8192 || s.outputTokens + 256 >= s.contextTokens) throw new Error('Invalid message token limits.')
     s.connectionId = s.connectionId ? entityId(s.connectionId) : ''
+    if (s.model !== undefined) s.model = text(s.model, 500)
     s.instructions = text(s.instructions, 6000)
     const names: Record<string, string> = {}
     if (!s.characterNames || typeof s.characterNames !== 'object' || Array.isArray(s.characterNames)) throw new Error('Invalid room character names.')
@@ -705,6 +706,11 @@ export class MochiService {
         else if (payload.type === 'mochi:account_avatar_upload') uploadedAvatarId = await this.fictionalAccounts.uploadAvatar(userId, payload.dataUrl)
         else if (payload.type !== 'mochi:accounts') throw new Error('Unsupported fictional account action.')
         this.host.sendToFrontend({ type: 'mochi:accounts', requestId: payload.requestId, createdAccountId, uploadedAvatarId, state: await this.accountsState(userId,payload.phone) }, userId)
+        return
+      }
+      if (payload.type === 'mochi:choices') {
+        const state=await this.state(userId,payload.accountId)
+        this.host.sendToFrontend({type:'mochi:choices',requestId:payload.requestId,personas:state.personas,characters:state.characters,connections:state.connections},userId)
         return
       }
       if (payload.type === 'mochi:send') { await this.message(userId, payload); return }
