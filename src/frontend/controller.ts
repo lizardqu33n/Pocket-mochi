@@ -1,6 +1,7 @@
 import { POCKET_ICONS as ICONS } from './components/icons.js'
 import { GALLERY_PAGE_SIZE } from '../domain/gallery-page.js'
 import { MochiView } from '../mochi/view.js'
+import { getMochiSession, type MochiSession, type MochiSurface } from '../mochi/session.js'
 import { PocketPortal } from './components/portal.js'
 import { showMochiNotification, reconcileMochiNotifications } from '../mochi/notifications.js'
 import type { MochiNotification } from '../mochi/types.js'
@@ -130,10 +131,10 @@ class PocketController {
   private expanded = false
   private currentApp: PhoneApp = 'home'
   private portal?: PocketPortal
-  private mochiStarted = false
+  private mochiSession: MochiSession
+  private mochiSurface!: MochiSurface
   private dismissMochiNotification: (() => void) | undefined
-  private mochi = new MochiView(payload => this.ctx.sendToBackend(payload), () => { this.portal?.refresh(true); if (this.currentApp === 'mochi') this.render(false) }, roomId => { if (roomId) this.openPocket({ app: 'mochi', roomId }); else this.openMochiPortal() },
-    () => ({ enabled: this.preferences.notifyMessages, previews: this.preferences.notificationPreviews, visible: this.expanded && this.currentApp === 'mochi' && !document.hidden }), n => this.showMochiNotification(n), (notices, rooms) => reconcileMochiNotifications(this.shell, notices, rooms))
+  private mochi: MochiView
   private state: PhoneState | null = null
   private preferences: DevicePreferences = defaultPreferences()
   private settingsDraft: DevicePreferences | null = null
@@ -246,6 +247,8 @@ class PocketController {
   private lastComposerReferenceId = ''
   constructor(ctx: SpindleFrontendContext) {
     this.ctx = ctx
+    this.mochiSession = getMochiSession(ctx)
+    this.mochi = this.mochiSession.view
     this.drawer = ctx.ui.registerDrawerTab({
       id: 'lumiphone',
       title: 'Pocket',
@@ -326,7 +329,7 @@ class PocketController {
 
   destroy(): void {
     this.dismissMochiNotification?.()
-    this.mochi.destroy()
+    try { this.mochiSession.destroy() } catch { /* transport may already be inactive; session cleanup still completes */ }
     this.voicePlayer.stop()
     this.setupModalDismiss?.()
     this.destroyed = true
@@ -398,7 +401,21 @@ class PocketController {
       () => {},
     ))
     this.installInlineArtifactObserver()
-    this.cleanups.push(this.ctx.onBackendMessage((payload) => this.onBackend(payload as BackendPayload)))
+    this.cleanups.push(this.mochiSession.subscribeNative(payload => this.onBackend(payload as BackendPayload)))
+    this.mochiSurface = {
+      redraw: () => { if (!this.mochiSession.owns(this.mochiSurface)) return; this.portal?.refresh(true); if (this.currentApp === 'mochi') this.render(false) },
+      navigate: roomId => { if (roomId) this.openPocket({app:'mochi',roomId}); else this.openMochiPortal() },
+      policy: () => ({enabled:this.preferences.notifyMessages,previews:this.preferences.notificationPreviews,visible:this.mochiSession.owns(this.mochiSurface)&&this.expanded&&this.currentApp==='mochi'&&this.mochi.isConversationOpen()&&this.shell.isConnected&&!this.shell.hidden&&!document.hidden&&!!this.screen.querySelector('.mochi-thread')}),
+      notify: (notice, open) => this.showMochiNotification(notice, open),
+      reconcile: (notices, rooms) => reconcileMochiNotifications(this.shell, notices, rooms),
+      dismiss: () => { this.dismissMochiNotification?.(); this.dismissMochiNotification=undefined },
+      ownership: active => {
+        if (active) { this.portal?.refresh(true); if(this.currentApp==='mochi')this.render(false) }
+        else { if(this.currentApp==='mochi'){this.close();this.currentApp='home';this.router.reset({app:'home'})};this.portal?.show('home') }
+      },
+      disposed: () => { for(const node of this.drawer.root.querySelectorAll('.mochi-view'))node.remove();this.screen.querySelector('.mochi-view')?.remove();if(this.currentApp==='mochi'){this.currentApp='home';this.router.reset({app:'home'})} },
+    }
+    this.cleanups.push(this.mochiSession.attach(this.mochiSurface))
     this.cleanups.push(this.ctx.events.on('CHAT_SWITCHED', () => {
       this.setupModalDismiss?.()
       this.settledOperationRequests.clear()
@@ -493,8 +510,8 @@ class PocketController {
   }
 
   private renderDrawerLanding(): void {
-    if (!this.portal) this.portal = new PocketPortal(() => this.renderPhoneChoices(), () => this.mochi.render('choices'), () => {
-      if (!this.mochiStarted) { this.mochiStarted = true; this.mochi.open() }
+    if (!this.portal) this.portal = new PocketPortal(() => this.renderPhoneChoices(), () => this.mochiSession.owns(this.mochiSurface)?this.mochi.render('choices'):el('div'), () => {
+      this.mochiSession.activate(this.mochiSurface)
     }, {back:(exit,anchor)=>this.mochi.back(exit,anchor),home:(exit,anchor)=>this.mochi.exitPortal(exit,anchor)})
     if (!this.drawer.root.contains(this.portal.root)) this.drawer.root.replaceChildren(this.portal.root)
     this.portal.refresh()
@@ -590,6 +607,7 @@ class PocketController {
       this.dockPanel = this.ctx.ui.requestDockPanel(dockOptions)
       this.dockVisibilityCleanup = this.dockPanel.onVisibilityChange((visible) => {
         if (!visible && this.expanded && !calculatePhoneSurface(this.preferences.handsetScale).fullscreen) {
+          if (this.currentApp === 'mochi') this.mochi.leave()
           this.expanded = false
           this.shell.hidden = true
           this.launcher.hidden = false
@@ -988,7 +1006,6 @@ class PocketController {
   }
 
   private onBackend(payload: BackendPayload): void {
-    if (this.mochi.receive(payload)) return
     if (!payload || typeof payload !== 'object' || typeof payload.type !== 'string') return
     if (payload.type === 'lumiphone:state' && payload.state) {
       const active = this.ctx.getActiveChat()
@@ -1492,11 +1509,11 @@ class PocketController {
     }, 240)
   }
 
-  private showMochiNotification(notification: MochiNotification): void {
+  private showMochiNotification(notification: MochiNotification, open: () => void): void {
     if (!this.preferences.notifyMessages || !this.expanded || document.hidden) return
     if (this.shell.querySelector('.lp-floating-notification:not(.mochi-notification-toast)')) return
     this.dismissMochiNotification?.()
-    this.dismissMochiNotification = showMochiNotification(this.shell, notification, this.preferences.notificationPreviews, () => this.mochi.openRoom(notification.roomId))
+    this.dismissMochiNotification = showMochiNotification(this.shell, notification, this.preferences.notificationPreviews, open)
   }
 
   private showIncomingNotification(notification: PhoneNotification): void {
@@ -1671,13 +1688,15 @@ class PocketController {
       return
     }
     if (route.app === 'mochi') {
+      this.mochiSession.activate(this.mochiSurface)
       this.currentApp = 'mochi'
       if (!this.expanded) this.open()
     } else if (!this.expanded) this.open()
     if (this.currentApp === 'settings' && route.app !== 'settings') this.settingsDraft = null
     this.currentApp = route.app
     if (route.app === 'mochi') {
-      if (!this.mochiStarted || !route.roomId) { this.openMochiPortal(); return }
+      if (!route.roomId || !this.mochi.state) { this.openMochiPortal(); return }
+      this.mochiSession.activate(this.mochiSurface)
       this.mochi.select(route.roomId)
       this.render(true)
       const viewport = currentViewport()

@@ -29,6 +29,7 @@ const stateAccountLabel=(id?:string)=>id?'Account settings':'Profiles and accoun
 import { defaultMochiSettings, type MochiMessage, type MochiNotification, type MochiRoom, type MochiSettings, type MochiState } from './types.js'
 
 export class MochiView {
+  private destroyed = false
   private profiles = new MochiProfiles()
   private profilesOpen = false
   private pickerOpen = false
@@ -94,6 +95,7 @@ export class MochiView {
   private choicesVersion = 0
   private choicesTimeout?: ReturnType<typeof setTimeout>
   private refreshChoices(): void {
+    if (this.destroyed) return
     this.choicesRequest=requestId('mochi_choices');this.choicesVersion=this.selectionVersion
     clearTimeout(this.choicesTimeout)
     this.choicesTimeout=setTimeout(()=>{this.choicesRequest=''},30000)
@@ -115,6 +117,7 @@ export class MochiView {
     if (this.profilesOpen) return this.profiles.hasUnsavedChanges()
     return !!(this.creating || this.editing) && !!this.draft && JSON.stringify([this.draft,this.settingsDraft]) !== this.formBaseline
   }
+  isConversationOpen(): boolean { return !this.destroyed && !!this.roomId && !this.pickerOpen && !this.profilesOpen && !this.editing && !this.creating && !this.notificationsOpen }
   private confirmNavigation(next: () => void, anchor: HTMLElement): void {
     if (!this.hasUnsavedChanges()) { next(); return }
     const content=el('div','mochi-action-panel')
@@ -159,10 +162,23 @@ export class MochiView {
   leave(): void {
     for (const dismiss of this.sheets) dismiss(); this.sheets.clear()
     const generationRequestId = this.ownGenerations.get(this.roomId)
-    if (generationRequestId) this.send({ type: 'mochi:cancel', accountId: this.state?.accountId, roomId: this.roomId, generationRequestId })
+    if (generationRequestId) { try { this.send({ type: 'mochi:cancel', accountId: this.state?.accountId, roomId: this.roomId, generationRequestId }) } finally { this.ownGenerations.delete(this.roomId) } }
   }
-  destroy(): void { try { this.leave() } finally { clearTimeout(this.timeout);clearTimeout(this.choicesTimeout);clearInterval(this.presenceTimer);for(const controller of this.modelControllers)controller.abort();this.modelControllers.clear() } }
+  destroy(cancel = true): void {
+    if (this.destroyed) return
+    try { if (cancel) this.leave(); else { for (const dismiss of this.sheets) dismiss(); this.sheets.clear() } }
+    finally {
+      this.destroyed = true
+      clearTimeout(this.timeout); clearTimeout(this.choicesTimeout); clearInterval(this.presenceTimer)
+      for (const controller of this.modelControllers) controller.abort()
+      this.modelControllers.clear(); this.modelChoices.clear(); this.choicesRequest = ''
+      this.resetScope(); this.profiles = new MochiProfiles(); this.profilesOpen = false; this.pickerOpen = false
+      this.drafts.clear(); this.responders.clear(); this.pendingSends.clear(); this.associations.clear(); this.settingsSections.clear()
+      this.phone = undefined; this.presenceRoot = undefined; this.error = ''; this.feedback = ''; this.formBaseline = ''
+    }
+  }
   private dispatch(type: string, values: Record<string, unknown> = {}): void {
+    if (this.destroyed) return
     if (this.busy) return
     this.request = requestId('mochi')
     this.requestVersion = this.selectionVersion
@@ -180,6 +196,7 @@ export class MochiView {
     this.redraw()
   }
   receive(payload: any): boolean {
+    if (this.destroyed) return false
     if(payload?.requestId===this.choicesRequest&&this.choicesRequest&&(payload.type==='mochi:choices'||payload.type==='mochi:error')){
       clearTimeout(this.choicesTimeout);this.choicesRequest=''
       if(this.choicesVersion!==this.selectionVersion)return true
@@ -314,6 +331,7 @@ export class MochiView {
     return notices
   }
   render(surface: 'all' | 'choices' | 'chat' = 'all', configure: () => void = () => {}): HTMLDivElement {
+    if (this.destroyed) return el('div', 'mochi-view')
     // Refresh only status attributes/text between renders, preserving composer focus and drafts.
     const page = el('div', 'mochi-view')
     page.dataset.surface = surface
