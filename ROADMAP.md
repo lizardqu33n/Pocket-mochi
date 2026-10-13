@@ -14,11 +14,13 @@ same-call AI reactions are deferred pending durable delivery metadata support.
 MSG-01C chat pins and independent system notes passed core user manual checks.
 Notes use one default position; future presets remain deferred. MSG-01D current-room
 search passed core user manual checks. MSG-01E character texting overrides and
-restored-composer sizing are source-implemented with targeted simulated verification,
-typecheck and matching production bundles; review/manual acceptance remain pending.
-The implemented Messaging Improvements scope is development-verified, not yet
-fully accepted for release. AI reactions remain explicitly deferred. No Memory &
-Prompt Management implementation has begun.
+restored-composer sizing passed targeted development verification and user manual
+acceptance. Messaging Improvements' implemented scope is accepted; broader release
+readiness still depends on the remaining phases and safety checks. AI
+reactions remain explicitly deferred. MEM-01A architecture review is complete.
+MEM-01B structured context resolution and authenticated prompt preview are
+development-verified with golden comparisons and matching bundles; manual review
+remains pending. No custom presets, macros or summaries have begun.
 Messaging order: MSG-01A quotes, MSG-01B reactions, MSG-01C pins, MSG-01D search,
 MSG-01E texting preferences and polish, then Memory & Prompt Management.
 Friends Beta 1 is tentatively hoped for Friday, October 16, 2026, explicitly

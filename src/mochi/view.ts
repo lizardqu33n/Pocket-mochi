@@ -35,6 +35,7 @@ import {MOCHI_REACTION_STYLES} from './reaction-styles.js'
 import {pinsPanel,MOCHI_PIN_STYLES,type NoteDraft} from './pins-panel.js'
 import {MochiSearch,MOCHI_SEARCH_STYLES} from './search-panel.js'
 import {textingControls,MOCHI_TEXTING_STYLES} from './texting-controls.js'
+import {MochiPreview,MOCHI_PREVIEW_STYLES} from './preview-panel.js'
 
 type DisplayMessage = Pick<MochiMessage, 'id' | 'role' | 'content' | 'name' | 'createdAt'> & Partial<Pick<MochiMessage, 'avatarUrl' | 'characterId' | 'editedAt'>> & {replyTo?:unknown}
 function isDisplayMessage(value: unknown): value is DisplayMessage {
@@ -125,6 +126,7 @@ export class MochiView {
     this.leave();this.resetScope();this.phone=phone;this.pickerOpen=true;this.startupOpen=true;this.profilesOpen=false;this.profiles.state=null;this.dispatch('mochi:accounts')
   }
   private resetScope():void{
+    this.preview.reset()
     this.search.reset()
     if(this.state&&this.roomId)this.lastRooms.set(this.state.accountId||'',this.roomId)
     this.desktopHistory.clear()
@@ -182,6 +184,7 @@ export class MochiView {
     const quote=this.quoteNode(room,id,true);(quote as HTMLButtonElement).click()
   },()=>this.presenceRoot?.querySelector<HTMLElement>('[aria-label="Room options"]')?.focus())
   private selectionVersion = 0
+  private preview=new MochiPreview(payload=>this.send(payload),()=>this.state?.rooms.find(r=>r.id===this.roomId&&r.accountId===this.state?.accountId),()=>this.redraw(),()=>this.presenceRoot?.querySelector<HTMLElement>('[aria-label="Room options"]')?.focus(),id=>this.state?.characters.find(c=>c.id===id)?.name||id)
   private requestVersion = 0
   private modelControllers = new Set<AbortController>()
   private modelChoices = new Map<string,MochiModelChoices>()
@@ -256,6 +259,7 @@ export class MochiView {
     if(this.state){if(id)this.lastRooms.set(this.state.accountId||'',id);else this.lastRooms.delete(this.state.accountId||'')}
   }
   leave(): void {
+    this.preview.reset()
     this.search.reset()
     for (const dismiss of this.sheets) dismiss(); this.sheets.clear()
     const generationRequestId = this.ownGenerations.get(this.roomId)
@@ -295,6 +299,7 @@ export class MochiView {
   }
   receive(payload: any): boolean {
     if (this.destroyed) return false
+    if(this.preview.receive(payload))return true
     if(this.search.receive(payload))return true
     if(this.navigationRequest&&payload?.requestId===this.navigationRequest&&(payload.type==='mochi:accounts'||payload.type==='mochi:error')){
       clearTimeout(this.navigationTimeout);this.navigationRequest=''
@@ -306,7 +311,7 @@ export class MochiView {
       clearTimeout(this.choicesTimeout);this.choicesRequest=''
       if(this.choicesVersion!==this.selectionVersion)return true
       if(payload.type==='mochi:error')this.error=String(payload.message)
-      else {if(this.state){this.state.personas=payload.personas;this.state.characters=payload.characters;this.state.connections=payload.connections}if(this.profiles.state)this.profiles.state.personas=payload.personas}
+      else {this.preview.invalidate('Sources refreshed. Refresh preview.');if(this.state){this.state.personas=payload.personas;this.state.characters=payload.characters;this.state.connections=payload.connections}if(this.profiles.state)this.profiles.state.personas=payload.personas}
       this.redraw();return true
     }
     if(payload?.type==='mochi:room_assigned'){
@@ -498,7 +503,7 @@ export class MochiView {
     page.dataset.surface = surface
     if (surface !== 'choices') this.presenceRoot=page
     const style = el('style')
-    style.textContent = MOCHI_STYLES+MOCHI_REPLY_STYLES+MOCHI_REACTION_STYLES+MOCHI_PIN_STYLES+MOCHI_SEARCH_STYLES+MOCHI_TEXTING_STYLES
+    style.textContent = MOCHI_STYLES+MOCHI_REPLY_STYLES+MOCHI_REACTION_STYLES+MOCHI_PIN_STYLES+MOCHI_SEARCH_STYLES+MOCHI_TEXTING_STYLES+MOCHI_PREVIEW_STYLES
     page.append(style)
     const header = el('header'); const brand = el('div', 'mochi-brand')
     const wordmark = el('h2', 'mochi-wordmark'); wordmark.setAttribute('aria-label', 'Mochi')
@@ -548,7 +553,8 @@ export class MochiView {
       const menuAction=(label:string,callback:()=>void)=>{const item=button(label,'lp-conversation-menu-action');item.setAttribute('aria-label',label);item.addEventListener('click',()=>{menu.open=false;callback()});return item}
       menuSheet.append(menuAction('Participants',()=>{const members=el('div','mochi-participants');for(const id of room.characterIds){const c=this.state?.characters.find(c=>c.id===id),name=room.settings?.characterNames[id]||c?.name||'Unavailable character';const row=el('div','mochi-member');row.append(portrait(name,c?.avatarUrl),el('span','',name));members.append(row)}this.sheet(roomHeader,'Room participants',members);members.closest('dialog')?.addEventListener('close',()=>{if(more.isConnected)more.focus()},{once:true})}),menuAction('Settings',openSettings))
       menuSheet.append(menuAction('Pins & Notes',()=>this.openPins(roomHeader,room)))
-      menuSheet.append(menuAction('Search conversation',()=>{this.search.show(room);this.presenceRoot?.querySelector<HTMLInputElement>('[aria-label="Search conversation text"]')?.focus()}))
+      menuSheet.append(menuAction('Search conversation',()=>{this.preview.reset();this.search.show(room);this.presenceRoot?.querySelector<HTMLInputElement>('[aria-label="Search conversation text"]')?.focus()}))
+      menuSheet.append(menuAction('Preview AI prompt',()=>{this.search.reset();this.preview.show(room);this.presenceRoot?.querySelector<HTMLSelectElement>('[aria-label="Preview scenario"]')?.focus()}))
       menu.append(more,menuSheet)
       menu.addEventListener('keydown',event=>{if(event.key==='Escape'){menu.open=false;more.focus();event.stopPropagation()}})
       menu.addEventListener('focusout',event=>{if(event.relatedTarget&&!menu.contains(event.relatedTarget as Node))menu.open=false})
@@ -557,6 +563,8 @@ export class MochiView {
       else headerActions.prepend(inbox)
       if(surface==='desktop')page.dataset.conversation='true'
       this.search.sync(room)
+      this.preview.sync(room)
+      if(this.preview.open)page.append(this.preview.render(room))
       if(this.search.open)page.append(this.search.render(room))
       page.append(this.thread(room,surface==='desktop'), this.composer(room))
       return page

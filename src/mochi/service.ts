@@ -1,5 +1,5 @@
 import { roomId, defaultMochiSettings, type MochiSettings, type MochiMessage, type MochiPersona, type MochiRoom, type MochiState } from './types.js'
-import { generateMochiReply, validateMochiSources } from './generation.js'
+import { generateMochiReply, validateMochiSources,resolveGenerationSources } from './generation.js'
 import { identifier, MAX_JOBS, publicRuntime, scheduleInput, temporaryFailure, TERMINAL, validateRuntime, type ScheduledJob } from './scheduling.js'
 import { delayFor, eligibleResponders, minimumDelay, statusFor, validatePresence } from './presence.js'
 import { applyDeliveredStatus } from './behavior.js'
@@ -10,6 +10,7 @@ import { REACTION_EMOJI, readReactions } from './reactions.js'
 import {validatePinnedContent,validateNote,noteId,MAX_CHAT_PINS} from './pins.js'
 import {searchRoom} from './search.js'
 import {validateTextingStyles} from './texting.js'
+import {previewContext,sourceSignature} from './preview.js'
 
 // New implementation. No Character Chatroom source is included.
 export interface MochiHost {
@@ -763,6 +764,19 @@ export class MochiService {
     if (!userId) return
     let selectedRoomId: string | undefined
     try {
+
+      if(payload.type==='mochi:preview'){
+        const user=this.account(userId),id=roomId(payload.roomId);entityId(payload.requestId)
+        const room=await this.locked(user,id,()=>this.read(user,id,payload.accountId)),signal=new AbortController().signal
+        const backgroundAllowed=await this.backgroundEnabled(user)
+        const result=await previewContext(this.host,room,user,payload,backgroundAllowed,signal,this.now())
+        const current=await this.locked(user,id,()=>this.read(user,id,payload.accountId))
+        const sources=await resolveGenerationSources(this.host,current,user,payload.responder??'auto',eligibleResponders(current,payload.responder??'auto',this.now()))
+        const allowedNow=await this.backgroundEnabled(user),finalRoom=await this.locked(user,id,()=>this.read(user,id,payload.accountId))
+        if(finalRoom.revision!==room.revision||(finalRoom.associationRevision||0)!==(room.associationRevision||0)||sourceSignature(sources)!==sourceSignature(result.sources)||JSON.stringify(finalRoom.runtime?.presence)!==JSON.stringify(room.runtime?.presence)||backgroundAllowed!==allowedNow||Boolean(finalRoom.runtime?.enabled)!==Boolean(room.runtime?.enabled))throw Error('Preview context changed. Refresh the preview.')
+        this.host.sendToFrontend({type:'mochi:preview',requestId:payload.requestId,roomId:id,accountId:room.accountId,revision:room.revision,associationRevision:room.associationRevision||0,preview:result.preview},user)
+        return
+      }
       if(payload.type==='mochi:search'||payload.type==='mochi:search_target'){
         const user=this.account(userId),id=roomId(payload.roomId);entityId(payload.requestId)
         const room=await this.locked(user,id,()=>this.read(user,id,payload.accountId))
