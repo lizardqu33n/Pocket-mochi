@@ -11,6 +11,7 @@ import {validatePinnedContent,validateNote,noteId,MAX_CHAT_PINS} from './pins.js
 import {searchRoom} from './search.js'
 import {validateTextingStyles} from './texting.js'
 import {previewContext,sourceSignature} from './preview.js'
+import {MochiPresets,validateBinding,DEFAULT_PRESET_ID} from './presets.js'
 
 // New implementation. No Character Chatroom source is included.
 export interface MochiHost {
@@ -98,7 +99,9 @@ export class MochiService {
     return { ...s, characterNames: names }
   }
   readonly fictionalAccounts: MochiAccounts
+  readonly presets:MochiPresets
   constructor(private host: MochiHost, private makeId = () => `room_${crypto.randomUUID().replaceAll('-', '')}`, private now: () => number = Date.now) {
+    this.presets=new MochiPresets(host)
     this.fictionalAccounts = new MochiAccounts(host, (user, input) => this.persona(user, input), now)
   }
   private account(userId: unknown): string { return text(userId, 180, true) }
@@ -148,6 +151,7 @@ export class MochiService {
       await this.fictionalAccounts.get(user,target)
       if(input.revision!==room.revision||input.associationRevision!==(room.associationRevision||0))throw new Error('The chat or its assignment changed elsewhere. Refresh before assigning.')
       if(room.accountId===target)throw new Error('This chat already belongs to that account.')
+      if(room.preset&&room.preset.id!==DEFAULT_PRESET_ID)throw Error('Restore Mochi Default before assigning this chat to another account. Custom presets are account-scoped.')
       if(this.jobs.has(this.jobKey(user,id))||(this.pending.get(this.jobKey(user,id))?.size||0)>0||room.runtime?.jobs.some(j=>j.status==='generating'&&(j.leaseUntil||0)>this.now()))throw new Error('Wait for active generation to finish or stop it before assigning this chat. Saved schedules remain intact.')
       const sourceAccountId=room.accountId
       room.accountId=target;room.associationRevision=(room.associationRevision||0)+1
@@ -178,6 +182,7 @@ export class MochiService {
     if (!await this.host.userStorage.exists(path, user)) throw new Error('This room is not available to your account.')
     const room = validateRoom(await this.host.userStorage.getJson(path, { userId: user }), id)
     if (room.accountId) await this.fictionalAccounts.get(user, room.accountId)
+    if(room.preset)validateBinding(room.preset,room.accountId)
     validatePinnedContent(room)
     if (room.runtime !== undefined) validateRuntime(room.runtime)
     if (room.runtime?.presence) for (const [id,p] of Object.entries(room.runtime.presence)) { entityId(id); validatePresence(p) }
@@ -271,6 +276,23 @@ export class MochiService {
       this.jobs.get(this.jobKey(user, id))?.controller.abort()
       await this.persist(user, room)
       return room
+    })
+  }
+  async bindPreset(userId:string,input:any):Promise<void>{
+    const user=this.account(userId),id=roomId(input.roomId),requestId=entityId(input.requestId)
+    await this.locked(user,id,async()=>{
+      const room=await this.read(user,id,input.accountId)
+      if(room.receipts!.includes(requestId))return
+      if(room.revision!==input.revision)throw Error('Chat changed elsewhere. Refresh before applying a preset.')
+      if(input.confirmed!==true)throw Error('Confirm applying this preset; pending replies may be canceled.')
+      const binding=validateBinding({id:input.presetId,revision:input.presetRevision,accountId:room.accountId},room.accountId)
+      const resolved=await this.presets.resolve(user,{accountId:room.accountId,preset:binding})
+      if(!resolved.builtIn){const bank=await this.presets.read(user,room.accountId);if(bank.presets.find(p=>p.id===resolved.id)?.archived&&room.preset?.id!==resolved.id)throw Error('Restore this archived preset before binding another chat.')}
+      if(binding.id===DEFAULT_PRESET_ID&&!room.preset||equivalent(binding,room.preset))return
+      if(binding.id===DEFAULT_PRESET_ID)delete room.preset;else room.preset=binding
+      this.jobs.get(this.jobKey(user,id))?.controller.abort()
+      for(const job of room.runtime?.jobs||[])if(!TERMINAL.has(job.status)){job.status='cancelled';delete job.draft;delete job.additional}
+      room.receipts!.push(requestId);room.revision++;room.updatedAt=new Date().toISOString();await this.persist(user,room)
     })
   }
   async state(userId: string, accountId?: unknown): Promise<MochiState> {
@@ -764,6 +786,14 @@ export class MochiService {
     if (!userId) return
     let selectedRoomId: string | undefined
     try {
+      if(payload.type==='mochi:presets'){
+        const user=this.account(userId),id=roomId(payload.roomId);entityId(payload.requestId)
+        await this.locked(user,id,()=>this.read(user,id,payload.accountId))
+        if(payload.accountId)await this.fictionalAccounts.get(user,payload.accountId)
+        const bank=payload.action==='list'?await this.presets.read(user,payload.accountId):await this.presets.mutate(user,payload)
+        const room=await this.locked(user,id,()=>this.read(user,id,payload.accountId)),effective=await this.presets.resolve(user,room)
+        this.host.sendToFrontend({type:'mochi:presets',requestId:payload.requestId,accountId:room.accountId,roomId:id,roomRevision:room.revision,bank,effective},user);return
+      }
 
       if(payload.type==='mochi:preview'){
         const user=this.account(userId),id=roomId(payload.roomId);entityId(payload.requestId)
@@ -830,6 +860,7 @@ export class MochiService {
       else if (payload.type === 'mochi:update') selectedRoomId = (await this.update(userId, payload)).id
       else if (payload.type==='mochi:reaction')await this.react(userId,payload)
       else if (payload.type==='mochi:pinned_content')await this.pinnedContent(userId,payload)
+      else if (payload.type==='mochi:preset_bind')await this.bindPreset(userId,payload)
       else if (payload.type !== 'mochi:list' && payload.type !== 'mochi:message_action' && payload.type !== 'mochi:notification_clear' && payload.type !== 'mochi:room_assign') throw new Error('Unsupported Mochi action.')
       this.host.sendToFrontend({ type: 'mochi:state', requestId: payload.requestId, selectedRoomId, state: await this.state(userId, payload.accountId) }, userId)
     } catch (error) {

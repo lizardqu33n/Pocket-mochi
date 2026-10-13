@@ -4,8 +4,9 @@ import { parseBehavior, type Behavior } from './behavior.js'
 
 export {type PromptMessage} from './context.js'
 import {resolveMochiContext,type PromptMessage} from './context.js'
-export async function buildMochiPrompt(room:MochiRoom,characters:any[],responder:string,count:(messages:PromptMessage[])=>Promise<number>,signal:AbortSignal,natural=false):Promise<PromptMessage[]>{
-  return (await resolveMochiContext(room,characters,responder,count,signal,natural)).messages
+import {MochiPresets,type ResolvedPreset} from './presets.js'
+export async function buildMochiPrompt(room:MochiRoom,characters:any[],responder:string,count:(messages:PromptMessage[])=>Promise<number>,signal:AbortSignal,natural=false,preset?:ResolvedPreset):Promise<PromptMessage[]>{
+  return (await resolveMochiContext(room,characters,responder,count,signal,natural,preset)).messages
 }
 export async function validateMochiSources(host: any, room: MochiRoom, userId: string): Promise<any> {
   const settings = room.settings || defaultMochiSettings()
@@ -33,13 +34,14 @@ export async function resolveGenerationSources(host:any,room:MochiRoom,userId:st
   if (!characters.length) throw new Error('No room character is currently eligible.')
   const speaker = responder === 'auto' && characters.length === 1 ? characters[0].id : responder
   if (speaker !== 'auto' && !room.characterIds.includes(speaker)) throw new Error('The selected responder is not in this room.')
-  return {connection,characters,speaker}
+  const preset=await new MochiPresets(host).resolve(userId,room)
+  return {connection,characters,speaker,preset}
 }
 export interface GeneratedReply { character:any; text:string; behavior:Behavior }
 export async function generateMochiReply(host: any, room: MochiRoom, userId: string, responder: string, signal: AbortSignal, eligibleIds = room.characterIds, natural = false): Promise<GeneratedReply & { replies: GeneratedReply[]; silent: boolean }> {
   const settings = room.settings || defaultMochiSettings()
-  const {connection,characters,speaker}=await resolveGenerationSources(host,room,userId,responder,eligibleIds)
-  const messages = await buildMochiPrompt(room, characters, speaker, async messages => (await host.tokens.countMessages(messages, { model: settings.model || connection.model, userId })).total_tokens, signal, natural)
+  const {connection,characters,speaker,preset}=await resolveGenerationSources(host,room,userId,responder,eligibleIds)
+  const messages = await buildMochiPrompt(room, characters, speaker, async messages => (await host.tokens.countMessages(messages, { model: settings.model || connection.model, userId })).total_tokens, signal, natural,preset)
   const response = await callPocketProvider(host, { messages, connection_id: settings.connectionId, userId, signal, reasoning: { source: 'off' }, parameters: { max_tokens: settings.outputTokens, temperature: 0.8, ...(settings.model ? { model: settings.model } : {}) } })
   let parsed: any
   try { parsed = JSON.parse(String(response.content).trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')) } catch { throw new Error('The model returned invalid message JSON. Try continuing again.') }

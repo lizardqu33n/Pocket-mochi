@@ -13,7 +13,7 @@ export async function previewContext(host:any,room:MochiRoom,user:string,input:a
  const allowBehavior=Boolean(settings.aiBehavior&&room.runtime?.enabled&&backgroundAllowed)
  const promptRoom={...room,settings:{...settings,aiBehavior:allowBehavior}}
  let tokenResult:any
- const plan=await resolveMochiContext(promptRoom,sources.characters,sources.speaker,async messages=>{tokenResult=await host.tokens.countMessages(messages,{model:settings.model||sources.connection.model,userId:user});return tokenResult.total_tokens},signal,natural)
+ const plan=await resolveMochiContext(promptRoom,sources.characters,sources.speaker,async messages=>{tokenResult=await host.tokens.countMessages(messages,{model:settings.model||sources.connection.model,userId:user});return tokenResult.total_tokens},signal,natural,sources.preset)
  const assumptions=['Read-only snapshot of saved history; no new user message is included. Future replies and scheduled context may change.','Quota, delivery eligibility and provider-side transformations are not executed or predicted.','Connection preset parameters may be inherited by Lumiverse quiet generation. They are not available through this preview; explicit Mochi parameters are shown.']
  if(input.scenario==='automatic'&&(settings.responseMode==='manual'||!settings.autoReply))assumptions.push('Automatic replies are disabled: this is hypothetical context, not a request that would be dispatched.')
  const delay=minimumDelay(room,responder,now)
@@ -23,5 +23,5 @@ export async function previewContext(host:any,room:MochiRoom,user:string,input:a
 }
 export function sourceSignature(sources:Awaited<ReturnType<typeof resolveGenerationSources>>):string {
  // Secrets are compared privately for changes, never returned or logged.
- return JSON.stringify({connection:sources.connection,characters:sources.characters.map(c=>({id:c.id,name:c.name,description:c.description,personality:c.personality,scenario:c.scenario})),speaker:sources.speaker})
+ return JSON.stringify({connection:sources.connection,characters:sources.characters.map(c=>({id:c.id,name:c.name,description:c.description,personality:c.personality,scenario:c.scenario})),speaker:sources.speaker,preset:sources.preset})
 }

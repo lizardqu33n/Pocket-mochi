@@ -20,7 +20,9 @@ readiness still depends on the remaining phases and safety checks. AI
 reactions remain explicitly deferred. MEM-01A architecture review is complete.
 MEM-01B structured context resolution and authenticated prompt preview are
 development-verified with golden comparisons and matching bundles; manual review
-remains pending. No custom presets, macros or summaries have begun.
+remains pending. MEM-01C versioned custom presets and explicit room bindings are
+development-verified with matching runtime bundles; combined MEM-01B/01C manual
+acceptance remains pending. No manual macros or summaries have begun.
 Messaging order: MSG-01A quotes, MSG-01B reactions, MSG-01C pins, MSG-01D search,
 MSG-01E texting preferences and polish, then Memory & Prompt Management.
 Friends Beta 1 is tentatively hoped for Friday, October 16, 2026, explicitly
