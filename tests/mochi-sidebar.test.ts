@@ -3,6 +3,9 @@ import { JSDOM } from 'jsdom'
 import { getMochiSession } from '../src/mochi/session.js'
 import { createMochiSidebar } from '../src/mochi/sidebar.js'
 import { createMochiWorkspace } from '../src/mochi/workspace.js'
+import { PocketPortal } from '../src/frontend/components/portal.js'
+import { MOCHI_SIDEBAR_ICON } from '../src/mochi/sidebar-icon.js'
+import { readFileSync } from 'node:fs'
 import type { SpindleFrontendContext } from 'lumiverse-spindle-types'
 
 function fixture(width=900, geometry=true) {
@@ -22,7 +25,10 @@ function fixture(width=900, geometry=true) {
     return {root,setVisible:(visible:boolean)=>{root.hidden=!visible},setSize:()=>{},moveTo:(x:number,y:number)=>{position={x,y}},getPosition:()=>position,onDragEnd:()=>()=>{},destroy:()=>root.remove()}
   }}
   if(geometry)ui.geometry={layoutViewportSize:()=>({width,height:850}),createResizeController:()=>()=>{}}
-  const destroy=createMochiSidebar({ui} as Pick<SpindleFrontendContext,'ui'>,session,()=>({enabled:true,previews:false}))
+  const navigation=createMochiSidebar({ui} as Pick<SpindleFrontendContext,'ui'>,session,()=>({enabled:true,previews:false}))
+  const pocket=new PocketPortal(()=>{const node=document.createElement('p');node.textContent='Native Pocket phones and settings';return node},()=>navigation.root,()=>navigation.open(),undefined,{phones:'<svg data-test="original-phone" viewBox="0 0 24 24"></svg>',mochi:MOCHI_SIDEBAR_ICON})
+  document.body.append(pocket.root)
+  const pane={root:navigation.root,activate:()=>pocket.show('mochi')}
   const a='account_'+'a'.repeat(32),b='account_'+'b'.repeat(32)
   const bank:any={version:1,ownerId:'synthetic',revision:1,selectedAccountId:a,accounts:[a,b].map((id,i)=>({id,displayName:i?'Other profile':'Long fictional profile '.repeat(5),avatarUrl:'',archived:false,roomIds:['room_'+id]})),personas:[],avatars:[],warnings:[],canUploadAvatar:false}
   const emit=(p:any)=>{for(const fn of listeners)fn(p)}
@@ -30,13 +36,13 @@ function fixture(width=900, geometry=true) {
   const accounts=()=>emit({type:'mochi:accounts',requestId:request('mochi:accounts').requestId,state:structuredClone(bank)})
   const state=(id:string|undefined,rooms=true)=>({accountId:id,rooms:rooms?[{id:'room_'+(id||'legacy'),accountId:id,ownerId:'synthetic',revision:1,title:'Long room '.repeat(15),characterIds:[],persona:{name:'Me',description:''},messages:[],settings:{autoReply:true,responseMode:'instant',instructions:'',connectionId:'',contextTokens:8192,outputTokens:1200,characterNames:{}}}]:[],characters:[],personas:[],connections:[],notifications:[],warnings:[]})
   const select=(id:string|undefined,rooms=true)=>{
-    const button=id?tabs[0].root.querySelector(`[data-account-id="${id}"]`):Array.from(tabs[0].root.querySelectorAll('button')).find((n:any)=>n.textContent==='Unassigned legacy chats')
+    const button=id?pane.root.querySelector(`[data-account-id="${id}"]`):Array.from(pane.root.querySelectorAll('button')).find((n:any)=>n.textContent==='Unassigned legacy chats')
     ;(button as HTMLButtonElement).click()
     if(id){bank.selectedAccountId=id;bank.revision++;emit({type:'mochi:accounts',requestId:request('mochi:account_select').requestId,state:structuredClone(bank)})}
     emit({type:'mochi:state',requestId:request('mochi:list').requestId,state:state(id,rooms)})
   }
-  const cleanup=()=>{try{destroy();session.destroy(false)}finally{dom.window.close();Object.assign(globalThis,previous)}}
-  return {session,tabs,sent,listeners,bank,a,b,emit,accounts,request,state,select,cleanup,get floats(){return floats}}
+  const cleanup=()=>{try{navigation.destroy();session.destroy(false)}finally{dom.window.close();Object.assign(globalThis,previous)}}
+  return {session,tabs:[pane],registrations:tabs,pocket,sent,listeners,bank,a,b,emit,accounts,request,state,select,cleanup,get floats(){return floats}}
 }
 
 test('sidebar is navigation only: one subscription, no cancellation/read receipt or independent view',()=>{
@@ -52,7 +58,30 @@ test('sidebar is navigation only: one subscription, no cancellation/read receipt
     expect(h.sent.slice(before).every(p=>p.type==='mochi:accounts')).toBe(true)
     expect(view.ownGenerations.get(view.roomId)).toBe('synthetic-generation');expect(view.drafts.get(view.roomId)).toBe('keep this draft');expect(h.floats).toBe(0)
     expect(view.busy).toBe(true);expect(view.request).toBe('synthetic-generation')
-    expect(h.tabs[0].options.id).toBe('mochi');expect(h.tabs[0].options.iconSvg).toContain('viewBox="0 0 24 24"')
+    expect(h.registrations).toHaveLength(0)
+  }finally{h.cleanup()}
+})
+
+test('one Pocket rail tab: adjacent internal shortcuts reuse native phones and the 01E account picker',()=>{
+  const h=fixture()
+  try{
+    const source=readFileSync(new URL('../src/frontend/controller.ts',import.meta.url),'utf8')
+    expect(source.match(/registerDrawerTab\(/g)).toHaveLength(1)
+    expect(source).toContain("id: 'lumiphone'")
+    const shortcuts=h.pocket.root.querySelectorAll('.pocket-portal-destination')
+    expect(shortcuts).toHaveLength(2);expect(shortcuts[0].querySelector('[data-test="original-phone"]')).not.toBeNull()
+    expect(shortcuts[1].querySelector('.pocket-portal-art')!.innerHTML).toContain('viewBox="0 0 24 24"')
+    expect(h.pocket.root.querySelector('[aria-label="Open Mochi window"]')).toBeNull()
+    ;(shortcuts[1] as HTMLButtonElement).click();h.accounts();expect(h.pocket.root.contains(h.tabs[0].root)).toBe(true)
+    h.select(h.a);expect(h.floats).toBe(1);expect(h.pocket.root.dataset.destination).toBe('mochi')
+    h.session.view.select('room_'+h.a);const view=h.session.view as any;view.ownGenerations.set(view.roomId,'pending');view.drafts.set(view.roomId,'draft')
+    const before=h.sent.length
+    h.pocket.root.querySelector<HTMLButtonElement>('.pocket-portal-home')!.click()
+    h.pocket.root.querySelector<HTMLButtonElement>('[aria-label="Connect to your phone"]')!.click()
+    expect(h.pocket.root.textContent).toContain('Native Pocket phones and settings');expect(h.sent.length).toBe(before)
+    expect(view.drafts.get(view.roomId)).toBe('draft');expect(view.ownGenerations.get(view.roomId)).toBe('pending')
+    h.pocket.show('home');h.pocket.root.querySelector<HTMLButtonElement>('[aria-label="Open Mochi"]')!.click();h.accounts()
+    expect(h.session.view.roomId).toBe('room_'+h.a);expect(h.floats).toBe(1);expect(h.registrations).toHaveLength(0)
   }finally{h.cleanup()}
 })
 

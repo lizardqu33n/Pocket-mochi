@@ -3,7 +3,8 @@ import { GALLERY_PAGE_SIZE } from '../domain/gallery-page.js'
 import { MochiView } from '../mochi/view.js'
 import { getMochiSession, type MochiSession, type MochiSurface } from '../mochi/session.js'
 import { createMochiWindow, type MochiWindow, type MochiWindowUI } from '../mochi/window.js'
-import { createMochiSidebar } from '../mochi/sidebar.js'
+import { createMochiSidebar, type MochiSidebar } from '../mochi/sidebar.js'
+import { MOCHI_SIDEBAR_ICON } from '../mochi/sidebar-icon.js'
 import { PocketPortal } from './components/portal.js'
 import { showMochiNotification, reconcileMochiNotifications } from '../mochi/notifications.js'
 import type { MochiNotification } from '../mochi/types.js'
@@ -134,6 +135,7 @@ class PocketController {
   private currentApp: PhoneApp = 'home'
   private portal?: PocketPortal
   private mochiSession: MochiSession
+  private mochiSidebar!: MochiSidebar
   private mochiWindow?: MochiWindow
   private mochiSurface!: MochiSurface
   private dismissMochiNotification: (() => void) | undefined
@@ -414,13 +416,14 @@ class PocketController {
       dismiss: () => { this.dismissMochiNotification?.(); this.dismissMochiNotification=undefined },
       ownership: active => {
         if (active) { this.portal?.refresh(true); if(this.currentApp==='mochi')this.render(false) }
-        else { if(this.currentApp==='mochi'){this.close();this.currentApp='home';this.router.reset({app:'home'})};this.portal?.show('home') }
+        else { if(this.currentApp==='mochi'){this.close();this.currentApp='home';this.router.reset({app:'home'})} }
       },
       disposed: () => { for(const node of this.drawer.root.querySelectorAll('.mochi-view'))node.remove();this.screen.querySelector('.mochi-view')?.remove();if(this.currentApp==='mochi'){this.currentApp='home';this.router.reset({app:'home'})} },
     }
     this.cleanups.push(this.mochiSession.attach(this.mochiSurface))
-    this.cleanups.push(createMochiSidebar(this.ctx, this.mochiSession,
-      () => ({enabled:this.preferences.notifyMessages,previews:this.preferences.notificationPreviews})))
+    this.mochiSidebar = createMochiSidebar(this.ctx, this.mochiSession,
+      () => ({enabled:this.preferences.notifyMessages,previews:this.preferences.notificationPreviews}))
+    this.cleanups.push(() => this.mochiSidebar.destroy())
     this.cleanups.push(this.ctx.events.on('CHAT_SWITCHED', () => {
       this.setupModalDismiss?.()
       this.settledOperationRequests.clear()
@@ -515,9 +518,8 @@ class PocketController {
   }
 
   private renderDrawerLanding(): void {
-    if (!this.portal) this.portal = new PocketPortal(() => this.renderPhoneChoices(), () => this.mochiSession.owns(this.mochiSurface)?this.mochi.render('choices'):el('div'), () => {
-      this.mochiSession.activate(this.mochiSurface)
-    }, {back:(exit,anchor)=>this.mochi.back(exit,anchor),home:(exit,anchor)=>this.mochi.exitPortal(exit,anchor),window:()=>this.openMochiWindow()})
+    if (!this.portal) this.portal = new PocketPortal(() => this.renderPhoneChoices(), () => this.mochiSidebar.root,
+      () => this.mochiSidebar.open(), undefined, {phones:PHONE_ICON,mochi:MOCHI_SIDEBAR_ICON})
     if (!this.drawer.root.contains(this.portal.root)) this.drawer.root.replaceChildren(this.portal.root)
     this.portal.refresh()
   }

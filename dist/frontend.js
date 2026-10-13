@@ -2874,9 +2874,6 @@ function createMochiWindow(ui, session, notificationPolicy) {
   return result;
 }
 
-// src/mochi/sidebar-icon.ts
-var MOCHI_SIDEBAR_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16C3 10 7 5 12 5s9 5 9 11c0 3-4 4-9 4s-9-1-9-4Z"/><circle cx="8" cy="13" r=".7"/><circle cx="16" cy="13" r=".7"/><path d="M10 15q2 2 4 0M18 3l1-1"/></svg>';
-
 // src/mochi/sidebar-styles.ts
 var MOCHI_SIDEBAR_STYLES = `
 .mochi-sidebar{height:100%;min-height:0;display:flex;flex-direction:column;color:var(--lumiverse-text,#eee);font:inherit}
@@ -2898,7 +2895,6 @@ var MOCHI_SIDEBAR_STYLES = `
 
 // src/mochi/sidebar.ts
 function createMochiSidebar(ctx, session, policy) {
-  const drawer = ctx.ui.registerDrawerTab({ id: "mochi", title: "Mochi", shortName: "Mochi", headerTitle: "Mochi", description: "Independent fictional accounts and conversations", keywords: ["messenger", "accounts", "Mochi"], iconSvg: MOCHI_SIDEBAR_ICON });
   const root = document.createElement("section");
   root.className = "mochi-sidebar";
   root.setAttribute("aria-label", "Mochi account navigation");
@@ -2911,7 +2907,6 @@ function createMochiSidebar(ctx, session, policy) {
   body.className = "mochi-sidebar-body";
   body.hidden = true;
   root.append(style, nav, picker, body);
-  drawer.root.append(root);
   let disposed = false, workspace, fallback = "", rendered = "";
   const button = (label, click) => {
     const node = document.createElement("button");
@@ -3019,18 +3014,21 @@ function createMochiSidebar(ctx, session, policy) {
       return;
     disposed = true;
     workspace?.destroy();
-    offActivate();
-    drawer.destroy();
     root.remove();
   };
-  const offActivate = drawer.onActivate(showPicker);
   const detach = session.observeNavigation({ redraw: render, disposed: dispose });
   render();
-  return () => {
+  return { root, open: () => {
+    session.assertActive();
+    showPicker();
+  }, destroy: () => {
     detach();
     dispose();
-  };
+  } };
 }
+
+// src/mochi/sidebar-icon.ts
+var MOCHI_SIDEBAR_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16C3 10 7 5 12 5s9 5 9 11c0 3-4 4-9 4s-9-1-9-4Z"/><circle cx="8" cy="13" r=".7"/><circle cx="16" cy="13" r=".7"/><path d="M10 15q2 2 4 0M18 3l1-1"/></svg>';
 
 // src/frontend/components/portal.ts
 var artwork = {
@@ -3043,13 +3041,15 @@ class PocketPortal {
   mochi;
   startMochi;
   mochiNavigation;
+  shortcutIcons;
   root = el("section", "pocket-portal lumiphone-device-drawer");
   destination = "home";
-  constructor(phones, mochi, startMochi, mochiNavigation) {
+  constructor(phones, mochi, startMochi, mochiNavigation, shortcutIcons) {
     this.phones = phones;
     this.mochi = mochi;
     this.startMochi = startMochi;
     this.mochiNavigation = mochiNavigation;
+    this.shortcutIcons = shortcutIcons;
     this.root.setAttribute("aria-label", "Pocket portal");
     this.render();
   }
@@ -3065,6 +3065,7 @@ class PocketPortal {
       this.render();
   }
   render() {
+    this.root.dataset.destination = this.destination;
     const active = this.root.contains(document.activeElement) ? document.activeElement : null;
     const label = active?.getAttribute("aria-label");
     const selection = active && ["INPUT", "TEXTAREA"].includes(active.tagName) ? [active.selectionStart, active.selectionEnd] : undefined;
@@ -3106,14 +3107,14 @@ class PocketPortal {
       body.append(el("p", "pocket-portal-info", "Pocket uses the active RP. Mochi keeps separate chat histories."));
       const results = el("div", "pocket-portal-destinations");
       for (const [id, title, copy, foot] of [
-        ["phones", "Connect to your phone", "Choose a phone to view its messages and apps.", "POCKET DEVICES"],
-        ["mochi", "Open Mochi", "Manage profiles and open independent character chats.", "INDEPENDENT CHATS"]
+        ["phones", "Connect to your phone", "Choose a phone to view its messages and apps.", "Pocket"],
+        ["mochi", "Open Mochi", "Choose a fictional account and open the messenger.", "Mochi"]
       ]) {
         const card = button("", "pocket-portal-destination");
         card.setAttribute("aria-label", title);
         const art = el("span", "pocket-portal-art");
         art.setAttribute("aria-hidden", "true");
-        art.innerHTML = `<svg viewBox="0 0 130 100" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${artwork[id]}</svg>`;
+        art.innerHTML = this.shortcutIcons?.[id] || `<svg viewBox="0 0 130 100" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${artwork[id]}</svg>`;
         card.append(art, el("small", "", foot), el("strong", "", title), el("span", "", copy), el("span", "pocket-portal-arrow", "↗"));
         card.onclick = () => this.show(id);
         results.append(card);
@@ -3143,6 +3144,8 @@ var PORTAL_STYLES = `
 .pocket-portal-nav{gap:12px}.pocket-portal-nav>span{margin-left:auto}.pocket-portal-back{min-height:44px;padding:6px 0;border:0;background:transparent;color:var(--lp-text)}.pocket-portal .mochi-profile-screen{gap:18px}.pocket-portal .mochi-view .mochi-inbox-actions>.lp-button{width:auto;flex:1 1 auto}.pocket-portal .mochi-account-picker .mochi-secondary-action{width:auto}.pocket-portal .mochi-profile-actions .lp-button{font-size:12px}.pocket-portal .mochi-connection-indicator{min-height:44px}.pocket-portal .mochi-profile-fields input,.pocket-portal .mochi-profile-fields select,.pocket-portal .mochi-profile-fields textarea{font-size:13px;border-radius:8px}
 
 .pocket-portal .mochi-sheet{position:fixed;inset:var(--app-interactive-safe-top,0px) 0 0;margin:auto;max-height:calc(100dvh - var(--app-interactive-safe-top,0px) - 32px);font:400 13px/1.5 Inter,ui-sans-serif,system-ui,sans-serif;letter-spacing:normal;text-transform:none}.pocket-portal .mochi-sheet h2{font-size:18px;letter-spacing:-.02em}.mochi-unsaved-sheet .lp-sheet-close{display:none}
+.pocket-portal-destinations{grid-template-columns:repeat(2,minmax(0,1fr))}.pocket-portal-destination{grid-template-columns:minmax(0,1fr);padding:14px 12px;min-height:160px}.pocket-portal-art{grid-column:1;grid-row:auto;justify-self:start}.pocket-portal-art svg{width:40px;height:40px}.pocket-portal-destination small{font-size:13px;letter-spacing:0;font-weight:600}.pocket-portal-destination strong{font-size:12px;letter-spacing:0}.pocket-portal-destination>span:not(.pocket-portal-art):not(.pocket-portal-arrow){font-size:11px;overflow-wrap:anywhere}
+.pocket-portal[data-destination=mochi]{height:100%;min-height:0;display:flex;flex-direction:column}.pocket-portal[data-destination=mochi]>.pocket-portal-body{display:flex;flex-direction:column;flex:1;min-height:0;max-width:none;width:100%;overflow:hidden}.pocket-portal .mochi-sidebar{flex:1;min-height:0}.pocket-portal .mochi-workspace[data-presentation=messenger]>.mochi-view{height:100%;padding:0;overflow:hidden}.pocket-portal .mochi-workspace[data-presentation=messenger] .mochi-desktop-main>.mochi-view{padding:12px;overflow:auto}.pocket-portal .mochi-workspace[data-presentation=messenger] .mochi-desktop-main>.mochi-view[data-conversation=true]{overflow:hidden}
 `;
 
 // src/frontend/components/tts-connection.ts
@@ -10057,6 +10060,7 @@ class PocketController {
   currentApp = "home";
   portal;
   mochiSession;
+  mochiSidebar;
   mochiWindow;
   mochiSurface;
   dismissMochiNotification;
@@ -10375,7 +10379,6 @@ class PocketController {
             this.currentApp = "home";
             this.router.reset({ app: "home" });
           }
-          this.portal?.show("home");
         }
       },
       disposed: () => {
@@ -10389,7 +10392,8 @@ class PocketController {
       }
     };
     this.cleanups.push(this.mochiSession.attach(this.mochiSurface));
-    this.cleanups.push(createMochiSidebar(this.ctx, this.mochiSession, () => ({ enabled: this.preferences.notifyMessages, previews: this.preferences.notificationPreviews })));
+    this.mochiSidebar = createMochiSidebar(this.ctx, this.mochiSession, () => ({ enabled: this.preferences.notifyMessages, previews: this.preferences.notificationPreviews }));
+    this.cleanups.push(() => this.mochiSidebar.destroy());
     this.cleanups.push(this.ctx.events.on("CHAT_SWITCHED", () => {
       this.setupModalDismiss?.();
       this.settledOperationRequests.clear();
@@ -10501,9 +10505,7 @@ class PocketController {
   }
   renderDrawerLanding() {
     if (!this.portal)
-      this.portal = new PocketPortal(() => this.renderPhoneChoices(), () => this.mochiSession.owns(this.mochiSurface) ? this.mochi.render("choices") : el("div"), () => {
-        this.mochiSession.activate(this.mochiSurface);
-      }, { back: (exit, anchor) => this.mochi.back(exit, anchor), home: (exit, anchor) => this.mochi.exitPortal(exit, anchor), window: () => this.openMochiWindow() });
+      this.portal = new PocketPortal(() => this.renderPhoneChoices(), () => this.mochiSidebar.root, () => this.mochiSidebar.open(), undefined, { phones: PHONE_ICON, mochi: MOCHI_SIDEBAR_ICON });
     if (!this.drawer.root.contains(this.portal.root))
       this.drawer.root.replaceChildren(this.portal.root);
     this.portal.refresh();

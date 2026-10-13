@@ -3,18 +3,17 @@ import type { MochiSession } from './session.js'
 import { createMochiWindow, type MochiWindowUI } from './window.js'
 import { createMochiWorkspace, type MochiWorkspace } from './workspace.js'
 import type { MochiNotificationPolicy } from './notifications.js'
-import { MOCHI_SIDEBAR_ICON } from './sidebar-icon.js'
 import { MOCHI_SIDEBAR_STYLES } from './sidebar-styles.js'
 
 /** Navigation only; conversation rendering always leases the existing session. */
+export interface MochiSidebar {readonly root:HTMLElement; open():void; destroy():void}
 export function createMochiSidebar(ctx: Pick<SpindleFrontendContext,'ui'>, session: MochiSession,
-  policy: () => Pick<MochiNotificationPolicy,'enabled'|'previews'>): () => void {
-  const drawer=ctx.ui.registerDrawerTab({id:'mochi',title:'Mochi',shortName:'Mochi',headerTitle:'Mochi',description:'Independent fictional accounts and conversations',keywords:['messenger','accounts','Mochi'],iconSvg:MOCHI_SIDEBAR_ICON})
+  policy: () => Pick<MochiNotificationPolicy,'enabled'|'previews'>): MochiSidebar {
   const root=document.createElement('section');root.className='mochi-sidebar';root.setAttribute('aria-label','Mochi account navigation')
   const style=document.createElement('style');style.textContent=MOCHI_SIDEBAR_STYLES
   const nav=document.createElement('nav'),picker=document.createElement('div'),body=document.createElement('div')
   nav.className='mochi-sidebar-nav';nav.setAttribute('aria-label','Mochi navigation');picker.className='mochi-sidebar-picker';body.className='mochi-sidebar-body';body.hidden=true
-  root.append(style,nav,picker,body);drawer.root.append(root)
+  root.append(style,nav,picker,body)
   let disposed=false, workspace:MochiWorkspace|undefined, fallback='', rendered=''
   const button=(label:string,click:(node:HTMLButtonElement)=>void)=>{const node=document.createElement('button');node.type='button';node.textContent=label;node.onclick=()=>click(node);return node}
   const showPicker=()=>{picker.hidden=false;body.hidden=true;session.prepareNavigation();render()}
@@ -57,9 +56,8 @@ export function createMochiSidebar(ctx: Pick<SpindleFrontendContext,'ui'>, sessi
     const legacy=button('Unassigned legacy chats',anchor=>session.view.selectNavigationAccount(undefined,anchor,present));legacy.disabled=state.switching;picker.append(legacy)
     if(focused)Array.from(picker.querySelectorAll<HTMLButtonElement>('[data-account-id]')).find(n=>n.dataset.accountId===focused)?.focus({preventScroll:true})
   }
-  const dispose=()=>{if(disposed)return;disposed=true;workspace?.destroy();offActivate();drawer.destroy();root.remove()}
-  const offActivate=drawer.onActivate(showPicker)
+  const dispose=()=>{if(disposed)return;disposed=true;workspace?.destroy();root.remove()}
   const detach=session.observeNavigation({redraw:render,disposed:dispose})
   render()
-  return()=>{detach();dispose()}
+  return {root,open:()=>{session.assertActive();showPicker()},destroy:()=>{detach();dispose()}}
 }
