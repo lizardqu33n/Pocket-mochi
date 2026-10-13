@@ -50,6 +50,33 @@ export class MochiView {
   private pickerOpen = false
   private startupOpen = false
   private activeAccountId?: string
+  private lastRooms = new Map<string, string>()
+  private navigationRequest = ''
+  private navigationTimeout?: ReturnType<typeof setTimeout>
+  private navigationError = ''
+  private restoreRoom = false
+  get navigationState() { return {accounts:this.profiles.state, selectedAccountId:this.state?.accountId||this.activeAccountId, loading:!!this.navigationRequest, error:this.navigationError, switching:this.busy} }
+  loadNavigationAccounts(): void {
+    if (this.destroyed || this.navigationRequest) return
+    this.navigationError = ''; this.navigationRequest = requestId('mochi_navigation')
+    this.navigationTimeout = setTimeout(()=>{this.navigationRequest='';this.navigationError='Accounts are unavailable. Try again.';this.redraw()},30000)
+    this.send({type:'mochi:accounts',requestId:this.navigationRequest}); this.redraw()
+  }
+  selectNavigationAccount(id: string | undefined, anchor: HTMLElement, present: () => void): void {
+    if (this.destroyed || this.busy) return
+    if (id && !this.profiles.state?.accounts.some(a=>a.id===id&&!a.archived)) return
+    if (this.state && this.state.accountId === id) { present(); return }
+    this.exitPortal(()=>{
+      this.restoreRoom=true
+      if(id)this.chooseAccount(id)
+      else {this.leave();this.resetScope();this.pickerOpen=false;this.profilesOpen=false;this.load()}
+      present()
+    },anchor)
+  }
+  createNavigationAccount(anchor: HTMLElement, present: () => void): void {
+    if (this.destroyed || this.busy || !this.profiles.state) return
+    this.exitPortal(()=>{this.leave();this.profiles.start();this.profilesOpen=true;this.pickerOpen=true;this.refreshChoices();this.redraw();present()},anchor)
+  }
   private phone?: MochiPhone
   private associations=new Map<string,{accountId:string;revision:number}>()
   private retiredSchedulingSessions = new Map<string, Set<string>>()
@@ -74,6 +101,7 @@ export class MochiView {
     this.leave();this.resetScope();this.phone=phone;this.pickerOpen=true;this.startupOpen=true;this.profilesOpen=false;this.profiles.state=null;this.dispatch('mochi:accounts')
   }
   private resetScope():void{
+    if(this.state&&this.roomId)this.lastRooms.set(this.state.accountId||'',this.roomId)
     this.desktopHistory.clear()
     this.retiredSchedulingSessions.clear(); this.schedulingTime.clear(); this.schedulingRoot = undefined
     this.notificationsChanged([],new Set(this.state?.rooms.map(r=>r.id)||[]));this.state=null;this.activeAccountId=undefined;this.roomId='';this.creating=false;this.editing=false;this.draft=null;this.settingsDraft=null;this.notificationsOpen=false;this.busy=false;clearTimeout(this.timeout);this.request='';this.selectionVersion++;this.notificationRevisions.clear();this.seenNotifications.clear();this.acknowledged.clear();this.acknowledgementRequests.clear();this.ownGenerations.clear()
@@ -174,6 +202,7 @@ export class MochiView {
   }
   select(id: string): void {
     if (this.roomId !== id) { this.leave(); this.selectionVersion++; this.roomId = id; this.creating = false; this.editing = false; this.draft = null; this.settingsDraft = null }
+    if(this.state){if(id)this.lastRooms.set(this.state.accountId||'',id);else this.lastRooms.delete(this.state.accountId||'')}
   }
   leave(): void {
     for (const dismiss of this.sheets) dismiss(); this.sheets.clear()
@@ -185,11 +214,12 @@ export class MochiView {
     try { if (cancel) this.leave(); else { for (const dismiss of this.sheets) dismiss(); this.sheets.clear() } }
     finally {
       this.destroyed = true
+      clearTimeout(this.navigationTimeout);this.navigationRequest='';this.navigationError='';this.lastRooms.clear()
       clearTimeout(this.timeout); clearTimeout(this.choicesTimeout); clearInterval(this.presenceTimer)
       for (const controller of this.modelControllers) controller.abort()
       this.modelControllers.clear(); this.modelChoices.clear(); this.choicesRequest = ''
       this.resetScope(); this.profiles = new MochiProfiles(); this.profilesOpen = false; this.pickerOpen = false
-      this.drafts.clear(); this.responders.clear(); this.pendingSends.clear(); this.associations.clear(); this.settingsSections.clear()
+      this.drafts.clear(); this.responders.clear(); this.pendingSends.clear(); this.associations.clear(); this.settingsSections.clear(); this.lastRooms.clear()
       this.phone = undefined; this.presenceRoot = undefined; this.error = ''; this.feedback = ''; this.formBaseline = ''
     }
   }
@@ -213,6 +243,12 @@ export class MochiView {
   }
   receive(payload: any): boolean {
     if (this.destroyed) return false
+    if(this.navigationRequest&&payload?.requestId===this.navigationRequest&&(payload.type==='mochi:accounts'||payload.type==='mochi:error')){
+      clearTimeout(this.navigationTimeout);this.navigationRequest=''
+      if(payload.type==='mochi:error')this.navigationError='Unable to load accounts. Try again.'
+      else if(!this.profiles.state||payload.state.revision>=this.profiles.state.revision)this.profiles.state=payload.state
+      this.redraw();return true
+    }
     if(payload?.requestId===this.choicesRequest&&this.choicesRequest&&(payload.type==='mochi:choices'||payload.type==='mochi:error')){
       clearTimeout(this.choicesTimeout);this.choicesRequest=''
       if(this.choicesVersion!==this.selectionVersion)return true
@@ -319,6 +355,12 @@ export class MochiView {
         if (previous && (previous.associationRevision || 0) === (room.associationRevision || 0)) room.background = this.mergeScheduling(previous, room.background, room.revision)
       }
       this.state = { ...payload.state, notifications }
+      if(this.restoreRoom&&this.state&&this.state.accountId===this.activeAccountId){
+        this.restoreRoom=false
+        const last=this.lastRooms.get(this.state.accountId||'')
+        this.roomId=last&&this.state.rooms.some(r=>r.id===last&&r.accountId===this.state?.accountId)?last:''
+        if(!this.roomId)this.lastRooms.delete(this.state.accountId||'')
+      }
       for (const [id, request] of this.ownGenerations) if (this.state && this.state.jobs?.[id] !== request) this.ownGenerations.delete(id)
       if (payload.selectedRoomId && this.requestVersion === this.selectionVersion) {
         this.creating = false; this.editing = false; this.draft = null

@@ -1,5 +1,15 @@
 # Pocket evaluation backlog — 2026-10-06
 
+## Mochi development order (user-approved update, 2026-10-12)
+
+Complete the dedicated desktop client, approachable settings, fictional clocks,
+messaging improvements, memory, optional RP linking and stability before full theme
+customization. Full Mochi themes and visual branding polish belong to the FINAL
+development milestone before Mochi 1.0. Essential layout, responsiveness, contrast
+and accessibility fixes remain allowed throughout development. Keep new styling
+in scoped, centralized modules. Desktop 01E uses a replaceable temporary sidebar
+SVG while the user prepares the final sibling-app icon; Pocket's icon is unchanged.
+
 Main Lumi is the evaluation environment. Update LumiTest after this pass, not during it.
 Preserve messaging/candidate commit behavior; changes below are targeted fixes and presentation work.
 

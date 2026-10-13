@@ -1,0 +1,119 @@
+import { expect, test } from 'bun:test'
+import { JSDOM } from 'jsdom'
+import { getMochiSession } from '../src/mochi/session.js'
+import { createMochiSidebar } from '../src/mochi/sidebar.js'
+import { createMochiWorkspace } from '../src/mochi/workspace.js'
+import type { SpindleFrontendContext } from 'lumiverse-spindle-types'
+
+function fixture(width=900, geometry=true) {
+  const dom=new JSDOM('<body><main id="portal"></main></body>',{pretendToBeVisual:true})
+  const previous={document:globalThis.document,window:globalThis.window};Object.assign(globalThis,{document:dom.window.document,window:dom.window})
+  Object.defineProperty(window,'innerWidth',{value:width,configurable:true})
+  // jsdom does not implement native modal dialogs; emulate their lifecycle.
+  dom.window.HTMLDialogElement.prototype.showModal=function(){this.open=true}
+  dom.window.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new dom.window.Event('close'))}
+  const listeners=new Set<(p:unknown)=>void>(),sent:any[]=[],tabs:any[]=[];let floats=0
+  const session=getMochiSession({sendToBackend:p=>sent.push(p),onBackendMessage:fn=>{listeners.add(fn);return()=>{listeners.delete(fn)}}})
+  const ui:any={registerDrawerTab:(options:any)=>{
+    const root=document.createElement('div');document.body.append(root);let activate:(()=>void)|undefined
+    const tab={options,root,onActivate:(fn:()=>void)=>{activate=fn;return()=>{activate=undefined}},activate:()=>activate?.(),destroy:()=>root.remove()};tabs.push(tab);return tab
+  },createFloatWidget:(options:any)=>{
+    floats++;const root=document.createElement('div');document.body.append(root);let position={...options.initialPosition}
+    return {root,setVisible:(visible:boolean)=>{root.hidden=!visible},setSize:()=>{},moveTo:(x:number,y:number)=>{position={x,y}},getPosition:()=>position,onDragEnd:()=>()=>{},destroy:()=>root.remove()}
+  }}
+  if(geometry)ui.geometry={layoutViewportSize:()=>({width,height:850}),createResizeController:()=>()=>{}}
+  const destroy=createMochiSidebar({ui} as Pick<SpindleFrontendContext,'ui'>,session,()=>({enabled:true,previews:false}))
+  const a='account_'+'a'.repeat(32),b='account_'+'b'.repeat(32)
+  const bank:any={version:1,ownerId:'synthetic',revision:1,selectedAccountId:a,accounts:[a,b].map((id,i)=>({id,displayName:i?'Other profile':'Long fictional profile '.repeat(5),avatarUrl:'',archived:false,roomIds:['room_'+id]})),personas:[],avatars:[],warnings:[],canUploadAvatar:false}
+  const emit=(p:any)=>{for(const fn of listeners)fn(p)}
+  const request=(type:string)=>sent.filter(p=>p.type===type).at(-1)
+  const accounts=()=>emit({type:'mochi:accounts',requestId:request('mochi:accounts').requestId,state:structuredClone(bank)})
+  const state=(id:string|undefined,rooms=true)=>({accountId:id,rooms:rooms?[{id:'room_'+(id||'legacy'),accountId:id,ownerId:'synthetic',revision:1,title:'Long room '.repeat(15),characterIds:[],persona:{name:'Me',description:''},messages:[],settings:{autoReply:true,responseMode:'instant',instructions:'',connectionId:'',contextTokens:8192,outputTokens:1200,characterNames:{}}}]:[],characters:[],personas:[],connections:[],notifications:[],warnings:[]})
+  const select=(id:string|undefined,rooms=true)=>{
+    const button=id?tabs[0].root.querySelector(`[data-account-id="${id}"]`):Array.from(tabs[0].root.querySelectorAll('button')).find((n:any)=>n.textContent==='Unassigned legacy chats')
+    ;(button as HTMLButtonElement).click()
+    if(id){bank.selectedAccountId=id;bank.revision++;emit({type:'mochi:accounts',requestId:request('mochi:account_select').requestId,state:structuredClone(bank)})}
+    emit({type:'mochi:state',requestId:request('mochi:list').requestId,state:state(id,rooms)})
+  }
+  const cleanup=()=>{try{destroy();session.destroy(false)}finally{dom.window.close();Object.assign(globalThis,previous)}}
+  return {session,tabs,sent,listeners,bank,a,b,emit,accounts,request,state,select,cleanup,get floats(){return floats}}
+}
+
+test('sidebar is navigation only: one subscription, no cancellation/read receipt or independent view',()=>{
+  const h=fixture()
+  try{
+    const portal=createMochiWorkspace({root:document.getElementById('portal')!,session:h.session,notificationPolicy:()=>({enabled:false,previews:false})})
+    portal.open();h.emit({type:'mochi:accounts',requestId:h.request('mochi:accounts').requestId,state:h.bank})
+    h.session.view.state=h.state(h.a);h.session.view.roomId='room_'+h.a
+    const view=h.session.view as any;view.ownGenerations.set(view.roomId,'synthetic-generation');view.drafts.set(view.roomId,'keep this draft');view.busy=true;view.request='synthetic-generation'
+    const before=h.sent.length
+    h.tabs[0].activate();h.accounts();h.tabs[0].activate();h.accounts()
+    expect(h.listeners.size).toBe(1);expect(h.session.view).toBe(view);expect(portal.isOpen).toBe(true)
+    expect(h.sent.slice(before).every(p=>p.type==='mochi:accounts')).toBe(true)
+    expect(view.ownGenerations.get(view.roomId)).toBe('synthetic-generation');expect(view.drafts.get(view.roomId)).toBe('keep this draft');expect(h.floats).toBe(0)
+    expect(view.busy).toBe(true);expect(view.request).toBe('synthetic-generation')
+    expect(h.tabs[0].options.id).toBe('mochi');expect(h.tabs[0].options.iconSvg).toContain('viewBox="0 0 24 24"')
+  }finally{h.cleanup()}
+})
+
+test('desktop selection restores rooms per account, reuses one window and falls back for missing rooms',()=>{
+  const h=fixture()
+  try{
+    h.tabs[0].activate();h.accounts();h.select(h.a);h.session.view.select('room_'+h.a)
+    h.tabs[0].activate();h.accounts();h.select(h.b);h.session.view.select('room_'+h.b)
+    h.tabs[0].activate();h.accounts();h.select(h.a)
+    expect(h.session.view.roomId).toBe('room_'+h.a);expect(h.floats).toBe(1);expect(h.listeners.size).toBe(1)
+    expect(document.querySelectorAll('.mochi-window')).toHaveLength(1)
+    h.tabs[0].activate();h.accounts();h.select(h.b,false);expect(h.session.view.roomId).toBe('')
+    h.session.authenticatedIdentityChanged(null);expect(h.listeners.size).toBe(0);expect(document.querySelector('.mochi-sidebar')).toBeNull();expect(h.session.view.state).toBeNull()
+  }finally{h.cleanup()}
+})
+
+for(const width of [320,390])test(`mobile ${width}: account selection stays in Mochi drawer; legacy scope preserved`,()=>{
+  const h=fixture(width)
+  try{
+    h.tabs[0].activate();h.accounts();h.select(h.a)
+    expect(h.floats).toBe(0);expect(h.tabs[0].root.querySelector('.mochi-desktop')).not.toBeNull()
+    h.tabs[0].activate();h.accounts();h.select(undefined)
+    expect(h.session.view.state?.accountId).toBeUndefined();expect(h.floats).toBe(0);expect(h.listeners.size).toBe(1)
+    h.session.view.select('room_legacy');h.tabs[0].activate();h.accounts();h.select(h.a)
+    h.tabs[0].activate();h.accounts();h.select(undefined);expect(h.session.view.roomId).toBe('room_legacy')
+  }finally{h.cleanup()}
+})
+
+test('navigation refresh stays metadata-only before selection; hidden mobile picker does not acknowledge notifications',()=>{
+  const h=fixture(390)
+  try{
+    h.tabs[0].activate();h.session.refresh();expect(h.sent.filter(p=>p.type==='mochi:accounts')).toHaveLength(1);expect(h.sent.some(p=>p.type==='mochi:list')).toBe(false)
+    h.accounts();h.select(h.a);h.session.view.select('room_'+h.a)
+    h.tabs[0].activate();h.accounts();const before=h.sent.length
+    h.emit({type:'mochi:notification',accountId:h.a,notificationRevision:1,notification:{id:'notice',accountId:h.a,roomId:'room_'+h.a,messageId:'message',title:'Synthetic',roomTitle:'Synthetic',body:'Synthetic',avatarUrl:'',createdAt:'2026-10-12T12:00:00Z',read:false}})
+    expect(h.sent.slice(before).some(p=>p.type==='mochi:notification_read')).toBe(false)
+    expect(document.querySelector('.mochi-notification-toast')).toBeNull()
+  }finally{h.cleanup()}
+})
+
+test('unsupported float host uses Mochi drawer, never Pocket phone',()=>{
+  const h=fixture(900,false)
+  try{h.tabs[0].activate();h.accounts();h.select(h.a);expect(h.floats).toBe(0);expect(h.tabs[0].root.textContent).toContain('Floating windows are unavailable');expect(h.tabs[0].root.querySelector('.mochi-desktop')).not.toBeNull()}finally{h.cleanup()}
+})
+
+test('picker loading/error/empty states, account creation and dirty-form safeguards use existing view',()=>{
+  const h=fixture()
+  try{
+    h.tabs[0].activate();expect(h.tabs[0].root.textContent).toContain('Loading accounts')
+    h.emit({type:'mochi:error',requestId:h.request('mochi:accounts').requestId,message:'private detail'});expect(h.tabs[0].root.textContent).toContain('Unable to load accounts');expect(h.tabs[0].root.textContent).not.toContain('private detail')
+    h.tabs[0].activate();h.bank.accounts=[];h.accounts();expect(h.tabs[0].root.textContent).toContain('No fictional accounts yet')
+    Array.from(h.tabs[0].root.querySelectorAll<HTMLButtonElement>('button')).find(n=>n.textContent==='Create account')!.click()
+    expect(h.floats).toBe(1);expect(document.querySelector('.mochi-profile-preview')).not.toBeNull()
+    const view=h.session.view as any;view.profiles.draft.displayName='Unsaved name';expect(view.hasUnsavedChanges()).toBe(true)
+    h.bank.accounts=[{id:h.b,displayName:'Other',avatarUrl:'',archived:false,roomIds:[]}];h.tabs[0].activate();h.accounts()
+    const count=h.sent.length;h.tabs[0].root.querySelector<HTMLButtonElement>(`[data-account-id="${h.b}"]`)!.click()
+    expect(h.sent.length).toBe(count);expect(view.profiles.draft.displayName).toBe('Unsaved name');expect(document.body.textContent).toContain('You have unsaved changes')
+    Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(n=>n.textContent.includes('Keep editing'))!.click()
+    expect(h.sent.length).toBe(count);expect(view.hasUnsavedChanges()).toBe(true)
+    h.tabs[0].root.querySelector<HTMLButtonElement>(`[data-account-id="${h.b}"]`)!.click()
+    Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(n=>n.textContent.includes('Discard changes'))!.click()
+    expect(h.request('mochi:account_select').accountId).toBe(h.b)
+  }finally{h.cleanup()}
+})

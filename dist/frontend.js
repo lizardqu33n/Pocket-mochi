@@ -728,6 +728,63 @@ class MochiView {
   pickerOpen = false;
   startupOpen = false;
   activeAccountId;
+  lastRooms = new Map;
+  navigationRequest = "";
+  navigationTimeout;
+  navigationError = "";
+  restoreRoom = false;
+  get navigationState() {
+    return { accounts: this.profiles.state, selectedAccountId: this.state?.accountId || this.activeAccountId, loading: !!this.navigationRequest, error: this.navigationError, switching: this.busy };
+  }
+  loadNavigationAccounts() {
+    if (this.destroyed || this.navigationRequest)
+      return;
+    this.navigationError = "";
+    this.navigationRequest = requestId("mochi_navigation");
+    this.navigationTimeout = setTimeout(() => {
+      this.navigationRequest = "";
+      this.navigationError = "Accounts are unavailable. Try again.";
+      this.redraw();
+    }, 30000);
+    this.send({ type: "mochi:accounts", requestId: this.navigationRequest });
+    this.redraw();
+  }
+  selectNavigationAccount(id, anchor, present) {
+    if (this.destroyed || this.busy)
+      return;
+    if (id && !this.profiles.state?.accounts.some((a) => a.id === id && !a.archived))
+      return;
+    if (this.state && this.state.accountId === id) {
+      present();
+      return;
+    }
+    this.exitPortal(() => {
+      this.restoreRoom = true;
+      if (id)
+        this.chooseAccount(id);
+      else {
+        this.leave();
+        this.resetScope();
+        this.pickerOpen = false;
+        this.profilesOpen = false;
+        this.load();
+      }
+      present();
+    }, anchor);
+  }
+  createNavigationAccount(anchor, present) {
+    if (this.destroyed || this.busy || !this.profiles.state)
+      return;
+    this.exitPortal(() => {
+      this.leave();
+      this.profiles.start();
+      this.profilesOpen = true;
+      this.pickerOpen = true;
+      this.refreshChoices();
+      this.redraw();
+      present();
+    }, anchor);
+  }
   phone;
   associations = new Map;
   retiredSchedulingSessions = new Map;
@@ -766,6 +823,8 @@ class MochiView {
     this.dispatch("mochi:accounts");
   }
   resetScope() {
+    if (this.state && this.roomId)
+      this.lastRooms.set(this.state.accountId || "", this.roomId);
     this.desktopHistory.clear();
     this.retiredSchedulingSessions.clear();
     this.schedulingTime.clear();
@@ -962,6 +1021,12 @@ class MochiView {
       this.draft = null;
       this.settingsDraft = null;
     }
+    if (this.state) {
+      if (id)
+        this.lastRooms.set(this.state.accountId || "", id);
+      else
+        this.lastRooms.delete(this.state.accountId || "");
+    }
   }
   leave() {
     for (const dismiss of this.sheets)
@@ -989,6 +1054,10 @@ class MochiView {
       }
     } finally {
       this.destroyed = true;
+      clearTimeout(this.navigationTimeout);
+      this.navigationRequest = "";
+      this.navigationError = "";
+      this.lastRooms.clear();
       clearTimeout(this.timeout);
       clearTimeout(this.choicesTimeout);
       clearInterval(this.presenceTimer);
@@ -1006,6 +1075,7 @@ class MochiView {
       this.pendingSends.clear();
       this.associations.clear();
       this.settingsSections.clear();
+      this.lastRooms.clear();
       this.phone = undefined;
       this.presenceRoot = undefined;
       this.error = "";
@@ -1040,6 +1110,16 @@ class MochiView {
   receive(payload) {
     if (this.destroyed)
       return false;
+    if (this.navigationRequest && payload?.requestId === this.navigationRequest && (payload.type === "mochi:accounts" || payload.type === "mochi:error")) {
+      clearTimeout(this.navigationTimeout);
+      this.navigationRequest = "";
+      if (payload.type === "mochi:error")
+        this.navigationError = "Unable to load accounts. Try again.";
+      else if (!this.profiles.state || payload.state.revision >= this.profiles.state.revision)
+        this.profiles.state = payload.state;
+      this.redraw();
+      return true;
+    }
     if (payload?.requestId === this.choicesRequest && this.choicesRequest && (payload.type === "mochi:choices" || payload.type === "mochi:error")) {
       clearTimeout(this.choicesTimeout);
       this.choicesRequest = "";
@@ -1228,6 +1308,13 @@ class MochiView {
           room.background = this.mergeScheduling(previous, room.background, room.revision);
       }
       this.state = { ...payload.state, notifications };
+      if (this.restoreRoom && this.state && this.state.accountId === this.activeAccountId) {
+        this.restoreRoom = false;
+        const last = this.lastRooms.get(this.state.accountId || "");
+        this.roomId = last && this.state.rooms.some((r) => r.id === last && r.accountId === this.state?.accountId) ? last : "";
+        if (!this.roomId)
+          this.lastRooms.delete(this.state.accountId || "");
+      }
       for (const [id, request] of this.ownGenerations)
         if (this.state && this.state.jobs?.[id] !== request)
           this.ownGenerations.delete(id);
@@ -2325,6 +2412,7 @@ class MochiSession {
   surfaces = new Set;
   active;
   nativeListeners = new Set;
+  navigationObservers = new Set;
   unsubscribe;
   started = false;
   destroyed = false;
@@ -2339,6 +2427,8 @@ class MochiSession {
     }, () => {
       for (const surface of this.surfaces)
         surface.redraw();
+      for (const observer of this.navigationObservers)
+        observer.redraw();
     }, (id) => this.active?.navigate(id), () => this.active?.policy() || { enabled: false, previews: false, visible: false }, (notice) => {
       if (this.active?.policy().enabled)
         this.active.notify(notice, () => this.view.openRoom(notice.roomId));
@@ -2385,7 +2475,7 @@ class MochiSession {
           this.hide(surface);
       } finally {
         surface.disposed();
-        if (!this.surfaces.size && !this.nativeListeners.size)
+        if (!this.surfaces.size && !this.nativeListeners.size && !this.navigationObservers.size)
           this.destroy();
       }
     };
@@ -2399,6 +2489,19 @@ class MochiSession {
   }
   owns(surface) {
     return !this.destroyed && this.active === surface;
+  }
+  observeNavigation(observer) {
+    this.assertActive();
+    this.navigationObservers.add(observer);
+    return () => {
+      if (this.navigationObservers.delete(observer))
+        observer.disposed();
+    };
+  }
+  prepareNavigation() {
+    this.assertActive();
+    this.started = true;
+    this.view.loadNavigationAccounts();
   }
   activate(surface) {
     this.assertActive();
@@ -2426,8 +2529,12 @@ class MochiSession {
   }
   refresh() {
     this.assertActive();
-    if (this.started)
-      this.view.load();
+    if (this.started) {
+      if (this.view.state)
+        this.view.load();
+      else
+        this.view.loadNavigationAccounts();
+    }
   }
   authenticatedIdentityChanged(owner) {
     this.assertActive();
@@ -2469,6 +2576,9 @@ class MochiSession {
         clean(() => surface.disposed());
       }
       this.surfaces.clear();
+      for (const observer of this.navigationObservers)
+        clean(() => observer.disposed());
+      this.navigationObservers.clear();
     }
     if (failure)
       throw failure;
@@ -2762,6 +2872,164 @@ function createMochiWindow(ui, session, notificationPolicy) {
   } };
   windows.set(session, result);
   return result;
+}
+
+// src/mochi/sidebar-icon.ts
+var MOCHI_SIDEBAR_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16C3 10 7 5 12 5s9 5 9 11c0 3-4 4-9 4s-9-1-9-4Z"/><circle cx="8" cy="13" r=".7"/><circle cx="16" cy="13" r=".7"/><path d="M10 15q2 2 4 0M18 3l1-1"/></svg>';
+
+// src/mochi/sidebar-styles.ts
+var MOCHI_SIDEBAR_STYLES = `
+.mochi-sidebar{height:100%;min-height:0;display:flex;flex-direction:column;color:var(--lumiverse-text,#eee);font:inherit}
+.mochi-sidebar-nav{display:flex;gap:8px;padding:12px;flex-shrink:0}
+.mochi-sidebar-picker{overflow:auto;padding:0 12px 16px;min-height:0}
+.mochi-sidebar button{font:inherit;color:inherit;background:var(--lumiverse-bg-elevated,#29262f);border:1px solid var(--lumiverse-border,#ffffff26);border-radius:10px;min-height:44px;padding:8px 12px;cursor:pointer}
+.mochi-sidebar button:focus-visible{outline:2px solid var(--lumiverse-primary,#9399ab);outline-offset:2px}
+.mochi-sidebar button:disabled{opacity:.6;cursor:default}
+.mochi-sidebar-account{display:flex;align-items:center;text-align:left;gap:12px;width:100%;margin:8px 0}
+.mochi-sidebar-account[aria-pressed=true]{border-color:var(--lumiverse-primary,#9399ab)}
+.mochi-sidebar-avatar{display:grid;place-items:center;flex:0 0 40px;width:40px;height:40px;border-radius:50%;overflow:hidden;background:var(--lumiverse-bg,#18161d)}
+.mochi-sidebar-avatar img{width:100%;height:100%;object-fit:cover}
+.mochi-sidebar-label{min-width:0;display:flex;flex-direction:column;gap:3px;overflow-wrap:anywhere}
+.mochi-sidebar-label small{opacity:.7}
+.mochi-sidebar-message{margin:12px 0;font-size:.9em;opacity:.8}
+.mochi-sidebar-body{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+.mochi-sidebar [hidden]{display:none!important}
+`;
+
+// src/mochi/sidebar.ts
+function createMochiSidebar(ctx, session, policy) {
+  const drawer = ctx.ui.registerDrawerTab({ id: "mochi", title: "Mochi", shortName: "Mochi", headerTitle: "Mochi", description: "Independent fictional accounts and conversations", keywords: ["messenger", "accounts", "Mochi"], iconSvg: MOCHI_SIDEBAR_ICON });
+  const root = document.createElement("section");
+  root.className = "mochi-sidebar";
+  root.setAttribute("aria-label", "Mochi account navigation");
+  const style = document.createElement("style");
+  style.textContent = MOCHI_SIDEBAR_STYLES;
+  const nav = document.createElement("nav"), picker = document.createElement("div"), body = document.createElement("div");
+  nav.className = "mochi-sidebar-nav";
+  nav.setAttribute("aria-label", "Mochi navigation");
+  picker.className = "mochi-sidebar-picker";
+  body.className = "mochi-sidebar-body";
+  body.hidden = true;
+  root.append(style, nav, picker, body);
+  drawer.root.append(root);
+  let disposed = false, workspace, fallback = "", rendered = "";
+  const button = (label, click) => {
+    const node = document.createElement("button");
+    node.type = "button";
+    node.textContent = label;
+    node.onclick = () => click(node);
+    return node;
+  };
+  const showPicker = () => {
+    picker.hidden = false;
+    body.hidden = true;
+    session.prepareNavigation();
+    render();
+  };
+  const present = () => {
+    const mobile = window.innerWidth <= 600 || window.matchMedia?.("(pointer: coarse)").matches;
+    if (!mobile) {
+      try {
+        createMochiWindow(ctx.ui, session, policy).open();
+        fallback = "";
+        render();
+        return;
+      } catch {
+        fallback = "Floating windows are unavailable in this host. Mochi is open in this drawer.";
+      }
+    }
+    workspace ||= createMochiWorkspace({ root: body, session, notificationPolicy: policy, presentation: "messenger" });
+    picker.hidden = true;
+    body.hidden = false;
+    workspace.open();
+    render();
+  };
+  const accounts = button("Accounts", () => showPicker()), open = button("Open messenger", () => present());
+  nav.append(accounts, open);
+  function render() {
+    if (disposed)
+      return;
+    const state = session.view.navigationState, focused = picker.contains(document.activeElement) ? document.activeElement.dataset.accountId : undefined;
+    open.disabled = !session.view.state;
+    const key = JSON.stringify([state.accounts?.revision, state.accounts?.accounts.map((a) => [a.id, a.displayName, a.avatarUrl, a.archived, a.roomIds.length]), state.selectedAccountId, state.loading, state.error, state.switching, fallback]);
+    if (key === rendered)
+      return;
+    rendered = key;
+    picker.replaceChildren();
+    const message = (text) => {
+      const p = document.createElement("p");
+      p.className = "mochi-sidebar-message";
+      p.textContent = text;
+      picker.append(p);
+    };
+    if (fallback)
+      message(fallback);
+    if (state.loading)
+      message("Loading accounts…");
+    if (state.error) {
+      message(state.error);
+      picker.append(button("Try again", () => session.prepareNavigation()));
+    }
+    if (!state.accounts) {
+      if (!state.loading && !state.error)
+        message("Open Accounts to load your Mochi profiles.");
+      return;
+    }
+    const available = state.accounts.accounts.filter((a) => !a.archived);
+    if (!available.length)
+      message("No fictional accounts yet. Create one to start chatting.");
+    for (const account of available) {
+      const node = button("", (anchor) => session.view.selectNavigationAccount(account.id, anchor, present));
+      node.className = "mochi-sidebar-account";
+      node.dataset.accountId = account.id;
+      node.setAttribute("aria-label", `Use Mochi account ${account.displayName}`);
+      node.setAttribute("aria-pressed", String(state.selectedAccountId === account.id));
+      node.disabled = state.switching;
+      const avatar = document.createElement("span");
+      avatar.className = "mochi-sidebar-avatar";
+      avatar.setAttribute("aria-hidden", "true");
+      avatar.textContent = account.displayName.slice(0, 1);
+      if (account.avatarUrl) {
+        const image = document.createElement("img");
+        image.src = account.avatarUrl;
+        image.alt = "";
+        avatar.replaceChildren(image);
+      }
+      const label = document.createElement("span");
+      label.className = "mochi-sidebar-label";
+      const name = document.createElement("span");
+      name.textContent = account.displayName;
+      const detail = document.createElement("small");
+      detail.textContent = `${state.selectedAccountId === account.id ? "Selected · " : ""}${account.roomIds.length} chats`;
+      label.append(name, detail);
+      node.append(avatar, label);
+      picker.append(node);
+    }
+    const create = button("Create account", (anchor) => session.view.createNavigationAccount(anchor, present));
+    create.disabled = state.switching;
+    picker.append(create);
+    const legacy = button("Unassigned legacy chats", (anchor) => session.view.selectNavigationAccount(undefined, anchor, present));
+    legacy.disabled = state.switching;
+    picker.append(legacy);
+    if (focused)
+      Array.from(picker.querySelectorAll("[data-account-id]")).find((n) => n.dataset.accountId === focused)?.focus({ preventScroll: true });
+  }
+  const dispose = () => {
+    if (disposed)
+      return;
+    disposed = true;
+    workspace?.destroy();
+    offActivate();
+    drawer.destroy();
+    root.remove();
+  };
+  const offActivate = drawer.onActivate(showPicker);
+  const detach = session.observeNavigation({ redraw: render, disposed: dispose });
+  render();
+  return () => {
+    detach();
+    dispose();
+  };
 }
 
 // src/frontend/components/portal.ts
@@ -10121,6 +10389,7 @@ class PocketController {
       }
     };
     this.cleanups.push(this.mochiSession.attach(this.mochiSurface));
+    this.cleanups.push(createMochiSidebar(this.ctx, this.mochiSession, () => ({ enabled: this.preferences.notifyMessages, previews: this.preferences.notificationPreviews })));
     this.cleanups.push(this.ctx.events.on("CHAT_SWITCHED", () => {
       this.setupModalDismiss?.();
       this.settledOperationRequests.clear();

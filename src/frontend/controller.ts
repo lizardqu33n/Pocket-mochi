@@ -3,6 +3,7 @@ import { GALLERY_PAGE_SIZE } from '../domain/gallery-page.js'
 import { MochiView } from '../mochi/view.js'
 import { getMochiSession, type MochiSession, type MochiSurface } from '../mochi/session.js'
 import { createMochiWindow, type MochiWindow, type MochiWindowUI } from '../mochi/window.js'
+import { createMochiSidebar } from '../mochi/sidebar.js'
 import { PocketPortal } from './components/portal.js'
 import { showMochiNotification, reconcileMochiNotifications } from '../mochi/notifications.js'
 import type { MochiNotification } from '../mochi/types.js'
@@ -418,6 +419,8 @@ class PocketController {
       disposed: () => { for(const node of this.drawer.root.querySelectorAll('.mochi-view'))node.remove();this.screen.querySelector('.mochi-view')?.remove();if(this.currentApp==='mochi'){this.currentApp='home';this.router.reset({app:'home'})} },
     }
     this.cleanups.push(this.mochiSession.attach(this.mochiSurface))
+    this.cleanups.push(createMochiSidebar(this.ctx, this.mochiSession,
+      () => ({enabled:this.preferences.notifyMessages,previews:this.preferences.notificationPreviews})))
     this.cleanups.push(this.ctx.events.on('CHAT_SWITCHED', () => {
       this.setupModalDismiss?.()
       this.settledOperationRequests.clear()

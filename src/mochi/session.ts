@@ -37,6 +37,7 @@ export class MochiSession {
   private surfaces = new Set<MochiSurface>()
   private active?: MochiSurface
   private nativeListeners = new Set<(payload: unknown) => void>()
+  private navigationObservers = new Set<{redraw():void; disposed():void}>()
   private unsubscribe: () => void
   private started = false
   private destroyed = false
@@ -45,7 +46,7 @@ export class MochiSession {
   private invalidAuth?: () => void
   private constructor(private transport: MochiTransport) {
     this.view = new MochiView(payload => { this.assertActive(); transport.sendToBackend(payload) },
-      () => { for (const surface of this.surfaces) surface.redraw() }, id => this.active?.navigate(id),
+      () => { for (const surface of this.surfaces) surface.redraw(); for (const observer of this.navigationObservers) observer.redraw() }, id => this.active?.navigate(id),
       () => this.active?.policy() || {enabled:false,previews:false,visible:false},
       notice => { if (this.active?.policy().enabled) this.active.notify(notice, () => this.view.openRoom(notice.roomId)) },
       (notices, rooms) => this.active?.reconcile(notices, rooms))
@@ -75,7 +76,7 @@ export class MochiSession {
     return () => {
       if (!this.surfaces.delete(surface)) return
       try { if (this.active === surface) this.hide(surface) }
-      finally { surface.disposed(); if (!this.surfaces.size && !this.nativeListeners.size) this.destroy() }
+      finally { surface.disposed(); if (!this.surfaces.size && !this.nativeListeners.size && !this.navigationObservers.size) this.destroy() }
     }
   }
   subscribeNative(listener: (payload: unknown) => void): () => void {
@@ -83,6 +84,12 @@ export class MochiSession {
     return () => { this.nativeListeners.delete(listener) }
   }
   owns(surface: MochiSurface): boolean { return !this.destroyed && this.active === surface }
+  /** Navigation observes the same view without acquiring its presentation lease. */
+  observeNavigation(observer: {redraw():void; disposed():void}): () => void {
+    this.assertActive(); this.navigationObservers.add(observer)
+    return () => { if (this.navigationObservers.delete(observer)) observer.disposed() }
+  }
+  prepareNavigation(): void { this.assertActive(); this.started = true; this.view.loadNavigationAccounts() }
   activate(surface: MochiSurface): void {
     this.assertActive()
     if (!this.surfaces.has(surface)) throw new Error('Mochi surface is not attached.')
@@ -97,7 +104,7 @@ export class MochiSession {
     this.active = undefined; surface.dismiss(); surface.ownership(false)
     this.view.leave()
   }
-  refresh(): void { this.assertActive(); if (this.started) this.view.load() }
+  refresh(): void { this.assertActive(); if (this.started) { if(this.view.state)this.view.load();else this.view.loadNavigationAccounts() } }
   /** Trusted shell identity boundary. RP/fictional profile switches never call it. */
   authenticatedIdentityChanged(owner: string | null): void {
     this.assertActive()
@@ -118,6 +125,8 @@ export class MochiSession {
       this.active = undefined
       for (const surface of this.surfaces) { clean(()=>surface.dismiss()); clean(()=>surface.ownership(false)); clean(()=>surface.disposed()) }
       this.surfaces.clear()
+      for (const observer of this.navigationObservers) clean(()=>observer.disposed())
+      this.navigationObservers.clear()
     }
     if (failure) throw failure
   }
