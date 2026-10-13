@@ -33,6 +33,7 @@ import { MOCHI_REPLY_STYLES } from './reply-styles.js'
 import {REACTION_EMOJI,REACTION_NAMES,readReactions} from './reactions.js'
 import {MOCHI_REACTION_STYLES} from './reaction-styles.js'
 import {pinsPanel,MOCHI_PIN_STYLES,type NoteDraft} from './pins-panel.js'
+import {MochiSearch,MOCHI_SEARCH_STYLES} from './search-panel.js'
 
 type DisplayMessage = Pick<MochiMessage, 'id' | 'role' | 'content' | 'name' | 'createdAt'> & Partial<Pick<MochiMessage, 'avatarUrl' | 'characterId' | 'editedAt'>> & {replyTo?:unknown}
 function isDisplayMessage(value: unknown): value is DisplayMessage {
@@ -123,6 +124,7 @@ export class MochiView {
     this.leave();this.resetScope();this.phone=phone;this.pickerOpen=true;this.startupOpen=true;this.profilesOpen=false;this.profiles.state=null;this.dispatch('mochi:accounts')
   }
   private resetScope():void{
+    this.search.reset()
     if(this.state&&this.roomId)this.lastRooms.set(this.state.accountId||'',this.roomId)
     this.desktopHistory.clear()
     this.retiredSchedulingSessions.clear(); this.schedulingTime.clear(); this.schedulingRoot = undefined
@@ -172,6 +174,12 @@ export class MochiView {
   private pendingSends = new Map<string, { roomId: string; content: string; replyTo?:string; replyKey:string }>()
   private noteDrafts=new Map<string,NoteDraft>()
   private pendingNoteSave?:string
+  private search=new MochiSearch(payload=>this.send(payload),()=>this.state?.rooms.find(r=>r.id===this.roomId&&r.accountId===this.state?.accountId),()=>this.redraw(),(incoming,id)=>{
+    const room=this.state?.rooms.find(r=>r.id===this.roomId&&r.id===incoming.id&&r.accountId===incoming.accountId)
+    if(!room)return
+    Object.assign(room,incoming)
+    const quote=this.quoteNode(room,id,true);(quote as HTMLButtonElement).click()
+  },()=>this.presenceRoot?.querySelector<HTMLElement>('[aria-label="Room options"]')?.focus())
   private selectionVersion = 0
   private requestVersion = 0
   private modelControllers = new Set<AbortController>()
@@ -247,6 +255,7 @@ export class MochiView {
     if(this.state){if(id)this.lastRooms.set(this.state.accountId||'',id);else this.lastRooms.delete(this.state.accountId||'')}
   }
   leave(): void {
+    this.search.reset()
     for (const dismiss of this.sheets) dismiss(); this.sheets.clear()
     const generationRequestId = this.ownGenerations.get(this.roomId)
     if (generationRequestId) { try { this.send({ type: 'mochi:cancel', accountId: this.state?.accountId, roomId: this.roomId, generationRequestId }) } finally { this.ownGenerations.delete(this.roomId) } }
@@ -285,6 +294,7 @@ export class MochiView {
   }
   receive(payload: any): boolean {
     if (this.destroyed) return false
+    if(this.search.receive(payload))return true
     if(this.navigationRequest&&payload?.requestId===this.navigationRequest&&(payload.type==='mochi:accounts'||payload.type==='mochi:error')){
       clearTimeout(this.navigationTimeout);this.navigationRequest=''
       if(payload.type==='mochi:error')this.navigationError='Unable to load accounts. Try again.'
@@ -487,7 +497,7 @@ export class MochiView {
     page.dataset.surface = surface
     if (surface !== 'choices') this.presenceRoot=page
     const style = el('style')
-    style.textContent = MOCHI_STYLES+MOCHI_REPLY_STYLES+MOCHI_REACTION_STYLES+MOCHI_PIN_STYLES
+    style.textContent = MOCHI_STYLES+MOCHI_REPLY_STYLES+MOCHI_REACTION_STYLES+MOCHI_PIN_STYLES+MOCHI_SEARCH_STYLES
     page.append(style)
     const header = el('header'); const brand = el('div', 'mochi-brand')
     const wordmark = el('h2', 'mochi-wordmark'); wordmark.setAttribute('aria-label', 'Mochi')
@@ -537,6 +547,7 @@ export class MochiView {
       const menuAction=(label:string,callback:()=>void)=>{const item=button(label,'lp-conversation-menu-action');item.setAttribute('aria-label',label);item.addEventListener('click',()=>{menu.open=false;callback()});return item}
       menuSheet.append(menuAction('Participants',()=>{const members=el('div','mochi-participants');for(const id of room.characterIds){const c=this.state?.characters.find(c=>c.id===id),name=room.settings?.characterNames[id]||c?.name||'Unavailable character';const row=el('div','mochi-member');row.append(portrait(name,c?.avatarUrl),el('span','',name));members.append(row)}this.sheet(roomHeader,'Room participants',members);members.closest('dialog')?.addEventListener('close',()=>{if(more.isConnected)more.focus()},{once:true})}),menuAction('Settings',openSettings))
       menuSheet.append(menuAction('Pins & Notes',()=>this.openPins(roomHeader,room)))
+      menuSheet.append(menuAction('Search conversation',()=>{this.search.show(room);this.presenceRoot?.querySelector<HTMLInputElement>('[aria-label="Search conversation text"]')?.focus()}))
       menu.append(more,menuSheet)
       menu.addEventListener('keydown',event=>{if(event.key==='Escape'){menu.open=false;more.focus();event.stopPropagation()}})
       menu.addEventListener('focusout',event=>{if(event.relatedTarget&&!menu.contains(event.relatedTarget as Node))menu.open=false})
@@ -544,6 +555,8 @@ export class MochiView {
       if (surface === 'chat') roomHeader.classList.add('mochi-chat-heading')
       else headerActions.prepend(inbox)
       if(surface==='desktop')page.dataset.conversation='true'
+      this.search.sync(room)
+      if(this.search.open)page.append(this.search.render(room))
       page.append(this.thread(room,surface==='desktop'), this.composer(room))
       return page
     }

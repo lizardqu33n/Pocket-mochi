@@ -879,6 +879,265 @@ var MOCHI_PIN_STYLES = `
 .mochi-sheet .mochi-pins-panel button{min-height:40px}.mochi-sheet .mochi-pins-panel :focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}.mochi-view .mochi-pin-indicator{font-size:11px;color:var(--lp-text-secondary);margin-left:6px}
 `;
 
+// src/mochi/search.ts
+var SEARCH_QUERY_MAX = 200;
+function searchQuery(value) {
+  if (typeof value !== "string" || value.length > SEARCH_QUERY_MAX)
+    throw Error("Search text must be at most 200 characters.");
+  return value.trim();
+}
+function messageSender(message) {
+  if (message?.role === "user")
+    return "user";
+  if (message?.role === "assistant" && replyIdentifier(message.characterId))
+    return "character:" + message.characterId;
+}
+
+// src/mochi/search-panel.ts
+var scopeKey = (r) => JSON.stringify([r.accountId || "", r.id, r.associationRevision || 0]);
+
+class MochiSearch {
+  send;
+  current;
+  redraw;
+  jump;
+  returned;
+  open = false;
+  query = "";
+  sender = "";
+  page;
+  status = "Enter text to search this conversation.";
+  scope = "";
+  revision = 0;
+  pending;
+  pageRevision = 0;
+  senderOptions;
+  timer;
+  constructor(send, current, redraw, jump, returned = () => {}) {
+    this.send = send;
+    this.current = current;
+    this.redraw = redraw;
+    this.jump = jump;
+    this.returned = returned;
+  }
+  cancel() {
+    clearTimeout(this.timer);
+    this.pending = undefined;
+  }
+  reset() {
+    this.cancel();
+    this.open = false;
+    this.query = "";
+    this.sender = "";
+    this.page = undefined;
+    this.scope = "";
+    this.senderOptions = undefined;
+    this.status = "Enter text to search this conversation.";
+  }
+  sync(room) {
+    const key = scopeKey(room);
+    if (this.scope && this.scope !== key)
+      this.reset();
+    if (this.scope === key && this.revision !== room.revision && (this.page || this.pending)) {
+      this.cancel();
+      this.page = undefined;
+      this.status = "Conversation changed. Search again for current results.";
+    }
+    this.scope = key;
+    this.revision = room.revision;
+  }
+  show(room) {
+    this.sync(room);
+    this.open = true;
+    this.redraw();
+  }
+  run(offset = 0, target) {
+    const room = this.current();
+    if (!room || !this.open)
+      return;
+    this.sync(room);
+    this.cancel();
+    let query;
+    try {
+      query = searchQuery(this.query);
+    } catch (error) {
+      this.status = error.message;
+      this.page = undefined;
+      this.redraw();
+      return;
+    }
+    if (!query && !target) {
+      this.page = undefined;
+      this.status = "Enter text to search this conversation.";
+      this.redraw();
+      return;
+    }
+    const id = requestId("mochi_search");
+    this.pending = { id, scope: scopeKey(room), revision: target || offset ? this.pageRevision : room.revision, viewRevision: room.revision, target };
+    this.status = target ? "Finding original message…" : "Searching…";
+    this.redraw();
+    this.timer = setTimeout(() => {
+      if (this.pending?.id === id) {
+        this.cancel();
+        this.page = undefined;
+        this.status = "Search did not respond. Try again.";
+        this.redraw();
+      }
+    }, 20000);
+    try {
+      this.send({ type: target ? "mochi:search_target" : "mochi:search", requestId: id, roomId: room.id, accountId: room.accountId, associationRevision: room.associationRevision || 0, revision: this.pending.revision, ...target ? { messageId: target } : { query, sender: this.sender, offset } });
+    } catch {
+      this.cancel();
+      this.page = undefined;
+      this.status = "Search is unavailable. Try again.";
+      this.redraw();
+    }
+  }
+  receive(payload) {
+    if (!["mochi:search", "mochi:search_target", "mochi:error"].includes(payload?.type))
+      return false;
+    const request = this.pending;
+    if (!request || payload.requestId !== request.id)
+      return payload.type !== "mochi:error";
+    const room = this.current();
+    this.cancel();
+    if (!this.open || !room || scopeKey(room) !== request.scope || room.revision !== request.viewRevision)
+      return true;
+    if (payload.type === "mochi:error") {
+      this.page = undefined;
+      this.status = String(payload.message || "Search failed. Try again.");
+      this.redraw();
+      return true;
+    }
+    if (payload.accountId !== room.accountId || payload.roomId !== room.id)
+      return true;
+    if (payload.type === "mochi:search_target") {
+      if (payload.messageId !== request.target || !payload.room || scopeKey(payload.room) !== request.scope || payload.room.revision !== request.revision)
+        return true;
+      this.revision = payload.room.revision;
+      this.status = `${this.page?.total || 0} results · original message selected.`;
+      this.jump(payload.room, payload.messageId);
+      return true;
+    }
+    if (payload.associationRevision !== (room.associationRevision || 0) || payload.revision < room.revision)
+      return true;
+    this.pageRevision = payload.revision;
+    this.page = payload.page;
+    this.status = this.page?.total ? `${this.page.total} results · newest first` : "No matching messages.";
+    this.redraw();
+    return true;
+  }
+  render(room) {
+    this.sync(room);
+    const root = el("section", "mochi-search-panel");
+    root.setAttribute("aria-label", "Search this conversation");
+    const form = el("form", "mochi-search-controls"), input = el("input");
+    input.type = "search";
+    input.maxLength = SEARCH_QUERY_MAX;
+    input.value = this.query;
+    input.setAttribute("aria-label", "Search conversation text");
+    input.oninput = () => {
+      this.query = input.value;
+      this.cancel();
+      this.page = undefined;
+      this.status = "Press Search for current results.";
+      const status = root.querySelector("[role=status]");
+      if (status)
+        status.textContent = this.status;
+      root.querySelector(".mochi-search-results")?.replaceChildren();
+    };
+    const filter = el("select");
+    filter.setAttribute("aria-label", "Filter search by sender");
+    const all = el("option", "", "All senders");
+    all.value = "";
+    filter.append(all);
+    const user = el("option", "", "You");
+    user.value = "user";
+    filter.append(user);
+    if (!this.senderOptions || this.senderOptions.scope !== scopeKey(room) || this.senderOptions.revision !== room.revision) {
+      const values = new Map;
+      for (const raw of room.messages) {
+        const m = raw, key = messageSender(m);
+        if (key?.startsWith("character:") && typeof m.name === "string")
+          values.set(key, m.name);
+      }
+      this.senderOptions = { scope: scopeKey(room), revision: room.revision, values };
+    }
+    const senders = this.senderOptions.values;
+    for (const [id, name] of senders) {
+      const option = el("option", "", name);
+      option.value = id;
+      filter.append(option);
+    }
+    filter.value = this.sender;
+    filter.onchange = () => {
+      this.sender = filter.value;
+      this.run();
+    };
+    const search = button("Search", "lp-button");
+    search.type = "submit";
+    const clear = button("Clear search", "lp-button");
+    clear.onclick = () => {
+      this.cancel();
+      this.query = "";
+      this.sender = "";
+      this.page = undefined;
+      this.status = "Enter text to search this conversation.";
+      this.redraw();
+    };
+    const close = button("Close search", "lp-button");
+    close.onclick = () => {
+      if (this.pending)
+        this.status = "Search canceled. Search again when ready.";
+      this.cancel();
+      this.open = false;
+      this.redraw();
+      this.returned();
+    };
+    form.onsubmit = (e) => {
+      e.preventDefault();
+      this.run();
+    };
+    form.append(input, filter, search, clear, close);
+    root.append(form);
+    const status = el("p", "mochi-muted", this.status);
+    status.setAttribute("role", "status");
+    status.setAttribute("aria-live", "polite");
+    root.append(status);
+    const results = el("div", "mochi-search-results");
+    for (const result of this.page?.results || []) {
+      const entry = button("", "mochi-search-result");
+      entry.setAttribute("aria-label", `Go to message ${result.position} by ${result.name}`);
+      entry.append(el("strong", "", result.name), el("small", "", `${new Date(result.createdAt).toLocaleString()} · Message ${result.position}`), el("span", "", result.excerpt));
+      entry.onclick = () => this.run(0, result.id);
+      results.append(entry);
+    }
+    if (this.page) {
+      const paging = el("div", "mochi-search-paging");
+      if (this.page.offset) {
+        const prev = button("Previous results", "lp-button");
+        prev.onclick = () => this.run(Math.max(0, this.page.offset - 30));
+        paging.append(prev);
+      }
+      if (this.page.nextOffset !== undefined) {
+        const next = button("Next results", "lp-button");
+        next.onclick = () => this.run(this.page.nextOffset);
+        paging.append(next);
+      }
+      results.append(paging);
+    }
+    root.append(results);
+    return root;
+  }
+}
+var MOCHI_SEARCH_STYLES = `
+.mochi-view .mochi-search-panel{flex:0 1 auto;min-height:0;max-height:40%;overflow:auto;border-bottom:1px solid var(--mochi-border);padding:10px;min-width:0}
+.mochi-view .mochi-search-controls{display:flex;flex-wrap:wrap;gap:6px;min-width:0}.mochi-view .mochi-search-controls input{flex:1 1 160px;min-width:0}.mochi-view .mochi-search-controls select{max-width:100%;min-width:0}
+.mochi-view .mochi-search-controls input,.mochi-view .mochi-search-controls select{box-sizing:border-box;background:var(--lp-surface-2,#ffffff0c);color:inherit;border:1px solid var(--mochi-border);border-radius:8px;padding:8px;font:inherit}
+.mochi-view .mochi-search-results{display:grid;gap:6px;min-width:0}.mochi-view .mochi-search-result{display:grid;gap:4px;min-width:0;max-width:100%;text-align:left;overflow-wrap:anywhere;white-space:normal;background:var(--lp-surface-2,#ffffff0c);color:inherit;border:1px solid var(--mochi-border);border-radius:10px;padding:10px;cursor:pointer}.mochi-view .mochi-search-result strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mochi-view .mochi-search-result small{font-size:11px}
+.mochi-view .mochi-search-paging{display:flex;gap:6px;flex-wrap:wrap}.mochi-view .mochi-search-panel button{min-height:40px}.mochi-view .mochi-search-panel :focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}
+`;
+
 // src/mochi/view.ts
 function action(label, icon, compact = false) {
   const node = button("", `lp-button${compact ? " mochi-icon-button" : ""}`);
@@ -1063,6 +1322,7 @@ class MochiView {
     this.dispatch("mochi:accounts");
   }
   resetScope() {
+    this.search.reset();
     if (this.state && this.roomId)
       this.lastRooms.set(this.state.accountId || "", this.roomId);
     this.desktopHistory.clear();
@@ -1164,6 +1424,14 @@ class MochiView {
   pendingSends = new Map;
   noteDrafts = new Map;
   pendingNoteSave;
+  search = new MochiSearch((payload) => this.send(payload), () => this.state?.rooms.find((r) => r.id === this.roomId && r.accountId === this.state?.accountId), () => this.redraw(), (incoming, id) => {
+    const room = this.state?.rooms.find((r) => r.id === this.roomId && r.id === incoming.id && r.accountId === incoming.accountId);
+    if (!room)
+      return;
+    Object.assign(room, incoming);
+    const quote = this.quoteNode(room, id, true);
+    quote.click();
+  }, () => this.presenceRoot?.querySelector('[aria-label="Room options"]')?.focus());
   selectionVersion = 0;
   requestVersion = 0;
   modelControllers = new Set;
@@ -1309,6 +1577,7 @@ class MochiView {
     }
   }
   leave() {
+    this.search.reset();
     for (const dismiss of this.sheets)
       dismiss();
     this.sheets.clear();
@@ -1397,6 +1666,8 @@ class MochiView {
   receive(payload) {
     if (this.destroyed)
       return false;
+    if (this.search.receive(payload))
+      return true;
     if (this.navigationRequest && payload?.requestId === this.navigationRequest && (payload.type === "mochi:accounts" || payload.type === "mochi:error")) {
       clearTimeout(this.navigationTimeout);
       this.navigationRequest = "";
@@ -1785,7 +2056,7 @@ class MochiView {
     if (surface !== "choices")
       this.presenceRoot = page;
     const style = el("style");
-    style.textContent = MOCHI_STYLES + MOCHI_REPLY_STYLES + MOCHI_REACTION_STYLES + MOCHI_PIN_STYLES;
+    style.textContent = MOCHI_STYLES + MOCHI_REPLY_STYLES + MOCHI_REACTION_STYLES + MOCHI_PIN_STYLES + MOCHI_SEARCH_STYLES;
     page.append(style);
     const header = el("header");
     const brand = el("div", "mochi-brand");
@@ -1939,6 +2210,10 @@ class MochiView {
         }, { once: true });
       }), menuAction("Settings", openSettings));
       menuSheet.append(menuAction("Pins & Notes", () => this.openPins(roomHeader, room)));
+      menuSheet.append(menuAction("Search conversation", () => {
+        this.search.show(room);
+        this.presenceRoot?.querySelector('[aria-label="Search conversation text"]')?.focus();
+      }));
       menu.append(more, menuSheet);
       menu.addEventListener("keydown", (event) => {
         if (event.key === "Escape") {
@@ -1960,6 +2235,9 @@ class MochiView {
         headerActions.prepend(inbox);
       if (surface === "desktop")
         page.dataset.conversation = "true";
+      this.search.sync(room);
+      if (this.search.open)
+        page.append(this.search.render(room));
       page.append(this.thread(room, surface === "desktop"), this.composer(room));
       return page;
     }

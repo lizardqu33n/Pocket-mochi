@@ -11,9 +11,10 @@ Messaging Improvements MSG-01A quoted replies are manually accepted by the user.
 MSG-01B persistent user reactions and bounded prompt attribution passed targeted
 verification and initial user manual testing. Optional
 same-call AI reactions are deferred pending durable delivery metadata support.
-MSG-01C chat pins and independent system notes are implemented with targeted
-simulated verification, typecheck and matching production bundles; manual review
-remains pending. Notes use one default position; future presets remain deferred.
+MSG-01C chat pins and independent system notes passed core user manual checks.
+Notes use one default position; future presets remain deferred. MSG-01D current-room
+search is implemented with targeted simulated verification, typecheck and matching
+production bundles; manual review remains pending.
 Messaging order: MSG-01A quotes, MSG-01B reactions, MSG-01C pins, MSG-01D search,
 MSG-01E texting preferences and polish, then Memory & Prompt Management.
 Friends Beta 1 is tentatively hoped for Friday, October 16, 2026, explicitly
@@ -22,14 +23,16 @@ not a deadline; data safety, compatibility and testing take priority.
 1. Messaging Improvements.
 2. Memory & Prompt Management — friends Beta 1 begins.
 3. Fictional Time & Character Routines.
-4. Optional RP Linking — planned wider Beta 2 testing, subject to discussion with Kitty.
-5. Bug Fixes & Stabilization.
-6. Settings Reorganization.
-7. First Theme Pass: Colors — eventual 1.0 when stable and ready.
+4. AI-Assisted Creation — Introductory Tools.
+5. Optional RP Linking — planned wider Beta 2 testing, subject to Kitty's agreement.
+6. Bug Fixes & Stabilization.
+7. Pocket Ecosystem Integration — deeper scope dependent on Kitty's input.
+8. Settings Reorganization.
+9. First Theme Pass: Colors — eventual 1.0 when stable and ready.
 
 Essential layout, responsiveness, contrast and accessibility fixes remain allowed
 throughout development; keep styling scoped and centralized. More ambitious mascot
-cosmetics and AIM/MySpace-style themes are post-1.0 ideas. The user supplies the
+cosmetics, AIM/MySpace-style themes and advanced AI memory generation are post-1.0 ideas. The user supplies the
 replaceable Mochi shortcut SVG; Pocket's icon is unchanged. No agreement from Kitty
 to share the branch or conduct wider beta testing is implied.
 

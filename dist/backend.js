@@ -764,6 +764,58 @@ function storedPhoneKey(phone, raw) {
   return [phone.chatId, phone.characterId, owner].map(encodeURIComponent).join("::");
 }
 
+// src/mochi/search.ts
+var SEARCH_PAGE_SIZE = 30;
+var SEARCH_QUERY_MAX = 200;
+function searchQuery(value) {
+  if (typeof value !== "string" || value.length > SEARCH_QUERY_MAX)
+    throw Error("Search text must be at most 200 characters.");
+  return value.trim();
+}
+function messageSender(message) {
+  if (message?.role === "user")
+    return "user";
+  if (message?.role === "assistant" && replyIdentifier(message.characterId))
+    return "character:" + message.characterId;
+}
+function excerpt(text, index) {
+  const start = Math.max(0, index - 60), end = Math.min(text.length, start + 240);
+  return (start ? "\u2026" : "") + text.slice(start, end) + (end < text.length ? "\u2026" : "");
+}
+async function searchRoom(room, input) {
+  const query = searchQuery(input.query), sender = input.sender ?? "", offset = input.offset ?? 0;
+  if (typeof sender !== "string" || sender !== "" && sender !== "user" && (!sender.startsWith("character:") || !replyIdentifier(sender.slice(10))))
+    throw Error("Invalid search sender.");
+  if (!Number.isSafeInteger(offset) || offset < 0 || offset > room.messages.length)
+    throw Error("Invalid search page. Repeat the search.");
+  const results = [], needle = query.toLowerCase();
+  let total = 0;
+  if (!query)
+    return { query, sender, offset: 0, total: 0, results };
+  const ids = new Map;
+  for (let i = 0;i < room.messages.length; i++) {
+    const m = room.messages[i];
+    if (replyIdentifier(m?.id))
+      ids.set(m.id, (ids.get(m.id) || 0) + 1);
+    if (i && i % 512 === 0)
+      await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+  for (let i = room.messages.length - 1;i >= 0; i--) {
+    const m = room.messages[i];
+    if (m && ids.get(m.id) === 1 && ["user", "assistant"].includes(m.role) && typeof m.content === "string" && typeof m.name === "string" && typeof m.createdAt === "string" && (!sender || messageSender(m) === sender)) {
+      const found = m.content.toLowerCase().indexOf(needle);
+      if (found >= 0) {
+        if (total >= offset && results.length < SEARCH_PAGE_SIZE)
+          results.push({ id: m.id, name: m.name.slice(0, 120), excerpt: excerpt(m.content, found), createdAt: m.createdAt.slice(0, 80), position: i + 1 });
+        total++;
+      }
+    }
+    if (i % 512 === 0)
+      await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+  return { query, sender, offset, total, results, ...offset + results.length < total ? { nextOffset: offset + results.length } : {} };
+}
+
 // src/mochi/service.ts
 var ROOT = "mochi/v1/rooms/";
 var pathFor = (id) => `${ROOT}${roomId(id)}.json`;
@@ -1881,6 +1933,30 @@ class MochiService {
       return;
     let selectedRoomId;
     try {
+      if (payload.type === "mochi:search" || payload.type === "mochi:search_target") {
+        const user = this.account(userId), id = roomId(payload.roomId);
+        entityId(payload.requestId);
+        const room = await this.locked(user, id, () => this.read(user, id, payload.accountId));
+        if (payload.type === "mochi:search_target") {
+          const target = entityId(payload.messageId);
+          if (room.revision !== payload.revision || (room.associationRevision || 0) !== payload.associationRevision)
+            throw Error("This conversation changed. Repeat the search before jumping.");
+          const message = room.messages[this.messageIndex(room, target)];
+          if (typeof message.name !== "string" || typeof message.createdAt !== "string")
+            throw Error("This original message is unavailable.");
+          const { runtime, ...visible } = room;
+          this.host.sendToFrontend({ type: "mochi:search_target", requestId: payload.requestId, roomId: id, accountId: room.accountId, messageId: target, room: { ...visible, background: this.visibleRuntime(user, room) } }, user);
+        } else {
+          if ((payload.offset || 0) > 0 && payload.revision !== room.revision)
+            throw Error("This conversation changed. Repeat the search.");
+          const page = await searchRoom(room, payload);
+          const current = await this.locked(user, id, () => this.read(user, id, payload.accountId));
+          if (current.revision !== room.revision || (current.associationRevision || 0) !== (room.associationRevision || 0))
+            throw Error("This conversation changed. Repeat the search.");
+          this.host.sendToFrontend({ type: "mochi:search", requestId: payload.requestId, roomId: id, accountId: room.accountId, associationRevision: room.associationRevision || 0, revision: room.revision, page }, user);
+        }
+        return;
+      }
       if (payload.type.startsWith("mochi:account_") || payload.type === "mochi:accounts") {
         let createdAccountId, uploadedAvatarId;
         if (payload.type === "mochi:account_create")

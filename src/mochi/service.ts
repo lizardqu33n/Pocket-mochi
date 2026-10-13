@@ -8,6 +8,7 @@ import { phoneContext, type MochiPhone } from './phone-selection.js'
 import { referencedMessage, replyIdentifier } from './replies.js'
 import { REACTION_EMOJI, readReactions } from './reactions.js'
 import {validatePinnedContent,validateNote,noteId,MAX_CHAT_PINS} from './pins.js'
+import {searchRoom} from './search.js'
 
 // New implementation. No Character Chatroom source is included.
 export interface MochiHost {
@@ -758,6 +759,25 @@ export class MochiService {
     if (!userId) return
     let selectedRoomId: string | undefined
     try {
+      if(payload.type==='mochi:search'||payload.type==='mochi:search_target'){
+        const user=this.account(userId),id=roomId(payload.roomId);entityId(payload.requestId)
+        const room=await this.locked(user,id,()=>this.read(user,id,payload.accountId))
+        if(payload.type==='mochi:search_target'){
+          const target=entityId(payload.messageId)
+          if(room.revision!==payload.revision||(room.associationRevision||0)!==payload.associationRevision)throw Error('This conversation changed. Repeat the search before jumping.')
+          const message=room.messages[this.messageIndex(room,target)] as MochiMessage
+          if(typeof message.name!=='string'||typeof message.createdAt!=='string')throw Error('This original message is unavailable.')
+          const {runtime,...visible}=room
+          this.host.sendToFrontend({type:'mochi:search_target',requestId:payload.requestId,roomId:id,accountId:room.accountId,messageId:target,room:{...visible,background:this.visibleRuntime(user,room)}},user)
+        }else{
+          if((payload.offset||0)>0&&payload.revision!==room.revision)throw Error('This conversation changed. Repeat the search.')
+          const page=await searchRoom(room,payload)
+          const current=await this.locked(user,id,()=>this.read(user,id,payload.accountId))
+          if(current.revision!==room.revision||(current.associationRevision||0)!==(room.associationRevision||0))throw Error('This conversation changed. Repeat the search.')
+          this.host.sendToFrontend({type:'mochi:search',requestId:payload.requestId,roomId:id,accountId:room.accountId,associationRevision:room.associationRevision||0,revision:room.revision,page},user)
+        }
+        return
+      }
       if (payload.type.startsWith('mochi:account_') || payload.type === 'mochi:accounts') {
         let createdAccountId: string | undefined, uploadedAvatarId: string | undefined
         if (payload.type === 'mochi:account_create') createdAccountId = (await this.fictionalAccounts.create(userId, payload)).id
