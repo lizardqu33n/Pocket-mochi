@@ -1138,6 +1138,57 @@ var MOCHI_SEARCH_STYLES = `
 .mochi-view .mochi-search-paging{display:flex;gap:6px;flex-wrap:wrap}.mochi-view .mochi-search-panel button{min-height:40px}.mochi-view .mochi-search-panel :focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}
 `;
 
+// src/mochi/texting.ts
+var TEXTING_OPTIONS = { length: ["short", "balanced", "detailed"], capitalization: ["lowercase", "natural", "formal"], punctuation: ["minimal", "natural", "expressive"], emoji: ["rare", "occasional", "frequent"] };
+
+// src/mochi/texting-controls.ts
+function textingControls(settings, id, name) {
+  const group = el("fieldset", "mochi-texting-controls");
+  group.append(el("legend", "", "Texting style in this chat"), el("small", "mochi-muted", "Optional tendencies. Character default keeps existing behavior. Save settings applies changes and may cancel pending replies."));
+  const change = (key, value) => {
+    const styles = { ...settings.textingStyles }, style = { ...styles[id] };
+    if (value)
+      Object.assign(style, { [key]: value });
+    else
+      delete style[key];
+    if (Object.keys(style).length)
+      styles[id] = style;
+    else
+      delete styles[id];
+    if (Object.keys(styles).length)
+      settings.textingStyles = styles;
+    else
+      delete settings.textingStyles;
+  };
+  const labels = { length: "Message length", capitalization: "Capitalization", punctuation: "Punctuation", emoji: "Emoji use" };
+  for (const key of Object.keys(TEXTING_OPTIONS)) {
+    const label = el("label", "", labels[key]), select = el("select"), defaultOption = el("option", "", "Character default");
+    defaultOption.value = "";
+    select.append(defaultOption);
+    select.setAttribute("aria-label", `${labels[key]} for ${name}`);
+    for (const value of TEXTING_OPTIONS[key]) {
+      const option = el("option", "", value === "lowercase" ? "Casual lowercase" : value[0].toUpperCase() + value.slice(1));
+      option.value = value;
+      select.append(option);
+    }
+    select.value = settings.textingStyles?.[id]?.[key] || "";
+    select.onchange = () => change(key, select.value);
+    label.append(select);
+    group.append(label);
+  }
+  const label = el("label", "", "Texting habits"), tone = el("textarea");
+  tone.rows = 2;
+  tone.maxLength = 400;
+  tone.value = settings.textingStyles?.[id]?.tone || "";
+  tone.placeholder = "Optional: casual abbreviations, complete sentences, dry humor…";
+  tone.setAttribute("aria-label", `Texting habits for ${name}`);
+  tone.oninput = () => change("tone", tone.value);
+  label.append(tone);
+  group.append(label);
+  return group;
+}
+var MOCHI_TEXTING_STYLES = `.mochi-view .mochi-texting-controls{min-width:0;display:grid;gap:8px;border:1px solid var(--mochi-border);border-radius:10px;padding:10px}.mochi-view .mochi-texting-controls label{min-width:0;display:grid;gap:4px;overflow-wrap:anywhere}.mochi-view .mochi-texting-controls select,.mochi-view .mochi-texting-controls textarea{box-sizing:border-box;min-width:0;width:100%;max-width:100%}.mochi-view .mochi-texting-controls :focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}`;
+
 // src/mochi/view.ts
 function action(label, icon, compact = false) {
   const node = button("", `lp-button${compact ? " mochi-icon-button" : ""}`);
@@ -2056,7 +2107,7 @@ class MochiView {
     if (surface !== "choices")
       this.presenceRoot = page;
     const style = el("style");
-    style.textContent = MOCHI_STYLES + MOCHI_REPLY_STYLES + MOCHI_REACTION_STYLES + MOCHI_PIN_STYLES + MOCHI_SEARCH_STYLES;
+    style.textContent = MOCHI_STYLES + MOCHI_REPLY_STYLES + MOCHI_REACTION_STYLES + MOCHI_PIN_STYLES + MOCHI_SEARCH_STYLES + MOCHI_TEXTING_STYLES;
     page.append(style);
     const header = el("header");
     const brand = el("div", "mochi-brand");
@@ -2589,6 +2640,7 @@ class MochiView {
           settings.characterNames[id] = input.value;
         };
         field(`Room name for ${state.characters.find((c) => c.id === id)?.name || id}`, input);
+        group.append(textingControls(settings, id, name));
       }
     }
     if (room) {
@@ -3058,6 +3110,12 @@ class MochiView {
       input.style.height = "auto";
       input.style.height = `${Math.min(input.scrollHeight, 112)}px`;
     };
+    globalThis.requestAnimationFrame?.(() => {
+      if (input.isConnected && input.value) {
+        input.style.height = "auto";
+        input.style.height = `${Math.min(input.scrollHeight, 112)}px`;
+      }
+    });
     input.onkeydown = (event) => {
       if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
         event.preventDefault();

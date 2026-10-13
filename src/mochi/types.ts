@@ -18,6 +18,7 @@ export interface MochiMessage {
 }
 export interface MochiNotification { id: string; roomId: string; messageId: string; title: string; roomTitle: string; body: string; avatarUrl: string; createdAt: string; read: boolean; accountId?: string }
 export interface MochiSettings {
+  textingStyles?: Record<string,import('./texting.js').TextingStyle>
   model?: string
   aiBehavior?: boolean
   responseMode?: 'natural' | 'instant' | 'manual'

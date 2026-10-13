@@ -13,12 +13,17 @@ verification and initial user manual testing. Optional
 same-call AI reactions are deferred pending durable delivery metadata support.
 MSG-01C chat pins and independent system notes passed core user manual checks.
 Notes use one default position; future presets remain deferred. MSG-01D current-room
-search is implemented with targeted simulated verification, typecheck and matching
-production bundles; manual review remains pending.
+search passed core user manual checks. MSG-01E character texting overrides and
+restored-composer sizing are source-implemented with targeted simulated verification,
+typecheck and matching production bundles; review/manual acceptance remain pending.
+The implemented Messaging Improvements scope is development-verified, not yet
+fully accepted for release. AI reactions remain explicitly deferred. No Memory &
+Prompt Management implementation has begun.
 Messaging order: MSG-01A quotes, MSG-01B reactions, MSG-01C pins, MSG-01D search,
 MSG-01E texting preferences and polish, then Memory & Prompt Management.
 Friends Beta 1 is tentatively hoped for Friday, October 16, 2026, explicitly
-not a deadline; data safety, compatibility and testing take priority.
+not a deadline; an earlier beta is possible only if necessary features and safety
+checks are ready. Data safety, compatibility and testing take priority.
 
 1. Messaging Improvements.
 2. Memory & Prompt Management — friends Beta 1 begins.

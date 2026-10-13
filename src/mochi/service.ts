@@ -9,6 +9,7 @@ import { referencedMessage, replyIdentifier } from './replies.js'
 import { REACTION_EMOJI, readReactions } from './reactions.js'
 import {validatePinnedContent,validateNote,noteId,MAX_CHAT_PINS} from './pins.js'
 import {searchRoom} from './search.js'
+import {validateTextingStyles} from './texting.js'
 
 // New implementation. No Character Chatroom source is included.
 export interface MochiHost {
@@ -91,6 +92,8 @@ export class MochiService {
     const names: Record<string, string> = {}
     if (!s.characterNames || typeof s.characterNames !== 'object' || Array.isArray(s.characterNames)) throw new Error('Invalid room character names.')
     for (const id of ids) if (s.characterNames[id]) names[id] = text(s.characterNames[id], 120, true)
+    const styles=validateTextingStyles(s.textingStyles)
+    if(styles)s.textingStyles=styles;else delete s.textingStyles
     return { ...s, characterNames: names }
   }
   readonly fictionalAccounts: MochiAccounts
@@ -255,6 +258,7 @@ export class MochiService {
       if (input.revision !== saved.revision) throw new Error('This room changed elsewhere. Refresh before saving again.')
       const ids = await this.membership(user, input.characterIds)
       const settings = this.settings(input.settings ?? saved.settings, ids)
+      for(const [id,style]of Object.entries(settings.textingStyles||{}))if(!ids.includes(id)&&!equivalent(style,saved.settings?.textingStyles?.[id]))throw Error('Texting preferences can only be changed for characters in this chat.')
       if (settings.aiBehavior && (!saved.runtime?.enabled || !await this.backgroundEnabled(user))) throw new Error('Enable account and room background messaging before AI timing suggestions.')
       if (settings.connectionId && !await this.host.connections?.get(settings.connectionId, user)) throw new Error('This connection is not available to your account.')
       const title = text(input.title, 120, true), persona = input.persona ? await this.persona(user, input.persona) : saved.persona

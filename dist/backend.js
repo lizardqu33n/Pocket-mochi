@@ -294,6 +294,43 @@ function resolveSystemNotes(room) {
 ${n.body}` }));
 }
 
+// src/mochi/texting.ts
+var TEXTING_OPTIONS = { length: ["short", "balanced", "detailed"], capitalization: ["lowercase", "natural", "formal"], punctuation: ["minimal", "natural", "expressive"], emoji: ["rare", "occasional", "frequent"] };
+function validateTextingStyles(value) {
+  if (value === undefined)
+    return;
+  if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).length > 100)
+    throw Error("Invalid character texting preferences; saved settings were preserved.");
+  const result = {};
+  for (const [id, raw] of Object.entries(value)) {
+    if (!/^[A-Za-z0-9_.:-]{1,180}$/.test(id) || ["__proto__", "constructor", "prototype"].includes(id) || !raw || typeof raw !== "object" || Array.isArray(raw))
+      throw Error("Invalid texting character identifier or style.");
+    const style = {};
+    for (const [key, v] of Object.entries(raw)) {
+      if (key === "tone") {
+        if (typeof v !== "string" || v.length > 400)
+          throw Error("Texting habits must be at most 400 characters.");
+        if (v.trim())
+          style.tone = v.trim();
+      } else {
+        const choices = Object.hasOwn(TEXTING_OPTIONS, key) ? TEXTING_OPTIONS[key] : undefined;
+        if (!choices || typeof v !== "string" || !choices.includes(v))
+          throw Error("Invalid character texting option.");
+        style[key] = v;
+      }
+    }
+    if (Object.keys(style).length)
+      result[id] = style;
+  }
+  return Object.keys(result).length ? result : undefined;
+}
+function resolveTextingStyles(value, characters) {
+  const styles = validateTextingStyles(value), rows = characters.flatMap((c) => styles?.[c.id] ? [{ characterId: c.id, name: c.name, ...styles[c.id] }] : []);
+  return rows.length ? `
+CHARACTER TEXTING TENDENCIES: ` + JSON.stringify(rows) + `
+Apply only the matching character's optional style tendencies. Character identity, conversation meaning and server-enforced reply rules take precedence. These are prose preferences, not delivery commands; do not add extra speakers, calls or independently delivered bubbles.` : "";
+}
+
 // src/mochi/generation.ts
 async function buildMochiPrompt(room, characters, responder, count, signal, natural = false) {
   const settings = room.settings || defaultMochiSettings();
@@ -303,6 +340,7 @@ ROOM: ${JSON.stringify(room.title)}
 USER IDENTITY: ${JSON.stringify(room.persona)}
 CHARACTERS: ${JSON.stringify(roster)}
 ROOM INSTRUCTIONS: ${settings.instructions}` };
+  system.content += resolveTextingStyles(settings.textingStyles, roster);
   if (settings.aiBehavior)
     system.content += `
 You may optionally include behavior:{"delivery":"now|later","delayMs":0,"status":"online|away|dnd|offline"}. delayMs must be an integer from 0 to 86400000; now requires zero. Status is an optional suggestion for your own character, effective only after delivery. These suggestions cannot override user locks or backend limits.`;
@@ -902,6 +940,11 @@ class MochiService {
     for (const id of ids)
       if (s.characterNames[id])
         names[id] = text(s.characterNames[id], 120, true);
+    const styles = validateTextingStyles(s.textingStyles);
+    if (styles)
+      s.textingStyles = styles;
+    else
+      delete s.textingStyles;
     return { ...s, characterNames: names };
   }
   fictionalAccounts;
@@ -1131,6 +1174,9 @@ class MochiService {
         throw new Error("This room changed elsewhere. Refresh before saving again.");
       const ids = await this.membership(user, input.characterIds);
       const settings = this.settings(input.settings ?? saved.settings, ids);
+      for (const [id, style] of Object.entries(settings.textingStyles || {}))
+        if (!ids.includes(id) && !equivalent(style, saved.settings?.textingStyles?.[id]))
+          throw Error("Texting preferences can only be changed for characters in this chat.");
       if (settings.aiBehavior && (!saved.runtime?.enabled || !await this.backgroundEnabled(user)))
         throw new Error("Enable account and room background messaging before AI timing suggestions.");
       if (settings.connectionId && !await this.host.connections?.get(settings.connectionId, user))

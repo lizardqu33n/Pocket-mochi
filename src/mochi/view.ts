@@ -34,6 +34,7 @@ import {REACTION_EMOJI,REACTION_NAMES,readReactions} from './reactions.js'
 import {MOCHI_REACTION_STYLES} from './reaction-styles.js'
 import {pinsPanel,MOCHI_PIN_STYLES,type NoteDraft} from './pins-panel.js'
 import {MochiSearch,MOCHI_SEARCH_STYLES} from './search-panel.js'
+import {textingControls,MOCHI_TEXTING_STYLES} from './texting-controls.js'
 
 type DisplayMessage = Pick<MochiMessage, 'id' | 'role' | 'content' | 'name' | 'createdAt'> & Partial<Pick<MochiMessage, 'avatarUrl' | 'characterId' | 'editedAt'>> & {replyTo?:unknown}
 function isDisplayMessage(value: unknown): value is DisplayMessage {
@@ -497,7 +498,7 @@ export class MochiView {
     page.dataset.surface = surface
     if (surface !== 'choices') this.presenceRoot=page
     const style = el('style')
-    style.textContent = MOCHI_STYLES+MOCHI_REPLY_STYLES+MOCHI_REACTION_STYLES+MOCHI_PIN_STYLES+MOCHI_SEARCH_STYLES
+    style.textContent = MOCHI_STYLES+MOCHI_REPLY_STYLES+MOCHI_REACTION_STYLES+MOCHI_PIN_STYLES+MOCHI_SEARCH_STYLES+MOCHI_TEXTING_STYLES
     page.append(style)
     const header = el('header'); const brand = el('div', 'mochi-brand')
     const wordmark = el('h2', 'mochi-wordmark'); wordmark.setAttribute('aria-label', 'Mochi')
@@ -667,6 +668,7 @@ export class MochiView {
         const plan=action(`Schedule status change for ${name}`,'plus');plan.type='button';plan.disabled=this.busy;plan.onclick=()=>{presence.transitions.push({at:new Date(when.value).getTime(),status:next.value as typeof presence.automatic});setPresence()};group.append(plan)
         if(presence.transitions.length){const clear=action(`Clear status schedule for ${name}`,'trash');clear.type='button';clear.disabled=this.busy;clear.onclick=()=>{presence.transitions=[];setPresence()};group.append(clear)}
         const input = el('input'); input.maxLength = 120; input.value = settings.characterNames[id] || ''; input.oninput = () => { settings.characterNames[id] = input.value }; field(`Room name for ${state.characters.find(c => c.id === id)?.name || id}`, input)
+        group.append(textingControls(settings,id,name))
       }
     }
     if(room){section('Chat ownership',true);group.append(this.assignmentControls(room))}
@@ -865,6 +867,8 @@ export class MochiView {
     const guidance = `Messaging as ${room.persona.name}. Enter to send; Shift+Enter for a new line. Send empty to continue.`
     input.setAttribute('aria-description', guidance); input.title = guidance
     input.oninput = () => { this.drafts.set(room.id, input.value); input.style.height = 'auto'; input.style.height = `${Math.min(input.scrollHeight, 112)}px` }
+    // Restored drafts did not previously get their measured multiline height back.
+    globalThis.requestAnimationFrame?.(()=>{if(input.isConnected&&input.value){input.style.height='auto';input.style.height=`${Math.min(input.scrollHeight,112)}px`}})
     input.onkeydown = event => { if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) { event.preventDefault(); form.requestSubmit() } }
     const job = this.state?.jobs?.[room.id]
     const submit = action('Send', 'send', true); submit.classList.add('mochi-primary'); submit.type = 'submit'; submit.disabled = this.busy || Boolean(job)
