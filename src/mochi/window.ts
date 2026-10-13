@@ -15,7 +15,7 @@ export interface MochiWindowUI {
   }
 }
 interface WindowRect {x:number; y:number; width:number; height:number}
-export interface MochiWindow {open():void; hide():void; destroy():void; readonly isOpen:boolean}
+export interface MochiWindow {open():void; hide():void; destroy():void; readonly isOpen:boolean; onVisibilityChange(handler:(visible:boolean)=>void):()=>void}
 const windows = new WeakMap<MochiSession, MochiWindow>()
 
 export function createMochiWindow(ui: MochiWindowUI, session: MochiSession,
@@ -41,6 +41,7 @@ export function createMochiWindow(ui: MochiWindowUI, session: MochiSession,
   const options = {width:rect.width,height:rect.height,initialPosition:{x:rect.x,y:rect.y},chromeless:true,snapToEdge:false,resizable:false,persistGeometry:false,touchScrollMode:'native' as const,tooltip:'Mochi'}
   const widget: SpindleFloatWidgetHandle = ui.createFloatWidget(options)
   let disposed = false, resizeCleanup: (()=>void)|undefined, dragCleanup: (()=>void)|undefined
+  const visibility = new Set<(visible:boolean)=>void>()
   const panel = document.createElement('section'); panel.className='mochi-window';panel.setAttribute('aria-label','Mochi window')
   const style = document.createElement('style')
   style.textContent='.mochi-window{display:flex;flex-direction:column;width:100%;height:100%;min-width:0;min-height:0;position:relative;background:var(--lumiverse-bg-elevated,#201e25);color:var(--lumiverse-text,#eee);border:1px solid var(--lumiverse-border,#ffffff26);border-radius:14px;overflow:hidden;box-sizing:border-box;box-shadow:0 12px 32px #0005}.mochi-window-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;min-height:36px;flex-shrink:0;cursor:move;touch-action:none;user-select:none}.mochi-window-body{flex:1;min-height:0;min-width:0;overflow:hidden}.mochi-window-close,.mochi-window-resize{color:inherit;background:transparent;border:0;min-width:32px;min-height:32px;cursor:pointer}.mochi-window-resize{position:absolute;right:0;bottom:0;cursor:nwse-resize;touch-action:none}.mochi-window button:focus-visible{outline:2px solid var(--lumiverse-primary,#9399ab);outline-offset:-3px}'
@@ -55,6 +56,7 @@ export function createMochiWindow(ui: MochiWindowUI, session: MochiSession,
   const apply = (next: WindowRect) => {rect=clamp(next);widget.setSize(rect.width,rect.height);widget.moveTo(rect.x,rect.y)}
   const cleanup = () => {
     if(disposed)return;disposed=true
+    for(const handler of visibility)handler(false);visibility.clear()
     windows.delete(session)
     window.removeEventListener('resize',restoreBounds)
     try{resizeCleanup?.()}finally{try{dragCleanup?.()}finally{panel.remove();widget.destroy()}}
@@ -67,8 +69,8 @@ export function createMochiWindow(ui: MochiWindowUI, session: MochiSession,
     if(typeof disposeResize!=='function')throw new Error('Unsupported resize-controller lifecycle. Use the Pocket portal.')
     resizeCleanup=disposeResize
     dragCleanup=widget.onDragEnd(position=>{rect={...rect,...position}})
-    workspace=createMochiWorkspace({root:body,session,notificationPolicy,presentation:'messenger',
-      onVisibilityChange:visible=>{if(!disposed)widget.setVisible(visible)},onDispose:cleanup})
+    workspace=createMochiWorkspace({root:body,session,notificationPolicy,presentation:'messenger',isHostVisible:()=>widget.isVisible(),
+      onVisibilityChange:visible=>{if(!disposed){widget.setVisible(visible);for(const handler of visibility)handler(visible)}},onDispose:cleanup})
     close.addEventListener('click',()=>workspace.close())
     grip.addEventListener('keydown',event=>{
       if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key))return
@@ -77,7 +79,7 @@ export function createMochiWindow(ui: MochiWindowUI, session: MochiSession,
     })
     window.addEventListener('resize',restoreBounds)
   } catch(error) {cleanup();throw error}
-  const result: MochiWindow = {get isOpen(){return !disposed&&workspace.isOpen},open(){if(disposed)throw new Error('Mochi window is disposed.');restoreBounds();workspace.open()},hide(){if(!disposed)workspace.close()},destroy(){if(!disposed)try{workspace.destroy()}finally{cleanup()}}}
+  const result: MochiWindow = {get isOpen(){return !disposed&&workspace.isOpen&&widget.isVisible()},onVisibilityChange(handler){visibility.add(handler);handler(!disposed&&workspace.isOpen&&widget.isVisible());return()=>{visibility.delete(handler)}},open(){if(disposed)throw new Error('Mochi window is disposed.');restoreBounds();workspace.open();widget.setVisible(true);for(const handler of visibility)handler(true)},hide(){if(!disposed)workspace.close()},destroy(){if(!disposed)try{workspace.destroy()}finally{cleanup()}}}
   windows.set(session,result)
   return result
 }

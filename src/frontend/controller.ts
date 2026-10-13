@@ -5,6 +5,7 @@ import { getMochiSession, type MochiSession, type MochiSurface } from '../mochi/
 import { createMochiWindow, type MochiWindow, type MochiWindowUI } from '../mochi/window.js'
 import { createMochiSidebar, type MochiSidebar } from '../mochi/sidebar.js'
 import { MOCHI_SIDEBAR_ICON } from '../mochi/sidebar-icon.js'
+import { createMochiLauncher } from '../mochi/launcher.js'
 import { PocketPortal } from './components/portal.js'
 import { showMochiNotification, reconcileMochiNotifications } from '../mochi/notifications.js'
 import type { MochiNotification } from '../mochi/types.js'
@@ -422,7 +423,7 @@ class PocketController {
     }
     this.cleanups.push(this.mochiSession.attach(this.mochiSurface))
     this.mochiSidebar = createMochiSidebar(this.ctx, this.mochiSession,
-      () => ({enabled:this.preferences.notifyMessages,previews:this.preferences.notificationPreviews}))
+      () => ({enabled:this.preferences.notifyMessages,previews:this.preferences.notificationPreviews}),()=>this.openMochiPortal())
     this.cleanups.push(() => this.mochiSidebar.destroy())
     this.cleanups.push(this.ctx.events.on('CHAT_SWITCHED', () => {
       this.setupModalDismiss?.()
@@ -510,6 +511,8 @@ class PocketController {
         window.setTimeout(() => { this.suppressLauncherClick = false }, 180)
       }))
       this.launcher.hidden = false
+      try { this.cleanups.push(createMochiLauncher(this.ctx.ui,this.widget,this.mochiSession,this.mochiSidebar)) }
+      catch { /* Without a supported floating widget, the existing sidebar remains available. */ }
       this.renderDrawerLanding()
     } catch {
       this.widget = null
@@ -565,7 +568,7 @@ class PocketController {
           this.selectedConversationId = ''
           this.selectedMessageId = ''
           this.currentApp = 'home'
-          this.mochi.leave()
+          if(this.mochiSession.owns(this.mochiSurface))this.mochi.leave()
           this.router.reset({ app: 'home' })
           this.updateBadge()
           this.renderDrawerLanding()
@@ -1626,7 +1629,7 @@ class PocketController {
 
   private close(): void {
     this.dismissMochiNotification?.()
-    this.mochi.leave()
+    if(this.mochiSession.owns(this.mochiSurface))this.mochi.leave()
     this.voicePlayer.stop()
     if (!this.widget && !this.dockPanel && !this.mobileWidget) return
     this.expanded = false

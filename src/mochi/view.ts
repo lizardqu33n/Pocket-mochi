@@ -55,6 +55,23 @@ export class MochiView {
   private navigationTimeout?: ReturnType<typeof setTimeout>
   private navigationError = ''
   private restoreRoom = false
+  private sidebarProfile = false
+  private profileReturn?: () => void
+  private accountNavigation?: {picker():void; settings(anchor:HTMLElement):void}
+  setAccountNavigation(owner: {picker():void; settings(anchor:HTMLElement):void} | undefined):void {this.accountNavigation=owner}
+  get isSidebarProfileOpen():boolean{return this.sidebarProfile}
+  editSidebarProfile(anchor:HTMLElement, complete:()=>void, create=false):void {
+    if(this.busy)return
+    const current=this.profiles.state?.accounts.find(a=>a.id===this.state?.accountId&&!a.archived)
+    if(!this.profiles.state||(!create&&!current))return
+    this.exitPortal(()=>{this.sidebarProfile=true;this.profileReturn=complete;this.profiles.start(create?undefined:current);this.refreshChoices();this.redraw()},anchor)
+  }
+  renderSidebarProfile():HTMLElement {
+    const root=el('section','mochi-view');const style=el('style');style.textContent=MOCHI_STYLES;root.append(style)
+    const finish=()=>{this.sidebarProfile=false;this.profiles.draft=null;const done=this.profileReturn;this.profileReturn=undefined;this.redraw();done?.()}
+    root.append(this.profiles.render(this.busy,(type,input)=>this.dispatch(type,input),()=>{if(!this.profiles.draft)finish();else this.redraw()},finish,(next,anchor)=>this.confirmNavigation(next,anchor),()=>this.refreshChoices()))
+    return root
+  }
   get navigationState() { return {accounts:this.profiles.state, selectedAccountId:this.state?.accountId||this.activeAccountId, loading:!!this.navigationRequest, error:this.navigationError, switching:this.busy} }
   loadNavigationAccounts(): void {
     if (this.destroyed || this.navigationRequest) return
@@ -158,6 +175,7 @@ export class MochiView {
     private notify: (n: MochiNotification) => void = () => {},
     private notificationsChanged: (notices: MochiNotification[], rooms: Set<string>) => void = () => {}) {}
   hasUnsavedChanges(): boolean {
+    if(this.sidebarProfile)return this.profiles.hasUnsavedChanges()
     if (this.profilesOpen) return this.profiles.hasUnsavedChanges()
     return !!(this.creating || this.editing) && !!this.draft && JSON.stringify([this.draft,this.settingsDraft]) !== this.formBaseline
   }
@@ -174,7 +192,7 @@ export class MochiView {
     discard.onclick=()=>{sheet?.dismiss();next()}
   }
   exitPortal(next: () => void, anchor: HTMLElement): void {
-    this.confirmNavigation(()=>{this.creating=false;this.editing=false;this.draft=null;this.settingsDraft=null;this.profiles.draft=null;this.profilesOpen=false;next()},anchor)
+    this.confirmNavigation(()=>{this.creating=false;this.editing=false;this.draft=null;this.settingsDraft=null;this.profiles.draft=null;this.profilesOpen=false;this.sidebarProfile=false;this.profileReturn=undefined;next()},anchor)
   }
   back(exit: () => void, anchor: HTMLElement): void {
     if (this.busy) return
@@ -219,7 +237,7 @@ export class MochiView {
       for (const controller of this.modelControllers) controller.abort()
       this.modelControllers.clear(); this.modelChoices.clear(); this.choicesRequest = ''
       this.resetScope(); this.profiles = new MochiProfiles(); this.profilesOpen = false; this.pickerOpen = false
-      this.drafts.clear(); this.responders.clear(); this.pendingSends.clear(); this.associations.clear(); this.settingsSections.clear(); this.lastRooms.clear()
+      this.drafts.clear(); this.responders.clear(); this.pendingSends.clear(); this.associations.clear(); this.settingsSections.clear(); this.lastRooms.clear();this.sidebarProfile=false;this.profileReturn=undefined;this.accountNavigation=undefined
       this.phone = undefined; this.presenceRoot = undefined; this.error = ''; this.feedback = ''; this.formBaseline = ''
     }
   }
@@ -272,6 +290,12 @@ export class MochiView {
       clearTimeout(this.timeout);this.busy=false;this.profiles.state=payload.state
       if(payload.uploadedAvatarId&&this.profiles.draft)this.profiles.draft.avatarId=payload.uploadedAvatarId
       else if(this.operation!=='mochi:accounts')this.profiles.draft=null
+      if(this.sidebarProfile&&!payload.uploadedAvatarId&&['mochi:account_create','mochi:account_update','mochi:account_archive','mochi:account_restore'].includes(this.operation)){
+        this.sidebarProfile=false;const done=this.profileReturn;this.profileReturn=undefined
+        if(payload.createdAccountId){this.chooseAccount(payload.createdAccountId);done?.();return true}
+        if(this.state?.accountId&&!payload.state.accounts.some((a:any)=>a.id===this.state?.accountId&&!a.archived)){this.leave();this.resetScope();this.pickerOpen=false}
+        this.redraw();done?.();return true
+      }
       if(this.operation==='mochi:account_select'){
         const id=payload.state.phone?.lastAccountId||payload.state.selectedAccountId
         if(id&&payload.state.accounts.some((a:any)=>a.id===id&&!a.archived)){this.chooseAccount(id,false);return true}
@@ -423,9 +447,9 @@ export class MochiView {
   }
   private inboxControls(): HTMLElement {
     const controls=el('div','mochi-inbox-actions')
-    const change=action('Switch Mochi account','people');change.onclick=()=>this.exitPortal(()=>this.showPicker(),change);controls.append(change)
+    const change=action('Switch Mochi account','people');change.onclick=()=>{if(this.accountNavigation)this.accountNavigation.picker();else this.exitPortal(()=>this.showPicker(),change)};controls.append(change)
     const profiles=action(stateAccountLabel(this.state?.accountId),'people');profiles.disabled=this.busy
-    profiles.onclick=()=>this.exitPortal(()=>{this.leave();this.profilesOpen=true;const current=this.profiles.state?.accounts.find(a=>a.id===this.state?.accountId);if(current)this.profiles.start(current);else this.profiles.draft=null;this.dispatch('mochi:accounts')},profiles);controls.append(profiles)
+    profiles.onclick=()=>{if(this.accountNavigation)this.accountNavigation.settings(profiles);else this.exitPortal(()=>{this.leave();this.profilesOpen=true;const current=this.profiles.state?.accounts.find(a=>a.id===this.state?.accountId);if(current)this.profiles.start(current);else this.profiles.draft=null;this.dispatch('mochi:accounts')},profiles)};controls.append(profiles)
     const create=action('New room','plus');create.disabled=this.busy;create.onclick=()=>this.exitPortal(()=>{this.creating=true;this.draft=null;this.refreshChoices();this.redraw()},create);controls.append(create)
     if(this.notificationPolicy().enabled){const notices=action('Mochi notifications','notifications',true),unread=this.state?.notifications?.filter(n=>!n.read).length||0;notices.title=`Mochi notifications · ${unread} unread`;notices.setAttribute('aria-description',`${unread} unread notifications`);notices.onclick=()=>this.exitPortal(()=>{this.leave();this.notificationsOpen=!this.notificationsOpen;this.redraw()},notices);controls.append(notices)}
     return controls
@@ -456,6 +480,7 @@ export class MochiView {
     }
     if (this.error) { const error = el('p', 'mochi-error', this.error); error.setAttribute('role', 'alert'); page.append(error) }
     if(this.profilesOpen){page.append(this.profiles.render(this.busy,(type,input)=>this.dispatch(type,input),()=>this.redraw(),()=>{this.profilesOpen=false;this.redraw()},(next,anchor)=>this.confirmNavigation(next,anchor),()=>this.refreshChoices()));return page}
+    if(this.pickerOpen&&surface==='desktop'&&this.accountNavigation){page.append(el('p','mochi-muted',this.busy?'Loading selected account…':'Choose a Mochi account in the Pocket sidebar.'));return page}
     if(this.pickerOpen){page.append(accountPicker(this.profiles.state,this.busy,id=>this.chooseAccount(id),()=>{this.profiles.start();this.profilesOpen=true;this.refreshChoices();this.redraw()},()=>{this.leave();this.resetScope();this.pickerOpen=false;this.load()},preference=>this.dispatch('mochi:account_startup',{preference,revision:this.profiles.state?.revision}),()=>{this.profilesOpen=true;this.profiles.draft=null;this.redraw()},()=>this.dispatch('mochi:accounts')));return page}
     if (!this.state) return page
     if (this.feedback) { const status = el('p', 'mochi-muted', this.feedback); status.setAttribute('role', 'status'); page.append(status) }

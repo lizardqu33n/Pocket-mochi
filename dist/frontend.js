@@ -733,6 +733,50 @@ class MochiView {
   navigationTimeout;
   navigationError = "";
   restoreRoom = false;
+  sidebarProfile = false;
+  profileReturn;
+  accountNavigation;
+  setAccountNavigation(owner) {
+    this.accountNavigation = owner;
+  }
+  get isSidebarProfileOpen() {
+    return this.sidebarProfile;
+  }
+  editSidebarProfile(anchor, complete, create = false) {
+    if (this.busy)
+      return;
+    const current = this.profiles.state?.accounts.find((a) => a.id === this.state?.accountId && !a.archived);
+    if (!this.profiles.state || !create && !current)
+      return;
+    this.exitPortal(() => {
+      this.sidebarProfile = true;
+      this.profileReturn = complete;
+      this.profiles.start(create ? undefined : current);
+      this.refreshChoices();
+      this.redraw();
+    }, anchor);
+  }
+  renderSidebarProfile() {
+    const root = el("section", "mochi-view");
+    const style = el("style");
+    style.textContent = MOCHI_STYLES;
+    root.append(style);
+    const finish = () => {
+      this.sidebarProfile = false;
+      this.profiles.draft = null;
+      const done = this.profileReturn;
+      this.profileReturn = undefined;
+      this.redraw();
+      done?.();
+    };
+    root.append(this.profiles.render(this.busy, (type, input) => this.dispatch(type, input), () => {
+      if (!this.profiles.draft)
+        finish();
+      else
+        this.redraw();
+    }, finish, (next, anchor) => this.confirmNavigation(next, anchor), () => this.refreshChoices()));
+    return root;
+  }
   get navigationState() {
     return { accounts: this.profiles.state, selectedAccountId: this.state?.accountId || this.activeAccountId, loading: !!this.navigationRequest, error: this.navigationError, switching: this.busy };
   }
@@ -923,6 +967,8 @@ class MochiView {
     this.notificationsChanged = notificationsChanged;
   }
   hasUnsavedChanges() {
+    if (this.sidebarProfile)
+      return this.profiles.hasUnsavedChanges();
     if (this.profilesOpen)
       return this.profiles.hasUnsavedChanges();
     return !!(this.creating || this.editing) && !!this.draft && JSON.stringify([this.draft, this.settingsDraft]) !== this.formBaseline;
@@ -955,6 +1001,8 @@ class MochiView {
       this.settingsDraft = null;
       this.profiles.draft = null;
       this.profilesOpen = false;
+      this.sidebarProfile = false;
+      this.profileReturn = undefined;
       next();
     }, anchor);
   }
@@ -1076,6 +1124,9 @@ class MochiView {
       this.associations.clear();
       this.settingsSections.clear();
       this.lastRooms.clear();
+      this.sidebarProfile = false;
+      this.profileReturn = undefined;
+      this.accountNavigation = undefined;
       this.phone = undefined;
       this.presenceRoot = undefined;
       this.error = "";
@@ -1178,6 +1229,24 @@ class MochiView {
         this.profiles.draft.avatarId = payload.uploadedAvatarId;
       else if (this.operation !== "mochi:accounts")
         this.profiles.draft = null;
+      if (this.sidebarProfile && !payload.uploadedAvatarId && ["mochi:account_create", "mochi:account_update", "mochi:account_archive", "mochi:account_restore"].includes(this.operation)) {
+        this.sidebarProfile = false;
+        const done = this.profileReturn;
+        this.profileReturn = undefined;
+        if (payload.createdAccountId) {
+          this.chooseAccount(payload.createdAccountId);
+          done?.();
+          return true;
+        }
+        if (this.state?.accountId && !payload.state.accounts.some((a) => a.id === this.state?.accountId && !a.archived)) {
+          this.leave();
+          this.resetScope();
+          this.pickerOpen = false;
+        }
+        this.redraw();
+        done?.();
+        return true;
+      }
       if (this.operation === "mochi:account_select") {
         const id = payload.state.phone?.lastAccountId || payload.state.selectedAccountId;
         if (id && payload.state.accounts.some((a) => a.id === id && !a.archived)) {
@@ -1418,20 +1487,30 @@ class MochiView {
   inboxControls() {
     const controls = el("div", "mochi-inbox-actions");
     const change = action("Switch Mochi account", "people");
-    change.onclick = () => this.exitPortal(() => this.showPicker(), change);
+    change.onclick = () => {
+      if (this.accountNavigation)
+        this.accountNavigation.picker();
+      else
+        this.exitPortal(() => this.showPicker(), change);
+    };
     controls.append(change);
     const profiles = action(stateAccountLabel(this.state?.accountId), "people");
     profiles.disabled = this.busy;
-    profiles.onclick = () => this.exitPortal(() => {
-      this.leave();
-      this.profilesOpen = true;
-      const current = this.profiles.state?.accounts.find((a) => a.id === this.state?.accountId);
-      if (current)
-        this.profiles.start(current);
+    profiles.onclick = () => {
+      if (this.accountNavigation)
+        this.accountNavigation.settings(profiles);
       else
-        this.profiles.draft = null;
-      this.dispatch("mochi:accounts");
-    }, profiles);
+        this.exitPortal(() => {
+          this.leave();
+          this.profilesOpen = true;
+          const current = this.profiles.state?.accounts.find((a) => a.id === this.state?.accountId);
+          if (current)
+            this.profiles.start(current);
+          else
+            this.profiles.draft = null;
+          this.dispatch("mochi:accounts");
+        }, profiles);
+    };
     controls.append(profiles);
     const create = action("New room", "plus");
     create.disabled = this.busy;
@@ -1509,6 +1588,10 @@ class MochiView {
         this.profilesOpen = false;
         this.redraw();
       }, (next, anchor) => this.confirmNavigation(next, anchor), () => this.refreshChoices()));
+      return page;
+    }
+    if (this.pickerOpen && surface === "desktop" && this.accountNavigation) {
+      page.append(el("p", "mochi-muted", this.busy ? "Loading selected account…" : "Choose a Mochi account in the Pocket sidebar."));
       return page;
     }
     if (this.pickerOpen) {
@@ -2603,7 +2686,7 @@ function createMochiWorkspace(options) {
   options.root.append(frame);
   let opened = false, destroyed = false, dirty = true;
   let dismissNotice;
-  const visible = () => opened && session.owns(surface) && frame.isConnected && !document.hidden && !frame.closest("[hidden]") && (typeof frame.checkVisibility !== "function" || frame.checkVisibility({ visibilityProperty: true }));
+  const visible = () => opened && session.owns(surface) && (options.isHostVisible?.() ?? true) && frame.isConnected && !document.hidden && !frame.closest("[hidden]") && (typeof frame.checkVisibility !== "function" || frame.checkVisibility({ visibilityProperty: true }));
   const policy = () => ({ ...options.notificationPolicy(), visible: visible() && view.isConversationOpen() });
   const render = () => {
     if (destroyed || !opened) {
@@ -2759,6 +2842,7 @@ function createMochiWindow(ui, session, notificationPolicy) {
   const options = { width: rect.width, height: rect.height, initialPosition: { x: rect.x, y: rect.y }, chromeless: true, snapToEdge: false, resizable: false, persistGeometry: false, touchScrollMode: "native", tooltip: "Mochi" };
   const widget = ui.createFloatWidget(options);
   let disposed = false, resizeCleanup, dragCleanup;
+  const visibility = new Set;
   const panel = document.createElement("section");
   panel.className = "mochi-window";
   panel.setAttribute("aria-label", "Mochi window");
@@ -2801,6 +2885,9 @@ function createMochiWindow(ui, session, notificationPolicy) {
     if (disposed)
       return;
     disposed = true;
+    for (const handler of visibility)
+      handler(false);
+    visibility.clear();
     windows.delete(session);
     window.removeEventListener("resize", restoreBounds);
     try {
@@ -2833,9 +2920,13 @@ function createMochiWindow(ui, session, notificationPolicy) {
       session,
       notificationPolicy,
       presentation: "messenger",
+      isHostVisible: () => widget.isVisible(),
       onVisibilityChange: (visible) => {
-        if (!disposed)
+        if (!disposed) {
           widget.setVisible(visible);
+          for (const handler of visibility)
+            handler(visible);
+        }
       },
       onDispose: cleanup
     });
@@ -2853,12 +2944,21 @@ function createMochiWindow(ui, session, notificationPolicy) {
     throw error;
   }
   const result = { get isOpen() {
-    return !disposed && workspace.isOpen;
+    return !disposed && workspace.isOpen && widget.isVisible();
+  }, onVisibilityChange(handler) {
+    visibility.add(handler);
+    handler(!disposed && workspace.isOpen && widget.isVisible());
+    return () => {
+      visibility.delete(handler);
+    };
   }, open() {
     if (disposed)
       throw new Error("Mochi window is disposed.");
     restoreBounds();
     workspace.open();
+    widget.setVisible(true);
+    for (const handler of visibility)
+      handler(true);
   }, hide() {
     if (!disposed)
       workspace.close();
@@ -2894,20 +2994,24 @@ var MOCHI_SIDEBAR_STYLES = `
 `;
 
 // src/mochi/sidebar.ts
-function createMochiSidebar(ctx, session, policy) {
+function createMochiSidebar(ctx, session, policy, activateSidebar = () => {}) {
   const root = document.createElement("section");
   root.className = "mochi-sidebar";
   root.setAttribute("aria-label", "Mochi account navigation");
   const style = document.createElement("style");
   style.textContent = MOCHI_SIDEBAR_STYLES;
-  const nav = document.createElement("nav"), picker = document.createElement("div"), body = document.createElement("div");
+  const nav = document.createElement("nav"), picker = document.createElement("div"), body = document.createElement("div"), editor = document.createElement("div");
+  editor.className = "mochi-sidebar-picker";
+  editor.hidden = true;
   nav.className = "mochi-sidebar-nav";
   nav.setAttribute("aria-label", "Mochi navigation");
   picker.className = "mochi-sidebar-picker";
   body.className = "mochi-sidebar-body";
   body.hidden = true;
-  root.append(style, nav, picker, body);
-  let disposed = false, workspace, fallback = "", rendered = "";
+  root.append(style, nav, picker, body, editor);
+  let disposed = false, workspace, fallback = "", rendered = "", pickerRequested = true;
+  let ownedWindow, offWindow;
+  const visibility = new Set;
   const button = (label, click) => {
     const node = document.createElement("button");
     node.type = "button";
@@ -2916,8 +3020,12 @@ function createMochiSidebar(ctx, session, policy) {
     return node;
   };
   const showPicker = () => {
+    pickerRequested = true;
     picker.hidden = false;
     body.hidden = true;
+    if (workspace?.isOpen && !ownedWindow?.isOpen)
+      for (const fn of visibility)
+        fn(false);
     session.prepareNavigation();
     render();
   };
@@ -2925,7 +3033,16 @@ function createMochiSidebar(ctx, session, policy) {
     const mobile = window.innerWidth <= 600 || window.matchMedia?.("(pointer: coarse)").matches;
     if (!mobile) {
       try {
-        createMochiWindow(ctx.ui, session, policy).open();
+        const next = createMochiWindow(ctx.ui, session, policy);
+        if (ownedWindow !== next) {
+          offWindow?.();
+          ownedWindow = next;
+          offWindow = next.onVisibilityChange((visible) => {
+            for (const fn of visibility)
+              fn(visible);
+          });
+        }
+        next.open();
         fallback = "";
         render();
         return;
@@ -2933,7 +3050,11 @@ function createMochiSidebar(ctx, session, policy) {
         fallback = "Floating windows are unavailable in this host. Mochi is open in this drawer.";
       }
     }
-    workspace ||= createMochiWorkspace({ root: body, session, notificationPolicy: policy, presentation: "messenger" });
+    activateSidebar();
+    workspace ||= createMochiWorkspace({ root: body, session, notificationPolicy: policy, presentation: "messenger", onVisibilityChange: (visible) => {
+      for (const fn of visibility)
+        fn(visible);
+    } });
     picker.hidden = true;
     body.hidden = false;
     workspace.open();
@@ -2944,6 +3065,24 @@ function createMochiSidebar(ctx, session, policy) {
   function render() {
     if (disposed)
       return;
+    editor.hidden = !session.view.isSidebarProfileOpen || pickerRequested;
+    if (session.view.isSidebarProfileOpen && !pickerRequested) {
+      picker.hidden = true;
+      body.hidden = true;
+      const focused = editor.contains(document.activeElement) ? document.activeElement : undefined, label = focused?.getAttribute("aria-label"), start = focused?.selectionStart, end = focused?.selectionEnd;
+      editor.replaceChildren(session.view.renderSidebarProfile());
+      const next = Array.from(editor.querySelectorAll("[aria-label]")).find((n) => n.getAttribute("aria-label") === label);
+      if (next) {
+        next.focus({ preventScroll: true });
+        if (start != null && end != null)
+          next.setSelectionRange(start, end);
+      }
+      return;
+    }
+    if (editor.childNodes.length) {
+      editor.replaceChildren();
+      picker.hidden = false;
+    }
     const state = session.view.navigationState, focused = picker.contains(document.activeElement) ? document.activeElement.dataset.accountId : undefined;
     open.disabled = !session.view.state;
     const key = JSON.stringify([state.accounts?.revision, state.accounts?.accounts.map((a) => [a.id, a.displayName, a.avatarUrl, a.archived, a.roomIds.length]), state.selectedAccountId, state.loading, state.error, state.switching, fallback]);
@@ -3000,7 +3139,15 @@ function createMochiSidebar(ctx, session, policy) {
       node.append(avatar, label);
       picker.append(node);
     }
-    const create = button("Create account", (anchor) => session.view.createNavigationAccount(anchor, present));
+    const create = button("Create account", (anchor) => {
+      pickerRequested = false;
+      session.view.editSidebarProfile(anchor, () => {
+        if (session.view.state?.accountId)
+          present();
+        else
+          showPicker();
+      }, true);
+    });
     create.disabled = state.switching;
     picker.append(create);
     const legacy = button("Unassigned legacy chats", (anchor) => session.view.selectNavigationAccount(undefined, anchor, present));
@@ -3013,14 +3160,49 @@ function createMochiSidebar(ctx, session, policy) {
     if (disposed)
       return;
     disposed = true;
+    offWindow?.();
+    visibility.clear();
+    session.view.setAccountNavigation(undefined);
     workspace?.destroy();
     root.remove();
   };
   const detach = session.observeNavigation({ redraw: render, disposed: dispose });
   render();
+  const openPicker = () => {
+    session.assertActive();
+    activateSidebar();
+    showPicker();
+  };
+  const settings = (anchor) => {
+    activateSidebar();
+    pickerRequested = false;
+    if (session.view.isSidebarProfileOpen)
+      render();
+    else
+      session.view.editSidebarProfile(anchor, () => {
+        if (session.view.state?.accountId)
+          present();
+        else
+          showPicker();
+      });
+  };
+  session.view.setAccountNavigation({ picker: openPicker, settings });
   return { root, open: () => {
     session.assertActive();
     showPicker();
+  }, settings, openMessenger: () => {
+    session.assertActive();
+    const current = session.view.navigationState;
+    if (current.selectedAccountId && current.accounts?.accounts.some((a) => a.id === current.selectedAccountId && !a.archived) && session.view.state?.accountId === current.selectedAccountId)
+      present();
+    else
+      openPicker();
+  }, onMessengerVisibility(handler) {
+    visibility.add(handler);
+    handler(ownedWindow?.isOpen || workspace?.isOpen || false);
+    return () => {
+      visibility.delete(handler);
+    };
   }, destroy: () => {
     detach();
     dispose();
@@ -3029,6 +3211,67 @@ function createMochiSidebar(ctx, session, policy) {
 
 // src/mochi/sidebar-icon.ts
 var MOCHI_SIDEBAR_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16C3 10 7 5 12 5s9 5 9 11c0 3-4 4-9 4s-9-1-9-4Z"/><circle cx="8" cy="13" r=".7"/><circle cx="16" cy="13" r=".7"/><path d="M10 15q2 2 4 0M18 3l1-1"/></svg>';
+
+// src/mochi/launcher.ts
+function createMochiLauncher(ui, pocket, session, navigation) {
+  session.assertActive();
+  const position = () => {
+    const p = pocket.getPosition();
+    return { x: p.x >= 72 ? p.x - 64 : p.x + 64, y: p.y };
+  };
+  const options = { width: 58, height: 58, initialPosition: position(), chromeless: true, resizable: false, persistGeometry: false, snapToEdge: true, tooltip: "Mochi" };
+  const widget = ui.createFloatWidget(options);
+  const root = document.createElement("div"), style = document.createElement("style"), button = document.createElement("button");
+  root.className = "mochi-launcher-root";
+  style.textContent = ".mochi-launcher-root{width:58px;height:58px;display:grid;place-items:center}.mochi-launcher{width:52px;height:52px;padding:6px;background:var(--lumiverse-bg-elevated,#201e25);color:var(--lumiverse-primary,#a6a0d9);border:1px solid var(--lumiverse-border,#ffffff26);border-radius:14px;cursor:pointer}.mochi-launcher svg{width:100%;height:100%;display:block}.mochi-launcher:focus-visible{outline:2px solid currentColor;outline-offset:2px}";
+  button.type = "button";
+  button.className = "mochi-launcher";
+  button.title = "Open Mochi messenger";
+  button.setAttribute("aria-label", "Open Mochi messenger");
+  button.innerHTML = MOCHI_SIDEBAR_ICON;
+  let disposed = false, dragged = false, timer;
+  const click = () => {
+    if (!dragged && !disposed)
+      navigation.openMessenger();
+  };
+  button.addEventListener("click", click);
+  root.append(style, button);
+  widget.root.append(root);
+  const offVisibility = navigation.onMessengerVisibility((visible) => {
+    if (!disposed && !session.isDestroyed)
+      widget.setVisible(!visible);
+  });
+  const offPocket = pocket.onDragEnd(() => {
+    if (!disposed) {
+      const p = position();
+      widget.moveTo(p.x, p.y);
+    }
+  });
+  const offDrag = widget.onDragEnd(() => {
+    dragged = true;
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      dragged = false;
+    }, 180);
+  });
+  const dispose = () => {
+    if (disposed)
+      return;
+    disposed = true;
+    clearTimeout(timer);
+    offVisibility();
+    offPocket();
+    offDrag();
+    button.removeEventListener("click", click);
+    root.remove();
+    widget.destroy();
+  };
+  const detach = session.observeNavigation({ redraw: () => {}, disposed: dispose });
+  return () => {
+    detach();
+    dispose();
+  };
+}
 
 // src/frontend/components/portal.ts
 var artwork = {
@@ -10392,7 +10635,7 @@ class PocketController {
       }
     };
     this.cleanups.push(this.mochiSession.attach(this.mochiSurface));
-    this.mochiSidebar = createMochiSidebar(this.ctx, this.mochiSession, () => ({ enabled: this.preferences.notifyMessages, previews: this.preferences.notificationPreviews }));
+    this.mochiSidebar = createMochiSidebar(this.ctx, this.mochiSession, () => ({ enabled: this.preferences.notifyMessages, previews: this.preferences.notificationPreviews }), () => this.openMochiPortal());
     this.cleanups.push(() => this.mochiSidebar.destroy());
     this.cleanups.push(this.ctx.events.on("CHAT_SWITCHED", () => {
       this.setupModalDismiss?.();
@@ -10497,6 +10740,9 @@ class PocketController {
         }, 180);
       }));
       this.launcher.hidden = false;
+      try {
+        this.cleanups.push(createMochiLauncher(this.ctx.ui, this.widget, this.mochiSession, this.mochiSidebar));
+      } catch {}
       this.renderDrawerLanding();
     } catch {
       this.widget = null;
@@ -10551,7 +10797,8 @@ class PocketController {
         this.selectedConversationId = "";
         this.selectedMessageId = "";
         this.currentApp = "home";
-        this.mochi.leave();
+        if (this.mochiSession.owns(this.mochiSurface))
+          this.mochi.leave();
         this.router.reset({ app: "home" });
         this.updateBadge();
         this.renderDrawerLanding();
@@ -11745,7 +11992,8 @@ class PocketController {
   }
   close() {
     this.dismissMochiNotification?.();
-    this.mochi.leave();
+    if (this.mochiSession.owns(this.mochiSurface))
+      this.mochi.leave();
     this.voicePlayer.stop();
     if (!this.widget && !this.dockPanel && !this.mobileWidget)
       return;

@@ -6,6 +6,7 @@ import { createMochiWorkspace } from '../src/mochi/workspace.js'
 import { PocketPortal } from '../src/frontend/components/portal.js'
 import { MOCHI_SIDEBAR_ICON } from '../src/mochi/sidebar-icon.js'
 import { readFileSync } from 'node:fs'
+import { createMochiLauncher } from '../src/mochi/launcher.js'
 import type { SpindleFrontendContext } from 'lumiverse-spindle-types'
 
 function fixture(width=900, geometry=true) {
@@ -22,7 +23,7 @@ function fixture(width=900, geometry=true) {
     const tab={options,root,onActivate:(fn:()=>void)=>{activate=fn;return()=>{activate=undefined}},activate:()=>activate?.(),destroy:()=>root.remove()};tabs.push(tab);return tab
   },createFloatWidget:(options:any)=>{
     floats++;const root=document.createElement('div');document.body.append(root);let position={...options.initialPosition}
-    return {root,setVisible:(visible:boolean)=>{root.hidden=!visible},setSize:()=>{},moveTo:(x:number,y:number)=>{position={x,y}},getPosition:()=>position,onDragEnd:()=>()=>{},destroy:()=>root.remove()}
+    return {root,setVisible:(visible:boolean)=>{root.hidden=!visible},isVisible:()=>!root.hidden,setSize:()=>{},moveTo:(x:number,y:number)=>{position={x,y}},getPosition:()=>position,onDragEnd:()=>()=>{},destroy:()=>root.remove()}
   }}
   if(geometry)ui.geometry={layoutViewportSize:()=>({width,height:850}),createResizeController:()=>()=>{}}
   const navigation=createMochiSidebar({ui} as Pick<SpindleFrontendContext,'ui'>,session,()=>({enabled:true,previews:false}))
@@ -30,7 +31,7 @@ function fixture(width=900, geometry=true) {
   document.body.append(pocket.root)
   const pane={root:navigation.root,activate:()=>pocket.show('mochi')}
   const a='account_'+'a'.repeat(32),b='account_'+'b'.repeat(32)
-  const bank:any={version:1,ownerId:'synthetic',revision:1,selectedAccountId:a,accounts:[a,b].map((id,i)=>({id,displayName:i?'Other profile':'Long fictional profile '.repeat(5),avatarUrl:'',archived:false,roomIds:['room_'+id]})),personas:[],avatars:[],warnings:[],canUploadAvatar:false}
+  const bank:any={version:1,ownerId:'synthetic',revision:1,selectedAccountId:a,accounts:[a,b].map((id,i)=>({id,revision:1,persona:{name:'Synthetic',description:'',source:'manual',sourceId:'',avatarUrl:''},username:'',displayName:i?'Other profile':'Long fictional profile '.repeat(5),avatarUrl:'',archived:false,roomIds:['room_'+id]})),personas:[],avatars:[],warnings:[],canUploadAvatar:false}
   const emit=(p:any)=>{for(const fn of listeners)fn(p)}
   const request=(type:string)=>sent.filter(p=>p.type===type).at(-1)
   const accounts=()=>emit({type:'mochi:accounts',requestId:request('mochi:accounts').requestId,state:structuredClone(bank)})
@@ -42,7 +43,7 @@ function fixture(width=900, geometry=true) {
     emit({type:'mochi:state',requestId:request('mochi:list').requestId,state:state(id,rooms)})
   }
   const cleanup=()=>{try{navigation.destroy();session.destroy(false)}finally{dom.window.close();Object.assign(globalThis,previous)}}
-  return {session,tabs:[pane],registrations:tabs,pocket,sent,listeners,bank,a,b,emit,accounts,request,state,select,cleanup,get floats(){return floats}}
+  return {session,ui,navigation,tabs:[pane],registrations:tabs,pocket,sent,listeners,bank,a,b,emit,accounts,request,state,select,cleanup,get floats(){return floats}}
 }
 
 test('sidebar is navigation only: one subscription, no cancellation/read receipt or independent view',()=>{
@@ -62,12 +63,53 @@ test('sidebar is navigation only: one subscription, no cancellation/read receipt
   }finally{h.cleanup()}
 })
 
+test('floating Mochi shortcut directly restores selected account, follows Pocket and hides/restores with one window',()=>{
+  const h=fixture();let dispose:()=>void=()=>{}
+  try{
+    let drag:((p:{x:number;y:number})=>void)|undefined
+    let pocketX=500,shortcut:any
+    const create=h.ui.createFloatWidget;h.ui.createFloatWidget=(options:any)=>{const widget=create(options);if(options.tooltip==='Mochi'&&options.width===58)shortcut=widget;return widget}
+    const pocket:any={getPosition:()=>({x:pocketX,y:160}),onDragEnd:(fn:any)=>{drag=fn;return()=>{drag=undefined}}}
+    dispose=createMochiLauncher(h.ui,pocket,h.session,h.navigation)
+    const launcher=document.querySelector<HTMLButtonElement>('.mochi-launcher')!,host=launcher.closest('.mochi-launcher-root')!.parentElement!
+    launcher.click();expect(h.floats).toBe(1);expect(h.request('mochi:accounts')).toBeDefined();expect(document.querySelector('.mochi-window')).toBeNull()
+    h.accounts();h.select(h.a);h.session.view.select('room_'+h.a)
+    expect(host.hidden).toBe(true)
+    document.querySelector<HTMLButtonElement>('[aria-label="Hide Mochi window"]')!.click();expect(host.hidden).toBe(false)
+    const before=h.sent.length;launcher.click();expect(h.sent.length).toBe(before);expect(h.session.view.roomId).toBe('room_'+h.a);expect(host.hidden).toBe(true)
+    expect(document.querySelectorAll('.mochi-window')).toHaveLength(1);expect(h.floats).toBe(2);drag?.({x:500,y:160});expect(shortcut.getPosition().x).toBe(436)
+    pocketX=12;drag?.({x:12,y:160});expect(shortcut.getPosition().x).toBe(76)
+    h.session.authenticatedIdentityChanged(null);expect(document.querySelector('.mochi-launcher')).toBeNull();expect(drag).toBeUndefined()
+  }finally{dispose();h.cleanup()}
+})
+
+test('messenger account controls use sidebar editor; save/cancel return to conversations without losing drafts',()=>{
+  const h=fixture()
+  try{
+    h.tabs[0].activate();h.accounts();h.select(h.a);h.session.view.select('room_'+h.a)
+    const view=h.session.view as any;view.drafts.set(view.roomId,'Unsent draft')
+    document.querySelector<HTMLButtonElement>('.mochi-window [aria-label="Switch Mochi account"]')!.click();h.accounts()
+    expect(document.querySelector('.mochi-window .mochi-account-picker')).toBeNull();expect(view.roomId).toBe('room_'+h.a)
+    document.querySelector<HTMLButtonElement>('.mochi-window [aria-label="Account settings"]')!.click()
+    expect(h.navigation.root.querySelector('.mochi-profile-screen')).not.toBeNull();expect(document.querySelector('.mochi-window .mochi-profile-screen')).toBeNull()
+    Array.from(h.navigation.root.querySelectorAll<HTMLButtonElement>('button')).find(n=>n.textContent==='Cancel profile changes')!.click()
+    expect(view.isSidebarProfileOpen).toBe(false);expect(view.roomId).toBe('room_'+h.a);expect(view.drafts.get(view.roomId)).toBe('Unsent draft')
+    h.navigation.settings(document.createElement('button'));view.profiles.draft.displayName='Changed synthetic profile'
+    h.navigation.root.querySelector<HTMLFormElement>('form')!.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}))
+    expect(h.request('mochi:account_update').accountId).toBe(h.a)
+    h.bank.revision++;h.emit({type:'mochi:accounts',requestId:h.request('mochi:account_update').requestId,state:h.bank})
+    expect(view.isSidebarProfileOpen).toBe(false);expect(view.roomId).toBe('room_'+h.a);expect(view.drafts.get(view.roomId)).toBe('Unsent draft')
+    expect(document.querySelector('.mochi-window .mochi-account-picker')).toBeNull();expect(h.listeners.size).toBe(1)
+  }finally{h.cleanup()}
+})
+
 test('one Pocket rail tab: adjacent internal shortcuts reuse native phones and the 01E account picker',()=>{
   const h=fixture()
   try{
     const source=readFileSync(new URL('../src/frontend/controller.ts',import.meta.url),'utf8')
     expect(source.match(/registerDrawerTab\(/g)).toHaveLength(1)
     expect(source).toContain("id: 'lumiphone'")
+    expect(source).toContain('if(this.mochiSession.owns(this.mochiSurface))this.mochi.leave()')
     const shortcuts=h.pocket.root.querySelectorAll('.pocket-portal-destination')
     expect(shortcuts).toHaveLength(2);expect(shortcuts[0].querySelector('[data-test="original-phone"]')).not.toBeNull()
     expect(shortcuts[1].querySelector('.pocket-portal-art')!.innerHTML).toContain('viewBox="0 0 24 24"')
@@ -134,7 +176,7 @@ test('picker loading/error/empty states, account creation and dirty-form safegua
     h.emit({type:'mochi:error',requestId:h.request('mochi:accounts').requestId,message:'private detail'});expect(h.tabs[0].root.textContent).toContain('Unable to load accounts');expect(h.tabs[0].root.textContent).not.toContain('private detail')
     h.tabs[0].activate();h.bank.accounts=[];h.accounts();expect(h.tabs[0].root.textContent).toContain('No fictional accounts yet')
     Array.from(h.tabs[0].root.querySelectorAll<HTMLButtonElement>('button')).find(n=>n.textContent==='Create account')!.click()
-    expect(h.floats).toBe(1);expect(document.querySelector('.mochi-profile-preview')).not.toBeNull()
+    expect(h.floats).toBe(0);expect(document.querySelector('.mochi-profile-preview')).not.toBeNull()
     const view=h.session.view as any;view.profiles.draft.displayName='Unsaved name';expect(view.hasUnsavedChanges()).toBe(true)
     h.bank.accounts=[{id:h.b,displayName:'Other',avatarUrl:'',archived:false,roomIds:[]}];h.tabs[0].activate();h.accounts()
     const count=h.sent.length;h.tabs[0].root.querySelector<HTMLButtonElement>(`[data-account-id="${h.b}"]`)!.click()

@@ -93,6 +93,18 @@ test('window: absent supported geometry fails before creation and leaves portal 
   }finally{h.cleanup()}
 })
 
+test('window: host-hidden messenger does not acknowledge or toast unread messages',()=>{
+  const h=fixture()
+  try{
+    h.portal.open();h.load();const win=createMochiWindow(h.ui,h.session,()=>({enabled:true,previews:true}));win.open()
+    h.widget.setVisible(false);expect(win.isOpen).toBe(false);const before=h.sent.length
+    h.emit({type:'mochi:notification',notificationRevision:1,notification:{id:'synthetic_notice',roomId:h.room.id,messageId:'synthetic_message',title:'Synthetic',roomTitle:'Synthetic',body:'Synthetic',avatarUrl:'',createdAt:'2026-10-12T12:00:00Z',read:false}})
+    expect(h.sent.slice(before).some(p=>p.type==='mochi:notification_read')).toBe(false)
+    expect(document.querySelector('.mochi-notification-toast')).toBeNull();expect(h.session.view.state!.notifications!.some(n=>n.id==='synthetic_notice'&&!n.read)).toBe(true)
+    win.open();expect(win.isOpen).toBe(true)
+  }finally{h.cleanup()}
+})
+
 test('window: temporary portal entry opens the host while original Mochi entry stays available',()=>{
   const h=fixture()
   try {

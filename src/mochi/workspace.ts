@@ -11,6 +11,7 @@ export interface MochiWorkspaceOptions {
   onVisibilityChange?: (visible: boolean) => void
   onDispose?: () => void
   presentation?: 'messenger'
+  isHostVisible?: () => boolean
 }
 export interface MochiWorkspace {
   readonly apiVersion: 1
@@ -35,7 +36,7 @@ export function createMochiWorkspace(options: MochiWorkspaceOptions): MochiWorks
   frame.append(style); options.root.append(frame)
   let opened = false, destroyed = false, dirty = true
   let dismissNotice: (() => void) | undefined
-  const visible = () => opened && session.owns(surface) && frame.isConnected && !document.hidden && !frame.closest('[hidden]') && (typeof frame.checkVisibility !== 'function' || frame.checkVisibility({ visibilityProperty: true }))
+  const visible = () => opened && session.owns(surface) && (options.isHostVisible?.()??true) && frame.isConnected && !document.hidden && !frame.closest('[hidden]') && (typeof frame.checkVisibility !== 'function' || frame.checkVisibility({ visibilityProperty: true }))
   const policy = (): MochiNotificationPolicy => ({ ...options.notificationPolicy(), visible: visible() && view.isConversationOpen() })
   const render = () => {
     if (destroyed || !opened) { dirty = true; return }
