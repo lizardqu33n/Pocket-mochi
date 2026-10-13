@@ -1340,9 +1340,13 @@ class MochiPreview {
     if (this.data) {
       const data = this.data, b = data.budget;
       root.append(el("p", "", `Input ${b.inputTokens} · output reserve ${b.outputTokens} · envelope ${b.envelopeTokens} · budget ${b.contextTokens} · remaining ${b.remainingTokens}`), el("p", "mochi-muted", `Host tokenizer: ${data.tokenization.tokenizerName || "not reported"}; ${data.tokenization.approximate === true ? "approximate fallback" : data.tokenization.approximate === false ? "matched tokenizer; provider usage may differ" : "precision not reported"}. Model: ${data.tokenization.model}`), el("p", "", `${data.history.retained} of ${data.history.stored} saved messages retained; ${data.history.trimmed} trimmed from outgoing context. Range: ${data.history.firstId || "none"} → ${data.history.lastId || "none"}. Saved history is unchanged.`));
+      if (data.history.omitted)
+        root.append(el("p", "mochi-preview-warning", `${data.history.omitted} saved messages omitted by the manual plan; they are still stored.`));
       root.append(el("p", "mochi-muted", `Snapshot time: ${data.resolvedAt ? new Date(data.resolvedAt).toLocaleString() : "not reported"}. Responder: ${data.responder || "not reported"}.`));
       if (data.preset)
-        root.append(el("p", "", `${data.preset.builtIn ? "Built-in" : "Custom"} preset: ${data.preset.name} · revision ${data.preset.revision} · ${data.preset.id} · ${data.preset.variant}`), el("pre", "mochi-preview-text", data.preset.appliedInstructions || "No additional preset instructions."));
+        root.append(el("p", "mochi-preview-identity", `${data.preset.builtIn ? "Built-in" : "Custom"} preset: ${data.preset.name} · revision ${data.preset.revision} · ${data.preset.variant} · ${data.preset.layout === "manual-v1" ? "Manual placement" : "Automatic placement"}`), el("pre", "mochi-preview-text", data.preset.appliedInstructions || "No additional preset instructions."));
+      for (const warning of data.warnings || [])
+        root.append(el("p", "mochi-preview-warning", warning));
       for (const text of data.assumptions)
         root.append(el("p", "mochi-muted", text));
       root.append(el("p", "", `Explicit Mochi parameters: ${JSON.stringify(data.parameters)} · reasoning ${JSON.stringify(data.reasoning)}`));
@@ -1362,8 +1366,161 @@ class MochiPreview {
 }
 var MOCHI_PREVIEW_STYLES = `.mochi-view .mochi-preview-panel{min-width:0;min-height:0;max-height:40%;overflow:auto;flex:0 1 auto;padding:10px;border-bottom:1px solid var(--mochi-border);overflow-wrap:anywhere}.mochi-view .mochi-preview-controls{display:flex;flex-wrap:wrap;gap:6px;min-width:0}.mochi-view .mochi-preview-controls select{max-width:100%;min-width:0;background:var(--lp-surface-2,#ffffff0c);color:inherit;border:1px solid var(--mochi-border);padding:8px;border-radius:8px}.mochi-view .mochi-preview-panel button{min-height:40px}.mochi-view .mochi-preview-text{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;max-width:100%}.mochi-view .mochi-preview-panel :focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}`;
 
+// src/mochi/macros.ts
+var CONTEXT_MACROS = ["mochi_characters", "mochi_persona", "mochi_room_instructions", "mochi_texting_styles", "mochi_system_notes", "mochi_history", "mochi_summary"];
+var expression = /\{\{\s*([^{}]*?)\s*\}\}/g;
+function validatePlacement(value) {
+  const p = value;
+  if (!p || p.version !== 1 || !Array.isArray(p.rows) || p.rows.length > 12 || Object.keys(p).some((k) => !["version", "rows"].includes(k)))
+    throw Error("Invalid manual context plan.");
+  const ids = new Set;
+  let size = 0;
+  for (const row of p.rows) {
+    if (!row || !/^section_[a-f0-9]{32}$/.test(row.id) || ids.has(row.id) || typeof row.title !== "string" || !row.title.trim() || row.title.length > 80 || typeof row.template !== "string" || row.template.length > 2000 || Object.keys(row).some((k) => !["id", "title", "template"].includes(k)))
+      throw Error("Invalid manual context row.");
+    ids.add(row.id);
+    size += row.template.length;
+    if (/[{}]{2}/.test(row.template.replace(expression, "")))
+      throw Error("Unbalanced macro expression.");
+    for (const match of row.template.matchAll(expression))
+      if (["mochi_history", "mochi_system_notes"].includes(match[1].trim()) && row.template.trim() !== match[0])
+        throw Error("History and system notes must each occupy a standalone row.");
+  }
+  if (size > 8000)
+    throw Error("Manual context plan is too large.");
+  return p;
+}
+function expandPlacement(p, values, history, notes) {
+  validatePlacement(p);
+  const seen = new Set, warnings = [], messages = [], sections = [];
+  for (const row of p.rows) {
+    const tokens = [...row.template.matchAll(expression)], standalone = tokens.length === 1 && row.template.trim() === tokens[0][0], name = standalone ? tokens[0][1].trim() : "";
+    const start = messages.length, already = seen.has(name);
+    const content = row.template.replace(expression, (literal, key) => {
+      key = key.trim();
+      if (!CONTEXT_MACROS.includes(key)) {
+        warnings.push(`Unknown expression ${literal}; kept literal.`);
+        return literal;
+      }
+      if (seen.has(key)) {
+        warnings.push(`Duplicate ${key}; expanded only once.`);
+        return "";
+      }
+      seen.add(key);
+      if (key === "mochi_summary") {
+        warnings.push("Summary is reserved and inactive.");
+        return "";
+      }
+      return values[key] || "";
+    });
+    if (name === "mochi_history" && !already)
+      messages.push(...history);
+    else if (name === "mochi_system_notes" && !already)
+      messages.push(...notes);
+    else if (content.trim())
+      messages.push({ role: "system", content });
+    sections.push({ id: row.title, active: messages.length > start, providerMessages: Array.from({ length: messages.length - start }, (_, i) => start + i + 1) });
+  }
+  for (const key of ["mochi_characters", "mochi_persona", "mochi_history"])
+    if (!seen.has(key))
+      warnings.push(`Missing ${key}; this context is omitted.`);
+  return { messages, sections, warnings, historyIncluded: seen.has("mochi_history") };
+}
+
 // src/mochi/presets.ts
 var DEFAULT_PRESET_ID = "mochi_default";
+
+// src/mochi/placement-controls.ts
+function placementControls(draft, redraw) {
+  const root = el("section", "mochi-placement-editor");
+  root.append(el("h4", "", "Context placement"));
+  const mode = el("select");
+  mode.setAttribute("aria-label", "Context placement mode");
+  for (const [value, label] of [["legacy-v1", "Automatic — existing prompt"], ["manual-v1", "Manual — ordered context rows"]]) {
+    const option = el("option", "", label);
+    option.value = value;
+    mode.append(option);
+  }
+  mode.value = draft.layout;
+  mode.onchange = () => {
+    draft.layout = mode.value;
+    if (draft.layout === "manual-v1" && !draft.placement)
+      draft.placement = { version: 1, rows: CONTEXT_MACROS.filter((k) => k !== "mochi_summary").map((key) => ({ id: "section_" + crypto.randomUUID().replaceAll("-", ""), title: key.replace("mochi_", ""), template: "{{" + key + "}}" })) };
+    redraw();
+  };
+  root.append(mode);
+  if (draft.layout === "manual-v1") {
+    draft.placement ||= { version: 1, rows: [] };
+    root.append(el("p", "mochi-muted", "Core response rules remain first; Continue remains last. History and notes need their own rows. Only these row templates expand macros; DM/Group instructions stay literal."));
+    for (const [i, row] of draft.placement.rows.entries()) {
+      const card = el("section", "mochi-placement-row"), heading = el("div", "mochi-placement-row-head");
+      heading.append(el("strong", "", `${i + 1}. ${row.title}`));
+      const up = button("Move up", "lp-button"), down = button("Move down", "lp-button"), remove = button("Remove row", "lp-button");
+      up.disabled = i === 0;
+      down.disabled = i === draft.placement.rows.length - 1;
+      up.setAttribute("aria-label", `Move ${row.title} up`);
+      down.setAttribute("aria-label", `Move ${row.title} down`);
+      remove.setAttribute("aria-label", `Remove ${row.title}`);
+      const move = (offset) => {
+        const rows = draft.placement.rows;
+        [rows[i], rows[i + offset]] = [rows[i + offset], rows[i]];
+        redraw();
+      };
+      up.onclick = () => move(-1);
+      down.onclick = () => move(1);
+      remove.onclick = () => {
+        draft.placement.rows.splice(i, 1);
+        redraw();
+      };
+      heading.append(up, down, remove);
+      const title = el("input");
+      title.maxLength = 80;
+      title.value = row.title;
+      title.setAttribute("aria-label", `Section title ${i + 1}`);
+      title.oninput = () => {
+        row.title = title.value;
+      };
+      const template = el("textarea");
+      template.rows = 2;
+      template.maxLength = 2000;
+      template.value = row.template;
+      template.setAttribute("aria-label", `Section template ${i + 1}`);
+      template.oninput = () => {
+        row.template = template.value;
+      };
+      card.append(heading, title, template);
+      root.append(card);
+    }
+    const choice = el("select");
+    choice.setAttribute("aria-label", "Context macro to add");
+    for (const key of CONTEXT_MACROS) {
+      const option = el("option", "", key);
+      option.value = key;
+      choice.append(option);
+    }
+    const add = button("Add context row", "lp-button");
+    add.disabled = draft.placement.rows.length >= 12;
+    add.onclick = () => {
+      const key = choice.value;
+      draft.placement.rows.push({ id: "section_" + crypto.randomUUID().replaceAll("-", ""), title: key.replace("mochi_", ""), template: "{{" + key + "}}" });
+      redraw();
+    };
+    root.append(choice, add);
+    const warnings = el("div", "mochi-preview-warning");
+    warnings.setAttribute("role", "status");
+    const updateWarnings = () => {
+      try {
+        warnings.replaceChildren(...expandPlacement(draft.placement, {}, [], []).warnings.map((text) => el("p", "", text)));
+      } catch (error) {
+        warnings.textContent = error.message;
+      }
+    };
+    updateWarnings();
+    root.addEventListener("input", updateWarnings);
+    root.append(warnings);
+  }
+  return root;
+}
 
 // src/mochi/preset-panel.ts
 var scope2 = (r) => JSON.stringify([r.accountId || "", r.id, r.associationRevision || 0]);
@@ -1384,6 +1541,7 @@ class MochiPresetPanel {
   timer;
   submitted = false;
   drafts = new Map;
+  selectedId;
   constructor(send, current, redraw, bind, returned) {
     this.send = send;
     this.current = current;
@@ -1399,6 +1557,7 @@ class MochiPresetPanel {
     this.effective = undefined;
     this.draft = undefined;
     this.key = "";
+    this.selectedId = undefined;
     if (privateState)
       this.drafts.clear();
   }
@@ -1469,7 +1628,7 @@ class MochiPresetPanel {
   edit(action, preset) {
     if (!this.bank)
       return;
-    const r = preset?.revisions.at(-1), value = { action, id: preset?.id, name: preset?.name || "", dmInstructions: r?.dmInstructions || "", groupInstructions: r?.groupInstructions || "", revision: this.bank.revision };
+    const r = preset?.revisions.at(-1), value = { action, id: preset?.id, name: preset?.name || "", dmInstructions: r?.dmInstructions || "", groupInstructions: r?.groupInstructions || "", revision: this.bank.revision, layout: r?.layout || "legacy-v1", placement: r?.placement ? structuredClone(r.placement) : undefined };
     this.draft = { ...value, baseline: JSON.stringify(value) };
     this.drafts.set(this.key, this.draft);
     this.redraw();
@@ -1548,6 +1707,33 @@ class MochiPresetPanel {
       root.append(create, duplicate);
       if (!this.bank.presets.length)
         root.append(el("p", "mochi-muted", "No custom presets in this account yet."));
+      const workspace = el("div", "mochi-preset-workspace"), library = el("nav", "mochi-preset-library"), editor = el("div", "mochi-preset-edit-pane");
+      library.setAttribute("aria-label", "Preset library");
+      library.append(el("h4", "", "Library"));
+      editor.append(el("h4", "", this.draft ? "Edit draft — not applied" : "Published preset"));
+      workspace.append(library, editor);
+      root.append(workspace);
+      const selected = this.selectedId || room.preset?.id || this.bank.presets[0]?.id;
+      for (const p of this.bank.presets) {
+        const item = button(`${p.name} · r${p.revisions.length}${p.archived ? " · archived" : ""}`, "mochi-preset-library-item");
+        item.setAttribute("aria-pressed", String(selected === p.id));
+        item.onclick = () => {
+          const choose = () => {
+            this.draft = undefined;
+            this.drafts.delete(this.key);
+            this.selectedId = p.id;
+            this.redraw();
+          };
+          if (this.draft) {
+            const confirm = button("Discard draft and open preset", "lp-button");
+            confirm.onclick = choose;
+            item.replaceWith(confirm);
+            confirm.focus();
+          } else
+            choose();
+        };
+        library.append(item);
+      }
       if (this.draft) {
         const d = this.draft, form = el("form", "mochi-preset-editor"), name = el("input");
         name.maxLength = 80;
@@ -1580,7 +1766,7 @@ class MochiPresetPanel {
           const dl = el("label", "", "DM instructions"), gl = el("label", "", "Group instructions");
           dl.append(dm);
           gl.append(group);
-          form.append(dl, gl);
+          form.append(dl, gl, placementControls(d, () => this.redraw()));
         }
         const publish = button(d.action === "rename" ? "Save preset name" : "Publish preset revision", "lp-button");
         publish.type = "submit";
@@ -1613,12 +1799,12 @@ class MochiPresetPanel {
         }
         form.onsubmit = (e) => {
           e.preventDefault();
-          this.request({ action: d.action, id: d.id, name: d.name, dmInstructions: d.dmInstructions, groupInstructions: d.groupInstructions, revision: d.revision });
+          this.request({ action: d.action, id: d.id, name: d.name, dmInstructions: d.dmInstructions, groupInstructions: d.groupInstructions, revision: d.revision, layout: d.layout, ...d.layout === "manual-v1" ? { placement: d.placement } : {} });
         };
         form.append(dirty, publish, cancel);
-        root.append(form);
+        editor.append(form);
       } else
-        for (const p of this.bank.presets) {
+        for (const p of this.bank.presets.filter((p) => p.id === selected)) {
           const row = el("section", "mochi-preset-entry");
           row.append(el("strong", "", `${p.name} · revision ${p.revisions.length}${p.archived ? " · archived" : ""}`));
           const edit = button("Edit / publish", "lp-button");
@@ -1633,14 +1819,15 @@ class MochiPresetPanel {
           const archive = button(p.archived ? "Restore archived preset" : "Archive", "lp-button");
           archive.disabled = Boolean(this.ticket);
           archive.onclick = () => this.request({ action: p.archived ? "restore" : "archive", id: p.id, revision: this.bank.revision });
-          row.append(edit, rename, copy, archive);
-          root.append(row);
+          row.append(el("p", "mochi-muted", p.revisions.at(-1).layout === "manual-v1" ? "Manual context placement" : "Automatic context placement"), el("pre", "", p.revisions.at(-1).dmInstructions || "No additional DM instructions."), el("pre", "", p.revisions.at(-1).groupInstructions || "No additional Group instructions."), edit, rename, copy, archive);
+          editor.append(row);
         }
     }
     return root;
   }
 }
 var MOCHI_PRESET_STYLES = `.mochi-view .mochi-preset-panel{min-width:0;min-height:0;max-height:45%;overflow:auto;flex:0 1 auto;padding:10px;border-bottom:1px solid var(--mochi-border);overflow-wrap:anywhere}.mochi-view .mochi-preset-panel button{min-height:40px;margin:3px}.mochi-view .mochi-preset-panel select{max-width:100%;min-width:0}.mochi-view .mochi-preset-editor{display:grid;gap:8px;min-width:0}.mochi-view .mochi-preset-editor label{display:grid;gap:4px;min-width:0}.mochi-view .mochi-preset-editor input,.mochi-view .mochi-preset-editor textarea{box-sizing:border-box;width:100%;min-width:0;font:inherit;background:var(--lp-surface-2,#ffffff0c);color:inherit;border:1px solid var(--mochi-border);border-radius:8px;padding:8px}.mochi-view .mochi-preset-entry{border:1px solid var(--mochi-border);border-radius:10px;padding:8px;margin-top:8px}.mochi-view .mochi-preset-panel :focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}`;
+var MOCHI_PRESET_WORKSPACE_STYLES = `.mochi-view .mochi-preset-panel{max-height:70%;container-type:inline-size;background:var(--lp-surface-1,transparent);border:1px solid var(--mochi-border);border-radius:12px;margin:6px}.mochi-view .mochi-preset-workspace{display:grid;gap:12px;margin-top:12px;min-width:0}.mochi-view .mochi-preset-library,.mochi-view .mochi-preset-edit-pane{min-width:0;border:1px solid var(--mochi-border);border-radius:10px;padding:10px;background:var(--lp-surface-2,#ffffff08)}.mochi-view .mochi-preset-library{display:grid;align-content:start;gap:6px;max-height:220px;overflow:auto}.mochi-view .mochi-preset-library-item{font:inherit;min-width:0;text-align:left;white-space:normal;overflow-wrap:anywhere;border:1px solid var(--mochi-border);border-radius:8px;background:transparent;color:inherit;padding:8px}.mochi-view .mochi-preset-library-item[aria-pressed=true]{border-color:var(--mochi-accent);background:var(--lp-surface-2,#ffffff18)}.mochi-view .mochi-preset-panel h3,.mochi-view .mochi-preset-panel h4{margin:0 0 10px;font-weight:600}.mochi-view .mochi-preset-editor label{padding:8px;border:1px solid var(--mochi-border);border-radius:8px}.mochi-view .mochi-placement-row{border:1px solid var(--mochi-border);border-radius:8px;padding:10px;margin:8px 0;min-width:0}.mochi-view .mochi-placement-row-head{display:flex;flex-wrap:wrap;align-items:center;gap:5px}.mochi-view .mochi-preset-panel pre{white-space:pre-wrap;overflow-wrap:anywhere}.mochi-view .mochi-placement-editor select{max-width:100%;background:var(--lp-surface-2,#ffffff08);color:inherit;border:1px solid var(--mochi-border);padding:8px}.mochi-view .mochi-preview-panel{border:1px solid var(--mochi-border);border-radius:12px;margin:6px;background:var(--lp-surface-1,transparent)}.mochi-view .mochi-preview-panel>details{border:1px solid var(--mochi-border);border-radius:8px;padding:10px;margin-top:8px;background:var(--lp-surface-2,#ffffff08)}.mochi-view .mochi-preview-panel summary{cursor:pointer;font-weight:600;min-height:32px}.mochi-view .mochi-preview-text{max-height:320px;overflow:auto;padding:8px;border-left:2px solid var(--mochi-border)}.mochi-view .mochi-preview-warning{border-left:3px solid var(--mochi-accent);padding:6px 10px}.mochi-view .mochi-preview-identity{font-weight:600}@container(min-width:600px){.mochi-view .mochi-preset-workspace{grid-template-columns:minmax(140px,190px) minmax(0,1fr)}.mochi-view .mochi-preset-library{max-height:none}}`;
 
 // src/mochi/view.ts
 function action(label, icon, compact = false) {
@@ -2579,7 +2766,7 @@ class MochiView {
     if (surface !== "choices")
       this.presenceRoot = page;
     const style = el("style");
-    style.textContent = MOCHI_STYLES + MOCHI_REPLY_STYLES + MOCHI_REACTION_STYLES + MOCHI_PIN_STYLES + MOCHI_SEARCH_STYLES + MOCHI_TEXTING_STYLES + MOCHI_PREVIEW_STYLES + MOCHI_PRESET_STYLES;
+    style.textContent = MOCHI_STYLES + MOCHI_REPLY_STYLES + MOCHI_REACTION_STYLES + MOCHI_PIN_STYLES + MOCHI_SEARCH_STYLES + MOCHI_TEXTING_STYLES + MOCHI_PREVIEW_STYLES + MOCHI_PRESET_STYLES + MOCHI_PRESET_WORKSPACE_STYLES;
     page.append(style);
     const header = el("header");
     const brand = el("div", "mochi-brand");

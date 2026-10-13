@@ -2,8 +2,9 @@ import type {MochiHost} from './service.js'
 import type {MochiRoom} from './types.js'
 import {fictionalAccountId} from './accounts.js'
 import {identifier} from './scheduling.js'
+import {validatePlacement,type Placement} from './macros.js'
 export const DEFAULT_PRESET_ID='mochi_default'
-export interface PresetRevision {revision:number;dmInstructions:string;groupInstructions:string;layout:'legacy-v1'}
+export interface PresetRevision {revision:number;dmInstructions:string;groupInstructions:string;layout:'legacy-v1'|'manual-v1';placement?:Placement}
 export interface MochiPreset {id:string;name:string;archived:boolean;revisions:PresetRevision[]}
 export interface PresetBinding {id:string;revision:number;accountId?:string}
 export interface ResolvedPreset extends PresetRevision {id:string;name:string;builtIn:boolean}
@@ -28,7 +29,7 @@ export class MochiPresets {
   if(!bank||bank.version!==1||bank.ownerId!==user||bank.accountId!==accountId||!Number.isSafeInteger(bank.revision)||bank.revision<1||!Array.isArray(bank.presets)||bank.presets.length>100||!Array.isArray(bank.receipts)||bank.receipts.length>10000||bank.receipts.some(id=>typeof id!=='string'))throw Error('Damaged preset library; saved revisions were preserved.')
   const ids=new Set<string>()
   for(const p of bank.presets){presetId(p?.id);if(ids.has(p.id)||typeof p.archived!=='boolean'||!Array.isArray(p.revisions)||!p.revisions.length||p.revisions.length>50)throw Error('Damaged preset history; saved revisions were preserved.');ids.add(p.id);bounded(p.name,80,true)
-   for(const [i,r]of p.revisions.entries()){if(!r||r.revision!==i+1||r.layout!=='legacy-v1')throw Error('Unsupported preset revision; saved content was preserved.');bounded(r.dmInstructions,4000);bounded(r.groupInstructions,4000)}
+   for(const [i,r]of p.revisions.entries()){if(!r||r.revision!==i+1||!['legacy-v1','manual-v1'].includes(r.layout))throw Error('Unsupported preset revision; saved content was preserved.');if(r.layout==='manual-v1')validatePlacement(r.placement);else if(r.placement!==undefined)throw Error('Automatic revision cannot carry a manual plan.');bounded(r.dmInstructions,4000);bounded(r.groupInstructions,4000)}
   }
   return bank
  }
@@ -46,16 +47,19 @@ export class MochiPresets {
    if(bank.receipts.includes(receipt))return bank
    if(bank.revision!==input.revision)throw Error('Preset library changed elsewhere. Refresh before publishing.')
    if(!['create','duplicate','publish','rename','archive','restore'].includes(input.action))throw Error('Unsupported preset action.')
+   const layout=input.layout??'legacy-v1';if(!['legacy-v1','manual-v1'].includes(layout))throw Error('Unsupported context layout.')
+   if(layout==='legacy-v1'&&input.placement!==undefined)throw Error('Automatic mode must omit the manual plan.')
+   const placement=layout==='manual-v1'?validatePlacement(input.placement):undefined
    const source=input.action==='create'||input.id===DEFAULT_PRESET_ID?undefined:bank.presets.find(p=>p.id===presetId(input.id))
    if(!['create','duplicate'].includes(input.action)&&!source)throw Error('This custom preset is unavailable; Mochi Default cannot be modified.')
    if(input.action==='create'||input.action==='duplicate'){
     if(bank.presets.length>=100)throw Error('Preset library limit reached; archive history was retained.')
     let content=defaultPreset()
     if(input.action==='duplicate'&&input.id!==DEFAULT_PRESET_ID){if(!source)throw Error('Preset to duplicate is unavailable.');const r=source.revisions.find(r=>r.revision===input.sourceRevision);if(!r)throw Error('Preset revision to duplicate is unavailable.');content={...r,id:source.id,name:source.name,builtIn:false}}
-    bank.presets.push({id:`preset_${crypto.randomUUID().replaceAll('-','')}`,name:bounded(input.name,80,true),archived:false,revisions:[{revision:1,layout:'legacy-v1',dmInstructions:input.action==='create'?bounded(input.dmInstructions??'',4000):content.dmInstructions,groupInstructions:input.action==='create'?bounded(input.groupInstructions??'',4000):content.groupInstructions}]})
+    bank.presets.push({id:`preset_${crypto.randomUUID().replaceAll('-','')}`,name:bounded(input.name,80,true),archived:false,revisions:[{revision:1,layout:input.action==='duplicate'?content.layout:layout,...(input.action==='duplicate'?content.placement?{placement:content.placement}:{}:placement?{placement}:{}),dmInstructions:input.action==='create'?bounded(input.dmInstructions??'',4000):content.dmInstructions,groupInstructions:input.action==='create'?bounded(input.groupInstructions??'',4000):content.groupInstructions}]})
    }else if(input.action==='publish'){
     if(source!.archived)throw Error('Restore this preset before publishing.');if(source!.revisions.length>=50)throw Error('Published revision limit reached. Duplicate into a new preset; existing revisions stay intact.')
-    source!.revisions.push({revision:source!.revisions.length+1,layout:'legacy-v1',dmInstructions:bounded(input.dmInstructions,4000),groupInstructions:bounded(input.groupInstructions,4000)})
+    source!.revisions.push({revision:source!.revisions.length+1,layout,...(placement?{placement}:{}),dmInstructions:bounded(input.dmInstructions,4000),groupInstructions:bounded(input.groupInstructions,4000)})
    }else if(input.action==='rename')source!.name=bounded(input.name,80,true)
    else source!.archived=input.action==='archive'
    bank.receipts.push(receipt);if(bank.receipts.length>10000)throw Error('Preset receipt limit reached; records were preserved.');bank.revision++

@@ -44,7 +44,9 @@ export async function generateMochiReply(host: any, room: MochiRoom, userId: str
   const messages = await buildMochiPrompt(room, characters, speaker, async messages => (await host.tokens.countMessages(messages, { model: settings.model || connection.model, userId })).total_tokens, signal, natural,preset)
   const response = await callPocketProvider(host, { messages, connection_id: settings.connectionId, userId, signal, reasoning: { source: 'off' }, parameters: { max_tokens: settings.outputTokens, temperature: 0.8, ...(settings.model ? { model: settings.model } : {}) } })
   let parsed: any
-  try { parsed = JSON.parse(String(response.content).trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')) } catch { throw new Error('The model returned invalid message JSON. Try continuing again.') }
+  const raw=response?.content
+  if(raw===undefined||raw===null||typeof raw==='string'&&!raw.trim())throw Error('The AI returned an empty response. Please try again.')
+  try { parsed = JSON.parse(String(raw).trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')) } catch { throw new Error('The AI returned malformed message JSON. Please try again.') }
   const rows = natural && Array.isArray(parsed?.messages) ? parsed.messages : [parsed]
   if(rows.length>3) throw new Error('The model exceeded the natural reply limit.')
   const replies:GeneratedReply[]=[],seen=new Set<string>()

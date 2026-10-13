@@ -36,7 +36,7 @@ import {pinsPanel,MOCHI_PIN_STYLES,type NoteDraft} from './pins-panel.js'
 import {MochiSearch,MOCHI_SEARCH_STYLES} from './search-panel.js'
 import {textingControls,MOCHI_TEXTING_STYLES} from './texting-controls.js'
 import {MochiPreview,MOCHI_PREVIEW_STYLES} from './preview-panel.js'
-import {MochiPresetPanel,MOCHI_PRESET_STYLES} from './preset-panel.js'
+import {MochiPresetPanel,MOCHI_PRESET_STYLES,MOCHI_PRESET_WORKSPACE_STYLES} from './preset-panel.js'
 
 type DisplayMessage = Pick<MochiMessage, 'id' | 'role' | 'content' | 'name' | 'createdAt'> & Partial<Pick<MochiMessage, 'avatarUrl' | 'characterId' | 'editedAt'>> & {replyTo?:unknown}
 function isDisplayMessage(value: unknown): value is DisplayMessage {
@@ -509,7 +509,7 @@ export class MochiView {
     page.dataset.surface = surface
     if (surface !== 'choices') this.presenceRoot=page
     const style = el('style')
-    style.textContent = MOCHI_STYLES+MOCHI_REPLY_STYLES+MOCHI_REACTION_STYLES+MOCHI_PIN_STYLES+MOCHI_SEARCH_STYLES+MOCHI_TEXTING_STYLES+MOCHI_PREVIEW_STYLES+MOCHI_PRESET_STYLES
+    style.textContent = MOCHI_STYLES+MOCHI_REPLY_STYLES+MOCHI_REACTION_STYLES+MOCHI_PIN_STYLES+MOCHI_SEARCH_STYLES+MOCHI_TEXTING_STYLES+MOCHI_PREVIEW_STYLES+MOCHI_PRESET_STYLES+MOCHI_PRESET_WORKSPACE_STYLES
     page.append(style)
     const header = el('header'); const brand = el('div', 'mochi-brand')
     const wordmark = el('h2', 'mochi-wordmark'); wordmark.setAttribute('aria-label', 'Mochi')

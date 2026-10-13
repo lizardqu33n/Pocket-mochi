@@ -656,6 +656,67 @@ class MochiAccounts {
   }
 }
 
+// src/mochi/macros.ts
+var CONTEXT_MACROS = ["mochi_characters", "mochi_persona", "mochi_room_instructions", "mochi_texting_styles", "mochi_system_notes", "mochi_history", "mochi_summary"];
+var expression = /\{\{\s*([^{}]*?)\s*\}\}/g;
+function validatePlacement(value) {
+  const p = value;
+  if (!p || p.version !== 1 || !Array.isArray(p.rows) || p.rows.length > 12 || Object.keys(p).some((k) => !["version", "rows"].includes(k)))
+    throw Error("Invalid manual context plan.");
+  const ids = new Set;
+  let size = 0;
+  for (const row of p.rows) {
+    if (!row || !/^section_[a-f0-9]{32}$/.test(row.id) || ids.has(row.id) || typeof row.title !== "string" || !row.title.trim() || row.title.length > 80 || typeof row.template !== "string" || row.template.length > 2000 || Object.keys(row).some((k) => !["id", "title", "template"].includes(k)))
+      throw Error("Invalid manual context row.");
+    ids.add(row.id);
+    size += row.template.length;
+    if (/[{}]{2}/.test(row.template.replace(expression, "")))
+      throw Error("Unbalanced macro expression.");
+    for (const match of row.template.matchAll(expression))
+      if (["mochi_history", "mochi_system_notes"].includes(match[1].trim()) && row.template.trim() !== match[0])
+        throw Error("History and system notes must each occupy a standalone row.");
+  }
+  if (size > 8000)
+    throw Error("Manual context plan is too large.");
+  return p;
+}
+function expandPlacement(p, values, history, notes) {
+  validatePlacement(p);
+  const seen = new Set, warnings = [], messages = [], sections = [];
+  for (const row of p.rows) {
+    const tokens = [...row.template.matchAll(expression)], standalone = tokens.length === 1 && row.template.trim() === tokens[0][0], name = standalone ? tokens[0][1].trim() : "";
+    const start = messages.length, already = seen.has(name);
+    const content = row.template.replace(expression, (literal, key) => {
+      key = key.trim();
+      if (!CONTEXT_MACROS.includes(key)) {
+        warnings.push(`Unknown expression ${literal}; kept literal.`);
+        return literal;
+      }
+      if (seen.has(key)) {
+        warnings.push(`Duplicate ${key}; expanded only once.`);
+        return "";
+      }
+      seen.add(key);
+      if (key === "mochi_summary") {
+        warnings.push("Summary is reserved and inactive.");
+        return "";
+      }
+      return values[key] || "";
+    });
+    if (name === "mochi_history" && !already)
+      messages.push(...history);
+    else if (name === "mochi_system_notes" && !already)
+      messages.push(...notes);
+    else if (content.trim())
+      messages.push({ role: "system", content });
+    sections.push({ id: row.title, active: messages.length > start, providerMessages: Array.from({ length: messages.length - start }, (_, i) => start + i + 1) });
+  }
+  for (const key of ["mochi_characters", "mochi_persona", "mochi_history"])
+    if (!seen.has(key))
+      warnings.push(`Missing ${key}; this context is omitted.`);
+  return { messages, sections, warnings, historyIncluded: seen.has("mochi_history") };
+}
+
 // src/mochi/presets.ts
 var DEFAULT_PRESET_ID = "mochi_default";
 var defaultPreset = () => ({ id: DEFAULT_PRESET_ID, name: "Mochi Default", builtIn: true, revision: 1, layout: "legacy-v1", dmInstructions: "", groupInstructions: "" });
@@ -707,8 +768,12 @@ class MochiPresets {
       ids.add(p.id);
       bounded(p.name, 80, true);
       for (const [i, r] of p.revisions.entries()) {
-        if (!r || r.revision !== i + 1 || r.layout !== "legacy-v1")
+        if (!r || r.revision !== i + 1 || !["legacy-v1", "manual-v1"].includes(r.layout))
           throw Error("Unsupported preset revision; saved content was preserved.");
+        if (r.layout === "manual-v1")
+          validatePlacement(r.placement);
+        else if (r.placement !== undefined)
+          throw Error("Automatic revision cannot carry a manual plan.");
         bounded(r.dmInstructions, 4000);
         bounded(r.groupInstructions, 4000);
       }
@@ -736,6 +801,12 @@ class MochiPresets {
         throw Error("Preset library changed elsewhere. Refresh before publishing.");
       if (!["create", "duplicate", "publish", "rename", "archive", "restore"].includes(input.action))
         throw Error("Unsupported preset action.");
+      const layout = input.layout ?? "legacy-v1";
+      if (!["legacy-v1", "manual-v1"].includes(layout))
+        throw Error("Unsupported context layout.");
+      if (layout === "legacy-v1" && input.placement !== undefined)
+        throw Error("Automatic mode must omit the manual plan.");
+      const placement = layout === "manual-v1" ? validatePlacement(input.placement) : undefined;
       const source = input.action === "create" || input.id === DEFAULT_PRESET_ID ? undefined : bank.presets.find((p) => p.id === presetId(input.id));
       if (!["create", "duplicate"].includes(input.action) && !source)
         throw Error("This custom preset is unavailable; Mochi Default cannot be modified.");
@@ -751,13 +822,13 @@ class MochiPresets {
             throw Error("Preset revision to duplicate is unavailable.");
           content = { ...r, id: source.id, name: source.name, builtIn: false };
         }
-        bank.presets.push({ id: `preset_${crypto.randomUUID().replaceAll("-", "")}`, name: bounded(input.name, 80, true), archived: false, revisions: [{ revision: 1, layout: "legacy-v1", dmInstructions: input.action === "create" ? bounded(input.dmInstructions ?? "", 4000) : content.dmInstructions, groupInstructions: input.action === "create" ? bounded(input.groupInstructions ?? "", 4000) : content.groupInstructions }] });
+        bank.presets.push({ id: `preset_${crypto.randomUUID().replaceAll("-", "")}`, name: bounded(input.name, 80, true), archived: false, revisions: [{ revision: 1, layout: input.action === "duplicate" ? content.layout : layout, ...input.action === "duplicate" ? content.placement ? { placement: content.placement } : {} : placement ? { placement } : {}, dmInstructions: input.action === "create" ? bounded(input.dmInstructions ?? "", 4000) : content.dmInstructions, groupInstructions: input.action === "create" ? bounded(input.groupInstructions ?? "", 4000) : content.groupInstructions }] });
       } else if (input.action === "publish") {
         if (source.archived)
           throw Error("Restore this preset before publishing.");
         if (source.revisions.length >= 50)
           throw Error("Published revision limit reached. Duplicate into a new preset; existing revisions stay intact.");
-        source.revisions.push({ revision: source.revisions.length + 1, layout: "legacy-v1", dmInstructions: bounded(input.dmInstructions, 4000), groupInstructions: bounded(input.groupInstructions, 4000) });
+        source.revisions.push({ revision: source.revisions.length + 1, layout, ...placement ? { placement } : {}, dmInstructions: bounded(input.dmInstructions, 4000), groupInstructions: bounded(input.groupInstructions, 4000) });
       } else if (input.action === "rename")
         source.name = bounded(input.name, 80, true);
       else
@@ -804,12 +875,14 @@ ROOM INSTRUCTIONS: ${settings.instructions}`, at = system.content.indexOf(marker
     system.content = system.content.slice(0, at) + `
 PRESET INSTRUCTIONS (${variant}): ${presetInstructions}` + system.content.slice(at);
   }
-  if (settings.aiBehavior)
-    system.content += `
+  const timingRule = `
 You may optionally include behavior:{"delivery":"now|later","delayMs":0,"status":"online|away|dnd|offline"}. delayMs must be an integer from 0 to 86400000; now requires zero. Status is an optional suggestion for your own character, effective only after delivery. These suggestions cannot override user locks or backend limits.`;
-  if (natural)
-    system.content += `
+  if (settings.aiBehavior)
+    system.content += timingRule;
+  const naturalRule = `
 NATURAL RESPONSE: Instead of a single message you may return {"messages":[{"speakerId":"eligible id","text":"message","behavior":{}}]}. Return zero to three messages, at most one per character. An empty messages array is appropriate when nobody needs to respond. Prefer meaningful selective contributions; do not use round-robin turns or make everyone reply. Avoid repeating the most recent speaker unless their contribution is needed. Optional behavior follows the same rules only when enabled above.`;
+  if (natural)
+    system.content += naturalRule;
   const history = room.messages.map((raw) => {
     const message = raw;
     if (!message || !["user", "assistant"].includes(message.role) || typeof message.content !== "string")
@@ -836,7 +909,7 @@ NATURAL RESPONSE: Instead of a single message you may return {"messages":[{"spea
         reactionContext.set(m, `
 [Reactions: ${JSON.stringify(included.map((r) => ({ emoji: r.emoji, actor: r.actor, actorId: r.actorId, name: r.name })))}]`);
     }
-    const messages = [system, ...history.map((message) => {
+    const dialogue = history.map((message) => {
       let quote = "";
       if (message.replyTo) {
         const original = originals.get(message.replyTo);
@@ -848,14 +921,21 @@ NATURAL RESPONSE: Instead of a single message you may return {"messages":[{"spea
       const referenced = replyIds.has(message.id) ? `[Message reference ID: ${JSON.stringify(message.id)}]
 ` : "";
       return { role: message.role, content: referenced + quote + `${message.name}: ${message.content}` + (reactionContext.get(message) || "") };
-    }), ...notes, tail];
+    });
+    const automaticMessages = [system, ...dialogue, ...notes, tail];
+    const manual = effective.layout === "manual-v1" ? expandPlacement(effective.placement, { mochi_characters: JSON.stringify(roster), mochi_persona: JSON.stringify(room.persona), mochi_room_instructions: settings.instructions, mochi_texting_styles: resolveTextingStyles(settings.textingStyles, roster) }, dialogue, notes) : undefined;
+    const requiredCore = system.content.slice(0, system.content.indexOf(`
+ROOM:`)) + `
+ROOM: ` + JSON.stringify(room.title) + (presetInstructions ? `
+PRESET INSTRUCTIONS (` + variant + "): " + presetInstructions : "") + (settings.aiBehavior ? timingRule : "") + (natural ? naturalRule : "");
+    const messages = manual ? [{ role: "system", content: requiredCore }, ...manual.messages, tail] : automaticMessages;
     const tokens = await count(messages);
     signal.throwIfAborted();
     if (!Number.isFinite(tokens) || tokens < 0)
       throw new Error("Invalid host token count.");
     if (tokens + settings.outputTokens + 256 <= settings.contextTokens) {
       const plan = describeContext(room, roster, messages, history, tokens, natural, Boolean(settings.aiBehavior));
-      return { ...plan, preset: { ...effective, variant, appliedInstructions: presetInstructions }, sections: [...plan.sections, { id: "preset_instructions", active: Boolean(presetInstructions), providerMessages: presetInstructions ? [0] : [] }] };
+      return { ...plan, ...manual && !manual.historyIncluded ? { history: { stored: room.messages.length, retained: 0, trimmed: 0, omitted: room.messages.length, firstId: null, lastId: null } } : {}, preset: { ...effective, variant, appliedInstructions: presetInstructions }, warnings: manual?.warnings || [], sections: manual ? [{ id: "core (server-required)", active: true, providerMessages: [0] }, ...manual.sections, { id: "continuation (server-required)", active: true, providerMessages: [messages.length - 1] }] : [...plan.sections, { id: "preset_instructions", active: Boolean(presetInstructions), providerMessages: presetInstructions ? [0] : [] }] };
     }
     if (history.length <= 1)
       throw new Error("Character instructions or the latest message exceed the context budget.");
@@ -913,10 +993,13 @@ async function generateMochiReply(host, room, userId, responder, signal, eligibl
   const messages = await buildMochiPrompt(room, characters, speaker, async (messages) => (await host.tokens.countMessages(messages, { model: settings.model || connection.model, userId })).total_tokens, signal, natural, preset);
   const response = await callPocketProvider(host, { messages, connection_id: settings.connectionId, userId, signal, reasoning: { source: "off" }, parameters: { max_tokens: settings.outputTokens, temperature: 0.8, ...settings.model ? { model: settings.model } : {} } });
   let parsed;
+  const raw = response?.content;
+  if (raw === undefined || raw === null || typeof raw === "string" && !raw.trim())
+    throw Error("The AI returned an empty response. Please try again.");
   try {
-    parsed = JSON.parse(String(response.content).trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, ""));
+    parsed = JSON.parse(String(raw).trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, ""));
   } catch {
-    throw new Error("The model returned invalid message JSON. Try continuing again.");
+    throw new Error("The AI returned malformed message JSON. Please try again.");
   }
   const rows = natural && Array.isArray(parsed?.messages) ? parsed.messages : [parsed];
   if (rows.length > 3)
