@@ -1,3 +1,4 @@
+import {SummaryError,prepareSummary,requestSummary,summaryInput,summarySources,summaryConfiguration,hashSummaryInput,type SummarySuggestion} from './summarization.js'
 import {validateMemory,proveCoverage,inspectMemory,MAX_SUMMARY_TEXT,MAX_SUMMARY_VERSIONS,type SummaryVersion} from './memory.js'
 import { roomId, defaultMochiSettings, type MochiSettings, type MochiMessage, type MochiPersona, type MochiRoom, type MochiState } from './types.js'
 import { generateMochiReply, validateMochiSources,resolveGenerationSources } from './generation.js'
@@ -81,7 +82,8 @@ export class MochiService {
     const background = publicRuntime(room.runtime)
     return background ? { ...background, snapshot: { session: this.schedulingSession, sequence: this.schedulingSequences.get(this.jobKey(user, room.id)) || 0 } } : undefined
   }
-  private jobs = new Map<string, { requestId: string; controller: AbortController; accountId?: string; phoneKey?: string; response?: boolean }>()
+  private summaryAttempts=new Map<string,{accountId?:string;associationRevision:number;coverage?:import('./memory.js').SummaryCoverage;configuration:string;inputDigest:string;sourceSignature:string;useCurrent:boolean;suggestion?:SummarySuggestion}>()
+  private jobs = new Map<string, { task?:'summary'; requestId: string; controller: AbortController; accountId?: string; phoneKey?: string; response?: boolean }>()
   private pending = new Map<string, Set<{ requestId: string; controller: AbortController; accountId?: string; phoneKey?: string }>>()
   private jobKey(user: string, id: string): string { return JSON.stringify([user, id]) }
   private settings(input: any, ids: string[]): MochiSettings {
@@ -280,6 +282,54 @@ export class MochiService {
       return room
     })
   }
+  private summaryAttemptKey(user:string,id:string,request:string):string{return JSON.stringify([user,id,request])}
+  private async verifySummary(user:string,room:MochiRoom,attempt:NonNullable<ReturnType<typeof this.summaryAttempts.get>>,boundaryId:string):Promise<void>{
+    if(room.accountId!==attempt.accountId||(room.associationRevision||0)!==attempt.associationRevision||summaryConfiguration(room)!==attempt.configuration)throw new SummaryError('The chat identity, settings or saved memory changed. Regenerate the suggestion; your editable text is retained.','stale')
+    let input:Awaited<ReturnType<typeof summaryInput>>
+    try{input=await summaryInput(room,boundaryId,attempt.useCurrent)}catch{throw new SummaryError('The source range changed or is unavailable. Regenerate or review your draft manually.','stale')}
+    if(!attempt.coverage||input.coverage.digest!==attempt.coverage.digest||input.coverage.count!==attempt.coverage.count||input.inputDigest!==attempt.inputDigest)throw new SummaryError('Messages in the summarized prefix changed. Regenerate the suggestion; no memory was saved.','stale')
+    const sources=await summarySources(this.host,room,user)
+    if(await hashSummaryInput(sources)!==attempt.sourceSignature)throw new SummaryError('The authorized summary sources changed. Regenerate the suggestion.','stale')
+  }
+  async generateSummary(userId:string,input:any):Promise<SummarySuggestion>{
+    const user=this.account(userId),id=roomId(input.roomId),requestId=entityId(input.requestId),key=this.jobKey(user,id),attemptKey=this.summaryAttemptKey(user,id,requestId),controller=new AbortController()
+    if(input.useCurrent!==undefined&&typeof input.useCurrent!=='boolean')throw new SummaryError('Invalid summary reference option.','input')
+    const queued={requestId,controller,accountId:input.accountId},waiting=this.pending.get(key)||new Set<{requestId:string;controller:AbortController;accountId?:string;phoneKey?:string}>();waiting.add(queued);this.pending.set(key,waiting)
+    let launched=false,reserved=false
+    const timeout=setTimeout(()=>controller.abort(),180000)
+    try{
+      const snapshot=await this.locked(user,id,async()=>{
+        const room=await this.read(user,id,input.accountId),previous=this.summaryAttempts.get(attemptKey)
+        controller.signal.throwIfAborted()
+        if(previous){if(previous.suggestion){if(previous.coverage?.boundaryId!==input.boundaryId||previous.useCurrent!==(input.useCurrent===true))throw new SummaryError('This request ID belongs to a different summary range. Generate again explicitly.','duplicate');await this.verifySummary(user,room,previous,previous.suggestion.coverage.boundaryId);return {room,cached:previous.suggestion}}throw new SummaryError('This Generate attempt has already started or ended. Generate again explicitly for a new attempt.','duplicate')}
+        if(this.jobs.has(key)||room.runtime?.jobs.some(j=>j.status==='generating'&&(j.leaseUntil||0)>this.now()))throw new SummaryError('A reply is already running in this chat. Wait or Stop it before generating a summary.','busy')
+        if(room.revision!==input.revision||(room.associationRevision||0)!==input.associationRevision)throw new SummaryError('The chat changed. Refresh and review the selected range before generating.','stale')
+        if(Array.from(this.summaryAttempts.keys()).filter(k=>JSON.parse(k)[0]===user).length>=256)throw new SummaryError('Your summary-attempt safety limit for this backend session was reached. Existing memories are preserved.','limit')
+        this.summaryAttempts.set(attemptKey,{accountId:room.accountId,associationRevision:room.associationRevision||0,configuration:summaryConfiguration(room),inputDigest:'',sourceSignature:'',useCurrent:input.useCurrent===true})
+        this.jobs.set(key,{task:'summary',requestId,controller,accountId:room.accountId});launched=true
+        return {room,cached:undefined}
+      })
+      if(snapshot.cached)return structuredClone(snapshot.cached)
+      this.host.sendToFrontend({type:'mochi:summary_started',roomId:id,accountId:snapshot.room.accountId,requestId},user)
+      const plan=await prepareSummary(this.host,snapshot.room,user,input.boundaryId,input.useCurrent===true,controller.signal),attempt=this.summaryAttempts.get(attemptKey)!
+      attempt.coverage=plan.coverage;attempt.inputDigest=plan.inputDigest;attempt.sourceSignature=plan.sourceSignature
+      await this.locked(user,id,async()=>{controller.signal.throwIfAborted();const current=await this.read(user,id,input.accountId);await this.verifySummary(user,current,attempt,plan.coverage.boundaryId)})
+      reserved=await this.reserveAutomatic(user,id,true)
+      if(!reserved)throw new SummaryError('The shared generation quota or concurrency limit was reached. Try again later.','quota')
+      controller.signal.throwIfAborted()
+      const body=await requestSummary(this.host,snapshot.room,user,plan,controller.signal)
+      return await this.locked(user,id,async()=>{
+        controller.signal.throwIfAborted();const room=await this.read(user,id,input.accountId)
+        if(this.jobs.get(key)?.controller!==controller)throw new SummaryError('The summary task is no longer current.','stale')
+        await this.verifySummary(user,room,attempt,plan.coverage.boundaryId);controller.signal.throwIfAborted()
+        const latest=await this.read(user,id,input.accountId)
+        if(latest.revision!==room.revision||(latest.associationRevision||0)!==(room.associationRevision||0))throw new SummaryError('The source changed during validation. Refresh and regenerate.','stale')
+        const suggestion:SummarySuggestion={id:'suggestion_'+crypto.randomUUID().replaceAll('-',''),coverage:{...plan.coverage},text:body,roomId:id,accountId:room.accountId,associationRevision:room.associationRevision||0,sourceRevision:snapshot.room.revision,createdAt:new Date(this.now()).toISOString(),budget:plan.budget}
+        attempt.suggestion=suggestion;return structuredClone(suggestion)
+      })
+    }catch(error){if(controller.signal.aborted)throw new SummaryError('Summary generation stopped or timed out. No memory was saved.','cancelled');if(error instanceof SummaryError)throw error;throw new SummaryError('Unable to generate this summary safely. Check the selected range, permissions and connection. Your saved memory is unchanged.','unavailable')}
+    finally{clearTimeout(timeout);waiting.delete(queued);if(!waiting.size&&this.pending.get(key)===waiting)this.pending.delete(key);if(launched){if(this.jobs.get(key)?.controller===controller)this.jobs.delete(key);if(reserved)this.releaseAutomatic(user,id);this.host.sendToFrontend({type:'mochi:job_finished',roomId:id,accountId:input.accountId,requestId},user)}}
+  }
   async saveMemory(userId:string,input:any):Promise<void>{
     const user=this.account(userId),id=roomId(input.roomId),requestId=entityId(input.requestId)
     await this.locked(user,id,async()=>{
@@ -295,6 +345,13 @@ export class MochiService {
         const body=text(input.text,MAX_SUMMARY_TEXT,true)
         if(typeof input.enabled!=='boolean'||typeof input.excludeCovered!=='boolean')throw Error('Invalid summary options.')
         const coverage=await proveCoverage(room,input.boundaryId)
+        if(input.suggestionId!==undefined){
+          if(typeof input.suggestionId!=='string'||!/^suggestion_[a-f0-9]{32}$/.test(input.suggestionId))throw new SummaryError('Invalid summary suggestion.','input')
+          const attempt=Array.from(this.summaryAttempts.entries()).find(([key,a])=>JSON.parse(key)[0]===user&&JSON.parse(key)[1]===id&&a.suggestion?.id===input.suggestionId)?.[1]
+          if(!attempt?.suggestion)throw new SummaryError('This suggestion expired with the backend session. Regenerate it; your editable text is retained.','stale')
+          if(coverage.boundaryId!==attempt.suggestion.coverage.boundaryId||coverage.count!==attempt.suggestion.coverage.count||coverage.digest!==attempt.suggestion.coverage.digest)throw new SummaryError('The generated coverage changed. Regenerate for this range or explicitly review it as a manual draft.','stale')
+          await this.verifySummary(user,room,attempt,coverage.boundaryId)
+        }
         data={text:body,enabled:input.enabled,excludeCovered:input.excludeCovered,coverage}
       }else if(input.action==='restore'){
         const original=room.memory?.versions.find(v=>v.id===input.versionId)
@@ -823,6 +880,10 @@ export class MochiService {
     if (!userId) return
     let selectedRoomId: string | undefined
     try {
+      if(payload.type==='mochi:summary_generate'){
+        const suggestion=await this.generateSummary(userId,payload)
+        this.host.sendToFrontend({type:'mochi:summary_suggestion',requestId:payload.requestId,roomId:suggestion.roomId,accountId:suggestion.accountId,associationRevision:suggestion.associationRevision,suggestion},userId);return
+      }
       if(payload.type==='mochi:memory'){
         const user=this.account(userId),id=roomId(payload.roomId);entityId(payload.requestId)
         if(payload.action!=='read')await this.saveMemory(user,payload)

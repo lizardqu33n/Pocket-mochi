@@ -86,6 +86,15 @@ class MochiMemoryPanel {
   redraw;
   applied;
   returned;
+  taskChanged;
+  unavailable;
+  generating = false;
+  suggestion;
+  suggestionDrafts = new Map;
+  summaryTicket = "";
+  summaryTimer;
+  summaryBoundaryId = "";
+  useCurrent = false;
   open = false;
   status = "";
   memory;
@@ -99,14 +108,17 @@ class MochiMemoryPanel {
   ticket = "";
   base = 0;
   submitted = false;
+  applyingSuggestionId;
   timer;
   drafts = new Map;
-  constructor(send, current, redraw, applied, returned) {
+  constructor(send, current, redraw, applied, returned, taskChanged = () => {}, unavailable = () => false) {
     this.send = send;
     this.current = current;
     this.redraw = redraw;
     this.applied = applied;
     this.returned = returned;
+    this.taskChanged = taskChanged;
+    this.unavailable = unavailable;
   }
   renderAgain() {
     const tree = this.root?.getRootNode(), active = tree?.activeElement;
@@ -121,8 +133,10 @@ class MochiMemoryPanel {
     }
   }
   reset(privateState = false) {
+    this.stopSummary();
     clearTimeout(this.timer);
     this.ticket = "";
+    this.applyingSuggestionId = undefined;
     this.open = false;
     this.key = "";
     this.draft = undefined;
@@ -133,8 +147,13 @@ class MochiMemoryPanel {
     this.loadedRevision = 0;
     this.root = undefined;
     this.status = "";
-    if (privateState)
+    this.suggestion = undefined;
+    this.summaryBoundaryId = "";
+    this.useCurrent = false;
+    if (privateState) {
       this.drafts.clear();
+      this.suggestionDrafts.clear();
+    }
   }
   show(room) {
     if (this.key !== scope(room))
@@ -142,13 +161,84 @@ class MochiMemoryPanel {
     this.key = scope(room);
     this.open = true;
     this.draft = this.drafts.get(this.key);
+    this.suggestion = this.suggestionDrafts.get(this.key);
     this.request({ action: "read" });
+  }
+  stopSummary() {
+    const ticket = this.summaryTicket, room = this.current();
+    clearTimeout(this.summaryTimer);
+    this.summaryTicket = "";
+    this.generating = false;
+    if (ticket) {
+      if (room && scope(room) === this.key)
+        try {
+          this.send({ type: "mochi:cancel", roomId: room.id, accountId: room.accountId, generationRequestId: ticket });
+        } catch {}
+      this.taskChanged(ticket, false);
+    }
+  }
+  generate() {
+    const room = this.current();
+    if (!room || !this.open || scope(room) !== this.key || this.generating || this.ticket || this.unavailable() || !this.summaryBoundaryId)
+      return;
+    this.summaryTicket = requestId("mochi_summary");
+    const ticket = this.summaryTicket;
+    this.generating = true;
+    this.status = "Generating one summary suggestion. Saved memory is unchanged.";
+    this.taskChanged(ticket, true);
+    this.renderAgain();
+    this.summaryTimer = setTimeout(() => {
+      if (this.summaryTicket === ticket) {
+        this.stopSummary();
+        this.status = "Summary generation timed out. Your saved memory and previous draft are unchanged.";
+        this.renderAgain();
+      }
+    }, 185000);
+    try {
+      this.send({ type: "mochi:summary_generate", requestId: ticket, roomId: room.id, accountId: room.accountId, associationRevision: room.associationRevision || 0, revision: room.revision, boundaryId: this.summaryBoundaryId, useCurrent: this.useCurrent });
+    } catch {
+      this.stopSummary();
+      this.status = "Summary generation is unavailable. Your draft is retained.";
+      this.renderAgain();
+    }
+  }
+  receiveSummary(p) {
+    const types = ["mochi:summary_started", "mochi:summary_suggestion", "mochi:error", "mochi:job_finished"];
+    if (!types.includes(p?.type))
+      return;
+    if (!this.summaryTicket || p.requestId !== this.summaryTicket)
+      return p.type.startsWith("mochi:summary_") ? true : undefined;
+    if (p.type === "mochi:job_finished") {
+      this.taskChanged(this.summaryTicket, false);
+      return;
+    }
+    const room = this.current();
+    if (!this.open || !room || scope(room) !== this.key)
+      return true;
+    if (p.type === "mochi:summary_started")
+      return true;
+    const ticket = this.summaryTicket;
+    clearTimeout(this.summaryTimer);
+    this.summaryTicket = "";
+    this.generating = false;
+    this.taskChanged(ticket, false);
+    if (p.type === "mochi:error")
+      this.status = String(p.message || "Summary generation failed. Saved memory is unchanged.");
+    else if (p.roomId === room.id && p.accountId === room.accountId && p.associationRevision === (room.associationRevision || 0) && p.suggestion?.roomId === room.id && p.suggestion.accountId === room.accountId) {
+      this.suggestion = p.suggestion;
+      this.suggestionDrafts.set(this.key, this.suggestion);
+      this.status = "AI suggestion — not saved. Review, edit, then apply explicitly.";
+    } else
+      this.status = "This suggestion belongs to an obsolete room scope and was discarded.";
+    this.renderAgain();
+    return true;
   }
   request(values) {
     const room = this.current();
     if (!room || !this.open || scope(room) !== this.key || this.ticket)
       return;
     this.submitted = values.action !== "read";
+    this.applyingSuggestionId = typeof values.suggestionId === "string" ? values.suggestionId : undefined;
     this.base = room.revision;
     this.ticket = requestId("mochi_memory");
     const ticket = this.ticket;
@@ -171,6 +261,9 @@ class MochiMemoryPanel {
     }
   }
   receive(p) {
+    const summary = this.receiveSummary(p);
+    if (summary !== undefined)
+      return summary;
     if (p?.type !== "mochi:memory" && p?.type !== "mochi:error")
       return false;
     if (!this.ticket || p.requestId !== this.ticket)
@@ -195,11 +288,15 @@ class MochiMemoryPanel {
     this.valid = p.valid;
     this.reason = p.reason;
     if (this.submitted) {
+      if (this.applyingSuggestionId && this.suggestion?.id === this.applyingSuggestionId) {
+        this.suggestionDrafts.delete(this.key);
+        this.suggestion = undefined;
+      }
       this.drafts.delete(this.key);
       this.draft = undefined;
       this.applied(p);
     }
-    this.status = this.submitted ? "Saved as a new memory version." : "Saved memory loaded. Editing does not contact AI.";
+    this.status = this.submitted ? "Saved as a new memory version." + (this.suggestion ? " AI suggestion retained; Apply will revalidate its original source." : "") : "Saved memory loaded. Editing does not contact AI.";
     this.renderAgain();
     return true;
   }
@@ -227,7 +324,7 @@ class MochiMemoryPanel {
     const root = el("section", "mochi-memory-panel");
     this.root = root;
     root.setAttribute("aria-label", "Conversation Memory");
-    root.append(el("h3", "", "Conversation Memory"), el("p", "mochi-muted", "A summary recalls this chat for AI. Original messages stay saved and searchable. No AI summarization runs here."));
+    root.append(el("h3", "", "Conversation Memory"), el("p", "mochi-muted", "A summary recalls this chat for AI. Original messages stay saved and searchable. AI suggestions are generated only when you ask, and saved only after review."));
     const status = el("p", "mochi-muted", this.status);
     status.setAttribute("role", "status");
     root.append(status);
@@ -249,6 +346,108 @@ class MochiMemoryPanel {
       if (current.coverage && !this.valid)
         root.append(el("p", "mochi-preview-warning", this.reason + " AI uses raw history with normal token trimming until reviewed."));
       root.append(el("pre", "mochi-memory-text", current.text || "Summary cleared. Earlier versions remain recoverable."));
+    }
+    const generation = el("section", "mochi-memory-version");
+    generation.setAttribute("aria-label", "AI summary generation");
+    generation.append(el("h4", "", "1. Choose messages · 2. Generate suggestion"));
+    if (!this.summaryBoundaryId) {
+      const last = room.messages.at(-1);
+      this.summaryBoundaryId = this.draft?.boundaryId || last?.id || "";
+    }
+    const end = el("input");
+    end.type = "number";
+    end.min = "1";
+    end.max = String(room.messages.length);
+    end.step = "1";
+    end.setAttribute("aria-label", "AI summary ending message");
+    const endIndex = room.messages.findIndex((m) => typeof m === "object" && m !== null && ("id" in m) && m.id === this.summaryBoundaryId);
+    end.value = endIndex < 0 ? "" : String(endIndex + 1);
+    end.disabled = this.generating;
+    const sourceLabel = el("label", "", "Summarize from the start through message");
+    sourceLabel.append(end);
+    generation.append(sourceLabel);
+    end.oninput = () => {
+      const i = Number(end.value), m = Number.isSafeInteger(i) && i > 0 ? room.messages[i - 1] : undefined;
+      this.summaryBoundaryId = typeof m?.id === "string" ? m.id : "";
+    };
+    const reference = el("input");
+    reference.type = "checkbox";
+    reference.checked = this.useCurrent;
+    reference.setAttribute("aria-label", "Use verified current summary as optional reference");
+    reference.disabled = this.generating;
+    reference.onchange = () => {
+      this.useCurrent = reference.checked;
+    };
+    const referenceLabel = el("label", "", "Use verified current summary as optional reference");
+    referenceLabel.prepend(reference);
+    generation.append(referenceLabel);
+    const generate = button("Generate summary", "lp-button");
+    generate.setAttribute("aria-label", "Generate summary");
+    generate.disabled = this.generating || !!this.ticket || this.unavailable() || !room.messages.length;
+    generate.onclick = () => {
+      if (this.suggestion) {
+        const yes = button("Confirm generate a replacement suggestion", "lp-button");
+        yes.onclick = () => this.generate();
+        generate.replaceWith(yes);
+        yes.focus();
+      } else
+        this.generate();
+    };
+    const stop = button("Stop summary", "lp-button");
+    stop.setAttribute("aria-label", "Stop summary");
+    stop.hidden = !this.generating;
+    stop.disabled = !this.generating;
+    stop.onclick = () => {
+      this.stopSummary();
+      this.status = "Summary stopped. Your saved memory and draft are unchanged.";
+      this.renderAgain();
+    };
+    generation.append(generate, stop, el("p", "mochi-muted", "One request, full chosen prefix. Oversized ranges are rejected rather than silently trimmed."));
+    root.append(generation);
+    if (this.suggestion) {
+      const suggestion = this.suggestion, preview = el("section", "mochi-memory-version");
+      preview.append(el("h4", "", "3. Review AI suggestion — not saved"), el("p", "mochi-muted", `Messages 1–${suggestion.coverage.count} · generated ${new Date(suggestion.createdAt).toLocaleString()} · input ${suggestion.budget.inputTokens}, output reserve ${suggestion.budget.outputTokens}, budget ${suggestion.budget.contextTokens}. ${suggestion.budget.approximate === true ? "Host token count is approximate." : ""}`));
+      const body = el("textarea");
+      body.rows = 6;
+      body.maxLength = MAX_SUMMARY_TEXT;
+      body.value = suggestion.text;
+      body.disabled = this.generating;
+      body.setAttribute("aria-label", "AI summary suggestion");
+      body.oninput = () => {
+        suggestion.text = body.value;
+      };
+      preview.append(body);
+      const use = button("Use suggestion in summary editor", "lp-button");
+      use.disabled = !!this.ticket || this.generating;
+      const replace = () => {
+        const value = { text: suggestion.text, enabled: current?.enabled ?? true, excludeCovered: current?.excludeCovered ?? false, boundaryId: suggestion.coverage.boundaryId, revision: room.revision };
+        this.draft = { ...value, suggestionId: suggestion.id, baseline: JSON.stringify(value) };
+        this.drafts.set(this.key, this.draft);
+        this.focusEditor = true;
+        this.renderAgain();
+      };
+      use.onclick = () => {
+        if (this.draft) {
+          const yes = button("Confirm replace unsaved summary draft", "lp-button");
+          yes.onclick = replace;
+          use.replaceWith(yes);
+          yes.focus();
+        } else
+          replace();
+      };
+      const discard = button("Discard AI suggestion", "lp-button");
+      discard.onclick = () => {
+        const yes = button("Confirm discard AI suggestion", "lp-button");
+        yes.onclick = () => {
+          this.suggestionDrafts.delete(this.key);
+          this.suggestion = undefined;
+          this.renderAgain();
+        };
+        discard.replaceWith(yes);
+        yes.focus();
+      };
+      preview.append(use, discard);
+      root.append(preview);
     }
     if (!this.draft) {
       const edit = button(current ? "Edit current summary" : "Create summary", "lp-button");
@@ -319,10 +518,10 @@ class MochiMemoryPanel {
       form.append(el("small", "mochi-muted", "Exclusion is off by default and requires verified coverage plus a summary actually included in the prompt. Manual presets need a standalone {{mochi_summary}} row."));
       const dirty = el("p", "mochi-muted", "Draft — not applied. Save creates a new version.");
       dirty.setAttribute("role", "status");
-      const save = button("Save summary version", "lp-button");
+      const save = button(d.suggestionId ? "Apply summary as new version" : "Save summary version", "lp-button");
       save.type = "submit";
-      save.disabled = !!this.ticket || d.revision !== room.revision;
-      if (d.revision !== room.revision) {
+      save.disabled = !!this.ticket || !d.suggestionId && d.revision !== room.revision;
+      if (!d.suggestionId && d.revision !== room.revision) {
         form.append(el("p", "mochi-preview-warning", "Conversation changed. Review the saved messages and covered boundary before saving."));
         const review = button("Use refreshed conversation revision", "lp-button");
         review.onclick = () => {
@@ -336,10 +535,26 @@ class MochiMemoryPanel {
           control.disabled = true;
       form.onsubmit = (e) => {
         e.preventDefault();
-        if (d.revision !== room.revision || !d.boundaryId)
+        if (!d.suggestionId && d.revision !== room.revision || !d.boundaryId)
           return;
-        this.confirm(save, "Confirm save summary", () => this.request({ action: "save", text: d.text, enabled: d.enabled, excludeCovered: d.excludeCovered, boundaryId: d.boundaryId, confirmed: true }));
+        this.confirm(save, "Confirm save summary", () => this.request({ action: "save", text: d.text, enabled: d.enabled, excludeCovered: d.excludeCovered, boundaryId: d.boundaryId, ...d.suggestionId ? { suggestionId: d.suggestionId } : {}, confirmed: true }));
       };
+      if (d.suggestionId) {
+        form.append(el("p", "mochi-muted", "AI-based draft. Apply revalidates the original source; changed coverage requires regeneration or explicit manual review."));
+        const manual = button("Review as a manual draft", "lp-button");
+        manual.disabled = !!this.ticket;
+        manual.onclick = () => {
+          const yes = button("Confirm manual review of text and covered messages", "lp-button");
+          yes.onclick = () => {
+            delete d.suggestionId;
+            d.revision = room.revision;
+            this.renderAgain();
+          };
+          manual.replaceWith(yes);
+          yes.focus();
+        };
+        form.append(manual);
+      }
       const discard = button("Discard summary draft", "lp-button");
       discard.disabled = !!this.ticket;
       discard.onclick = () => {
@@ -380,7 +595,7 @@ class MochiMemoryPanel {
     return root;
   }
 }
-var MOCHI_MEMORY_STYLES = `.mochi-view .mochi-memory-panel{min-width:0;min-height:0;max-height:70%;overflow:auto;flex:0 1 auto;border:1px solid var(--mochi-border);border-radius:12px;margin:6px;padding:10px;background:var(--lp-surface-1,transparent);overflow-wrap:anywhere}.mochi-view .mochi-memory-editor{display:grid;gap:10px;min-width:0}.mochi-view .mochi-memory-editor label{display:grid;gap:5px;min-width:0}.mochi-view .mochi-memory-editor textarea,.mochi-view .mochi-memory-editor input[type=number]{box-sizing:border-box;width:100%;min-width:0;max-width:100%;font:inherit;color:inherit;background:var(--lp-surface-2,#ffffff0c);border:1px solid var(--mochi-border);border-radius:8px;padding:8px}.mochi-view .mochi-memory-panel button{min-height:40px;max-width:100%;white-space:normal;margin:3px}.mochi-view .mochi-memory-text{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;max-height:240px;overflow:auto}.mochi-view .mochi-memory-version{border:1px solid var(--mochi-border);border-radius:8px;padding:8px;margin:8px 0}.mochi-view .mochi-memory-panel :focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}`;
+var MOCHI_MEMORY_STYLES = `.mochi-view .mochi-memory-panel{min-width:0;min-height:0;max-height:70%;overflow:auto;flex:0 1 auto;border:1px solid var(--mochi-border);border-radius:12px;margin:6px;padding:10px;background:var(--lp-surface-1,transparent);overflow-wrap:anywhere}.mochi-view .mochi-memory-editor{display:grid;gap:10px;min-width:0}.mochi-view .mochi-memory-editor label{display:grid;gap:5px;min-width:0}.mochi-view .mochi-memory-panel textarea,.mochi-view .mochi-memory-panel input[type=number]{box-sizing:border-box;width:100%;min-width:0;max-width:100%;font:inherit;color:inherit;background:var(--lp-surface-2,#ffffff0c);border:1px solid var(--mochi-border);border-radius:8px;padding:8px}.mochi-view .mochi-memory-panel button{min-height:40px;max-width:100%;white-space:normal;margin:3px}.mochi-view .mochi-memory-text{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;max-height:240px;overflow:auto}.mochi-view .mochi-memory-version{border:1px solid var(--mochi-border);border-radius:8px;padding:8px;margin:8px 0}.mochi-view .mochi-memory-panel :focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}`;
 
 // src/mochi/styles.ts
 var MOCHI_STYLES = `
@@ -2456,7 +2671,20 @@ class MochiView {
       room.background = this.mergeScheduling(room, p.background, p.revision);
       this.preview.invalidate();
     }
-  }, () => this.presenceRoot?.querySelector('[aria-label="Room options"]')?.focus());
+  }, () => this.presenceRoot?.querySelector('[aria-label="Room options"]')?.focus(), (id, running) => {
+    if (running) {
+      this.ownGenerations.set(this.roomId, id);
+      if (this.state) {
+        this.state.jobs ||= {};
+        this.state.jobs[this.roomId] = id;
+      }
+    } else {
+      if (this.ownGenerations.get(this.roomId) === id)
+        this.ownGenerations.delete(this.roomId);
+      if (this.state?.jobs?.[this.roomId] === id)
+        delete this.state.jobs[this.roomId];
+    }
+  }, () => this.busy || Boolean(this.state?.jobs?.[this.roomId]));
   presetPanel = new MochiPresetPanel((payload) => this.send(payload), () => this.state?.rooms.find((r) => r.id === this.roomId && r.accountId === this.state?.accountId), () => this.redraw(), (presetId, presetRevision) => {
     const room = this.state?.rooms.find((r) => r.id === this.roomId);
     if (!room || this.busy)
@@ -4151,14 +4379,14 @@ class MochiView {
     const submit = action("Send", "send", true);
     submit.classList.add("mochi-primary");
     submit.type = "submit";
-    submit.disabled = this.busy || Boolean(job);
+    submit.disabled = this.busy || Boolean(job) || this.memoryPanel.generating;
     const stop = action("Stop reply", "stop", true);
     stop.disabled = !job;
     stop.hidden = !job;
     stop.onclick = () => this.send({ type: "mochi:cancel", accountId: this.state?.accountId, roomId: room.id, generationRequestId: job });
     form.onsubmit = (event) => {
       event.preventDefault();
-      if (!this.busy && !job)
+      if (!this.busy && !job && !this.memoryPanel.generating)
         this.dispatch("mochi:send", { roomId: room.id, revision: room.revision, content: input.value, responder: responder.value, ...input.value.trim() && this.replyTargets.get(this.replyKey(room)) ? { replyTo: this.replyTargets.get(this.replyKey(room)) } : {} });
     };
     const actions = el("div", "mochi-composer-row");

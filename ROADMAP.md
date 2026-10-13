@@ -30,7 +30,10 @@ MEM-01D has received initial user manual testing; comprehensive acceptance remai
 pending. MEM-01E manual conversation summaries, exact prefix coverage, recoverable
 versions and opt-in outgoing-history exclusion are development-verified with
 matching bundles and targeted synthetic/DOM tests. Real-host acceptance remains
-pending. AI-generated summaries (MEM-01F) and automatic memory extraction have
+pending. MEM-01F explicit AI-assisted Generate/Preview/Edit/Apply summarization is
+development-verified with source-proof checks, shared task/quota ownership and
+matching bundles. Combined MEM-01E/01F disposable-host manual acceptance remains
+pending before MEM-01G. Automatic memory extraction/background summarization has
 not begun. Later UI Modernization & Settings Reorganization must research genuinely
 beginner-friendly interfaces rather than merely rearranging existing controls.
 Messaging order: MSG-01A quotes, MSG-01B reactions, MSG-01C pins, MSG-01D search,
