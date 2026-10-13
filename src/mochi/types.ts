@@ -6,11 +6,13 @@ export interface MochiPersona {
   avatarUrl: string
 }
 export interface MochiCharacter { id: string; name: string; avatarUrl: string }
+export interface MochiReaction {emoji:string;actor:'user'|'character';actorId:string;name:string}
 export interface MochiMessage {
   id: string; role: 'user' | 'assistant'; content: string; name: string; avatarUrl: string
   characterId?: string; createdAt: string; requestId: string
   editedAt?: string
   replyTo?: string
+  reactions?: MochiReaction[]
   previousVersions?: Array<{ content: string; name: string; avatarUrl: string; savedAt: string }>
 }
 export interface MochiNotification { id: string; roomId: string; messageId: string; title: string; roomTitle: string; body: string; avatarUrl: string; createdAt: string; read: boolean; accountId?: string }

@@ -237,6 +237,25 @@ function referencedMessage(messages, id) {
 }
 var quoteExcerpt = (content, limit = 220) => content.replace(/\s+/g, " ").slice(0, limit) + (content.replace(/\s+/g, " ").length > limit ? "\u2026" : "");
 
+// src/mochi/reactions.ts
+var REACTION_EMOJI = ["\uD83D\uDC4D", "\u2764\uFE0F", "\uD83D\uDE02", "\uD83D\uDE2E", "\uD83D\uDE22", "\uD83C\uDF89", "\uD83E\uDD14", "\uD83D\uDC40"];
+function readReactions(value, room) {
+  if (value === undefined)
+    return [];
+  if (!Array.isArray(value) || value.length > 128)
+    throw Error("Unsupported reactions; stored history was preserved.");
+  const seen = new Set;
+  for (const r of value) {
+    if (!r || !REACTION_EMOJI.includes(r.emoji) || typeof r.name !== "string" || r.name.length > 120 || !r.name.trim() || !["user", "character"].includes(r.actor) || typeof r.actorId !== "string" || (r.actor === "user" ? r.actorId !== "legacy" && !/^account_[a-f0-9]{32}$/.test(r.actorId) : !/^[A-Za-z0-9_.:-]{1,180}$/.test(r.actorId)))
+      throw Error("Unsupported reaction ownership; stored history was preserved.");
+    const key = JSON.stringify([r.emoji, r.actor, r.actorId]);
+    if (seen.has(key))
+      throw Error("Ambiguous reactions; stored history was preserved.");
+    seen.add(key);
+  }
+  return value;
+}
+
 // src/mochi/generation.ts
 async function buildMochiPrompt(room, characters, responder, count, signal, natural = false) {
   const settings = room.settings || defaultMochiSettings();
@@ -268,6 +287,15 @@ NATURAL RESPONSE: Instead of a single message you may return {"messages":[{"spea
   while (true) {
     signal.throwIfAborted();
     const includedIds = new Set(history.map((m) => m.id)), replyIds = new Set(history.map((m) => m.replyTo).filter(replyIdentifier));
+    const reactionContext = new Map;
+    let remaining = 32;
+    for (const m of history.slice().reverse()) {
+      const reactions = readReactions(m.reactions, room), included = reactions.slice(0, Math.min(4, remaining));
+      remaining -= included.length;
+      if (included.length)
+        reactionContext.set(m, `
+[Reactions: ${JSON.stringify(included.map((r) => ({ emoji: r.emoji, actor: r.actor, actorId: r.actorId, name: r.name })))}]`);
+    }
     const messages = [system, ...history.map((message) => {
       let quote = "";
       if (message.replyTo) {
@@ -279,7 +307,7 @@ NATURAL RESPONSE: Instead of a single message you may return {"messages":[{"spea
       }
       const referenced = replyIds.has(message.id) ? `[Message reference ID: ${JSON.stringify(message.id)}]
 ` : "";
-      return { role: message.role, content: referenced + quote + `${message.name}: ${message.content}` };
+      return { role: message.role, content: referenced + quote + `${message.name}: ${message.content}` + (reactionContext.get(message) || "") };
     }), tail];
     const tokens = await count(messages);
     signal.throwIfAborted();
@@ -1187,6 +1215,34 @@ class MochiService {
       await this.persist(user, room);
     });
   }
+  async react(userId, input) {
+    const user = this.account(userId), id = roomId(input.roomId), requestId = entityId(input.requestId), messageId = entityId(input.messageId);
+    if (!REACTION_EMOJI.includes(input.emoji) || input.actor !== undefined || input.actorId !== undefined || input.characterId !== undefined)
+      throw Error("Invalid user reaction.");
+    await this.locked(user, id, async () => {
+      const room = await this.read(user, id, input.accountId);
+      if (room.receipts.includes(requestId))
+        return;
+      if (room.revision !== input.revision)
+        throw Error("This room changed elsewhere. Refresh before reacting.");
+      if (this.jobs.has(this.jobKey(user, id)) || room.runtime?.jobs.some((j) => j.status === "generating" && (j.leaseUntil || 0) > this.now()))
+        throw Error("Wait for the active reply before reacting.");
+      const message = room.messages[this.messageIndex(room, messageId)];
+      const reactions = readReactions(message.reactions, room), actorId = room.accountId || "legacy";
+      const exists = reactions.some((r) => r.emoji === input.emoji && r.actor === "user" && r.actorId === actorId);
+      message.reactions = exists ? reactions.filter((r) => !(r.emoji === input.emoji && r.actor === "user" && r.actorId === actorId)) : [...reactions, { emoji: input.emoji, actor: "user", actorId, name: room.persona.name }];
+      if (message.reactions.length > 128)
+        throw Error("This message has too many reactions.");
+      const previousRevision = room.revision;
+      room.receipts.push(requestId);
+      room.revision++;
+      room.updatedAt = new Date().toISOString();
+      for (const job of room.runtime?.jobs || [])
+        if (!TERMINAL.has(job.status) && job.revision === previousRevision)
+          job.revision = room.revision;
+      await this.persist(user, room);
+    });
+  }
   messageIndex(room, id) {
     const matches = room.messages.map((m, i) => m?.id === id ? i : -1).filter((i) => i >= 0);
     if (matches.length !== 1)
@@ -1787,6 +1843,8 @@ class MochiService {
         selectedRoomId = (await this.create(userId, payload)).id;
       else if (payload.type === "mochi:update")
         selectedRoomId = (await this.update(userId, payload)).id;
+      else if (payload.type === "mochi:reaction")
+        await this.react(userId, payload);
       else if (payload.type !== "mochi:list" && payload.type !== "mochi:message_action" && payload.type !== "mochi:notification_clear" && payload.type !== "mochi:room_assign")
         throw new Error("Unsupported Mochi action.");
       this.host.sendToFrontend({ type: "mochi:state", requestId: payload.requestId, selectedRoomId, state: await this.state(userId, payload.accountId) }, userId);

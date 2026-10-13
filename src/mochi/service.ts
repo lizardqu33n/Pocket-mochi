@@ -6,6 +6,7 @@ import { applyDeliveredStatus } from './behavior.js'
 import { MochiAccounts, fictionalAccountId } from './accounts.js'
 import { phoneContext, type MochiPhone } from './phone-selection.js'
 import { referencedMessage, replyIdentifier } from './replies.js'
+import { REACTION_EMOJI, readReactions } from './reactions.js'
 
 // New implementation. No Character Chatroom source is included.
 export interface MochiHost {
@@ -369,6 +370,27 @@ export class MochiService {
       await this.persist(user, room)
     })
   }
+  async react(userId:string,input:any):Promise<void>{
+    const user=this.account(userId),id=roomId(input.roomId),requestId=entityId(input.requestId),messageId=entityId(input.messageId)
+    if(!REACTION_EMOJI.includes(input.emoji)||input.actor!==undefined||input.actorId!==undefined||input.characterId!==undefined)throw Error('Invalid user reaction.')
+    await this.locked(user,id,async()=>{
+      const room=await this.read(user,id,input.accountId)
+      if(room.receipts!.includes(requestId))return
+      if(room.revision!==input.revision)throw Error('This room changed elsewhere. Refresh before reacting.')
+      // Do not invalidate an interactive/scheduled generation snapshot mid-flight.
+      if(this.jobs.has(this.jobKey(user,id))||room.runtime?.jobs.some(j=>j.status==='generating'&&(j.leaseUntil||0)>this.now()))throw Error('Wait for the active reply before reacting.')
+      const message=room.messages[this.messageIndex(room,messageId)] as MochiMessage
+      const reactions=readReactions(message.reactions,room),actorId=room.accountId||'legacy'
+      const exists=reactions.some(r=>r.emoji===input.emoji&&r.actor==='user'&&r.actorId===actorId)
+      message.reactions=exists?reactions.filter(r=>!(r.emoji===input.emoji&&r.actor==='user'&&r.actorId===actorId)):[...reactions,{emoji:input.emoji,actor:'user',actorId,name:room.persona.name}]
+      if(message.reactions.length>128)throw Error('This message has too many reactions.')
+      const previousRevision=room.revision
+      room.receipts!.push(requestId);room.revision++;room.updatedAt=new Date().toISOString()
+      // Metadata-only edits preserve already valid queued/generated opportunities.
+      for(const job of room.runtime?.jobs||[])if(!TERMINAL.has(job.status)&&job.revision===previousRevision)job.revision=room.revision
+      await this.persist(user,room)
+    })
+  }
   private messageIndex(room: MochiRoom, id: string): number {
     const matches = room.messages.map((m: any, i) => m?.id === id ? i : -1).filter(i => i >= 0)
     if (matches.length !== 1) throw new Error('This message is unavailable or has an ambiguous identifier.')
@@ -730,6 +752,7 @@ export class MochiService {
       if (payload.type === 'mochi:cancel') { await this.cancel(userId, payload.roomId, payload.generationRequestId, payload.accountId); return }
       if (payload.type === 'mochi:create') selectedRoomId = (await this.create(userId, payload)).id
       else if (payload.type === 'mochi:update') selectedRoomId = (await this.update(userId, payload)).id
+      else if (payload.type==='mochi:reaction')await this.react(userId,payload)
       else if (payload.type !== 'mochi:list' && payload.type !== 'mochi:message_action' && payload.type !== 'mochi:notification_clear' && payload.type !== 'mochi:room_assign') throw new Error('Unsupported Mochi action.')
       this.host.sendToFrontend({ type: 'mochi:state', requestId: payload.requestId, selectedRoomId, state: await this.state(userId, payload.accountId) }, userId)
     } catch (error) {

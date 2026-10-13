@@ -30,6 +30,8 @@ import { defaultMochiSettings, type MochiMessage, type MochiNotification, type M
 import { MOCHI_DESKTOP_STYLES } from './desktop-styles.js'
 import { referencedMessage, quoteExcerpt } from './replies.js'
 import { MOCHI_REPLY_STYLES } from './reply-styles.js'
+import {REACTION_EMOJI,REACTION_NAMES,readReactions} from './reactions.js'
+import {MOCHI_REACTION_STYLES} from './reaction-styles.js'
 
 type DisplayMessage = Pick<MochiMessage, 'id' | 'role' | 'content' | 'name' | 'createdAt'> & Partial<Pick<MochiMessage, 'avatarUrl' | 'characterId' | 'editedAt'>> & {replyTo?:unknown}
 function isDisplayMessage(value: unknown): value is DisplayMessage {
@@ -481,7 +483,7 @@ export class MochiView {
     page.dataset.surface = surface
     if (surface !== 'choices') this.presenceRoot=page
     const style = el('style')
-    style.textContent = MOCHI_STYLES+MOCHI_REPLY_STYLES
+    style.textContent = MOCHI_STYLES+MOCHI_REPLY_STYLES+MOCHI_REACTION_STYLES
     page.append(style)
     const header = el('header'); const brand = el('div', 'mochi-brand')
     const wordmark = el('h2', 'mochi-wordmark'); wordmark.setAttribute('aria-label', 'Mochi')
@@ -718,7 +720,16 @@ export class MochiView {
       const more = action(`Actions for ${message.name || 'message'}`, 'more', true); more.classList.add('mochi-message-actions'); more.onclick = () => this.messageActions(more, room, message)
       const bubble = el('div', 'mochi-bubble', message.content || '')
       if (message.editedAt) { bubble.title = `Edited ${new Date(message.editedAt).toLocaleString()}`; bubble.setAttribute('aria-description', bubble.title) }
-      meta.append(more);body.append(heading);if(message.replyTo!==undefined)body.append(this.quoteNode(room,message.replyTo,true));body.append(bubble,meta)
+      meta.append(more);body.append(heading);if(message.replyTo!==undefined)body.append(this.quoteNode(room,message.replyTo,true));body.append(bubble)
+      try{
+        const reactions=readReactions('reactions'in raw?raw.reactions:undefined,room),chips=el('div','mochi-reactions')
+        for(const emoji of REACTION_EMOJI){const actors=reactions.filter(r=>r.emoji===emoji);if(!actors.length)continue
+          const selected=actors.some(r=>r.actor==='user'&&r.actorId===(room.accountId||'legacy')),chip=button(`${emoji} ${actors.length}`,'mochi-reaction')
+          chip.type='button';chip.title=actors.map(r=>r.name+(r.actor==='character'?' (character)':' (profile)')).join(', ');chip.setAttribute('aria-label',`${selected?'Remove your':'Add your'} ${REACTION_NAMES[emoji]} reaction. ${chip.title}`);chip.setAttribute('aria-pressed',String(selected));chip.disabled=this.busy||Boolean(this.state?.jobs?.[room.id]);chip.onclick=()=>this.dispatch('mochi:reaction',{roomId:room.id,revision:room.revision,messageId:message.id,emoji});chips.append(chip)
+        }
+        body.append(chips)
+      }catch{body.append(el('small','mochi-muted','Reactions unavailable. Saved records preserved.'))}
+      body.append(meta)
       row.append(avatarFrame, body); thread.append(row)
     }
     if (this.state?.jobs?.[room.id]) { const status = el('p', 'mochi-muted', 'Character is replying…'); status.setAttribute('role', 'status'); thread.append(status) }
@@ -753,7 +764,12 @@ export class MochiView {
       content.replaceChildren(el('p', '', 'Delete this saved message? Only this message and its prior versions will be removed. Later messages stay unchanged. This cannot be undone.'), confirm)
     }
     const reply=action('Reply','back');reply.onclick=()=>{this.replyTargets.set(this.replyKey(room),message.id);sheet?.dismiss();this.redraw();const root=this.presenceRoot;root?.querySelector<HTMLTextAreaElement>('[aria-label="Message"]')?.focus({preventScroll:true})}
-    content.append(reply,copy, edit, remove)
+    const react=action('React','more');react.disabled=this.busy||Boolean(this.state?.jobs?.[room.id]);react.onclick=()=>{
+      const palette=el('div','mochi-reaction-palette');palette.setAttribute('aria-label','Common emoji reactions')
+      let selected:string[]=[];try{selected=readReactions('reactions'in message?message.reactions:undefined,room).filter(r=>r.actor==='user'&&r.actorId===(room.accountId||'legacy')).map(r=>r.emoji)}catch{/* Backend preserves unsupported records. */}
+      for(const emoji of REACTION_EMOJI){const choice=button(emoji,'mochi-reaction');choice.type='button';choice.setAttribute('aria-label',`Toggle ${REACTION_NAMES[emoji]} reaction`);choice.setAttribute('aria-pressed',String(selected.includes(emoji)));choice.onclick=()=>{this.dispatch('mochi:reaction',{roomId:room.id,revision,messageId:message.id,emoji});sheet?.dismiss()};palette.append(choice)}content.replaceChildren(palette);palette.querySelector<HTMLButtonElement>('button')?.focus()
+    }
+    content.append(reply,react,copy, edit, remove)
     if (message.role === 'assistant') {
       const reroll = action('Regenerate message', 'refresh'); reroll.disabled = this.busy || Boolean(this.state?.jobs?.[room.id])
       reroll.onclick = () => { const confirm = action('Confirm reroll', 'refresh'); confirm.onclick = () => { this.dispatch('mochi:regenerate', { roomId: room.id, revision, messageId: message.id, confirmed: true }); sheet?.dismiss() }; content.replaceChildren(el('p', '', 'Reroll using the conversation before this reply? The previous text is retained. Later messages stay unchanged and may no longer fit the new reply.'), confirm) }

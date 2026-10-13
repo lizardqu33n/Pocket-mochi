@@ -704,6 +704,35 @@ var MOCHI_REPLY_STYLES = `
 .mochi-view .mochi-reply-preview{display:flex;align-items:center;gap:6px;min-width:0}.mochi-reply-preview>.mochi-quote{flex:1}.mochi-reply-preview>button{flex:none}
 `;
 
+// src/mochi/reactions.ts
+var REACTION_EMOJI = ["\uD83D\uDC4D", "❤️", "\uD83D\uDE02", "\uD83D\uDE2E", "\uD83D\uDE22", "\uD83C\uDF89", "\uD83E\uDD14", "\uD83D\uDC40"];
+var REACTION_NAMES = { "\uD83D\uDC4D": "thumbs up", "❤️": "heart", "\uD83D\uDE02": "laugh", "\uD83D\uDE2E": "surprised", "\uD83D\uDE22": "sad", "\uD83C\uDF89": "celebration", "\uD83E\uDD14": "thinking", "\uD83D\uDC40": "eyes" };
+function readReactions(value, room) {
+  if (value === undefined)
+    return [];
+  if (!Array.isArray(value) || value.length > 128)
+    throw Error("Unsupported reactions; stored history was preserved.");
+  const seen = new Set;
+  for (const r of value) {
+    if (!r || !REACTION_EMOJI.includes(r.emoji) || typeof r.name !== "string" || r.name.length > 120 || !r.name.trim() || !["user", "character"].includes(r.actor) || typeof r.actorId !== "string" || (r.actor === "user" ? r.actorId !== "legacy" && !/^account_[a-f0-9]{32}$/.test(r.actorId) : !/^[A-Za-z0-9_.:-]{1,180}$/.test(r.actorId)))
+      throw Error("Unsupported reaction ownership; stored history was preserved.");
+    const key = JSON.stringify([r.emoji, r.actor, r.actorId]);
+    if (seen.has(key))
+      throw Error("Ambiguous reactions; stored history was preserved.");
+    seen.add(key);
+  }
+  return value;
+}
+
+// src/mochi/reaction-styles.ts
+var MOCHI_REACTION_STYLES = `
+.mochi-view .mochi-reactions,.mochi-view .mochi-reaction-palette,.mochi-sheet .mochi-reaction-palette{display:flex;flex-wrap:wrap;gap:5px;min-width:0;max-width:100%;margin-top:5px}
+.mochi-view .mochi-reactions:empty{display:none}
+.mochi-view .mochi-reaction{font:inherit;font-size:12px;color:inherit;min-height:32px;padding:4px 8px;border:1px solid var(--mochi-border);border-radius:12px;background:var(--lp-surface-2,#ffffff0c);cursor:pointer;max-width:100%}.mochi-view .mochi-reaction-palette .mochi-reaction{min-width:44px;min-height:44px;font-size:20px}
+.mochi-view .mochi-reaction[aria-pressed=true]{border-color:var(--mochi-accent);background:var(--lp-surface-2,#ffffff18)}.mochi-view .mochi-reaction:focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}
+.mochi-sheet .mochi-reaction{min-width:44px;min-height:44px;font-size:20px;border-radius:12px;border:1px solid var(--mochi-border);background:var(--lp-surface-2,#ffffff0c);color:inherit;cursor:pointer}.mochi-sheet .mochi-reaction:focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}.mochi-sheet .mochi-reaction[aria-pressed=true]{border-color:var(--mochi-accent)}
+`;
+
 // src/mochi/view.ts
 function action(label, icon, compact = false) {
   const node = button("", `lp-button${compact ? " mochi-icon-button" : ""}`);
@@ -1601,7 +1630,7 @@ class MochiView {
     if (surface !== "choices")
       this.presenceRoot = page;
     const style = el("style");
-    style.textContent = MOCHI_STYLES + MOCHI_REPLY_STYLES;
+    style.textContent = MOCHI_STYLES + MOCHI_REPLY_STYLES + MOCHI_REACTION_STYLES;
     page.append(style);
     const header = el("header");
     const brand = el("div", "mochi-brand");
@@ -2294,7 +2323,27 @@ class MochiView {
       body.append(heading);
       if (message.replyTo !== undefined)
         body.append(this.quoteNode(room, message.replyTo, true));
-      body.append(bubble, meta);
+      body.append(bubble);
+      try {
+        const reactions = readReactions("reactions" in raw ? raw.reactions : undefined, room), chips = el("div", "mochi-reactions");
+        for (const emoji of REACTION_EMOJI) {
+          const actors = reactions.filter((r) => r.emoji === emoji);
+          if (!actors.length)
+            continue;
+          const selected = actors.some((r) => r.actor === "user" && r.actorId === (room.accountId || "legacy")), chip = button(`${emoji} ${actors.length}`, "mochi-reaction");
+          chip.type = "button";
+          chip.title = actors.map((r) => r.name + (r.actor === "character" ? " (character)" : " (profile)")).join(", ");
+          chip.setAttribute("aria-label", `${selected ? "Remove your" : "Add your"} ${REACTION_NAMES[emoji]} reaction. ${chip.title}`);
+          chip.setAttribute("aria-pressed", String(selected));
+          chip.disabled = this.busy || Boolean(this.state?.jobs?.[room.id]);
+          chip.onclick = () => this.dispatch("mochi:reaction", { roomId: room.id, revision: room.revision, messageId: message.id, emoji });
+          chips.append(chip);
+        }
+        body.append(chips);
+      } catch {
+        body.append(el("small", "mochi-muted", "Reactions unavailable. Saved records preserved."));
+      }
+      body.append(meta);
       row.append(avatarFrame, body);
       thread.append(row);
     }
@@ -2378,7 +2427,30 @@ class MochiView {
       const root = this.presenceRoot;
       root?.querySelector('[aria-label="Message"]')?.focus({ preventScroll: true });
     };
-    content.append(reply, copy, edit, remove);
+    const react = action("React", "more");
+    react.disabled = this.busy || Boolean(this.state?.jobs?.[room.id]);
+    react.onclick = () => {
+      const palette = el("div", "mochi-reaction-palette");
+      palette.setAttribute("aria-label", "Common emoji reactions");
+      let selected = [];
+      try {
+        selected = readReactions("reactions" in message ? message.reactions : undefined, room).filter((r) => r.actor === "user" && r.actorId === (room.accountId || "legacy")).map((r) => r.emoji);
+      } catch {}
+      for (const emoji of REACTION_EMOJI) {
+        const choice = button(emoji, "mochi-reaction");
+        choice.type = "button";
+        choice.setAttribute("aria-label", `Toggle ${REACTION_NAMES[emoji]} reaction`);
+        choice.setAttribute("aria-pressed", String(selected.includes(emoji)));
+        choice.onclick = () => {
+          this.dispatch("mochi:reaction", { roomId: room.id, revision, messageId: message.id, emoji });
+          sheet?.dismiss();
+        };
+        palette.append(choice);
+      }
+      content.replaceChildren(palette);
+      palette.querySelector("button")?.focus();
+    };
+    content.append(reply, react, copy, edit, remove);
     if (message.role === "assistant") {
       const reroll = action("Regenerate message", "refresh");
       reroll.disabled = this.busy || Boolean(this.state?.jobs?.[room.id]);

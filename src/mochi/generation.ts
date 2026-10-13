@@ -2,6 +2,7 @@ import { callPocketProvider } from '../backend/generation.js'
 import { defaultMochiSettings, type MochiMessage, type MochiRoom } from './types.js'
 import { parseBehavior, type Behavior } from './behavior.js'
 import { quoteExcerpt, replyIdentifier } from './replies.js'
+import {readReactions} from './reactions.js'
 
 export type PromptMessage = { role: 'system' | 'user' | 'assistant'; content: string }
 export async function buildMochiPrompt(room: MochiRoom, characters: any[], responder: string, count: (messages: PromptMessage[]) => Promise<number>, signal: AbortSignal, natural = false): Promise<PromptMessage[]> {
@@ -22,6 +23,11 @@ export async function buildMochiPrompt(room: MochiRoom, characters: any[], respo
   while (true) {
     signal.throwIfAborted()
     const includedIds=new Set(history.map(m=>m.id)),replyIds=new Set(history.map(m=>m.replyTo).filter(replyIdentifier))
+    const reactionContext=new Map<MochiMessage,string>();let remaining=32
+    for(const m of history.slice().reverse()){
+      const reactions=readReactions(m.reactions,room),included=reactions.slice(0,Math.min(4,remaining));remaining-=included.length
+      if(included.length)reactionContext.set(m,`\n[Reactions: ${JSON.stringify(included.map(r=>({emoji:r.emoji,actor:r.actor,actorId:r.actorId,name:r.name})))}]`)
+    }
     const messages = [system, ...history.map(message=>{
       let quote=''
       if(message.replyTo){
@@ -31,7 +37,7 @@ export async function buildMochiPrompt(room: MochiRoom, characters: any[], respo
       }
       // Dialogue and excerpts remain untrusted conversation content, never system instructions.
       const referenced=replyIds.has(message.id)?`[Message reference ID: ${JSON.stringify(message.id)}]\n`:''
-      return {role:message.role,content:referenced+quote+`${message.name}: ${message.content}`} as PromptMessage
+      return {role:message.role,content:referenced+quote+`${message.name}: ${message.content}`+(reactionContext.get(message)||'')} as PromptMessage
     }), tail]
     const tokens = await count(messages)
     signal.throwIfAborted()
