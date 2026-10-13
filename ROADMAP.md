@@ -8,9 +8,12 @@ manual Windows acceptance. Silent real-user switching and external-hide launcher
 synchronization remain host API limitations. This is not public-beta readiness.
 
 Messaging Improvements MSG-01A quoted replies are manually accepted by the user.
-MSG-01B persistent user reactions and bounded prompt attribution are implemented
-with targeted simulated verification; manual acceptance remains pending. Optional
+MSG-01B persistent user reactions and bounded prompt attribution passed targeted
+verification and initial user manual testing. Optional
 same-call AI reactions are deferred pending durable delivery metadata support.
+MSG-01C chat pins and independent system notes are implemented with targeted
+simulated verification, typecheck and matching production bundles; manual review
+remains pending. Notes use one default position; future presets remain deferred.
 Messaging order: MSG-01A quotes, MSG-01B reactions, MSG-01C pins, MSG-01D search,
 MSG-01E texting preferences and polish, then Memory & Prompt Management.
 Friends Beta 1 is tentatively hoped for Friday, October 16, 2026, explicitly

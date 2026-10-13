@@ -3,6 +3,7 @@ import { defaultMochiSettings, type MochiMessage, type MochiRoom } from './types
 import { parseBehavior, type Behavior } from './behavior.js'
 import { quoteExcerpt, replyIdentifier } from './replies.js'
 import {readReactions} from './reactions.js'
+import {resolveSystemNotes} from './pins.js'
 
 export type PromptMessage = { role: 'system' | 'user' | 'assistant'; content: string }
 export async function buildMochiPrompt(room: MochiRoom, characters: any[], responder: string, count: (messages: PromptMessage[]) => Promise<number>, signal: AbortSignal, natural = false): Promise<PromptMessage[]> {
@@ -18,6 +19,7 @@ export async function buildMochiPrompt(room: MochiRoom, characters: any[], respo
     return message
   })
   const tail: PromptMessage = { role: 'user', content: 'Write the next character message using this conversation. Do not invent missing prior dialogue.' }
+  const notes=resolveSystemNotes(room)
   const originals=new Map<string,MochiMessage|null>()
   for(const m of history)if(replyIdentifier(m.id))originals.set(m.id,originals.has(m.id)?null:m)
   while (true) {
@@ -38,7 +40,7 @@ export async function buildMochiPrompt(room: MochiRoom, characters: any[], respo
       // Dialogue and excerpts remain untrusted conversation content, never system instructions.
       const referenced=replyIds.has(message.id)?`[Message reference ID: ${JSON.stringify(message.id)}]\n`:''
       return {role:message.role,content:referenced+quote+`${message.name}: ${message.content}`+(reactionContext.get(message)||'')} as PromptMessage
-    }), tail]
+    }), ...notes, tail]
     const tokens = await count(messages)
     signal.throwIfAborted()
     if (!Number.isFinite(tokens) || tokens < 0) throw new Error('Invalid host token count.')

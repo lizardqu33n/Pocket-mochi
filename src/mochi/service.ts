@@ -7,6 +7,7 @@ import { MochiAccounts, fictionalAccountId } from './accounts.js'
 import { phoneContext, type MochiPhone } from './phone-selection.js'
 import { referencedMessage, replyIdentifier } from './replies.js'
 import { REACTION_EMOJI, readReactions } from './reactions.js'
+import {validatePinnedContent,validateNote,noteId,MAX_CHAT_PINS} from './pins.js'
 
 // New implementation. No Character Chatroom source is included.
 export interface MochiHost {
@@ -172,6 +173,7 @@ export class MochiService {
     if (!await this.host.userStorage.exists(path, user)) throw new Error('This room is not available to your account.')
     const room = validateRoom(await this.host.userStorage.getJson(path, { userId: user }), id)
     if (room.accountId) await this.fictionalAccounts.get(user, room.accountId)
+    validatePinnedContent(room)
     if (room.runtime !== undefined) validateRuntime(room.runtime)
     if (room.runtime?.presence) for (const [id,p] of Object.entries(room.runtime.presence)) { entityId(id); validatePresence(p) }
     for(const job of room.runtime?.jobs || []) {
@@ -363,11 +365,47 @@ export class MochiService {
       if (input.action === 'edit') {
         room.messages[index] = { ...message, content, editedAt: new Date().toISOString(), previousVersions: [...message.previousVersions || [], this.previousVersion(message)] }
         for (const n of room.notifications!) if (n.messageId === messageId) n.body = content.slice(0, 220)
-      } else { room.messages.splice(index, 1); room.notifications = room.notifications!.filter(n => n.messageId !== messageId) }
+      } else { room.messages.splice(index, 1); room.notifications = room.notifications!.filter(n => n.messageId !== messageId); if(room.chatPins)room.chatPins=room.chatPins.filter(id=>id!==messageId) }
       this.jobs.get(this.jobKey(user, id))?.controller.abort()
       room.receipts!.push(requestId); room.revision++; room.updatedAt = new Date().toISOString()
       room.notificationRevision!++
       await this.persist(user, room)
+    })
+  }
+  async pinnedContent(userId:string,input:any):Promise<void>{
+    const user=this.account(userId),id=roomId(input.roomId),requestId=entityId(input.requestId)
+    if(!['pin','note_save','note_delete'].includes(input.action))throw Error('Unsupported pinned-content action.')
+    await this.locked(user,id,async()=>{
+      const room=await this.read(user,id,input.accountId)
+      if(room.receipts!.includes(requestId))return
+      if(room.revision!==input.revision)throw Error('This room changed elsewhere. Refresh before saving pinned content.')
+      if(this.jobs.has(this.jobKey(user,id))||room.runtime?.jobs.some(j=>j.status==='generating'&&(j.leaseUntil||0)>this.now()))throw Error('Wait for the active reply before changing pinned content.')
+      if(input.action==='pin'){
+        const messageId=entityId(input.messageId);this.messageIndex(room,messageId)
+        if(!replyIdentifier(messageId)||typeof input.pinned!=='boolean')throw Error('Invalid chat pin.')
+        const pins=room.chatPins||[]
+        room.chatPins=input.pinned?pins.includes(messageId)?pins:[...pins,messageId]:pins.filter(id=>id!==messageId)
+        if(room.chatPins.length>MAX_CHAT_PINS)throw Error('This chat has reached its pin limit.')
+      }else{
+        // A prepared output already captured the old instructions. Never silently discard it.
+        if(room.runtime?.jobs.some(j=>!TERMINAL.has(j.status)&&Boolean(j.draft)))throw Error('Wait for or explicitly cancel the prepared scheduled reply before editing system notes.')
+        const notes=room.systemNotes||[]
+        if(input.action==='note_delete'){
+          const target=noteId(input.noteId)
+          if(!notes.some(n=>n.id===target)||input.confirmed!==true)throw Error('Confirm deletion of an available system note.')
+          room.systemNotes=notes.filter(n=>n.id!==target)
+        }else{
+          const target=input.noteId===undefined?`note_${crypto.randomUUID().replaceAll('-','')}`:noteId(input.noteId)
+          if(input.noteId!==undefined&&!notes.some(n=>n.id===target))throw Error('This system note is unavailable.')
+          const note=validateNote({id:target,title:input.title,body:input.body,enabled:input.enabled})
+          room.systemNotes=input.noteId===undefined?[...notes,note]:notes.map(n=>n.id===target?note:n)
+        }
+      }
+      validatePinnedContent(room)
+      const previousRevision=room.revision
+      room.receipts!.push(requestId);room.revision++;room.updatedAt=new Date().toISOString()
+      for(const job of room.runtime?.jobs||[])if(!TERMINAL.has(job.status)&&job.revision===previousRevision)job.revision=room.revision
+      await this.persist(user,room)
     })
   }
   async react(userId:string,input:any):Promise<void>{
@@ -753,6 +791,7 @@ export class MochiService {
       if (payload.type === 'mochi:create') selectedRoomId = (await this.create(userId, payload)).id
       else if (payload.type === 'mochi:update') selectedRoomId = (await this.update(userId, payload)).id
       else if (payload.type==='mochi:reaction')await this.react(userId,payload)
+      else if (payload.type==='mochi:pinned_content')await this.pinnedContent(userId,payload)
       else if (payload.type !== 'mochi:list' && payload.type !== 'mochi:message_action' && payload.type !== 'mochi:notification_clear' && payload.type !== 'mochi:room_assign') throw new Error('Unsupported Mochi action.')
       this.host.sendToFrontend({ type: 'mochi:state', requestId: payload.requestId, selectedRoomId, state: await this.state(userId, payload.accountId) }, userId)
     } catch (error) {

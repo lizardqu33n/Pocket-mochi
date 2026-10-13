@@ -32,6 +32,7 @@ import { referencedMessage, quoteExcerpt } from './replies.js'
 import { MOCHI_REPLY_STYLES } from './reply-styles.js'
 import {REACTION_EMOJI,REACTION_NAMES,readReactions} from './reactions.js'
 import {MOCHI_REACTION_STYLES} from './reaction-styles.js'
+import {pinsPanel,MOCHI_PIN_STYLES,type NoteDraft} from './pins-panel.js'
 
 type DisplayMessage = Pick<MochiMessage, 'id' | 'role' | 'content' | 'name' | 'createdAt'> & Partial<Pick<MochiMessage, 'avatarUrl' | 'characterId' | 'editedAt'>> & {replyTo?:unknown}
 function isDisplayMessage(value: unknown): value is DisplayMessage {
@@ -169,6 +170,8 @@ export class MochiView {
   private responders = new Map<string, string>()
   private ownGenerations = new Map<string, string>()
   private pendingSends = new Map<string, { roomId: string; content: string; replyTo?:string; replyKey:string }>()
+  private noteDrafts=new Map<string,NoteDraft>()
+  private pendingNoteSave?:string
   private selectionVersion = 0
   private requestVersion = 0
   private modelControllers = new Set<AbortController>()
@@ -258,7 +261,7 @@ export class MochiView {
       for (const controller of this.modelControllers) controller.abort()
       this.modelControllers.clear(); this.modelChoices.clear(); this.choicesRequest = ''
       this.resetScope(); this.profiles = new MochiProfiles(); this.profilesOpen = false; this.pickerOpen = false
-      this.drafts.clear();this.replyTargets.clear();this.quoteJump=undefined; this.responders.clear(); this.pendingSends.clear(); this.associations.clear(); this.settingsSections.clear(); this.lastRooms.clear();this.sidebarProfile=false;this.profileReturn=undefined;this.accountNavigation=undefined
+      this.drafts.clear();this.replyTargets.clear();this.quoteJump=undefined;this.noteDrafts.clear();this.pendingNoteSave=undefined; this.responders.clear(); this.pendingSends.clear(); this.associations.clear(); this.settingsSections.clear(); this.lastRooms.clear();this.sidebarProfile=false;this.profileReturn=undefined;this.accountNavigation=undefined
       this.phone = undefined; this.presenceRoot = undefined; this.error = ''; this.feedback = ''; this.formBaseline = ''
     }
   }
@@ -391,7 +394,7 @@ export class MochiView {
     if (payload.requestId !== this.request) return true
     clearTimeout(this.timeout)
     this.busy = false
-    if (payload.type === 'mochi:error') { if (this.requestVersion === this.selectionVersion) this.error = String(payload.message) }
+    if (payload.type === 'mochi:error') { this.pendingNoteSave=undefined; if (this.requestVersion === this.selectionVersion) this.error = String(payload.message) }
     else {
       payload.state.rooms=payload.state.rooms.filter((r:MochiRoom)=>{const known=this.associations.get(r.id);return !known||(known.accountId===payload.state.accountId&&(r.associationRevision||0)>=known.revision)})
       payload.state.notifications=(payload.state.notifications||[]).filter((n:MochiNotification)=>{const known=this.associations.get(n.roomId);return !known||known.accountId===payload.state.accountId})
@@ -401,6 +404,7 @@ export class MochiView {
         if (previous && (previous.associationRevision || 0) === (room.associationRevision || 0)) room.background = this.mergeScheduling(previous, room.background, room.revision)
       }
       this.state = { ...payload.state, notifications }
+      if(this.operation==='mochi:pinned_content'&&this.pendingNoteSave){this.noteDrafts.delete(this.pendingNoteSave);this.pendingNoteSave=undefined}
       if(this.restoreRoom&&this.state&&this.state.accountId===this.activeAccountId){
         this.restoreRoom=false
         const last=this.lastRooms.get(this.state.accountId||'')
@@ -483,7 +487,7 @@ export class MochiView {
     page.dataset.surface = surface
     if (surface !== 'choices') this.presenceRoot=page
     const style = el('style')
-    style.textContent = MOCHI_STYLES+MOCHI_REPLY_STYLES+MOCHI_REACTION_STYLES
+    style.textContent = MOCHI_STYLES+MOCHI_REPLY_STYLES+MOCHI_REACTION_STYLES+MOCHI_PIN_STYLES
     page.append(style)
     const header = el('header'); const brand = el('div', 'mochi-brand')
     const wordmark = el('h2', 'mochi-wordmark'); wordmark.setAttribute('aria-label', 'Mochi')
@@ -532,6 +536,7 @@ export class MochiView {
       const menuSheet=el('div','lp-conversation-menu-sheet')
       const menuAction=(label:string,callback:()=>void)=>{const item=button(label,'lp-conversation-menu-action');item.setAttribute('aria-label',label);item.addEventListener('click',()=>{menu.open=false;callback()});return item}
       menuSheet.append(menuAction('Participants',()=>{const members=el('div','mochi-participants');for(const id of room.characterIds){const c=this.state?.characters.find(c=>c.id===id),name=room.settings?.characterNames[id]||c?.name||'Unavailable character';const row=el('div','mochi-member');row.append(portrait(name,c?.avatarUrl),el('span','',name));members.append(row)}this.sheet(roomHeader,'Room participants',members);members.closest('dialog')?.addEventListener('close',()=>{if(more.isConnected)more.focus()},{once:true})}),menuAction('Settings',openSettings))
+      menuSheet.append(menuAction('Pins & Notes',()=>this.openPins(roomHeader,room)))
       menu.append(more,menuSheet)
       menu.addEventListener('keydown',event=>{if(event.key==='Escape'){menu.open=false;more.focus();event.stopPropagation()}})
       menu.addEventListener('focusout',event=>{if(event.relatedTarget&&!menu.contains(event.relatedTarget as Node))menu.open=false})
@@ -720,6 +725,7 @@ export class MochiView {
       const more = action(`Actions for ${message.name || 'message'}`, 'more', true); more.classList.add('mochi-message-actions'); more.onclick = () => this.messageActions(more, room, message)
       const bubble = el('div', 'mochi-bubble', message.content || '')
       if (message.editedAt) { bubble.title = `Edited ${new Date(message.editedAt).toLocaleString()}`; bubble.setAttribute('aria-description', bubble.title) }
+      if(room.chatPins?.includes(message.id)){const pinned=el('span','mochi-pin-indicator','Pinned');pinned.setAttribute('aria-label','Pinned chat message');heading.append(pinned)}
       meta.append(more);body.append(heading);if(message.replyTo!==undefined)body.append(this.quoteNode(room,message.replyTo,true));body.append(bubble)
       try{
         const reactions=readReactions('reactions'in raw?raw.reactions:undefined,room),chips=el('div','mochi-reactions')
@@ -739,6 +745,17 @@ export class MochiView {
     const sheet = showPocketSheet(anchor, title, content)
     if (sheet) { this.sheets.add(sheet.dismiss); content.closest('dialog')?.classList.add('mochi-sheet'); content.closest('dialog')?.addEventListener('close', () => this.sheets.delete(sheet.dismiss), { once: true }) }
     return sheet
+  }
+  private openPins(anchor:HTMLElement,room:MochiRoom):void {
+    const key=this.replyKey(room)
+    let sheet:ReturnType<typeof showPocketSheet>
+    const content=pinsPanel(room,{
+      draft:this.noteDrafts.get(key),setDraft:draft=>{if(draft)this.noteDrafts.set(key,draft);else this.noteDrafts.delete(key)},
+      unavailable:this.busy||Boolean(this.state?.jobs?.[room.id]),
+      mutate:(values,saveDraft)=>{if(this.busy)return;this.pendingNoteSave=saveDraft?key:undefined;this.dispatch('mochi:pinned_content',{roomId:room.id,revision:room.revision,...values});sheet?.dismiss()},
+      jump:id=>{sheet?.dismiss();const quote=this.quoteNode(room,id,true);(quote as HTMLButtonElement).click()}
+    })
+    sheet=this.sheet(anchor,'Pins & Notes',content)
   }
   private messageActions(anchor: HTMLElement, room: MochiRoom, message: DisplayMessage): void {
     const revision = room.revision, content = el('div', 'mochi-action-panel')
@@ -769,7 +786,8 @@ export class MochiView {
       let selected:string[]=[];try{selected=readReactions('reactions'in message?message.reactions:undefined,room).filter(r=>r.actor==='user'&&r.actorId===(room.accountId||'legacy')).map(r=>r.emoji)}catch{/* Backend preserves unsupported records. */}
       for(const emoji of REACTION_EMOJI){const choice=button(emoji,'mochi-reaction');choice.type='button';choice.setAttribute('aria-label',`Toggle ${REACTION_NAMES[emoji]} reaction`);choice.setAttribute('aria-pressed',String(selected.includes(emoji)));choice.onclick=()=>{this.dispatch('mochi:reaction',{roomId:room.id,revision,messageId:message.id,emoji});sheet?.dismiss()};palette.append(choice)}content.replaceChildren(palette);palette.querySelector<HTMLButtonElement>('button')?.focus()
     }
-    content.append(reply,react,copy, edit, remove)
+    const pinned=room.chatPins?.includes(message.id)||false,pin=button(pinned?'Unpin':'Pin','lp-button');pin.disabled=this.busy||Boolean(this.state?.jobs?.[room.id]);pin.onclick=()=>{this.pendingNoteSave=undefined;this.dispatch('mochi:pinned_content',{roomId:room.id,revision,messageId:message.id,action:'pin',pinned:!pinned});sheet?.dismiss()}
+    content.append(reply,react,pin,copy, edit, remove)
     if (message.role === 'assistant') {
       const reroll = action('Regenerate message', 'refresh'); reroll.disabled = this.busy || Boolean(this.state?.jobs?.[room.id])
       reroll.onclick = () => { const confirm = action('Confirm reroll', 'refresh'); confirm.onclick = () => { this.dispatch('mochi:regenerate', { roomId: room.id, revision, messageId: message.id, confirmed: true }); sheet?.dismiss() }; content.replaceChildren(el('p', '', 'Reroll using the conversation before this reply? The previous text is retained. Later messages stay unchanged and may no longer fit the new reply.'), confirm) }

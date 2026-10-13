@@ -7,6 +7,7 @@ export interface MochiPersona {
 }
 export interface MochiCharacter { id: string; name: string; avatarUrl: string }
 export interface MochiReaction {emoji:string;actor:'user'|'character';actorId:string;name:string}
+export interface MochiSystemNote {id:string;title:string;body:string;enabled:boolean}
 export interface MochiMessage {
   id: string; role: 'user' | 'assistant'; content: string; name: string; avatarUrl: string
   characterId?: string; createdAt: string; requestId: string
@@ -34,6 +35,8 @@ export interface MochiRoom {
   characterIds: string[]
   persona: MochiPersona
   messages: unknown[]
+  chatPins?: string[]
+  systemNotes?: MochiSystemNote[]
   settings?: MochiSettings
   receipts?: string[]
   notifications?: MochiNotification[]

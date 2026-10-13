@@ -256,6 +256,44 @@ function readReactions(value, room) {
   return value;
 }
 
+// src/mochi/pins.ts
+var MAX_CHAT_PINS = 50;
+var MAX_SYSTEM_NOTES = 8;
+var MAX_NOTE_BODY = 2000;
+var MAX_NOTE_TOTAL = 8000;
+function noteId(value) {
+  if (typeof value !== "string" || !/^note_[a-f0-9]{32}$/.test(value))
+    throw Error("Invalid system note identifier.");
+  return value;
+}
+function validateNote(value) {
+  if (!value || typeof value !== "object")
+    throw Error("Invalid system note; saved content was preserved.");
+  const n = value;
+  noteId(n.id);
+  if (typeof n.title !== "string" || !n.title.trim() || n.title.length > 80 || typeof n.body !== "string" || !n.body.trim() || n.body.length > MAX_NOTE_BODY || typeof n.enabled !== "boolean")
+    throw Error("Invalid system note; saved content was preserved.");
+  return { id: noteId(n.id), title: n.title, body: n.body, enabled: n.enabled };
+}
+function validatePinnedContent(room) {
+  if (room.chatPins !== undefined) {
+    if (!Array.isArray(room.chatPins) || room.chatPins.length > MAX_CHAT_PINS || new Set(room.chatPins).size !== room.chatPins.length || room.chatPins.some((id) => !replyIdentifier(id)))
+      throw Error("Invalid chat pins; saved history was preserved.");
+  }
+  if (room.systemNotes !== undefined) {
+    if (!Array.isArray(room.systemNotes) || room.systemNotes.length > MAX_SYSTEM_NOTES)
+      throw Error("Invalid system notes; saved content was preserved.");
+    const notes = room.systemNotes.map(validateNote);
+    if (new Set(notes.map((n) => n.id)).size !== notes.length || notes.reduce((total, n) => total + n.body.length, 0) > MAX_NOTE_TOTAL)
+      throw Error("System note limits exceeded; saved content was preserved.");
+  }
+}
+function resolveSystemNotes(room) {
+  validatePinnedContent(room);
+  return (room.systemNotes || []).filter((n) => n.enabled).map((n) => ({ role: "system", content: `ROOM SYSTEM NOTE (${JSON.stringify(n.title)}):
+${n.body}` }));
+}
+
 // src/mochi/generation.ts
 async function buildMochiPrompt(room, characters, responder, count, signal, natural = false) {
   const settings = room.settings || defaultMochiSettings();
@@ -280,6 +318,7 @@ NATURAL RESPONSE: Instead of a single message you may return {"messages":[{"spea
     return message;
   });
   const tail = { role: "user", content: "Write the next character message using this conversation. Do not invent missing prior dialogue." };
+  const notes = resolveSystemNotes(room);
   const originals = new Map;
   for (const m of history)
     if (replyIdentifier(m.id))
@@ -308,7 +347,7 @@ NATURAL RESPONSE: Instead of a single message you may return {"messages":[{"spea
       const referenced = replyIds.has(message.id) ? `[Message reference ID: ${JSON.stringify(message.id)}]
 ` : "";
       return { role: message.role, content: referenced + quote + `${message.name}: ${message.content}` + (reactionContext.get(message) || "") };
-    }), tail];
+    }), ...notes, tail];
     const tokens = await count(messages);
     signal.throwIfAborted();
     if (!Number.isFinite(tokens) || tokens < 0)
@@ -925,6 +964,7 @@ class MochiService {
     const room = validateRoom(await this.host.userStorage.getJson(path, { userId: user }), id);
     if (room.accountId)
       await this.fictionalAccounts.get(user, room.accountId);
+    validatePinnedContent(room);
     if (room.runtime !== undefined)
       validateRuntime(room.runtime);
     if (room.runtime?.presence)
@@ -1206,12 +1246,63 @@ class MochiService {
       } else {
         room.messages.splice(index, 1);
         room.notifications = room.notifications.filter((n) => n.messageId !== messageId);
+        if (room.chatPins)
+          room.chatPins = room.chatPins.filter((id) => id !== messageId);
       }
       this.jobs.get(this.jobKey(user, id))?.controller.abort();
       room.receipts.push(requestId);
       room.revision++;
       room.updatedAt = new Date().toISOString();
       room.notificationRevision++;
+      await this.persist(user, room);
+    });
+  }
+  async pinnedContent(userId, input) {
+    const user = this.account(userId), id = roomId(input.roomId), requestId = entityId(input.requestId);
+    if (!["pin", "note_save", "note_delete"].includes(input.action))
+      throw Error("Unsupported pinned-content action.");
+    await this.locked(user, id, async () => {
+      const room = await this.read(user, id, input.accountId);
+      if (room.receipts.includes(requestId))
+        return;
+      if (room.revision !== input.revision)
+        throw Error("This room changed elsewhere. Refresh before saving pinned content.");
+      if (this.jobs.has(this.jobKey(user, id)) || room.runtime?.jobs.some((j) => j.status === "generating" && (j.leaseUntil || 0) > this.now()))
+        throw Error("Wait for the active reply before changing pinned content.");
+      if (input.action === "pin") {
+        const messageId = entityId(input.messageId);
+        this.messageIndex(room, messageId);
+        if (!replyIdentifier(messageId) || typeof input.pinned !== "boolean")
+          throw Error("Invalid chat pin.");
+        const pins = room.chatPins || [];
+        room.chatPins = input.pinned ? pins.includes(messageId) ? pins : [...pins, messageId] : pins.filter((id) => id !== messageId);
+        if (room.chatPins.length > MAX_CHAT_PINS)
+          throw Error("This chat has reached its pin limit.");
+      } else {
+        if (room.runtime?.jobs.some((j) => !TERMINAL.has(j.status) && Boolean(j.draft)))
+          throw Error("Wait for or explicitly cancel the prepared scheduled reply before editing system notes.");
+        const notes = room.systemNotes || [];
+        if (input.action === "note_delete") {
+          const target = noteId(input.noteId);
+          if (!notes.some((n) => n.id === target) || input.confirmed !== true)
+            throw Error("Confirm deletion of an available system note.");
+          room.systemNotes = notes.filter((n) => n.id !== target);
+        } else {
+          const target = input.noteId === undefined ? `note_${crypto.randomUUID().replaceAll("-", "")}` : noteId(input.noteId);
+          if (input.noteId !== undefined && !notes.some((n) => n.id === target))
+            throw Error("This system note is unavailable.");
+          const note = validateNote({ id: target, title: input.title, body: input.body, enabled: input.enabled });
+          room.systemNotes = input.noteId === undefined ? [...notes, note] : notes.map((n) => n.id === target ? note : n);
+        }
+      }
+      validatePinnedContent(room);
+      const previousRevision = room.revision;
+      room.receipts.push(requestId);
+      room.revision++;
+      room.updatedAt = new Date().toISOString();
+      for (const job of room.runtime?.jobs || [])
+        if (!TERMINAL.has(job.status) && job.revision === previousRevision)
+          job.revision = room.revision;
       await this.persist(user, room);
     });
   }
@@ -1845,6 +1936,8 @@ class MochiService {
         selectedRoomId = (await this.update(userId, payload)).id;
       else if (payload.type === "mochi:reaction")
         await this.react(userId, payload);
+      else if (payload.type === "mochi:pinned_content")
+        await this.pinnedContent(userId, payload);
       else if (payload.type !== "mochi:list" && payload.type !== "mochi:message_action" && payload.type !== "mochi:notification_clear" && payload.type !== "mochi:room_assign")
         throw new Error("Unsupported Mochi action.");
       this.host.sendToFrontend({ type: "mochi:state", requestId: payload.requestId, selectedRoomId, state: await this.state(userId, payload.accountId) }, userId);
