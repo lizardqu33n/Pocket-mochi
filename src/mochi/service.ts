@@ -5,6 +5,7 @@ import { delayFor, eligibleResponders, minimumDelay, statusFor, validatePresence
 import { applyDeliveredStatus } from './behavior.js'
 import { MochiAccounts, fictionalAccountId } from './accounts.js'
 import { phoneContext, type MochiPhone } from './phone-selection.js'
+import { referencedMessage, replyIdentifier } from './replies.js'
 
 // New implementation. No Character Chatroom source is included.
 export interface MochiHost {
@@ -594,9 +595,11 @@ export class MochiService {
       const target = regenerate ? room.messages[targetIndex] as MochiMessage : null
       if (target && (target.role !== 'assistant' || !target.characterId)) throw new Error('Only character messages can be regenerated.')
       const content = regenerate ? '' : text(input.content ?? '', 32000)
+      const replyTo=regenerate?undefined:input.replyTo
+      if(replyTo!==undefined&&(!content||!replyIdentifier(replyTo)||!referencedMessage(room.messages,replyTo)))throw new Error('The reply target is unavailable in this conversation. Clear it or choose another message.')
       const responder = target ? entityId(target.characterId) : input.responder === 'auto' || !input.responder ? 'auto' : entityId(input.responder)
       if (responder !== 'auto' && !room.characterIds.includes(responder)) throw new Error('The selected responder is not in this room.')
-      if (content) room.messages.push({ id: crypto.randomUUID(), role: 'user', content, name: room.persona.name, avatarUrl: room.persona.avatarUrl, createdAt: new Date().toISOString(), requestId } satisfies MochiMessage)
+      if (content) room.messages.push({ id: crypto.randomUUID(), role: 'user', content, name: room.persona.name, avatarUrl: room.persona.avatarUrl, createdAt: new Date().toISOString(), requestId, ...(replyTo?{replyTo}:{}) } satisfies MochiMessage)
       if(content&&room.runtime?.idle) {
         const idle=room.runtime.idle;idle.periodId=requestId;idle.startedAt=this.now();idle.delivered=0;idle.opportunities=0;idle.nextDueAt=Math.max(this.now()+5400000,idle.lastDeliveredAt+5400000)
         for(const j of room.runtime.jobs) if((j.kind==='idle'||j.kind==='response')&&!TERMINAL.has(j.status)){j.status='cancelled';delete j.draft;delete j.additional}

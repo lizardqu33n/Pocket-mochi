@@ -66,6 +66,8 @@ export function createMochiWorkspace(options: MochiWorkspaceOptions): MochiWorks
       if (replacement && selection?.[0] != null && selection[1] != null) replacement.setSelectionRange(selection[0], selection[1])
     }
     dirty = false
+    const jump=view.consumeQuoteJump()
+    if(jump){const target=Array.from(node.querySelectorAll<HTMLElement>('[data-message-id]')).find(n=>n.dataset.messageId===jump.messageId);target?.scrollIntoView?.({block:'center',behavior:'auto'});target?.focus({preventScroll:true})}
   }
   const surface: MochiSurface = {
     redraw: () => { dirty = true; render() },

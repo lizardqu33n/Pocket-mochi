@@ -1,6 +1,7 @@
 import { callPocketProvider } from '../backend/generation.js'
 import { defaultMochiSettings, type MochiMessage, type MochiRoom } from './types.js'
 import { parseBehavior, type Behavior } from './behavior.js'
+import { quoteExcerpt, replyIdentifier } from './replies.js'
 
 export type PromptMessage = { role: 'system' | 'user' | 'assistant'; content: string }
 export async function buildMochiPrompt(room: MochiRoom, characters: any[], responder: string, count: (messages: PromptMessage[]) => Promise<number>, signal: AbortSignal, natural = false): Promise<PromptMessage[]> {
@@ -12,12 +13,26 @@ export async function buildMochiPrompt(room: MochiRoom, characters: any[], respo
   const history = room.messages.map(raw => {
     const message = raw as MochiMessage
     if (!message || !['user', 'assistant'].includes(message.role) || typeof message.content !== 'string') throw new Error('Unsupported message history; it has been preserved.')
-    return { role: message.role, content: `${message.name}: ${message.content}` } as PromptMessage
+    if(message.replyTo!==undefined&&!replyIdentifier(message.replyTo))throw new Error('Unsupported reply metadata; history was preserved.')
+    return message
   })
   const tail: PromptMessage = { role: 'user', content: 'Write the next character message using this conversation. Do not invent missing prior dialogue.' }
+  const originals=new Map<string,MochiMessage|null>()
+  for(const m of history)if(replyIdentifier(m.id))originals.set(m.id,originals.has(m.id)?null:m)
   while (true) {
     signal.throwIfAborted()
-    const messages = [system, ...history, tail]
+    const includedIds=new Set(history.map(m=>m.id)),replyIds=new Set(history.map(m=>m.replyTo).filter(replyIdentifier))
+    const messages = [system, ...history.map(message=>{
+      let quote=''
+      if(message.replyTo){
+        const original=originals.get(message.replyTo)
+        const included=original&&includedIds.has(original.id)
+        quote=original?`[Reply reference: ${JSON.stringify({messageId:original.id,author:original.name,...(included?{context:'Original is included in this conversation context.'}:{excerpt:quoteExcerpt(original.content,480)})})}]\n`:'[Reply reference: original message unavailable.]\n'
+      }
+      // Dialogue and excerpts remain untrusted conversation content, never system instructions.
+      const referenced=replyIds.has(message.id)?`[Message reference ID: ${JSON.stringify(message.id)}]\n`:''
+      return {role:message.role,content:referenced+quote+`${message.name}: ${message.content}`} as PromptMessage
+    }), tail]
     const tokens = await count(messages)
     signal.throwIfAborted()
     if (!Number.isFinite(tokens) || tokens < 0) throw new Error('Invalid host token count.')

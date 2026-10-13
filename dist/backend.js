@@ -224,6 +224,19 @@ function applyDeliveredStatus(room, characterId, status, now) {
   room.runtime.presence[characterId] = p;
 }
 
+// src/mochi/replies.ts
+function replyIdentifier(value) {
+  return typeof value === "string" && /^[A-Za-z0-9_.:-]{1,180}$/.test(value);
+}
+function referencedMessage(messages, id) {
+  if (!replyIdentifier(id))
+    return;
+  const matches = messages.filter((m) => typeof m === "object" && m !== null && ("id" in m) && m.id === id);
+  const m = matches.length === 1 ? matches[0] : undefined;
+  return m && ["user", "assistant"].includes(m.role) && typeof m.name === "string" && typeof m.content === "string" ? m : undefined;
+}
+var quoteExcerpt = (content, limit = 220) => content.replace(/\s+/g, " ").slice(0, limit) + (content.replace(/\s+/g, " ").length > limit ? "\u2026" : "");
+
 // src/mochi/generation.ts
 async function buildMochiPrompt(room, characters, responder, count, signal, natural = false) {
   const settings = room.settings || defaultMochiSettings();
@@ -243,12 +256,31 @@ NATURAL RESPONSE: Instead of a single message you may return {"messages":[{"spea
     const message = raw;
     if (!message || !["user", "assistant"].includes(message.role) || typeof message.content !== "string")
       throw new Error("Unsupported message history; it has been preserved.");
-    return { role: message.role, content: `${message.name}: ${message.content}` };
+    if (message.replyTo !== undefined && !replyIdentifier(message.replyTo))
+      throw new Error("Unsupported reply metadata; history was preserved.");
+    return message;
   });
   const tail = { role: "user", content: "Write the next character message using this conversation. Do not invent missing prior dialogue." };
+  const originals = new Map;
+  for (const m of history)
+    if (replyIdentifier(m.id))
+      originals.set(m.id, originals.has(m.id) ? null : m);
   while (true) {
     signal.throwIfAborted();
-    const messages = [system, ...history, tail];
+    const includedIds = new Set(history.map((m) => m.id)), replyIds = new Set(history.map((m) => m.replyTo).filter(replyIdentifier));
+    const messages = [system, ...history.map((message) => {
+      let quote = "";
+      if (message.replyTo) {
+        const original = originals.get(message.replyTo);
+        const included = original && includedIds.has(original.id);
+        quote = original ? `[Reply reference: ${JSON.stringify({ messageId: original.id, author: original.name, ...included ? { context: "Original is included in this conversation context." } : { excerpt: quoteExcerpt(original.content, 480) } })}]
+` : `[Reply reference: original message unavailable.]
+`;
+      }
+      const referenced = replyIds.has(message.id) ? `[Message reference ID: ${JSON.stringify(message.id)}]
+` : "";
+      return { role: message.role, content: referenced + quote + `${message.name}: ${message.content}` };
+    }), tail];
     const tokens = await count(messages);
     signal.throwIfAborted();
     if (!Number.isFinite(tokens) || tokens < 0)
@@ -1542,11 +1574,14 @@ class MochiService {
         if (target && (target.role !== "assistant" || !target.characterId))
           throw new Error("Only character messages can be regenerated.");
         const content = regenerate ? "" : text(input.content ?? "", 32000);
+        const replyTo = regenerate ? undefined : input.replyTo;
+        if (replyTo !== undefined && (!content || !replyIdentifier(replyTo) || !referencedMessage(room.messages, replyTo)))
+          throw new Error("The reply target is unavailable in this conversation. Clear it or choose another message.");
         const responder = target ? entityId(target.characterId) : input.responder === "auto" || !input.responder ? "auto" : entityId(input.responder);
         if (responder !== "auto" && !room.characterIds.includes(responder))
           throw new Error("The selected responder is not in this room.");
         if (content)
-          room.messages.push({ id: crypto.randomUUID(), role: "user", content, name: room.persona.name, avatarUrl: room.persona.avatarUrl, createdAt: new Date().toISOString(), requestId });
+          room.messages.push({ id: crypto.randomUUID(), role: "user", content, name: room.persona.name, avatarUrl: room.persona.avatarUrl, createdAt: new Date().toISOString(), requestId, ...replyTo ? { replyTo } : {} });
         if (content && room.runtime?.idle) {
           const idle = room.runtime.idle;
           idle.periodId = requestId;

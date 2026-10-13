@@ -7,6 +7,11 @@ Desktop foundation 01B–01F is source-implemented with targeted simulated tests
 manual Windows acceptance. Silent real-user switching and external-hide launcher
 synchronization remain host API limitations. This is not public-beta readiness.
 
+Messaging Improvements MSG-01A quoted replies are source-implemented with targeted
+synthetic verification; manual acceptance and review remain pending. MSG-01B has
+not begun. Friends Beta 1 has a tentative October 17–18, 2026 target, explicitly
+not a deadline; data safety, compatibility and testing take priority.
+
 1. Messaging Improvements.
 2. Memory & Prompt Management — friends Beta 1 begins.
 3. Fictional Time & Character Routines.

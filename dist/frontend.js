@@ -683,6 +683,27 @@ var MOCHI_DESKTOP_STYLES = `
 @container (max-width:639px){.mochi-desktop.mochi-view{grid-template-columns:minmax(0,1fr)}.mochi-desktop[data-mode=list]>.mochi-desktop-main{display:none}.mochi-desktop[data-mode=chat]>.mochi-desktop-list,.mochi-desktop[data-mode=detail]>.mochi-desktop-list{display:none}.mochi-desktop-list{border-right:0}}
 `;
 
+// src/mochi/replies.ts
+function replyIdentifier(value) {
+  return typeof value === "string" && /^[A-Za-z0-9_.:-]{1,180}$/.test(value);
+}
+function referencedMessage(messages, id) {
+  if (!replyIdentifier(id))
+    return;
+  const matches = messages.filter((m) => typeof m === "object" && m !== null && ("id" in m) && m.id === id);
+  const m = matches.length === 1 ? matches[0] : undefined;
+  return m && ["user", "assistant"].includes(m.role) && typeof m.name === "string" && typeof m.content === "string" ? m : undefined;
+}
+var quoteExcerpt = (content, limit = 220) => content.replace(/\s+/g, " ").slice(0, limit) + (content.replace(/\s+/g, " ").length > limit ? "…" : "");
+
+// src/mochi/reply-styles.ts
+var MOCHI_REPLY_STYLES = `
+.mochi-view .mochi-quote{display:flex;flex-direction:column;gap:3px;min-width:0;max-width:100%;text-align:left;font:inherit;color:inherit;padding:7px 10px;border:0;border-left:3px solid var(--mochi-accent);border-radius:6px;background:var(--lp-surface-2,#ffffff0c);overflow:hidden}
+.mochi-quote strong{font-size:11px;overflow-wrap:anywhere}.mochi-quote span{font-size:12px;white-space:normal;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.mochi-view button.mochi-quote{cursor:pointer;min-height:44px}.mochi-view button.mochi-quote:focus-visible,.mochi-message:focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}
+.mochi-view .mochi-reply-preview{display:flex;align-items:center;gap:6px;min-width:0}.mochi-reply-preview>.mochi-quote{flex:1}.mochi-reply-preview>button{flex:none}
+`;
+
 // src/mochi/view.ts
 function action(label, icon, compact = false) {
   const node = button("", `lp-button${compact ? " mochi-icon-button" : ""}`);
@@ -929,6 +950,40 @@ class MochiView {
   operation = "";
   request = "";
   drafts = new Map;
+  replyTargets = new Map;
+  quoteJump;
+  replyKey(room) {
+    return JSON.stringify([room.accountId || "", room.id]);
+  }
+  quoteNode(room, id, navigate = false) {
+    const candidate = room.accountId === this.state?.accountId ? referencedMessage(room.messages, id) : undefined, original = candidate && isDisplayMessage(candidate) ? candidate : undefined, label = original ? `Reply to ${original.name}: ${quoteExcerpt(original.content)}` : "Reply to unavailable message";
+    const node = navigate && original ? button("", "mochi-quote") : el("div", "mochi-quote");
+    node.setAttribute("aria-label", label);
+    node.append(el("strong", "", original ? original.name : "Message unavailable"), el("span", "", original ? quoteExcerpt(original.content) : "The original message is no longer available."));
+    if (navigate && original) {
+      node.setAttribute("type", "button");
+      node.onclick = () => {
+        const index = room.messages.findIndex((m) => typeof m === "object" && m !== null && ("id" in m) && m.id === original.id);
+        this.desktopHistory.set(room.id, Math.max(this.desktopHistory.get(room.id) || 100, room.messages.length - index));
+        this.quoteJump = { roomId: room.id, messageId: original.id, accountId: room.accountId };
+        this.redraw();
+        if (this.quoteJump) {
+          const jump = this.consumeQuoteJump();
+          if (jump) {
+            const target = Array.from(this.presenceRoot?.querySelectorAll("[data-message-id]") || []).find((n) => n.dataset.messageId === jump.messageId);
+            target?.scrollIntoView?.({ block: "center", behavior: "auto" });
+            target?.focus({ preventScroll: true });
+          }
+        }
+      };
+    }
+    return node;
+  }
+  consumeQuoteJump() {
+    const jump = this.quoteJump;
+    this.quoteJump = undefined;
+    return jump && jump.roomId === this.roomId && jump.accountId === this.state?.accountId ? jump : undefined;
+  }
   responders = new Map;
   ownGenerations = new Map;
   pendingSends = new Map;
@@ -1119,6 +1174,8 @@ class MochiView {
       this.profilesOpen = false;
       this.pickerOpen = false;
       this.drafts.clear();
+      this.replyTargets.clear();
+      this.quoteJump = undefined;
       this.responders.clear();
       this.pendingSends.clear();
       this.associations.clear();
@@ -1144,7 +1201,7 @@ class MochiView {
     if (type === "mochi:send" || type === "mochi:regenerate")
       this.ownGenerations.set(this.roomId, this.request);
     if (type === "mochi:send")
-      this.pendingSends.set(this.request, { roomId: this.roomId, content: String(values.content ?? "") });
+      this.pendingSends.set(this.request, { roomId: this.roomId, content: String(values.content ?? ""), replyTo: typeof values.replyTo === "string" ? values.replyTo : undefined, replyKey: JSON.stringify([this.state?.accountId || "", this.roomId]) });
     this.operation = type;
     this.busy = true;
     this.error = "";
@@ -1303,6 +1360,8 @@ class MochiView {
       const sent = this.pendingSends.get(payload.requestId);
       if ((this.drafts.get(sent.roomId) || "") === sent.content)
         this.drafts.set(sent.roomId, "");
+      if (sent.content.trim() && this.replyTargets.get(sent.replyKey) === sent.replyTo)
+        this.replyTargets.delete(sent.replyKey);
       this.pendingSends.delete(payload.requestId);
     }
     if (payload?.type === "mochi:accepted")
@@ -1542,7 +1601,7 @@ class MochiView {
     if (surface !== "choices")
       this.presenceRoot = page;
     const style = el("style");
-    style.textContent = MOCHI_STYLES;
+    style.textContent = MOCHI_STYLES + MOCHI_REPLY_STYLES;
     page.append(style);
     const header = el("header");
     const brand = el("div", "mochi-brand");
@@ -2191,6 +2250,7 @@ class MochiView {
       const message = raw;
       const row = el("div", "mochi-message");
       row.dataset.role = message.role;
+      row.tabIndex = -1;
       row.dataset.messageId = message.id;
       const elapsed = previous ? Date.parse(message.createdAt) - Date.parse(previous.createdAt) : Infinity;
       row.dataset.grouped = String(Boolean(previous && previous.role === message.role && previous.characterId === message.characterId && previous.name === message.name && elapsed >= 0 && elapsed < 300000));
@@ -2231,7 +2291,10 @@ class MochiView {
         bubble.setAttribute("aria-description", bubble.title);
       }
       meta.append(more);
-      body.append(heading, bubble, meta);
+      body.append(heading);
+      if (message.replyTo !== undefined)
+        body.append(this.quoteNode(room, message.replyTo, true));
+      body.append(bubble, meta);
       row.append(avatarFrame, body);
       thread.append(row);
     }
@@ -2307,7 +2370,15 @@ class MochiView {
       };
       content.replaceChildren(el("p", "", "Delete this saved message? Only this message and its prior versions will be removed. Later messages stay unchanged. This cannot be undone."), confirm);
     };
-    content.append(copy, edit, remove);
+    const reply = action("Reply", "back");
+    reply.onclick = () => {
+      this.replyTargets.set(this.replyKey(room), message.id);
+      sheet?.dismiss();
+      this.redraw();
+      const root = this.presenceRoot;
+      root?.querySelector('[aria-label="Message"]')?.focus({ preventScroll: true });
+    };
+    content.append(reply, copy, edit, remove);
     if (message.role === "assistant") {
       const reroll = action("Regenerate message", "refresh");
       reroll.disabled = this.busy || Boolean(this.state?.jobs?.[room.id]);
@@ -2460,10 +2531,23 @@ class MochiView {
     form.onsubmit = (event) => {
       event.preventDefault();
       if (!this.busy && !job)
-        this.dispatch("mochi:send", { roomId: room.id, revision: room.revision, content: input.value, responder: responder.value });
+        this.dispatch("mochi:send", { roomId: room.id, revision: room.revision, content: input.value, responder: responder.value, ...input.value.trim() && this.replyTargets.get(this.replyKey(room)) ? { replyTo: this.replyTargets.get(this.replyKey(room)) } : {} });
     };
     const actions = el("div", "mochi-composer-row");
     actions.append(input, submit, stop);
+    const target = this.replyTargets.get(this.replyKey(room));
+    if (target) {
+      const preview = el("div", "mochi-reply-preview");
+      preview.append(this.quoteNode(room, target));
+      const clear = action("Clear reply target", "close", true);
+      clear.onclick = () => {
+        this.replyTargets.delete(this.replyKey(room));
+        this.redraw();
+        this.presenceRoot?.querySelector('[aria-label="Message"]')?.focus({ preventScroll: true });
+      };
+      preview.append(clear);
+      form.append(preview);
+    }
     form.append(responderField, actions);
     return form;
   }
@@ -2730,6 +2814,12 @@ function createMochiWorkspace(options) {
         replacement.setSelectionRange(selection[0], selection[1]);
     }
     dirty = false;
+    const jump = view.consumeQuoteJump();
+    if (jump) {
+      const target = Array.from(node.querySelectorAll("[data-message-id]")).find((n) => n.dataset.messageId === jump.messageId);
+      target?.scrollIntoView?.({ block: "center", behavior: "auto" });
+      target?.focus({ preventScroll: true });
+    }
   };
   const surface = {
     redraw: () => {

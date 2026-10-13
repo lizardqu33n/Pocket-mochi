@@ -28,8 +28,10 @@ function portrait(name: string, url = ''): HTMLSpanElement {
 const stateAccountLabel=(id?:string)=>id?'Account settings':'Profiles and account settings'
 import { defaultMochiSettings, type MochiMessage, type MochiNotification, type MochiRoom, type MochiSettings, type MochiState } from './types.js'
 import { MOCHI_DESKTOP_STYLES } from './desktop-styles.js'
+import { referencedMessage, quoteExcerpt } from './replies.js'
+import { MOCHI_REPLY_STYLES } from './reply-styles.js'
 
-type DisplayMessage = Pick<MochiMessage, 'id' | 'role' | 'content' | 'name' | 'createdAt'> & Partial<Pick<MochiMessage, 'avatarUrl' | 'characterId' | 'editedAt'>>
+type DisplayMessage = Pick<MochiMessage, 'id' | 'role' | 'content' | 'name' | 'createdAt'> & Partial<Pick<MochiMessage, 'avatarUrl' | 'characterId' | 'editedAt'>> & {replyTo?:unknown}
 function isDisplayMessage(value: unknown): value is DisplayMessage {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
     && 'id' in value && typeof value.id === 'string' && Boolean(value.id)
@@ -145,9 +147,26 @@ export class MochiView {
   private operation = ''
   private request = ''
   private drafts = new Map<string, string>()
+  private replyTargets = new Map<string,string>()
+  private quoteJump?:{roomId:string;messageId:string;accountId?:string}
+  private replyKey(room:MochiRoom):string{return JSON.stringify([room.accountId||'',room.id])}
+  private quoteNode(room:MochiRoom,id:unknown,navigate=false):HTMLElement {
+    const candidate=room.accountId===this.state?.accountId?referencedMessage(room.messages,id):undefined,original=candidate&&isDisplayMessage(candidate)?candidate:undefined,label=original?`Reply to ${original.name}: ${quoteExcerpt(original.content)}`:'Reply to unavailable message'
+    const node=navigate&&original?button('','mochi-quote'):el('div','mochi-quote');node.setAttribute('aria-label',label)
+    node.append(el('strong','',original?original.name:'Message unavailable'),el('span','',original?quoteExcerpt(original.content):'The original message is no longer available.'))
+    if(navigate&&original){node.setAttribute('type','button');node.onclick=()=>{
+      const index=room.messages.findIndex(m=>typeof m==='object'&&m!==null&&'id'in m&&m.id===original.id)
+      this.desktopHistory.set(room.id,Math.max(this.desktopHistory.get(room.id)||100,room.messages.length-index))
+      this.quoteJump={roomId:room.id,messageId:original.id,accountId:room.accountId};this.redraw()
+      // Compatibility handset routes do not use the workspace scroll controller.
+      if(this.quoteJump){const jump=this.consumeQuoteJump();if(jump){const target=Array.from(this.presenceRoot?.querySelectorAll<HTMLElement>('[data-message-id]')||[]).find(n=>n.dataset.messageId===jump.messageId);target?.scrollIntoView?.({block:'center',behavior:'auto'});target?.focus({preventScroll:true})}}
+    }}
+    return node
+  }
+  consumeQuoteJump():{roomId:string;messageId:string}|undefined{const jump=this.quoteJump;this.quoteJump=undefined;return jump&&jump.roomId===this.roomId&&jump.accountId===this.state?.accountId?jump:undefined}
   private responders = new Map<string, string>()
   private ownGenerations = new Map<string, string>()
-  private pendingSends = new Map<string, { roomId: string; content: string }>()
+  private pendingSends = new Map<string, { roomId: string; content: string; replyTo?:string; replyKey:string }>()
   private selectionVersion = 0
   private requestVersion = 0
   private modelControllers = new Set<AbortController>()
@@ -237,7 +256,7 @@ export class MochiView {
       for (const controller of this.modelControllers) controller.abort()
       this.modelControllers.clear(); this.modelChoices.clear(); this.choicesRequest = ''
       this.resetScope(); this.profiles = new MochiProfiles(); this.profilesOpen = false; this.pickerOpen = false
-      this.drafts.clear(); this.responders.clear(); this.pendingSends.clear(); this.associations.clear(); this.settingsSections.clear(); this.lastRooms.clear();this.sidebarProfile=false;this.profileReturn=undefined;this.accountNavigation=undefined
+      this.drafts.clear();this.replyTargets.clear();this.quoteJump=undefined; this.responders.clear(); this.pendingSends.clear(); this.associations.clear(); this.settingsSections.clear(); this.lastRooms.clear();this.sidebarProfile=false;this.profileReturn=undefined;this.accountNavigation=undefined
       this.phone = undefined; this.presenceRoot = undefined; this.error = ''; this.feedback = ''; this.formBaseline = ''
     }
   }
@@ -247,7 +266,7 @@ export class MochiView {
     this.request = requestId('mochi')
     this.requestVersion = this.selectionVersion
     if (type === 'mochi:send' || type === 'mochi:regenerate') this.ownGenerations.set(this.roomId, this.request)
-    if (type === 'mochi:send') this.pendingSends.set(this.request, { roomId: this.roomId, content: String(values.content ?? '') })
+    if (type === 'mochi:send') this.pendingSends.set(this.request, { roomId: this.roomId, content: String(values.content ?? ''),replyTo:typeof values.replyTo==='string'?values.replyTo:undefined,replyKey:JSON.stringify([this.state?.accountId||'',this.roomId]) })
     this.operation = type
     this.busy = true; this.error = ''; this.feedback = ''
     clearTimeout(this.timeout)
@@ -333,6 +352,7 @@ export class MochiView {
     if ((payload?.type === 'mochi:accepted' || (payload?.type === 'mochi:state' && payload.accepted)) && this.pendingSends.has(payload.requestId)) {
       const sent = this.pendingSends.get(payload.requestId)!
       if ((this.drafts.get(sent.roomId) || '') === sent.content) this.drafts.set(sent.roomId, '')
+      if(sent.content.trim()&&this.replyTargets.get(sent.replyKey)===sent.replyTo)this.replyTargets.delete(sent.replyKey)
       this.pendingSends.delete(payload.requestId)
     }
     if (payload?.type === 'mochi:accepted') return true
@@ -461,7 +481,7 @@ export class MochiView {
     page.dataset.surface = surface
     if (surface !== 'choices') this.presenceRoot=page
     const style = el('style')
-    style.textContent = MOCHI_STYLES
+    style.textContent = MOCHI_STYLES+MOCHI_REPLY_STYLES
     page.append(style)
     const header = el('header'); const brand = el('div', 'mochi-brand')
     const wordmark = el('h2', 'mochi-wordmark'); wordmark.setAttribute('aria-label', 'Mochi')
@@ -679,6 +699,7 @@ export class MochiView {
       if(!isDisplayMessage(raw)){thread.append(el('p','mochi-message-unavailable','Message unavailable. Saved record preserved.'));previous=undefined;continue}
       const message = raw
       const row = el('div', 'mochi-message'); row.dataset.role = message.role
+      row.tabIndex=-1
       row.dataset.messageId = message.id
       const elapsed = previous ? Date.parse(message.createdAt) - Date.parse(previous.createdAt) : Infinity
       row.dataset.grouped = String(Boolean(previous && previous.role === message.role && previous.characterId === message.characterId && previous.name === message.name && elapsed >= 0 && elapsed < 300000))
@@ -697,7 +718,7 @@ export class MochiView {
       const more = action(`Actions for ${message.name || 'message'}`, 'more', true); more.classList.add('mochi-message-actions'); more.onclick = () => this.messageActions(more, room, message)
       const bubble = el('div', 'mochi-bubble', message.content || '')
       if (message.editedAt) { bubble.title = `Edited ${new Date(message.editedAt).toLocaleString()}`; bubble.setAttribute('aria-description', bubble.title) }
-      meta.append(more); body.append(heading, bubble, meta)
+      meta.append(more);body.append(heading);if(message.replyTo!==undefined)body.append(this.quoteNode(room,message.replyTo,true));body.append(bubble,meta)
       row.append(avatarFrame, body); thread.append(row)
     }
     if (this.state?.jobs?.[room.id]) { const status = el('p', 'mochi-muted', 'Character is replying…'); status.setAttribute('role', 'status'); thread.append(status) }
@@ -731,7 +752,8 @@ export class MochiView {
       const confirm = action('Confirm delete', 'trash'); confirm.onclick = () => { this.dispatch('mochi:message_action', { roomId: room.id, revision, messageId: message.id, action: 'delete', confirmed: true }); sheet?.dismiss() }
       content.replaceChildren(el('p', '', 'Delete this saved message? Only this message and its prior versions will be removed. Later messages stay unchanged. This cannot be undone.'), confirm)
     }
-    content.append(copy, edit, remove)
+    const reply=action('Reply','back');reply.onclick=()=>{this.replyTargets.set(this.replyKey(room),message.id);sheet?.dismiss();this.redraw();const root=this.presenceRoot;root?.querySelector<HTMLTextAreaElement>('[aria-label="Message"]')?.focus({preventScroll:true})}
+    content.append(reply,copy, edit, remove)
     if (message.role === 'assistant') {
       const reroll = action('Regenerate message', 'refresh'); reroll.disabled = this.busy || Boolean(this.state?.jobs?.[room.id])
       reroll.onclick = () => { const confirm = action('Confirm reroll', 'refresh'); confirm.onclick = () => { this.dispatch('mochi:regenerate', { roomId: room.id, revision, messageId: message.id, confirmed: true }); sheet?.dismiss() }; content.replaceChildren(el('p', '', 'Reroll using the conversation before this reply? The previous text is retained. Later messages stay unchanged and may no longer fit the new reply.'), confirm) }
@@ -800,8 +822,10 @@ export class MochiView {
     const job = this.state?.jobs?.[room.id]
     const submit = action('Send', 'send', true); submit.classList.add('mochi-primary'); submit.type = 'submit'; submit.disabled = this.busy || Boolean(job)
     const stop = action('Stop reply', 'stop', true); stop.disabled = !job; stop.hidden = !job; stop.onclick = () => this.send({ type: 'mochi:cancel', accountId: this.state?.accountId, roomId: room.id, generationRequestId: job })
-    form.onsubmit = event => { event.preventDefault(); if (!this.busy && !job) this.dispatch('mochi:send', { roomId: room.id, revision: room.revision, content: input.value, responder: responder.value }) }
+    form.onsubmit = event => { event.preventDefault(); if (!this.busy && !job) this.dispatch('mochi:send', { roomId: room.id, revision: room.revision, content: input.value, responder: responder.value,...(input.value.trim()&&this.replyTargets.get(this.replyKey(room))?{replyTo:this.replyTargets.get(this.replyKey(room))}:{}) }) }
     const actions = el('div', 'mochi-composer-row'); actions.append(input, submit, stop)
+    const target=this.replyTargets.get(this.replyKey(room))
+    if(target){const preview=el('div','mochi-reply-preview');preview.append(this.quoteNode(room,target));const clear=action('Clear reply target','close',true);clear.onclick=()=>{this.replyTargets.delete(this.replyKey(room));this.redraw();this.presenceRoot?.querySelector<HTMLTextAreaElement>('[aria-label="Message"]')?.focus({preventScroll:true})};preview.append(clear);form.append(preview)}
     form.append(responderField, actions)
     return form
   }

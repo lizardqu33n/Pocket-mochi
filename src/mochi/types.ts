@@ -10,6 +10,7 @@ export interface MochiMessage {
   id: string; role: 'user' | 'assistant'; content: string; name: string; avatarUrl: string
   characterId?: string; createdAt: string; requestId: string
   editedAt?: string
+  replyTo?: string
   previousVersions?: Array<{ content: string; name: string; avatarUrl: string; savedAt: string }>
 }
 export interface MochiNotification { id: string; roomId: string; messageId: string; title: string; roomTitle: string; body: string; avatarUrl: string; createdAt: string; read: boolean; accountId?: string }
