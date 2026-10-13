@@ -2843,6 +2843,8 @@ function createMochiWindow(ui, session, notificationPolicy) {
   const widget = ui.createFloatWidget(options);
   let disposed = false, resizeCleanup, dragCleanup;
   const visibility = new Set;
+  let savedRect, opener, lastFocus;
+  const maximized = () => typeof widget.isFullscreen === "function" && widget.isFullscreen();
   const panel = document.createElement("section");
   panel.className = "mochi-window";
   panel.setAttribute("aria-label", "Mochi window");
@@ -2857,6 +2859,23 @@ function createMochiWindow(ui, session, notificationPolicy) {
   close.textContent = "×";
   close.setAttribute("aria-label", "Hide Mochi window");
   close.title = "Hide Mochi window";
+  bar.tabIndex = 0;
+  bar.setAttribute("aria-label", "Mochi title bar");
+  bar.setAttribute("aria-description", "Use arrow keys to move the window. Escape hides it.");
+  const maximize = document.createElement("button");
+  maximize.type = "button";
+  maximize.className = "mochi-window-close";
+  maximize.textContent = "□";
+  const canMaximize = typeof widget.setFullscreen === "function" && typeof widget.isFullscreen === "function";
+  const syncControls = () => {
+    const full = maximized();
+    maximize.setAttribute("aria-label", full ? "Restore Mochi window" : "Maximize Mochi window");
+    maximize.title = full ? "Restore window" : "Maximize window";
+    maximize.setAttribute("aria-pressed", String(full));
+    grip.hidden = full;
+    grip.disabled = full;
+    bar.setAttribute("aria-description", full ? "Window maximized. Escape hides it." : "Use arrow keys to move the window. Escape hides it.");
+  };
   const body = document.createElement("div");
   body.className = "mochi-window-body";
   const grip = document.createElement("button");
@@ -2867,20 +2886,64 @@ function createMochiWindow(ui, session, notificationPolicy) {
   grip.setAttribute("data-spindle-float-resize-handle", "");
   grip.setAttribute("aria-label", "Resize Mochi window");
   grip.title = "Drag to resize, or use arrow keys";
+  if (canMaximize)
+    bar.append(maximize);
   bar.append(close);
   panel.append(style, bar, body, grip);
   widget.root.style.height = "100%";
   widget.root.append(panel);
+  const focusStyle = document.createElement("style");
+  focusStyle.textContent = ".mochi-window-bar:focus-visible{outline:2px solid var(--lumiverse-primary,#9399ab);outline-offset:-2px}.mochi-window [hidden]{display:none!important}";
+  panel.append(focusStyle);
+  panel.addEventListener("focusin", (event) => {
+    if (event.target !== close)
+      lastFocus = event.target;
+  });
   panel.addEventListener("pointerdown", (event) => {
-    if (event.target !== bar)
+    if (event.target !== bar || maximized())
       event.stopPropagation();
   });
   panel.addEventListener("contextmenu", (event) => event.preventDefault());
   const apply = (next) => {
+    if (maximized())
+      return;
     rect = clamp(next);
     widget.setSize(rect.width, rect.height);
     widget.moveTo(rect.x, rect.y);
   };
+  const hide = () => {
+    workspace.close();
+    if (opener?.isConnected && !opener.closest("[hidden]"))
+      opener.focus({ preventScroll: true });
+  };
+  maximize.onclick = () => {
+    if (maximized()) {
+      widget.setFullscreen(false);
+      if (savedRect)
+        apply(savedRect);
+      savedRect = undefined;
+    } else {
+      savedRect = { ...rect, ...widget.getPosition() };
+      widget.setFullscreen(true);
+    }
+    syncControls();
+  };
+  bar.addEventListener("keydown", (event) => {
+    if (event.target !== bar || event.defaultPrevented)
+      return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      hide();
+      return;
+    }
+    if (maximized() || !["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key))
+      return;
+    event.preventDefault();
+    event.stopPropagation();
+    const p = widget.getPosition();
+    apply({ ...rect, x: p.x + (event.key === "ArrowRight" ? 16 : event.key === "ArrowLeft" ? -16 : 0), y: p.y + (event.key === "ArrowDown" ? 16 : event.key === "ArrowUp" ? -16 : 0) });
+  });
   const cleanup = () => {
     if (disposed)
       return;
@@ -2930,7 +2993,8 @@ function createMochiWindow(ui, session, notificationPolicy) {
       },
       onDispose: cleanup
     });
-    close.addEventListener("click", () => workspace.close());
+    close.addEventListener("click", hide);
+    syncControls();
     grip.addEventListener("keydown", (event) => {
       if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key))
         return;
@@ -2954,14 +3018,25 @@ function createMochiWindow(ui, session, notificationPolicy) {
   }, open() {
     if (disposed)
       throw new Error("Mochi window is disposed.");
+    const active = document.activeElement;
+    if (!panel.contains(active) && active && typeof active.focus === "function")
+      opener = active;
     restoreBounds();
     workspace.open();
     widget.setVisible(true);
+    syncControls();
     for (const handler of visibility)
       handler(true);
+    session.view.resume();
+    if (!panel.contains(document.activeElement)) {
+      if (lastFocus?.isConnected && panel.contains(lastFocus) && !lastFocus.closest("[hidden]"))
+        lastFocus.focus({ preventScroll: true });
+      else
+        bar.focus({ preventScroll: true });
+    }
   }, hide() {
     if (!disposed)
-      workspace.close();
+      hide();
   }, destroy() {
     if (!disposed)
       try {
@@ -3094,6 +3169,7 @@ function createMochiSidebar(ctx, session, policy, activateSidebar = () => {}) {
       const p = document.createElement("p");
       p.className = "mochi-sidebar-message";
       p.textContent = text;
+      p.setAttribute("role", text === state.error ? "alert" : "status");
       picker.append(p);
     };
     if (fallback)

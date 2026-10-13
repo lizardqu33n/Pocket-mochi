@@ -51,7 +51,7 @@ export function createMochiSidebar(ctx: Pick<SpindleFrontendContext,'ui'>, sessi
     if(key===rendered)return
     rendered=key
     picker.replaceChildren()
-    const message=(text:string)=>{const p=document.createElement('p');p.className='mochi-sidebar-message';p.textContent=text;picker.append(p)}
+    const message=(text:string)=>{const p=document.createElement('p');p.className='mochi-sidebar-message';p.textContent=text;p.setAttribute('role',text===state.error?'alert':'status');picker.append(p)}
     if(fallback)message(fallback)
     if(state.loading)message('Loading accounts…')
     if(state.error){message(state.error);picker.append(button('Try again',()=>session.prepareNavigation()))}

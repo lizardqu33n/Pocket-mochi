@@ -140,11 +140,16 @@ test('desktop selection restores rooms per account, reuses one window and falls 
   }finally{h.cleanup()}
 })
 
-for(const width of [320,390])test(`mobile ${width}: account selection stays in Mochi drawer; legacy scope preserved`,()=>{
+for(const width of [320,390,600])test(`mobile ${width}: account selection stays in Mochi drawer; legacy scope preserved`,()=>{
   const h=fixture(width)
   try{
     h.tabs[0].activate();h.accounts();h.select(h.a)
     expect(h.floats).toBe(0);expect(h.tabs[0].root.querySelector('.mochi-desktop')).not.toBeNull()
+    h.tabs[0].root.querySelector<HTMLButtonElement>('.mochi-desktop-room')!.click()
+    h.emit({type:'mochi:state',requestId:h.request('mochi:list').requestId,state:h.state(h.a)})
+    expect(h.tabs[0].root.querySelector<HTMLElement>('.mochi-desktop')!.dataset.mode).toBe('chat')
+    h.tabs[0].root.querySelector<HTMLButtonElement>('[aria-label="Back to conversations"]')!.click()
+    expect(h.tabs[0].root.querySelector<HTMLElement>('.mochi-desktop')!.dataset.mode).toBe('list')
     h.tabs[0].activate();h.accounts();h.select(undefined)
     expect(h.session.view.state?.accountId).toBeUndefined();expect(h.floats).toBe(0);expect(h.listeners.size).toBe(1)
     h.session.view.select('room_legacy');h.tabs[0].activate();h.accounts();h.select(h.a)
@@ -173,7 +178,7 @@ test('picker loading/error/empty states, account creation and dirty-form safegua
   const h=fixture()
   try{
     h.tabs[0].activate();expect(h.tabs[0].root.textContent).toContain('Loading accounts')
-    h.emit({type:'mochi:error',requestId:h.request('mochi:accounts').requestId,message:'private detail'});expect(h.tabs[0].root.textContent).toContain('Unable to load accounts');expect(h.tabs[0].root.textContent).not.toContain('private detail')
+    h.emit({type:'mochi:error',requestId:h.request('mochi:accounts').requestId,message:'private detail'});expect(h.tabs[0].root.textContent).toContain('Unable to load accounts');expect(h.tabs[0].root.textContent).not.toContain('private detail');expect(h.tabs[0].root.querySelector('[role="alert"]')).not.toBeNull()
     h.tabs[0].activate();h.bank.accounts=[];h.accounts();expect(h.tabs[0].root.textContent).toContain('No fictional accounts yet')
     Array.from(h.tabs[0].root.querySelectorAll<HTMLButtonElement>('button')).find(n=>n.textContent==='Create account')!.click()
     expect(h.floats).toBe(0);expect(document.querySelector('.mochi-profile-preview')).not.toBeNull()

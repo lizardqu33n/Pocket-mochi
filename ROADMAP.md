@@ -1,14 +1,25 @@
 # Pocket evaluation backlog — 2026-10-06
 
-## Mochi development order (user-approved update, 2026-10-12)
+## Mochi development order (user-approved update, 2026-10-13)
 
-Complete the dedicated desktop client, approachable settings, fictional clocks,
-messaging improvements, memory, optional RP linking and stability before full theme
-customization. Full Mochi themes and visual branding polish belong to the FINAL
-development milestone before Mochi 1.0. Essential layout, responsiveness, contrast
-and accessibility fixes remain allowed throughout development. Keep new styling
-in scoped, centralized modules. Desktop 01E uses a replaceable temporary sidebar
-SVG while the user prepares the final sibling-app icon; Pocket's icon is unchanged.
+Desktop foundation 01B–01F is source-implemented with targeted simulated tests.
+01E3 navigation was manually tested by the user; 01F still requires review and
+manual Windows acceptance. Silent real-user switching and external-hide launcher
+synchronization remain host API limitations. This is not public-beta readiness.
+
+1. Messaging Improvements.
+2. Memory & Prompt Management — friends Beta 1 begins.
+3. Fictional Time & Character Routines.
+4. Optional RP Linking — planned wider Beta 2 testing, subject to discussion with Kitty.
+5. Bug Fixes & Stabilization.
+6. Settings Reorganization.
+7. First Theme Pass: Colors — eventual 1.0 when stable and ready.
+
+Essential layout, responsiveness, contrast and accessibility fixes remain allowed
+throughout development; keep styling scoped and centralized. More ambitious mascot
+cosmetics and AIM/MySpace-style themes are post-1.0 ideas. The user supplies the
+replaceable Mochi shortcut SVG; Pocket's icon is unchanged. No agreement from Kitty
+to share the branch or conduct wider beta testing is implied.
 
 Main Lumi is the evaluation environment. Update LumiTest after this pass, not during it.
 Preserve messaging/candidate commit behavior; changes below are targeted fixes and presentation work.

@@ -42,18 +42,30 @@ export function createMochiWindow(ui: MochiWindowUI, session: MochiSession,
   const widget: SpindleFloatWidgetHandle = ui.createFloatWidget(options)
   let disposed = false, resizeCleanup: (()=>void)|undefined, dragCleanup: (()=>void)|undefined
   const visibility = new Set<(visible:boolean)=>void>()
+  let savedRect:WindowRect|undefined,opener:HTMLElement|undefined,lastFocus:HTMLElement|undefined
+  const maximized=()=>typeof widget.isFullscreen==='function'&&widget.isFullscreen()
   const panel = document.createElement('section'); panel.className='mochi-window';panel.setAttribute('aria-label','Mochi window')
   const style = document.createElement('style')
   style.textContent='.mochi-window{display:flex;flex-direction:column;width:100%;height:100%;min-width:0;min-height:0;position:relative;background:var(--lumiverse-bg-elevated,#201e25);color:var(--lumiverse-text,#eee);border:1px solid var(--lumiverse-border,#ffffff26);border-radius:14px;overflow:hidden;box-sizing:border-box;box-shadow:0 12px 32px #0005}.mochi-window-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;min-height:36px;flex-shrink:0;cursor:move;touch-action:none;user-select:none}.mochi-window-body{flex:1;min-height:0;min-width:0;overflow:hidden}.mochi-window-close,.mochi-window-resize{color:inherit;background:transparent;border:0;min-width:32px;min-height:32px;cursor:pointer}.mochi-window-resize{position:absolute;right:0;bottom:0;cursor:nwse-resize;touch-action:none}.mochi-window button:focus-visible{outline:2px solid var(--lumiverse-primary,#9399ab);outline-offset:-3px}'
   const bar=document.createElement('header');bar.className='mochi-window-bar';bar.append('Mochi')
   const close=document.createElement('button');close.className='mochi-window-close';close.type='button';close.textContent='×';close.setAttribute('aria-label','Hide Mochi window');close.title='Hide Mochi window'
+  bar.tabIndex=0;bar.setAttribute('aria-label','Mochi title bar');bar.setAttribute('aria-description','Use arrow keys to move the window. Escape hides it.')
+  const maximize=document.createElement('button');maximize.type='button';maximize.className='mochi-window-close';maximize.textContent='□'
+  const canMaximize=typeof widget.setFullscreen==='function'&&typeof widget.isFullscreen==='function'
+  const syncControls=()=>{const full=maximized();maximize.setAttribute('aria-label',full?'Restore Mochi window':'Maximize Mochi window');maximize.title=full?'Restore window':'Maximize window';maximize.setAttribute('aria-pressed',String(full));grip.hidden=full;grip.disabled=full;bar.setAttribute('aria-description',full?'Window maximized. Escape hides it.':'Use arrow keys to move the window. Escape hides it.')}
   const body=document.createElement('div');body.className='mochi-window-body'
   const grip=document.createElement('button');grip.className='mochi-window-resize';grip.type='button';grip.textContent='◢';grip.dataset.resizeHandle='se';grip.setAttribute('data-spindle-float-resize-handle','');grip.setAttribute('aria-label','Resize Mochi window');grip.title='Drag to resize, or use arrow keys'
+  if(canMaximize)bar.append(maximize)
   bar.append(close);panel.append(style,bar,body,grip);widget.root.style.height='100%';widget.root.append(panel)
+  const focusStyle=document.createElement('style');focusStyle.textContent='.mochi-window-bar:focus-visible{outline:2px solid var(--lumiverse-primary,#9399ab);outline-offset:-2px}.mochi-window [hidden]{display:none!important}';panel.append(focusStyle)
+  panel.addEventListener('focusin',event=>{if(event.target!==close)lastFocus=event.target as HTMLElement})
   // Host drag bubbles from its entire container. Only bare title-bar gestures may reach it.
-  panel.addEventListener('pointerdown',event=>{if(event.target!==bar)event.stopPropagation()})
+  panel.addEventListener('pointerdown',event=>{if(event.target!==bar||maximized())event.stopPropagation()})
   panel.addEventListener('contextmenu',event=>event.preventDefault()) // Avoid host chrome Hide bypassing session cancellation.
-  const apply = (next: WindowRect) => {rect=clamp(next);widget.setSize(rect.width,rect.height);widget.moveTo(rect.x,rect.y)}
+  const apply = (next: WindowRect) => {if(maximized())return;rect=clamp(next);widget.setSize(rect.width,rect.height);widget.moveTo(rect.x,rect.y)}
+  const hide=()=>{workspace.close();if(opener?.isConnected&&!opener.closest('[hidden]'))opener.focus({preventScroll:true})}
+  maximize.onclick=()=>{if(maximized()){widget.setFullscreen(false);if(savedRect)apply(savedRect);savedRect=undefined}else{savedRect={...rect,...widget.getPosition()};widget.setFullscreen(true)}syncControls()}
+  bar.addEventListener('keydown',event=>{if(event.target!==bar||event.defaultPrevented)return;if(event.key==='Escape'){event.preventDefault();event.stopPropagation();hide();return}if(maximized()||!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key))return;event.preventDefault();event.stopPropagation();const p=widget.getPosition();apply({...rect,x:p.x+(event.key==='ArrowRight'?16:event.key==='ArrowLeft'?-16:0),y:p.y+(event.key==='ArrowDown'?16:event.key==='ArrowUp'?-16:0)})})
   const cleanup = () => {
     if(disposed)return;disposed=true
     for(const handler of visibility)handler(false);visibility.clear()
@@ -71,7 +83,8 @@ export function createMochiWindow(ui: MochiWindowUI, session: MochiSession,
     dragCleanup=widget.onDragEnd(position=>{rect={...rect,...position}})
     workspace=createMochiWorkspace({root:body,session,notificationPolicy,presentation:'messenger',isHostVisible:()=>widget.isVisible(),
       onVisibilityChange:visible=>{if(!disposed){widget.setVisible(visible);for(const handler of visibility)handler(visible)}},onDispose:cleanup})
-    close.addEventListener('click',()=>workspace.close())
+    close.addEventListener('click',hide)
+    syncControls()
     grip.addEventListener('keydown',event=>{
       if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key))return
       event.preventDefault();event.stopPropagation()
@@ -79,7 +92,7 @@ export function createMochiWindow(ui: MochiWindowUI, session: MochiSession,
     })
     window.addEventListener('resize',restoreBounds)
   } catch(error) {cleanup();throw error}
-  const result: MochiWindow = {get isOpen(){return !disposed&&workspace.isOpen&&widget.isVisible()},onVisibilityChange(handler){visibility.add(handler);handler(!disposed&&workspace.isOpen&&widget.isVisible());return()=>{visibility.delete(handler)}},open(){if(disposed)throw new Error('Mochi window is disposed.');restoreBounds();workspace.open();widget.setVisible(true);for(const handler of visibility)handler(true)},hide(){if(!disposed)workspace.close()},destroy(){if(!disposed)try{workspace.destroy()}finally{cleanup()}}}
+  const result: MochiWindow = {get isOpen(){return !disposed&&workspace.isOpen&&widget.isVisible()},onVisibilityChange(handler){visibility.add(handler);handler(!disposed&&workspace.isOpen&&widget.isVisible());return()=>{visibility.delete(handler)}},open(){if(disposed)throw new Error('Mochi window is disposed.');const active=document.activeElement as HTMLElement|null;if(!panel.contains(active)&&active&&typeof active.focus==='function')opener=active;restoreBounds();workspace.open();widget.setVisible(true);syncControls();for(const handler of visibility)handler(true);session.view.resume();if(!panel.contains(document.activeElement)){if(lastFocus?.isConnected&&panel.contains(lastFocus)&&!lastFocus.closest('[hidden]'))lastFocus.focus({preventScroll:true});else bar.focus({preventScroll:true})}},hide(){if(!disposed)hide()},destroy(){if(!disposed)try{workspace.destroy()}finally{cleanup()}}}
   windows.set(session,result)
   return result
 }
