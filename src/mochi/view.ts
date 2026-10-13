@@ -1,3 +1,4 @@
+import {MochiMemoryPanel,MOCHI_MEMORY_STYLES} from './memory-panel.js'
 import { button, el, requestId } from '../frontend/shared.js'
 import { POCKET_ICONS } from '../frontend/components/icons.js'
 import { MOCHI_STYLES } from './styles.js'
@@ -127,6 +128,7 @@ export class MochiView {
     this.leave();this.resetScope();this.phone=phone;this.pickerOpen=true;this.startupOpen=true;this.profilesOpen=false;this.profiles.state=null;this.dispatch('mochi:accounts')
   }
   private resetScope():void{
+    this.memoryPanel.reset()
     this.presetPanel.reset()
     this.preview.reset()
     this.search.reset()
@@ -186,6 +188,7 @@ export class MochiView {
     const quote=this.quoteNode(room,id,true);(quote as HTMLButtonElement).click()
   },()=>this.presenceRoot?.querySelector<HTMLElement>('[aria-label="Room options"]')?.focus())
   private selectionVersion = 0
+  private memoryPanel=new MochiMemoryPanel(payload=>this.send(payload),()=>this.state?.rooms.find(r=>r.id===this.roomId&&r.accountId===this.state?.accountId),()=>this.redraw(),p=>{const room=this.state?.rooms.find(r=>r.id===p.roomId&&r.accountId===p.accountId);if(room&&p.revision>=room.revision&&(room.associationRevision||0)===p.associationRevision){room.memory=p.memory;room.revision=p.revision;room.updatedAt=p.updatedAt;room.background=this.mergeScheduling(room,p.background,p.revision);this.preview.invalidate()}},()=>this.presenceRoot?.querySelector<HTMLElement>('[aria-label="Room options"]')?.focus())
   private presetPanel=new MochiPresetPanel(payload=>this.send(payload),()=>this.state?.rooms.find(r=>r.id===this.roomId&&r.accountId===this.state?.accountId),()=>this.redraw(),(presetId,presetRevision)=>{const room=this.state?.rooms.find(r=>r.id===this.roomId);if(!room||this.busy)return;this.presetPanel.reset();this.preview.reset();this.dispatch('mochi:preset_bind',{roomId:room.id,revision:room.revision,presetId,presetRevision,confirmed:true})},()=>this.presenceRoot?.querySelector<HTMLElement>('[aria-label="Room options"]')?.focus())
   private preview=new MochiPreview(payload=>this.send(payload),()=>this.state?.rooms.find(r=>r.id===this.roomId&&r.accountId===this.state?.accountId),()=>this.redraw(),()=>this.presenceRoot?.querySelector<HTMLElement>('[aria-label="Room options"]')?.focus(),id=>this.state?.characters.find(c=>c.id===id)?.name||id)
   private requestVersion = 0
@@ -262,6 +265,7 @@ export class MochiView {
     if(this.state){if(id)this.lastRooms.set(this.state.accountId||'',id);else this.lastRooms.delete(this.state.accountId||'')}
   }
   leave(): void {
+    this.memoryPanel.reset()
     this.presetPanel.reset()
     this.preview.reset()
     this.search.reset()
@@ -274,6 +278,7 @@ export class MochiView {
     try { if (cancel) this.leave(); else { for (const dismiss of this.sheets) dismiss(); this.sheets.clear() } }
     finally {
       this.destroyed = true
+      this.memoryPanel.reset(true)
       this.presetPanel.reset(true)
       clearTimeout(this.navigationTimeout);this.navigationRequest='';this.navigationError='';this.lastRooms.clear()
       clearTimeout(this.timeout); clearTimeout(this.choicesTimeout); clearInterval(this.presenceTimer)
@@ -304,6 +309,7 @@ export class MochiView {
   }
   receive(payload: any): boolean {
     if (this.destroyed) return false
+    if(this.memoryPanel.receive(payload))return true
     if(this.presetPanel.receive(payload))return true
     if(this.preview.receive(payload))return true
     if(this.search.receive(payload))return true
@@ -509,7 +515,7 @@ export class MochiView {
     page.dataset.surface = surface
     if (surface !== 'choices') this.presenceRoot=page
     const style = el('style')
-    style.textContent = MOCHI_STYLES+MOCHI_REPLY_STYLES+MOCHI_REACTION_STYLES+MOCHI_PIN_STYLES+MOCHI_SEARCH_STYLES+MOCHI_TEXTING_STYLES+MOCHI_PREVIEW_STYLES+MOCHI_PRESET_STYLES+MOCHI_PRESET_WORKSPACE_STYLES
+    style.textContent = MOCHI_STYLES+MOCHI_REPLY_STYLES+MOCHI_REACTION_STYLES+MOCHI_PIN_STYLES+MOCHI_SEARCH_STYLES+MOCHI_TEXTING_STYLES+MOCHI_PREVIEW_STYLES+MOCHI_PRESET_STYLES+MOCHI_PRESET_WORKSPACE_STYLES+MOCHI_MEMORY_STYLES
     page.append(style)
     const header = el('header'); const brand = el('div', 'mochi-brand')
     const wordmark = el('h2', 'mochi-wordmark'); wordmark.setAttribute('aria-label', 'Mochi')
@@ -559,9 +565,10 @@ export class MochiView {
       const menuAction=(label:string,callback:()=>void)=>{const item=button(label,'lp-conversation-menu-action');item.setAttribute('aria-label',label);item.addEventListener('click',()=>{menu.open=false;callback()});return item}
       menuSheet.append(menuAction('Participants',()=>{const members=el('div','mochi-participants');for(const id of room.characterIds){const c=this.state?.characters.find(c=>c.id===id),name=room.settings?.characterNames[id]||c?.name||'Unavailable character';const row=el('div','mochi-member');row.append(portrait(name,c?.avatarUrl),el('span','',name));members.append(row)}this.sheet(roomHeader,'Room participants',members);members.closest('dialog')?.addEventListener('close',()=>{if(more.isConnected)more.focus()},{once:true})}),menuAction('Settings',openSettings))
       menuSheet.append(menuAction('Pins & Notes',()=>this.openPins(roomHeader,room)))
-      menuSheet.append(menuAction('Presets',()=>{this.preview.reset();this.search.reset();this.presetPanel.show(room);this.presenceRoot?.querySelector<HTMLButtonElement>('[aria-label="Mochi presets"] button')?.focus()}))
-      menuSheet.append(menuAction('Search conversation',()=>{this.presetPanel.reset();this.preview.reset();this.search.show(room);this.presenceRoot?.querySelector<HTMLInputElement>('[aria-label="Search conversation text"]')?.focus()}))
-      menuSheet.append(menuAction('Preview AI prompt',()=>{this.presetPanel.reset();this.search.reset();this.preview.show(room);this.presenceRoot?.querySelector<HTMLSelectElement>('[aria-label="Preview scenario"]')?.focus()}))
+      menuSheet.append(menuAction('Conversation Memory',()=>{this.preview.reset();this.search.reset();this.presetPanel.reset();this.memoryPanel.show(room);this.presenceRoot?.querySelector<HTMLButtonElement>('[aria-label="Conversation Memory"] button')?.focus()}))
+      menuSheet.append(menuAction('Presets',()=>{this.memoryPanel.reset();this.preview.reset();this.search.reset();this.presetPanel.show(room);this.presenceRoot?.querySelector<HTMLButtonElement>('[aria-label="Mochi presets"] button')?.focus()}))
+      menuSheet.append(menuAction('Search conversation',()=>{this.memoryPanel.reset();this.presetPanel.reset();this.preview.reset();this.search.show(room);this.presenceRoot?.querySelector<HTMLInputElement>('[aria-label="Search conversation text"]')?.focus()}))
+      menuSheet.append(menuAction('Preview AI prompt',()=>{this.memoryPanel.reset();this.presetPanel.reset();this.search.reset();this.preview.show(room);this.presenceRoot?.querySelector<HTMLSelectElement>('[aria-label="Preview scenario"]')?.focus()}))
       menu.append(more,menuSheet)
       menu.addEventListener('keydown',event=>{if(event.key==='Escape'){menu.open=false;more.focus();event.stopPropagation()}})
       menu.addEventListener('focusout',event=>{if(event.relatedTarget&&!menu.contains(event.relatedTarget as Node))menu.open=false})
@@ -571,6 +578,7 @@ export class MochiView {
       if(surface==='desktop')page.dataset.conversation='true'
       this.search.sync(room)
       this.preview.sync(room)
+      if(this.memoryPanel.open)page.append(this.memoryPanel.render(room))
       if(this.presetPanel.open)page.append(this.presetPanel.render(room))
       if(this.preview.open)page.append(this.preview.render(room))
       if(this.search.open)page.append(this.search.render(room))

@@ -22,15 +22,16 @@ export function expandPlacement(p:Placement,values:Record<string,string>,history
   const content=row.template.replace(expression,(literal,key:string)=>{
    key=key.trim();if(!CONTEXT_MACROS.includes(key as any)){warnings.push(`Unknown expression ${literal}; kept literal.`);return literal}
    if(seen.has(key)){warnings.push(`Duplicate ${key}; expanded only once.`);return ''}seen.add(key)
-   if(key==='mochi_summary'){warnings.push('Summary is reserved and inactive.');return ''}
+   if(key==='mochi_summary'){if(!standalone){warnings.push('Summary requires a standalone row; inline placeholders remain inactive.');seen.delete(key);return ''}if(!values[key])warnings.push('Summary is inactive: absent, disabled or coverage requires review.');return values[key]||''}
    return values[key]||''
   })
   // Replacement strings are never recursively evaluated.
   if(name==='mochi_history'&&!already)messages.push(...history)
   else if(name==='mochi_system_notes'&&!already)messages.push(...notes)
-  else if(content.trim())messages.push({role:'system',content})
+  else if(content.trim())messages.push({role:name==='mochi_summary'?'user':'system',content})
   sections.push({id:row.title,active:messages.length>start,providerMessages:Array.from({length:messages.length-start},(_,i)=>start+i+1)})
  }
  for(const key of ['mochi_characters','mochi_persona','mochi_history'])if(!seen.has(key))warnings.push(`Missing ${key}; this context is omitted.`)
- return{messages,sections,warnings,historyIncluded:seen.has('mochi_history')}
+ if(values.mochi_summary&&!seen.has('mochi_summary'))warnings.push('Missing mochi_summary; saved memory is omitted and summarized history cannot be excluded.')
+ return{messages,sections,warnings,historyIncluded:seen.has('mochi_history'),summaryIncluded:seen.has('mochi_summary')&&Boolean(values.mochi_summary)}
 }

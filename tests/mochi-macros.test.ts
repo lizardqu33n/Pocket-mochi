@@ -28,7 +28,7 @@ function fixture(){
 const placement=(templates:string[])=>({version:1 as const,rows:templates.map((template,i)=>({id:'section_'+i.toString(16).padStart(32,'0'),title:'Row '+i,template}))})
 test('pure macros never recurse, keep unknown host expressions literal, and resolve singleton duplicates once',()=>{
  const plan=expandPlacement(placement(['{{mochi_characters}}','{{mochi_characters}}','{{char}}','{{mochi_summary}}','{{mochi_history}}','{{mochi_history}}']),{mochi_characters:'Card {{mochi_persona}}'},[{role:'user',content:'Actual dialogue'}],[])
- expect(plan.messages).toEqual([{role:'system',content:'Card {{mochi_persona}}'},{role:'system',content:'{{char}}'},{role:'user',content:'Actual dialogue'}]);expect(plan.warnings.join(' ')).toContain('Duplicate');expect(plan.warnings.join(' ')).toContain('Unknown');expect(plan.warnings.join(' ')).toContain('Missing mochi_persona');expect(plan.warnings.join(' ')).toContain('reserved')
+ expect(plan.messages).toEqual([{role:'system',content:'Card {{mochi_persona}}'},{role:'system',content:'{{char}}'},{role:'user',content:'Actual dialogue'}]);expect(plan.warnings.join(' ')).toContain('Duplicate');expect(plan.warnings.join(' ')).toContain('Unknown');expect(plan.warnings.join(' ')).toContain('Missing mochi_persona');expect(plan.warnings.join(' ')).toContain('inactive')
 })
 test('unsafe structure, unsupported roles, mixed history/notes and malformed syntax reject',()=>{
  for(const input of [placement(['Prefix {{mochi_history}}']),placement(['{{mochi_system_notes}} suffix']),placement(['{{mochi_persona']),{...placement(['x']),rows:[{...placement(['x']).rows[0],role:'assistant'}]},placement(Array(13).fill('x'))])expect(()=>validatePlacement(input)).toThrow()

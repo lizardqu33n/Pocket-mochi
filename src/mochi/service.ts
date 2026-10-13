@@ -1,3 +1,4 @@
+import {validateMemory,proveCoverage,inspectMemory,MAX_SUMMARY_TEXT,MAX_SUMMARY_VERSIONS,type SummaryVersion} from './memory.js'
 import { roomId, defaultMochiSettings, type MochiSettings, type MochiMessage, type MochiPersona, type MochiRoom, type MochiState } from './types.js'
 import { generateMochiReply, validateMochiSources,resolveGenerationSources } from './generation.js'
 import { identifier, MAX_JOBS, publicRuntime, scheduleInput, temporaryFailure, TERMINAL, validateRuntime, type ScheduledJob } from './scheduling.js'
@@ -183,6 +184,7 @@ export class MochiService {
     const room = validateRoom(await this.host.userStorage.getJson(path, { userId: user }), id)
     if (room.accountId) await this.fictionalAccounts.get(user, room.accountId)
     if(room.preset)validateBinding(room.preset,room.accountId)
+    if(room.memory)validateMemory(room.memory,room.id,user)
     validatePinnedContent(room)
     if (room.runtime !== undefined) validateRuntime(room.runtime)
     if (room.runtime?.presence) for (const [id,p] of Object.entries(room.runtime.presence)) { entityId(id); validatePresence(p) }
@@ -276,6 +278,41 @@ export class MochiService {
       this.jobs.get(this.jobKey(user, id))?.controller.abort()
       await this.persist(user, room)
       return room
+    })
+  }
+  async saveMemory(userId:string,input:any):Promise<void>{
+    const user=this.account(userId),id=roomId(input.roomId),requestId=entityId(input.requestId)
+    await this.locked(user,id,async()=>{
+      const room=await this.read(user,id,input.accountId)
+      if(room.receipts!.includes(requestId))return
+      if(room.revision!==input.revision||(room.associationRevision||0)!==input.associationRevision)throw Error('Conversation changed. Refresh and review your summary draft before saving.')
+      if(input.confirmed!==true)throw Error('Confirm this memory change; active and pending replies may be canceled.')
+      if(room.receipts!.length>=10000)throw Error('Room receipt limit reached; no data was removed.')
+      if((room.memory?.versions.length||0)>=MAX_SUMMARY_VERSIONS)throw Error('Summary version limit reached. Existing versions were preserved.')
+      const current=room.memory?.versions.find(v=>v.id===room.memory!.currentId)
+      let data:Omit<SummaryVersion,'id'|'savedAt'>
+      if(input.action==='save'){
+        const body=text(input.text,MAX_SUMMARY_TEXT,true)
+        if(typeof input.enabled!=='boolean'||typeof input.excludeCovered!=='boolean')throw Error('Invalid summary options.')
+        const coverage=await proveCoverage(room,input.boundaryId)
+        data={text:body,enabled:input.enabled,excludeCovered:input.excludeCovered,coverage}
+      }else if(input.action==='restore'){
+        const original=room.memory?.versions.find(v=>v.id===input.versionId)
+        if(!original)throw Error('This summary version is unavailable.')
+        data={text:original.text,enabled:original.enabled,excludeCovered:original.excludeCovered,coverage:original.coverage,restoredFrom:original.id}
+      }else if(input.action==='disable'&&current){data={text:current.text,enabled:false,excludeCovered:current.excludeCovered,coverage:current.coverage}}
+      else if(input.action==='clear'&&current){data={text:'',enabled:false,excludeCovered:false}}
+      else throw Error('Unsupported conversation memory action.')
+      // Async hashing cannot authorize a stale association or changed snapshot.
+      const latest=await this.read(user,id,input.accountId)
+      if(latest.revision!==room.revision||(latest.associationRevision||0)!==(room.associationRevision||0))throw Error('Conversation changed while validating coverage. Review and save again.')
+      const saved:SummaryVersion={...data,id:'summary_'+crypto.randomUUID().replaceAll('-',''),savedAt:new Date(this.now()).toISOString()}
+      room.memory={version:1,ownerId:user,roomId:id,currentId:saved.id,versions:[...room.memory?.versions||[],saved]}
+      validateMemory(room.memory,id,user)
+      this.jobs.get(this.jobKey(user,id))?.controller.abort()
+      for(const job of room.runtime?.jobs||[])if(!TERMINAL.has(job.status)){job.status='cancelled';delete job.draft;delete job.additional}
+      room.receipts!.push(requestId);room.revision++;room.updatedAt=saved.savedAt
+      await this.persist(user,room)
     })
   }
   async bindPreset(userId:string,input:any):Promise<void>{
@@ -786,6 +823,16 @@ export class MochiService {
     if (!userId) return
     let selectedRoomId: string | undefined
     try {
+      if(payload.type==='mochi:memory'){
+        const user=this.account(userId),id=roomId(payload.roomId);entityId(payload.requestId)
+        if(payload.action!=='read')await this.saveMemory(user,payload)
+        const room=await this.locked(user,id,()=>this.read(user,id,payload.accountId)),inspection=await inspectMemory(room)
+        const latest=await this.locked(user,id,()=>this.read(user,id,payload.accountId))
+        if(latest.revision!==room.revision||(latest.associationRevision||0)!==(room.associationRevision||0))throw Error('Conversation changed. Refresh memory.')
+        this.host.sendToFrontend({type:'mochi:memory',requestId:payload.requestId,roomId:id,accountId:room.accountId,associationRevision:room.associationRevision||0,revision:room.revision,updatedAt:room.updatedAt,background:this.visibleRuntime(user,room),memory:room.memory,valid:inspection.valid,reason:inspection.reason},user)
+        if(payload.action!=='read'){const {runtime,...visible}=room;this.host.sendToFrontend({type:'mochi:room_updated',room:{...visible,background:this.visibleRuntime(user,room)},accountId:room.accountId},user)}
+        return
+      }
       if(payload.type==='mochi:presets'){
         const user=this.account(userId),id=roomId(payload.roomId);entityId(payload.requestId)
         await this.locked(user,id,()=>this.read(user,id,payload.accountId))

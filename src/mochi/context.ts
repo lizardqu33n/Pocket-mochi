@@ -1,3 +1,4 @@
+import {inspectMemory,summaryPrompt} from './memory.js'
 import {defaultMochiSettings,type MochiRoom,type MochiMessage} from './types.js'
 import {quoteExcerpt,replyIdentifier} from './replies.js'
 import {readReactions} from './reactions.js'
@@ -8,11 +9,12 @@ import {expandPlacement} from './macros.js'
 export type PromptMessage = { role: 'system' | 'user' | 'assistant'; content: string }
 export interface ContextSection {id:string;active:boolean;providerMessages:number[]}
 export interface MochiContextPlan {
+ memory?:{enabled:boolean;valid:boolean;included:boolean;covered:number;boundaryId?:string}
  warnings:string[]
  preset:ResolvedPreset&{variant:'dm'|'group';appliedInstructions:string}
  messages:PromptMessage[];sections:ContextSection[]
  budget:{inputTokens:number;outputTokens:number;envelopeTokens:number;contextTokens:number;remainingTokens:number}
- history:{stored:number;retained:number;trimmed:number;omitted?:number;firstId:string|null;lastId:string|null}
+ history:{stored:number;retained:number;trimmed:number;omitted?:number;excluded?:number;firstId:string|null;lastId:string|null}
 }
 function describeContext(room:MochiRoom,roster:any[],messages:PromptMessage[],history:MochiMessage[],tokens:number,natural:boolean,timing:boolean):Omit<MochiContextPlan,'preset'|'warnings'> {
  const settings=room.settings||defaultMochiSettings(),dialogue=history.map((_,i)=>i+1),noteIndexes=messages.slice(1+history.length,-1).map((_,i)=>1+history.length+i)
@@ -41,6 +43,13 @@ export async function resolveMochiContext(room: MochiRoom, characters: any[], re
   const notes=resolveSystemNotes(room)
   const originals=new Map<string,MochiMessage|null>()
   for(const m of history)if(replyIdentifier(m.id))originals.set(m.id,originals.has(m.id)?null:m)
+  const memory=await inspectMemory(room),active=memory.current?.enabled&&memory.valid?summaryPrompt(memory.current.text):''
+  const scalarValues={mochi_characters:JSON.stringify(roster),mochi_persona:JSON.stringify(room.persona),mochi_room_instructions:settings.instructions,mochi_texting_styles:resolveTextingStyles(settings.textingStyles,roster),mochi_summary:active}
+  const manualProbe=effective.layout==='manual-v1'?expandPlacement(effective.placement!,scalarValues,[],[]):undefined
+  const summaryIncluded=Boolean(active&&(!manualProbe||manualProbe.summaryIncluded))
+  const excluded=summaryIncluded&&memory.current?.excludeCovered&&(!manualProbe||manualProbe.historyIncluded)?memory.current.coverage!.count:0
+  if(excluded)history.splice(0,excluded)
+  const memoryWarnings=memory.current?.enabled&&!memory.valid?[memory.reason+' Saved memory is omitted; raw history uses normal token trimming.']:[]
   while (true) {
     signal.throwIfAborted()
     const includedIds=new Set(history.map(m=>m.id)),replyIds=new Set(history.map(m=>m.replyTo).filter(replyIdentifier))
@@ -60,15 +69,22 @@ export async function resolveMochiContext(room: MochiRoom, characters: any[], re
       const referenced=replyIds.has(message.id)?`[Message reference ID: ${JSON.stringify(message.id)}]\n`:''
       return {role:message.role,content:referenced+quote+`${message.name}: ${message.content}`+(reactionContext.get(message)||'')} as PromptMessage
     })
-    const automaticMessages=[system,...dialogue,...notes,tail]
-    const manual=effective.layout==='manual-v1'?expandPlacement(effective.placement!,{mochi_characters:JSON.stringify(roster),mochi_persona:JSON.stringify(room.persona),mochi_room_instructions:settings.instructions,mochi_texting_styles:resolveTextingStyles(settings.textingStyles,roster)},dialogue,notes):undefined
+    const automaticMessages=[system,...(active?[{role:'user' as const,content:active}]:[]),...dialogue,...notes,tail]
+    const manual=effective.layout==='manual-v1'?expandPlacement(effective.placement!,scalarValues,dialogue,notes):undefined
     const requiredCore=system.content.slice(0,system.content.indexOf('\nROOM:'))+'\nROOM: '+JSON.stringify(room.title)+(presetInstructions?'\nPRESET INSTRUCTIONS ('+variant+'): '+presetInstructions:'')+(settings.aiBehavior?timingRule:'')+(natural?naturalRule:'')
     const messages:PromptMessage[]=manual?[{role:'system',content:requiredCore},...manual.messages,tail]:automaticMessages
     const tokens = await count(messages)
     signal.throwIfAborted()
     if (!Number.isFinite(tokens) || tokens < 0) throw new Error('Invalid host token count.')
     // Reserve output and a conservative envelope margin within the configured total budget.
-    if (tokens + settings.outputTokens + 256 <= settings.contextTokens) { const plan=describeContext(room,roster,messages,history,tokens,natural,Boolean(settings.aiBehavior));return {...plan,...(manual&&!manual.historyIncluded?{history:{stored:room.messages.length,retained:0,trimmed:0,omitted:room.messages.length,firstId:null,lastId:null}}:{}),preset:{...effective,variant,appliedInstructions:presetInstructions},warnings:manual?.warnings||[],sections:manual?[{id:'core (server-required)',active:true,providerMessages:[0]},...manual.sections,{id:'continuation (server-required)',active:true,providerMessages:[messages.length-1]}]:[...plan.sections,{id:'preset_instructions',active:Boolean(presetInstructions),providerMessages:presetInstructions?[0]:[]}]}}
+    if (tokens + settings.outputTokens + 256 <= settings.contextTokens) {
+      const plan=describeContext(room,roster,messages,history,tokens,natural,Boolean(settings.aiBehavior))
+      const historyInfo=manual&&!manual.historyIncluded?{stored:room.messages.length,retained:0,trimmed:0,omitted:room.messages.length,firstId:null,lastId:null}:{...plan.history,trimmed:room.messages.length-excluded-history.length,...(excluded?{excluded}: {})}
+      // The optional automatic memory message shifts dialogue/notes, never the core.
+      const sections=plan.sections.map(s=>({...s,providerMessages:active?s.providerMessages.map(i=>i>0&&i<messages.length-1?i+1:i):s.providerMessages}))
+      if(active){const notesStart=2+history.length;const notesSection=sections.find(s=>s.id==='system_notes')!;notesSection.active=notes.length>0;notesSection.providerMessages=notes.map((_,i)=>notesStart+i)}
+      return {...plan,history:historyInfo,...(memory.current?{memory:{enabled:memory.current.enabled,valid:memory.valid,included:summaryIncluded,covered:memory.current.coverage?.count||0,boundaryId:memory.current.coverage?.boundaryId}}:{}),preset:{...effective,variant,appliedInstructions:presetInstructions},warnings:[...memoryWarnings,...manual?.warnings||[]],sections:manual?[{id:'core (server-required)',active:true,providerMessages:[0]},...manual.sections,{id:'continuation (server-required)',active:true,providerMessages:[messages.length-1]}]:[...sections,...(active?[{id:'conversation_memory',active:true,providerMessages:[1]}]:[]),{id:'preset_instructions',active:Boolean(presetInstructions),providerMessages:presetInstructions?[0]:[]}]}
+    }
     if (history.length <= 1) throw new Error('Character instructions or the latest message exceed the context budget.')
     history.shift()
   }

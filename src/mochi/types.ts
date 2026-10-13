@@ -27,6 +27,7 @@ export interface MochiSettings {
 }
 export const defaultMochiSettings = (): MochiSettings => ({ autoReply: true, connectionId: '', contextTokens: 8192, outputTokens: 1200, instructions: '', characterNames: {} })
 export interface MochiRoom {
+  memory?: import('./memory.js').ConversationMemory
   preset?: import('./presets.js').PresetBinding
   version: 1
   accountId?: string

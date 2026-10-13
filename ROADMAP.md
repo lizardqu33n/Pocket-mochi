@@ -26,7 +26,13 @@ acceptance remains pending. MEM-01B/01C are now provisionally accepted by the us
 with full live regression and multi-user acceptance still pending. MEM-01D manual
 context macros/placement, focused preset workspace polish and empty-response clarity
 are development-verified with matching bundles; manual review remains pending.
-No summaries or automatic memory generation have begun.
+MEM-01D has received initial user manual testing; comprehensive acceptance remains
+pending. MEM-01E manual conversation summaries, exact prefix coverage, recoverable
+versions and opt-in outgoing-history exclusion are development-verified with
+matching bundles and targeted synthetic/DOM tests. Real-host acceptance remains
+pending. AI-generated summaries (MEM-01F) and automatic memory extraction have
+not begun. Later UI Modernization & Settings Reorganization must research genuinely
+beginner-friendly interfaces rather than merely rearranging existing controls.
 Messaging order: MSG-01A quotes, MSG-01B reactions, MSG-01C pins, MSG-01D search,
 MSG-01E texting preferences and polish, then Memory & Prompt Management.
 Friends Beta 1 is tentatively hoped for Friday, October 16, 2026, explicitly
