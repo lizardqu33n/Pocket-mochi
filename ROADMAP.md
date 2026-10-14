@@ -36,7 +36,16 @@ matching bundles. MEM-01E/01F were reviewed by the user with superficial testing
 this permits MEM-01G but is not full live regression or multi-user acceptance.
 MEM-01G source/privacy/UI assessment is complete with targeted synthetic tests.
 Multi-user beta readiness is blocked by the unwired trusted real-user transition
-boundary; memory-capacity management and actual-host/visual acceptance also remain.
+boundary. Memory-capacity management was a G blocker; BETA-FIX-02 now provides
+bounded, revision-safe Disable/Clear without evicting saved versions. It uses
+explicit managed-memory v2 records (legacy v1 loads unchanged); old memory readers
+refuse v2, so rollback must not strip this state or overwrite newer histories.
+Small cancellation/scope/save-state wording fixes are development-verified with
+337 targeted synthetic tests, one typecheck and one matching build. BETA-FIX-01
+cannot implement automatic trusted auth teardown within the approved host boundary.
+Host cooperation and actual-host/visual acceptance remain required; beta is blocked.
+See MOCHI-BETA-FIX-01-02.md and the updated MOCHI-BETA-CANDIDATE.json. No publication,
+installation or next feature milestone is authorized by these development checks.
 See MOCHI-MEM-01G.md and MOCHI-UI-UX-AUDIT.md. No runtime/UI changes were made in G.
 Automatic memory extraction/background summarization has
 not begun. Later UI Modernization & Settings Reorganization must research genuinely

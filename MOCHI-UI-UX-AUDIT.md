@@ -1,5 +1,7 @@
 # Mochi UI/UX Audit & Modernization Proposal
 
+Follow-up: [BETA-FIX-01/02](MOCHI-BETA-FIX-01-02.md) addresses bounded memory management and selected cancellation/scope/save wording. Authentication remains blocked; the larger modernization proposals remain unimplemented. The inventory/findings below describe the MEM-01F/G source assessment, not a new pixel review.
+
 MEM-01G, 2026-10-13. **Read-only source/structure audit**, not a verified pixel review, usability study or actual multi-user acceptance. Inspected the MEM-01F frontend, styles and local Lumiverse patterns; no browser, screenshots, server or private content was used. The user's E/F superficial testing permits this assessment, not assumptions of comprehensive acceptance.
 
 Priority: A = beta-critical safety/usability, B = safe isolated pre-beta clarity work, C = later cohesive **UI Modernization & Settings Reorganization**. No frontend redesign or wording changes were implemented here. Backend invariants and the approved chat screen remain intact. Authentication and capacity blockers are documented in [MOCHI-MEM-01G.md](MOCHI-MEM-01G.md).

@@ -98,7 +98,9 @@ Tests use synthetic providers, in-memory storage and JSDOM. No full Pocket suite
 - Runtime: `src/mochi/memory.ts`, `service.ts`, `summarization.ts`, `memory-panel.ts`, `view.ts`, `window.ts`, `profile-screen.ts`, `preset-panel.ts`.
 - Tests: `tests/mochi-beta-readiness.test.ts`, `mochi-memory.test.ts`, `mochi-summarization.test.ts`, `mochi-window.test.ts`, `mochi.test.ts`; new `mochi-beta-ux.test.ts`.
 - Matching artifacts: `dist/backend.js`, `dist/frontend.js`.
-- Documentation/inventory: this report, `MOCHI-BETA-CANDIDATE.json`, `ROADMAP.md`, `MOCHI-UI-UX-AUDIT.md`.
+- Documentation/inventory: this report, `MOCHI-BETA-CANDIDATE.json`, `ROADMAP.md`, `MOCHI-UI-UX-AUDIT.md`, `MOCHI-MEM-01G.md` (historical follow-up note).
+
+Local source/bundle checkpoint: `08de2db47ab3384bfee7a0280d7a52634f553663`. A following documentation-only commit pins this hash in the candidate inventory and updates status; it changes no runtime source or bundles.
 
 `src/backend.ts`, `src/frontend.ts`, native Pocket controller/modules, `session.ts`, manifest, extension permissions and generation parser were not edited. No credentials or private fixtures were added. No installed data was inspected or changed.
 

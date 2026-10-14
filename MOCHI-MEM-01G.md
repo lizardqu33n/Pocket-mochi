@@ -1,5 +1,7 @@
 # MOCHI-MEM-01G — Integration, Privacy & Beta Readiness
 
+Historical assessment. Subsequent [BETA-FIX-01/02](MOCHI-BETA-FIX-01-02.md) adds bounded memory recovery and narrow UX safeguards; the candidate inventory now pins that newer runtime. The trusted authentication blocker remains. Findings and G test results below are preserved as the original assessment, not current release approval.
+
 Assessment date: 2026-10-13. Branch: `codex/mochi-desktop-01b-base-review`.
 Runtime/source candidate: `db5bbba9b8efb4d5a389fa97c0028852272523ef` (MEM-01F).
 Inspected local Lumiverse source: `b1a68d9e32e2a2480a0d5ae71422566845f2657b`, clean tracked working tree. This is local source evidence, not evidence about the installed Ubuntu runtime.
