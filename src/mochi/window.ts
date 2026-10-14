@@ -64,8 +64,9 @@ export function createMochiWindow(ui: MochiWindowUI, session: MochiSession,
   panel.addEventListener('contextmenu',event=>event.preventDefault()) // Avoid host chrome Hide bypassing session cancellation.
   const apply = (next: WindowRect) => {if(maximized())return;rect=clamp(next);widget.setSize(rect.width,rect.height);widget.moveTo(rect.x,rect.y)}
   const hide=()=>{workspace.close();if(opener?.isConnected&&!opener.closest('[hidden]'))opener.focus({preventScroll:true})}
+  const requestHide=()=>session.view.confirmGenerationExit(hide,close)
   maximize.onclick=()=>{if(maximized()){widget.setFullscreen(false);if(savedRect)apply(savedRect);savedRect=undefined}else{savedRect={...rect,...widget.getPosition()};widget.setFullscreen(true)}syncControls()}
-  bar.addEventListener('keydown',event=>{if(event.target!==bar||event.defaultPrevented)return;if(event.key==='Escape'){event.preventDefault();event.stopPropagation();hide();return}if(maximized()||!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key))return;event.preventDefault();event.stopPropagation();const p=widget.getPosition();apply({...rect,x:p.x+(event.key==='ArrowRight'?16:event.key==='ArrowLeft'?-16:0),y:p.y+(event.key==='ArrowDown'?16:event.key==='ArrowUp'?-16:0)})})
+  bar.addEventListener('keydown',event=>{if(event.target!==bar||event.defaultPrevented)return;if(event.key==='Escape'){event.preventDefault();event.stopPropagation();requestHide();return}if(maximized()||!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key))return;event.preventDefault();event.stopPropagation();const p=widget.getPosition();apply({...rect,x:p.x+(event.key==='ArrowRight'?16:event.key==='ArrowLeft'?-16:0),y:p.y+(event.key==='ArrowDown'?16:event.key==='ArrowUp'?-16:0)})})
   const cleanup = () => {
     if(disposed)return;disposed=true
     for(const handler of visibility)handler(false);visibility.clear()
@@ -83,7 +84,7 @@ export function createMochiWindow(ui: MochiWindowUI, session: MochiSession,
     dragCleanup=widget.onDragEnd(position=>{rect={...rect,...position}})
     workspace=createMochiWorkspace({root:body,session,notificationPolicy,presentation:'messenger',isHostVisible:()=>widget.isVisible(),
       onVisibilityChange:visible=>{if(!disposed){widget.setVisible(visible);for(const handler of visibility)handler(visible)}},onDispose:cleanup})
-    close.addEventListener('click',hide)
+    close.addEventListener('click',requestHide)
     syncControls()
     grip.addEventListener('keydown',event=>{
       if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key))return

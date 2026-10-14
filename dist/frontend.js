@@ -76,6 +76,40 @@ var quoteExcerpt = (content, limit = 220) => content.replace(/\s+/g, " ").slice(
 
 // src/mochi/memory.ts
 var MAX_SUMMARY_TEXT = 12000;
+var MAX_SUMMARY_VERSIONS = 100;
+var versionId = (v) => typeof v === "string" && /^summary_[a-f0-9]{32}$/.test(v);
+function validateMemory(value, roomId, ownerId) {
+  const m = value;
+  if (!m || ![1, 2].includes(m.version) || m.roomId !== roomId || typeof m.ownerId !== "string" || !m.ownerId || ownerId !== undefined && m.ownerId !== ownerId || !Array.isArray(m.versions) || !m.versions.length || m.versions.length > MAX_SUMMARY_VERSIONS || !versionId(m.currentId))
+    throw Error("Unsupported conversation memory; room data was preserved.");
+  const ids = new Set;
+  for (const v of m.versions) {
+    if (!v || !versionId(v.id) || ids.has(v.id) || typeof v.text !== "string" || v.text.length > MAX_SUMMARY_TEXT || typeof v.enabled !== "boolean" || typeof v.excludeCovered !== "boolean" || typeof v.savedAt !== "string" || !Number.isFinite(Date.parse(v.savedAt)) || v.restoredFrom !== undefined && !ids.has(v.restoredFrom))
+      throw Error("Invalid summary version; room data was preserved.");
+    const c = v.coverage;
+    if (c && (!replyIdentifier(c.boundaryId) || !Number.isSafeInteger(c.count) || c.count < 1 || typeof c.digest !== "string" || !/^[a-f0-9]{64}$/.test(c.digest)))
+      throw Error("Invalid saved summary coverage; room data was preserved.");
+    if (v.text.trim() && !c || v.enabled && (!v.text.trim() || !c))
+      throw Error("Summary coverage is missing; room data was preserved.");
+    ids.add(v.id);
+  }
+  if (!ids.has(m.currentId))
+    throw Error("Current summary version is missing; room data was preserved.");
+  const control = m.management;
+  if (m.version === 2 && !control || m.version === 1 && control !== undefined)
+    throw Error("Invalid memory management version; room data was preserved.");
+  if (control !== undefined && (!control || control.version !== 1 || !["disable", "clear"].includes(control.action) || typeof control.cleared !== "boolean" || control.action === "clear" && !control.cleared || typeof control.requestId !== "string" || control.requestId.length > 180 || !/^[A-Za-z0-9_-]+$/.test(control.requestId) || !Number.isSafeInteger(control.baseRevision) || control.baseRevision < 1 || typeof control.changedAt !== "string" || !Number.isFinite(Date.parse(control.changedAt))))
+    throw Error("Invalid memory management state; room data was preserved.");
+  return m;
+}
+function currentSummary(room) {
+  if (!room.memory)
+    return;
+  const memory = validateMemory(room.memory, room.id), saved = memory.versions.find((v) => v.id === memory.currentId);
+  if (!saved || !memory.management)
+    return saved;
+  return { ...saved, enabled: false, ...memory.management.cleared ? { text: "", excludeCovered: false, coverage: undefined } : {} };
+}
 
 // src/mochi/memory-panel.ts
 var scope = (r) => JSON.stringify([r.accountId || "", r.id, r.associationRevision || 0]);
@@ -296,12 +330,12 @@ class MochiMemoryPanel {
       this.draft = undefined;
       this.applied(p);
     }
-    this.status = this.submitted ? "Saved as a new memory version." + (this.suggestion ? " AI suggestion retained; Apply will revalidate its original source." : "") : "Saved memory loaded. Editing does not contact AI.";
+    this.status = this.submitted ? (p.revision === this.base ? "Memory already has this state. All saved versions are retained." : p.memory?.management ? "Summary disabled or cleared. All saved versions are retained." : "Saved as a new memory version.") + (this.suggestion ? " AI suggestion retained; Apply will revalidate its original source." : "") : "Saved memory loaded. Editing does not contact AI.";
     this.renderAgain();
     return true;
   }
   start(room) {
-    const v = this.memory?.versions.find((v) => v.id === this.memory.currentId), last = room.messages.at(-1);
+    const v = currentSummary({ ...room, memory: this.memory }), last = room.messages.at(-1);
     const value = { text: v?.text || "", enabled: v?.enabled ?? true, excludeCovered: v?.excludeCovered ?? false, boundaryId: v?.coverage?.boundaryId || last?.id || "", revision: room.revision };
     this.focusEditor = true;
     this.draft = { ...value, baseline: JSON.stringify(value) };
@@ -332,20 +366,39 @@ class MochiMemoryPanel {
     refresh.disabled = !!this.ticket;
     refresh.onclick = () => this.request({ action: "read" });
     const close = button("Close memory", "lp-button");
-    close.onclick = () => {
+    const leave = () => {
       this.reset();
       this.renderAgain();
       this.returned();
     };
+    close.onclick = () => {
+      if (!this.generating) {
+        leave();
+        return;
+      }
+      const warning = el("span", "mochi-preview-warning", "A summary is still generating. Closing will cancel it. Saved memories stay intact. "), yes = button("Cancel summary & close", "lp-button"), no = button("Stay here", "lp-button");
+      yes.onclick = leave;
+      no.onclick = () => {
+        this.renderAgain();
+        this.root?.querySelector("button")?.focus();
+      };
+      warning.append(yes, no);
+      close.replaceWith(warning);
+      no.focus();
+    };
     root.append(refresh, close);
     if (this.loadedRevision && this.loadedRevision !== room.revision)
       root.append(el("p", "mochi-preview-warning", "Conversation changed. Refresh memory to recheck coverage; unsaved text is retained."));
-    const current = this.memory?.versions.find((v) => v.id === this.memory.currentId);
+    const current = currentSummary({ ...room, memory: this.memory }), full = (this.memory?.versions.length || 0) >= MAX_SUMMARY_VERSIONS || (room.receipts?.length || 0) >= 1e4;
+    if (full)
+      root.append(el("p", "mochi-preview-warning", "Memory history or receipt capacity is full. New summary versions and Restore are unavailable. Disable and Clear keep all saved versions and messages; discard an editor draft first to use them. History export/management is not yet implemented."));
     if (current) {
       root.append(el("p", "", `Saved ${new Date(current.savedAt).toLocaleString()} · ${current.enabled ? "Enabled" : "Disabled"} · ${current.coverage ? "Summarizes messages 1–" + current.coverage.count : "No covered messages"}`));
+      if (this.memory?.management)
+        root.append(el("p", "mochi-muted", `Memory control changed ${new Date(this.memory.management.changedAt).toLocaleString()}; saved versions were not changed.`));
       if (current.coverage && !this.valid)
         root.append(el("p", "mochi-preview-warning", this.reason + " AI uses raw history with normal token trimming until reviewed."));
-      root.append(el("pre", "mochi-memory-text", current.text || "Summary cleared. Earlier versions remain recoverable."));
+      root.append(el("pre", "mochi-memory-text", current.text || "Summary cleared from active use. All saved versions are retained."));
     }
     const generation = el("section", "mochi-memory-version");
     generation.setAttribute("aria-label", "AI summary generation");
@@ -519,8 +572,9 @@ class MochiMemoryPanel {
       const dirty = el("p", "mochi-muted", "Draft — not applied. Save creates a new version.");
       dirty.setAttribute("role", "status");
       const save = button(d.suggestionId ? "Apply summary as new version" : "Save summary version", "lp-button");
+      save.title = "Save reviewed memory to this conversation; generating or using a suggestion does not save it.";
       save.type = "submit";
-      save.disabled = !!this.ticket || !d.suggestionId && d.revision !== room.revision;
+      save.disabled = full || !!this.ticket || !d.suggestionId && d.revision !== room.revision;
       if (!d.suggestionId && d.revision !== room.revision) {
         form.append(el("p", "mochi-preview-warning", "Conversation changed. Review the saved messages and covered boundary before saving."));
         const review = button("Use refreshed conversation revision", "lp-button");
@@ -535,7 +589,7 @@ class MochiMemoryPanel {
           control.disabled = true;
       form.onsubmit = (e) => {
         e.preventDefault();
-        if (!d.suggestionId && d.revision !== room.revision || !d.boundaryId)
+        if (full || !d.suggestionId && d.revision !== room.revision || !d.boundaryId)
           return;
         this.confirm(save, "Confirm save summary", () => this.request({ action: "save", text: d.text, enabled: d.enabled, excludeCovered: d.excludeCovered, boundaryId: d.boundaryId, ...d.suggestionId ? { suggestionId: d.suggestionId } : {}, confirmed: true }));
       };
@@ -583,9 +637,9 @@ class MochiMemoryPanel {
       history.append(el("summary", "", `Previous versions (${this.memory.versions.length}/100 retained)`));
       for (const [i, v] of this.memory.versions.entries()) {
         const row = el("section", "mochi-memory-version");
-        row.append(el("h4", "", `Version ${i + 1} · ${new Date(v.savedAt).toLocaleString()}${v.id === this.memory.currentId ? " · Current" : ""}`), el("p", "mochi-muted", `${v.enabled ? "Enabled" : "Disabled"} · ${v.coverage ? "Messages 1–" + v.coverage.count : "Cleared"}${v.restoredFrom ? " · Restored copy" : ""}`), el("pre", "mochi-memory-text", v.text || "Cleared"));
+        row.append(el("h4", "", `Version ${i + 1} · ${new Date(v.savedAt).toLocaleString()}${v.id === this.memory.currentId ? " · Selected saved version" : ""}`), el("p", "mochi-muted", `${v.enabled ? "Enabled when saved" : "Disabled when saved"} · ${v.coverage ? "Messages 1–" + v.coverage.count : "Cleared"}${v.restoredFrom ? " · Restored copy" : ""}`), el("pre", "mochi-memory-text", v.text || "Cleared"));
         const restore = button("Restore version " + (i + 1), "lp-button");
-        restore.disabled = !!this.ticket || !!this.draft;
+        restore.disabled = full || !!this.ticket || !!this.draft;
         restore.onclick = () => this.confirm(restore, "Confirm restore as new version", () => this.request({ action: "restore", versionId: v.id, confirmed: true }));
         row.append(restore);
         history.append(row);
@@ -969,7 +1023,7 @@ class MochiProfiles {
       return form;
     }
     const draft = this.draft;
-    form.append(el("h3", "", draft.id ? "Edit Mochi profile" : "New Mochi profile"));
+    form.append(el("h3", "", draft.id ? "Edit Mochi profile" : "New Mochi profile"), el("p", "mochi-muted", "This fictional profile · Save applies persona, name and avatar edits. Your Lumiverse login is unchanged."));
     const saved = this.state.accounts.find((a) => a.id === draft.id), chosen = this.state.personas.find((p) => p.source + ":" + p.sourceId === draft.persona);
     const url = draft.avatarId === "persona" ? chosen?.avatarUrl || saved?.persona.avatarUrl || "" : draft.avatarId ? "/api/v1/images/" + draft.avatarId : "";
     const preview = el("section", "mochi-profile-preview");
@@ -2175,7 +2229,7 @@ class MochiPresetPanel {
     }
     const root = el("section", "mochi-preset-panel");
     root.setAttribute("aria-label", "Mochi presets");
-    root.append(el("h3", "", "Mochi Presets"), el("p", "mochi-muted", "Published revisions stay fixed for each chat until you apply an update. Room instructions remain a separate override."));
+    root.append(el("h3", "", "Mochi Presets"), el("p", "mochi-muted", "Publish saves a reusable template version in this library. Apply uses a selected version in this conversation. Other conversations stay on their saved versions. Room instructions remain a separate override."));
     const status = el("p", "mochi-muted", this.status);
     status.setAttribute("role", "status");
     root.append(status);
@@ -2495,7 +2549,7 @@ class MochiView {
         this.load();
       }
       present();
-    }, anchor);
+    }, anchor, true);
   }
   createNavigationAccount(anchor, present) {
     if (this.destroyed || this.busy || !this.profiles.state)
@@ -2508,7 +2562,7 @@ class MochiView {
       this.refreshChoices();
       this.redraw();
       present();
-    }, anchor);
+    }, anchor, true);
   }
   phone;
   associations = new Map;
@@ -2737,14 +2791,40 @@ class MochiView {
   isConversationOpen() {
     return !this.destroyed && !!this.roomId && !this.pickerOpen && !this.profilesOpen && !this.editing && !this.creating && !this.notificationsOpen;
   }
-  confirmNavigation(next, anchor) {
-    if (!this.hasUnsavedChanges()) {
+  generationExitNotice(summaryOnly = false) {
+    if (this.memoryPanel.generating)
+      return "A summary is still generating. Leaving will cancel it. Saved memories will not be deleted.";
+    return !summaryOnly && this.ownGenerations.has(this.roomId) ? "A reply is still generating. Leaving will stop this reply. Saved messages will not be deleted." : "";
+  }
+  confirmGenerationExit(next, anchor, summaryOnly = false) {
+    const notice = this.generationExitNotice(summaryOnly);
+    if (!notice) {
       next();
       return;
     }
     const content = el("div", "mochi-action-panel");
-    content.append(el("p", "", "You have unsaved changes. Discard them and leave this screen?"));
-    const keep = action("Keep editing", "edit"), discard = action("Discard changes", "back");
+    content.append(el("p", "", notice + " Scheduled jobs are unaffected. Drafts are retained only in this frontend session."));
+    const stay = action("Stay here", "back"), leave = action("Cancel generation & leave", "stop");
+    content.append(stay, leave);
+    const sheet = this.sheet(anchor, "Stop generation and leave?", content);
+    stay.onclick = () => sheet?.dismiss();
+    leave.onclick = () => {
+      sheet?.dismiss();
+      next();
+    };
+  }
+  confirmNavigation(next, anchor, stopsGeneration = false) {
+    const notice = stopsGeneration ? this.generationExitNotice() : "";
+    if (!this.hasUnsavedChanges()) {
+      if (stopsGeneration)
+        this.confirmGenerationExit(next, anchor);
+      else
+        next();
+      return;
+    }
+    const content = el("div", "mochi-action-panel");
+    content.append(el("p", "", "You have unsaved changes to settings or your fictional profile. Leaving discards these edits." + (notice ? " " + notice : "") + " Saved conversation data is unchanged."));
+    const keep = action("Keep editing", "edit"), discard = action(notice ? "Discard edits, cancel generation & leave" : "Discard changes", "back");
     content.append(keep, discard);
     const sheet = this.sheet(anchor, "Unsaved changes", content);
     content.closest("dialog")?.classList.add("mochi-unsaved-sheet");
@@ -2754,7 +2834,7 @@ class MochiView {
       next();
     };
   }
-  exitPortal(next, anchor) {
+  exitPortal(next, anchor, stopsGeneration = false) {
     this.confirmNavigation(() => {
       this.creating = false;
       this.editing = false;
@@ -2765,7 +2845,7 @@ class MochiView {
       this.sidebarProfile = false;
       this.profileReturn = undefined;
       next();
-    }, anchor);
+    }, anchor, stopsGeneration);
   }
   back(exit, anchor) {
     if (this.busy)
@@ -2794,7 +2874,7 @@ class MochiView {
       }
       this.redraw();
     };
-    this.confirmNavigation(next, anchor);
+    this.confirmNavigation(next, anchor, this.isConversationOpen());
   }
   load() {
     if (!this.presenceTimer) {
@@ -3248,7 +3328,7 @@ class MochiView {
         badge.setAttribute("aria-label", `${count} unread notifications`);
         row.append(badge);
       }
-      row.onclick = () => this.exitPortal(() => this.openRoom(room.id), row);
+      row.onclick = () => this.exitPortal(() => this.openRoom(room.id), row, room.id !== this.roomId);
       rooms.append(row);
     }
     if (this.state && !this.state.rooms.length)
@@ -3278,7 +3358,7 @@ class MochiView {
       if (this.accountNavigation)
         this.accountNavigation.picker();
       else
-        this.exitPortal(() => this.showPicker(), change);
+        this.exitPortal(() => this.showPicker(), change, true);
     };
     controls.append(change);
     const profiles = action(stateAccountLabel(this.state?.accountId), "people");
@@ -3296,7 +3376,7 @@ class MochiView {
           else
             this.profiles.draft = null;
           this.dispatch("mochi:accounts");
-        }, profiles);
+        }, profiles, true);
     };
     controls.append(profiles);
     const create = action("New room", "plus");
@@ -3316,7 +3396,7 @@ class MochiView {
         this.leave();
         this.notificationsOpen = !this.notificationsOpen;
         this.redraw();
-      }, notices);
+      }, notices, true);
       controls.append(notices);
     }
     return controls;
@@ -3346,13 +3426,13 @@ class MochiView {
       bell.title = `Mochi notifications · ${unread} unread`;
       if (unread)
         bell.append(el("span", "mochi-unread-count", String(unread)));
-      bell.onclick = () => {
+      bell.onclick = () => this.confirmGenerationExit(() => {
         this.leave();
         this.notificationsOpen = !this.notificationsOpen;
         this.redraw();
         if (!this.state)
           this.load();
-      };
+      }, bell);
       headerActions.append(bell);
       bell.setAttribute("aria-description", `${unread} unread notifications`);
     }
@@ -3427,7 +3507,11 @@ class MochiView {
         selector.append(option);
       }
       selector.value = room.id;
-      selector.onchange = () => this.openRoom(selector.value);
+      selector.onchange = () => {
+        const target = selector.value;
+        selector.value = room.id;
+        this.confirmNavigation(() => this.openRoom(target), selector, target !== room.id);
+      };
       selector.title = room.title;
       const roomSelector = el("div", "mochi-room-select");
       const groupIcon = el("span", "mochi-room-select-icon");
@@ -3442,11 +3526,11 @@ class MochiView {
       info.append(roomSelector, roomMeta);
       const controls = el("div", "mochi-actions");
       const inbox = action("Room inbox", "back", true);
-      inbox.onclick = () => {
+      inbox.onclick = () => this.confirmNavigation(() => {
         this.select("");
         this.navigate();
-      };
-      const openSettings = () => {
+      }, inbox, true);
+      const openSettings = () => this.confirmGenerationExit(() => {
         this.leave();
         this.editing = true;
         this.draft = null;
@@ -3455,7 +3539,7 @@ class MochiView {
           configure();
         this.refreshChoices();
         this.redraw();
-      };
+      }, more);
       const menu = el("details", "lp-conversation-menu"), more = el("summary", "lp-nav-action", "⋯");
       more.setAttribute("aria-label", "Room options");
       const menuSheet = el("div", "lp-conversation-menu-sheet");
@@ -3490,27 +3574,27 @@ class MochiView {
         this.memoryPanel.show(room);
         this.presenceRoot?.querySelector('[aria-label="Conversation Memory"] button')?.focus();
       }));
-      menuSheet.append(menuAction("Presets", () => {
+      menuSheet.append(menuAction("Presets", () => this.confirmGenerationExit(() => {
         this.memoryPanel.reset();
         this.preview.reset();
         this.search.reset();
         this.presetPanel.show(room);
         this.presenceRoot?.querySelector('[aria-label="Mochi presets"] button')?.focus();
-      }));
-      menuSheet.append(menuAction("Search conversation", () => {
+      }, more, true)));
+      menuSheet.append(menuAction("Search conversation", () => this.confirmGenerationExit(() => {
         this.memoryPanel.reset();
         this.presetPanel.reset();
         this.preview.reset();
         this.search.show(room);
         this.presenceRoot?.querySelector('[aria-label="Search conversation text"]')?.focus();
-      }));
-      menuSheet.append(menuAction("Preview AI prompt", () => {
+      }, more, true)));
+      menuSheet.append(menuAction("Preview AI prompt", () => this.confirmGenerationExit(() => {
         this.memoryPanel.reset();
         this.presetPanel.reset();
         this.search.reset();
         this.preview.show(room);
         this.presenceRoot?.querySelector('[aria-label="Preview scenario"]')?.focus();
-      }));
+      }, more, true)));
       menu.append(more, menuSheet);
       menu.addEventListener("keydown", (event) => {
         if (event.key === "Escape") {
@@ -3759,8 +3843,9 @@ class MochiView {
       };
       field("Response mode", mode);
       auto.disabled = !!settings.responseMode;
+      group.append(el("p", "mochi-muted", "This conversation · Requires Save. Natural may choose silence or delayed replies; Instant requests an eligible reply; Manual disables automatic replies, while Continue still works. A selected mode controls automatic replies; Existing behavior uses the automatic-reply checkbox. Ordinary replies do not require idle/background autonomy."));
       section("Background messaging", true);
-      group.append(el("p", "mochi-muted", "These controls apply immediately. Scheduled and idle messages can generate replies while you are away."));
+      group.append(el("p", "mochi-muted", "Permission, presence and schedule actions apply now. AI timing/status suggestions require Save. Background autonomy is separate from ordinary replies to your messages."));
       const accountBackground = el("input");
       accountBackground.type = "checkbox";
       accountBackground.checked = !!state.backgroundEnabled;
@@ -3774,13 +3859,16 @@ class MochiView {
       };
       field("Allow AI delivery timing and status suggestions", aiBehavior);
       accountBackground.onchange = () => this.dispatch("mochi:background_account", { enabled: accountBackground.checked });
-      field("Allow server-side background messaging for my account", accountBackground);
+      field("This Lumiverse login: allow background messaging (applies now)", accountBackground);
+      accountBackground.setAttribute("aria-description", "This Lumiverse login · Applies now across its fictional profiles. Does not enable ordinary automatic replies.");
+      group.append(el("small", "mochi-muted", "This Lumiverse login: background permission applies across its fictional profiles. It is not a fictional-profile setting."));
       const roomBackground = el("input");
       roomBackground.type = "checkbox";
       roomBackground.checked = !!room.background?.enabled;
       roomBackground.disabled = this.busy;
       roomBackground.onchange = () => this.dispatch("mochi:background_room", { roomId: room.id, revision: room.revision, enabled: roomBackground.checked });
-      field("Allow scheduled messages in this room", roomBackground);
+      field("This conversation: allow scheduled messages (applies now)", roomBackground);
+      roomBackground.setAttribute("aria-description", "This conversation · Applies now. Also requires permission for this Lumiverse login.");
       const idle = el("input");
       idle.type = "checkbox";
       idle.checked = !!room.background?.idle?.enabled;
@@ -4862,6 +4950,7 @@ function createMochiWindow(ui, session, notificationPolicy) {
     if (opener?.isConnected && !opener.closest("[hidden]"))
       opener.focus({ preventScroll: true });
   };
+  const requestHide = () => session.view.confirmGenerationExit(hide, close);
   maximize.onclick = () => {
     if (maximized()) {
       widget.setFullscreen(false);
@@ -4880,7 +4969,7 @@ function createMochiWindow(ui, session, notificationPolicy) {
     if (event.key === "Escape") {
       event.preventDefault();
       event.stopPropagation();
-      hide();
+      requestHide();
       return;
     }
     if (maximized() || !["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key))
@@ -4939,7 +5028,7 @@ function createMochiWindow(ui, session, notificationPolicy) {
       },
       onDispose: cleanup
     });
-    close.addEventListener("click", hide);
+    close.addEventListener("click", requestHide);
     syncControls();
     grip.addEventListener("keydown", (event) => {
       if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key))

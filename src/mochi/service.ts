@@ -335,11 +335,33 @@ export class MochiService {
     await this.locked(user,id,async()=>{
       const room=await this.read(user,id,input.accountId)
       if(room.receipts!.includes(requestId))return
+      const management=room.memory?.management
+      if(management?.requestId===requestId){
+        if(input.confirmed!==true||input.action!==management.action||input.revision!==management.baseRevision||(room.associationRevision||0)!==input.associationRevision)throw Error('Memory recovery request changed. Review the current conversation before retrying.')
+        return
+      }
       if(room.revision!==input.revision||(room.associationRevision||0)!==input.associationRevision)throw Error('Conversation changed. Refresh and review your summary draft before saving.')
       if(input.confirmed!==true)throw Error('Confirm this memory change; active and pending replies may be canceled.')
-      if(room.receipts!.length>=10000)throw Error('Room receipt limit reached; no data was removed.')
-      if((room.memory?.versions.length||0)>=MAX_SUMMARY_VERSIONS)throw Error('Summary version limit reached. Existing versions were preserved.')
       const current=room.memory?.versions.find(v=>v.id===room.memory!.currentId)
+      if((input.action==='disable'||input.action==='clear')&&current){
+        // Management remains possible even when version/receipt capacity is full.
+        // Replay of the latest recovery uses this bounded slot; older requests
+        // retain their stale revision and cannot overwrite newer state.
+        const changed=input.action==='clear'?(!management?.cleared&&(!!current.text||current.enabled||!!current.coverage)):!management&&current.enabled
+        if(!changed)return
+        const changedAt=new Date(this.now()).toISOString()
+        room.memory!.version=2
+        room.memory!.management={version:1,action:input.action,cleared:input.action==='clear'||!!management?.cleared,requestId,baseRevision:room.revision,changedAt}
+        validateMemory(room.memory,id,user)
+        this.jobs.get(this.jobKey(user,id))?.controller.abort()
+        for(const job of room.runtime?.jobs||[])if(!TERMINAL.has(job.status)){job.status='cancelled';delete job.draft;delete job.additional}
+        if(room.receipts!.length<10000)room.receipts!.push(requestId)
+        room.revision++;room.updatedAt=changedAt
+        await this.persist(user,room)
+        return
+      }
+      if(room.receipts!.length>=10000)throw Error('Room receipt limit reached. Disable/Clear remain available; no data was removed.')
+      if((room.memory?.versions.length||0)>=MAX_SUMMARY_VERSIONS)throw Error('Summary version limit reached. Disable/Clear remain available; saving or restoring a version requires future history-management support. Existing versions were preserved.')
       let data:Omit<SummaryVersion,'id'|'savedAt'>
       if(input.action==='save'){
         const body=text(input.text,MAX_SUMMARY_TEXT,true)
@@ -357,9 +379,7 @@ export class MochiService {
         const original=room.memory?.versions.find(v=>v.id===input.versionId)
         if(!original)throw Error('This summary version is unavailable.')
         data={text:original.text,enabled:original.enabled,excludeCovered:original.excludeCovered,coverage:original.coverage,restoredFrom:original.id}
-      }else if(input.action==='disable'&&current){data={text:current.text,enabled:false,excludeCovered:current.excludeCovered,coverage:current.coverage}}
-      else if(input.action==='clear'&&current){data={text:'',enabled:false,excludeCovered:false}}
-      else throw Error('Unsupported conversation memory action.')
+      }else throw Error('Unsupported conversation memory action.')
       // Async hashing cannot authorize a stale association or changed snapshot.
       const latest=await this.read(user,id,input.accountId)
       if(latest.revision!==room.revision||(latest.associationRevision||0)!==(room.associationRevision||0))throw Error('Conversation changed while validating coverage. Review and save again.')

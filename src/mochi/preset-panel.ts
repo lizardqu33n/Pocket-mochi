@@ -34,7 +34,7 @@ export class MochiPresetPanel {
  }
  render(room:MochiRoom):HTMLElement{
   if(this.key!==scope(room)){this.reset();return el('div')}
-  const root=el('section','mochi-preset-panel');root.setAttribute('aria-label','Mochi presets');root.append(el('h3','','Mochi Presets'),el('p','mochi-muted','Published revisions stay fixed for each chat until you apply an update. Room instructions remain a separate override.'))
+  const root=el('section','mochi-preset-panel');root.setAttribute('aria-label','Mochi presets');root.append(el('h3','','Mochi Presets'),el('p','mochi-muted','Publish saves a reusable template version in this library. Apply uses a selected version in this conversation. Other conversations stay on their saved versions. Room instructions remain a separate override.'))
   const status=el('p','mochi-muted',this.status);status.setAttribute('role','status');root.append(status)
   const refresh=button('Refresh preset library','lp-button');refresh.onclick=()=>this.load();const close=button('Close presets','lp-button');close.onclick=()=>{clearTimeout(this.timer);this.ticket='';this.open=false;this.redraw();this.returned()};root.append(refresh,close)
   const restore=button('Restore Mochi Default','lp-button');restore.onclick=()=>{const confirm=button('Confirm restore default','lp-button');confirm.onclick=()=>this.bind(DEFAULT_PRESET_ID,1);restore.replaceWith(confirm);confirm.focus()};root.append(restore,el('small','mochi-muted','Applying a preset or restoring Default may cancel this chat’s pending replies. Publishing alone does not.'))

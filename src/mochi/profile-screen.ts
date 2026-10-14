@@ -37,7 +37,7 @@ export class MochiProfiles {
       const back=button('Back','lp-button');back.onclick=exit;form.append(back);return form
     }
     const draft=this.draft
-    form.append(el('h3','',draft.id?'Edit Mochi profile':'New Mochi profile'))
+    form.append(el('h3','',draft.id?'Edit Mochi profile':'New Mochi profile'),el('p','mochi-muted','This fictional profile · Save applies persona, name and avatar edits. Your Lumiverse login is unchanged.'))
     const saved=this.state.accounts.find(a=>a.id===draft.id),chosen=this.state.personas.find(p=>p.source+':'+p.sourceId===draft.persona)
     const url=draft.avatarId==='persona'?(chosen?.avatarUrl||saved?.persona.avatarUrl||''):draft.avatarId?'/api/v1/images/'+draft.avatarId:''
     const preview=el('section','mochi-profile-preview'); preview.setAttribute('aria-label','Profile preview')

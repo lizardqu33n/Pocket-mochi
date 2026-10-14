@@ -243,7 +243,7 @@ var MAX_SUMMARY_VERSIONS = 100;
 var versionId = (v) => typeof v === "string" && /^summary_[a-f0-9]{32}$/.test(v);
 function validateMemory(value, roomId, ownerId) {
   const m = value;
-  if (!m || m.version !== 1 || m.roomId !== roomId || typeof m.ownerId !== "string" || !m.ownerId || ownerId !== undefined && m.ownerId !== ownerId || !Array.isArray(m.versions) || !m.versions.length || m.versions.length > MAX_SUMMARY_VERSIONS || !versionId(m.currentId))
+  if (!m || ![1, 2].includes(m.version) || m.roomId !== roomId || typeof m.ownerId !== "string" || !m.ownerId || ownerId !== undefined && m.ownerId !== ownerId || !Array.isArray(m.versions) || !m.versions.length || m.versions.length > MAX_SUMMARY_VERSIONS || !versionId(m.currentId))
     throw Error("Unsupported conversation memory; room data was preserved.");
   const ids = new Set;
   for (const v of m.versions) {
@@ -258,12 +258,20 @@ function validateMemory(value, roomId, ownerId) {
   }
   if (!ids.has(m.currentId))
     throw Error("Current summary version is missing; room data was preserved.");
+  const control = m.management;
+  if (m.version === 2 && !control || m.version === 1 && control !== undefined)
+    throw Error("Invalid memory management version; room data was preserved.");
+  if (control !== undefined && (!control || control.version !== 1 || !["disable", "clear"].includes(control.action) || typeof control.cleared !== "boolean" || control.action === "clear" && !control.cleared || typeof control.requestId !== "string" || control.requestId.length > 180 || !/^[A-Za-z0-9_-]+$/.test(control.requestId) || !Number.isSafeInteger(control.baseRevision) || control.baseRevision < 1 || typeof control.changedAt !== "string" || !Number.isFinite(Date.parse(control.changedAt))))
+    throw Error("Invalid memory management state; room data was preserved.");
   return m;
 }
 function currentSummary(room) {
   if (!room.memory)
     return;
-  return validateMemory(room.memory, room.id).versions.find((v) => v.id === room.memory.currentId);
+  const memory = validateMemory(room.memory, room.id), saved = memory.versions.find((v) => v.id === memory.currentId);
+  if (!saved || !memory.management)
+    return saved;
+  return { ...saved, enabled: false, ...memory.management.cleared ? { text: "", excludeCovered: false, coverage: undefined } : {} };
 }
 async function proveCoverage(room, boundaryId) {
   if (!replyIdentifier(boundaryId))
@@ -1161,7 +1169,7 @@ async function summaryInput(room, boundaryId, useCurrent) {
     throw new SummaryError("This prefix is too large for one safe request. Choose an earlier ending message; no source text was truncated.", "budget");
   return { coverage, data, inputDigest: await hashSummaryInput(data) };
 }
-var summaryConfiguration = (room) => JSON.stringify([room.accountId || "", room.associationRevision || 0, room.title, room.persona, room.characterIds, room.settings, room.preset, room.memory?.currentId || ""]);
+var summaryConfiguration = (room) => JSON.stringify([room.accountId || "", room.associationRevision || 0, room.title, room.persona, room.characterIds, room.settings, room.preset, room.memory?.currentId || "", room.memory?.management || null]);
 async function prepareSummary(host, room, user, boundaryId, useCurrent, signal) {
   const input = await summaryInput(room, boundaryId, useCurrent), sources = await summarySources(host, room, user);
   if (!host.tokens?.countMessages)
@@ -1763,15 +1771,43 @@ class MochiService {
       const room = await this.read(user, id, input.accountId);
       if (room.receipts.includes(requestId))
         return;
+      const management = room.memory?.management;
+      if (management?.requestId === requestId) {
+        if (input.confirmed !== true || input.action !== management.action || input.revision !== management.baseRevision || (room.associationRevision || 0) !== input.associationRevision)
+          throw Error("Memory recovery request changed. Review the current conversation before retrying.");
+        return;
+      }
       if (room.revision !== input.revision || (room.associationRevision || 0) !== input.associationRevision)
         throw Error("Conversation changed. Refresh and review your summary draft before saving.");
       if (input.confirmed !== true)
         throw Error("Confirm this memory change; active and pending replies may be canceled.");
-      if (room.receipts.length >= 1e4)
-        throw Error("Room receipt limit reached; no data was removed.");
-      if ((room.memory?.versions.length || 0) >= MAX_SUMMARY_VERSIONS)
-        throw Error("Summary version limit reached. Existing versions were preserved.");
       const current = room.memory?.versions.find((v) => v.id === room.memory.currentId);
+      if ((input.action === "disable" || input.action === "clear") && current) {
+        const changed = input.action === "clear" ? !management?.cleared && (!!current.text || current.enabled || !!current.coverage) : !management && current.enabled;
+        if (!changed)
+          return;
+        const changedAt = new Date(this.now()).toISOString();
+        room.memory.version = 2;
+        room.memory.management = { version: 1, action: input.action, cleared: input.action === "clear" || !!management?.cleared, requestId, baseRevision: room.revision, changedAt };
+        validateMemory(room.memory, id, user);
+        this.jobs.get(this.jobKey(user, id))?.controller.abort();
+        for (const job of room.runtime?.jobs || [])
+          if (!TERMINAL.has(job.status)) {
+            job.status = "cancelled";
+            delete job.draft;
+            delete job.additional;
+          }
+        if (room.receipts.length < 1e4)
+          room.receipts.push(requestId);
+        room.revision++;
+        room.updatedAt = changedAt;
+        await this.persist(user, room);
+        return;
+      }
+      if (room.receipts.length >= 1e4)
+        throw Error("Room receipt limit reached. Disable/Clear remain available; no data was removed.");
+      if ((room.memory?.versions.length || 0) >= MAX_SUMMARY_VERSIONS)
+        throw Error("Summary version limit reached. Disable/Clear remain available; saving or restoring a version requires future history-management support. Existing versions were preserved.");
       let data;
       if (input.action === "save") {
         const body = text(input.text, MAX_SUMMARY_TEXT, true);
@@ -1794,10 +1830,6 @@ class MochiService {
         if (!original)
           throw Error("This summary version is unavailable.");
         data = { text: original.text, enabled: original.enabled, excludeCovered: original.excludeCovered, coverage: original.coverage, restoredFrom: original.id };
-      } else if (input.action === "disable" && current) {
-        data = { text: current.text, enabled: false, excludeCovered: current.excludeCovered, coverage: current.coverage };
-      } else if (input.action === "clear" && current) {
-        data = { text: "", enabled: false, excludeCovered: false };
       } else
         throw Error("Unsupported conversation memory action.");
       const latest = await this.read(user, id, input.accountId);

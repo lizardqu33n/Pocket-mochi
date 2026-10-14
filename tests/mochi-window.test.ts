@@ -8,6 +8,8 @@ import { PocketPortal } from '../src/frontend/components/portal.js'
 function fixture() {
   const dom=new JSDOM('<body><main id="portal"></main></body>',{pretendToBeVisual:true})
   const previous={document:globalThis.document,window:globalThis.window};Object.assign(globalThis,{document:dom.window.document,window:dom.window})
+  dom.window.HTMLDialogElement.prototype.showModal=function(){this.open=true}
+  dom.window.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new dom.window.Event('close'))}
   const listeners=new Set<(payload:unknown)=>void>(),sent:any[]=[]
   const transport={sendToBackend:(payload:unknown)=>sent.push(payload),onBackendMessage:(fn:(payload:unknown)=>void)=>{listeners.add(fn);return()=>listeners.delete(fn)}}
   const session=getMochiSession(transport)
@@ -91,6 +93,19 @@ test('window: absent supported geometry fails before creation and leaves portal 
     h.portal.open();expect(()=>createMochiWindow({...h.ui,geometry:undefined},h.session,()=>({enabled:true,previews:false}))).toThrow('geometry')
     expect(h.portal.isOpen).toBe(true);expect(h.counts.created).toBe(0);expect(h.listeners.size).toBe(1)
   }finally{h.cleanup()}
+})
+
+test('window: user Hide warns about active replies and Stay does not cancel; programmatic cleanup remains unconditional',()=>{
+ const h=fixture()
+ try{
+  h.portal.open();h.load();const win=createMochiWindow(h.ui,h.session,()=>({enabled:true,previews:false}));win.open()
+  ;(h.session.view as any).ownGenerations.set(h.room.id,'synthetic_hide_reply')
+  const click=(name:string)=>Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(b=>b.getAttribute('aria-label')===name||b.textContent===name)!.click()
+  click('Hide Mochi window');expect(win.isOpen).toBe(true);expect(document.body.textContent).toContain('A reply is still generating')
+  click('Stay here');expect(win.isOpen).toBe(true);expect(h.sent.some(p=>p.type==='mochi:cancel')).toBe(false)
+  click('Hide Mochi window');click('Cancel generation & leave');expect(win.isOpen).toBe(false);expect(h.sent.filter(p=>p.type==='mochi:cancel')).toHaveLength(1)
+  win.open();expect(h.listeners.size).toBe(1);expect(h.sent.some(p=>p.type==='mochi:schedule_cancel')).toBe(false)
+ }finally{h.cleanup()}
 })
 
 test('window: host-hidden messenger does not acknowledge or toast unread messages',()=>{

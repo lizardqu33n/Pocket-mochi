@@ -67,6 +67,15 @@ for(const kind of ['edit','delete','reroll','attribution','reaction','settings',
  const before=structuredClone(f.files);await expect(apply(f,current,suggestion)).rejects.toThrow();expect(f.files).toEqual(before);expect(f.calls).toHaveLength(1)
 })
 
+for(const action of ['disable','clear'])test(`AI suggestion cannot bypass ${action} when the saved version ID is unchanged`,async()=>{
+ const f=fixture(),{room}=await f.create();provider(f)
+ await f.service.saveMemory('alice',{roomId:room.id,revision:room.revision,associationRevision:0,requestId:'seed_memory',action:'save',text:'Synthetic saved memory',boundaryId:(room.messages[0]as any).id,enabled:true,excludeCovered:true,confirmed:true})
+ const before=await read(f,room),suggestion=await generate(f,before)
+ await f.service.saveMemory('alice',{roomId:room.id,revision:before.revision,associationRevision:0,requestId:'manage_'+action,action,confirmed:true})
+ const managed=await read(f,room);expect(managed.memory!.currentId).toBe(before.memory!.currentId);const files=structuredClone(f.files)
+ await expect(apply(f,managed,suggestion)).rejects.toThrow();expect(f.files).toEqual(files);expect(f.calls).toHaveLength(1)
+})
+
 test('new appended messages allow same-prefix Apply; changed boundary cannot claim greater coverage',async()=>{
  const f=fixture(),{room}=await f.create();provider(f);const suggestion=await generate(f,room);await f.service.message('alice',{roomId:room.id,revision:room.revision,requestId:'append',content:'Later text'});const current=await read(f,room)
  await expect(apply(f,current,suggestion,{boundaryId:(current.messages.at(-1)as any).id})).rejects.toThrow('coverage changed');await apply(f,current,suggestion);const saved=await read(f,room);expect(saved.memory!.versions[0].coverage!.count).toBe(1);expect(saved.messages).toHaveLength(2)
@@ -189,6 +198,6 @@ test('ordinary memory saves/disable/clear/restore never discard an edited unsave
    (panel as any).request({action,text:'Separate handwritten summary',enabled:true,excludeCovered:false,boundaryId:suggestion.coverage.boundaryId,versionId:active.memory?.versions[0].id,confirmed:true});const request=sent.at(-1);f.events.length=0;await f.service.handle(request,'alice');for(const event of f.events)panel.receive(event)
    expect(panel.suggestion!.text).toBe('User-edited unsaved AI suggestion');expect(panel.status).toContain('retained');document.body.replaceChildren(panel.render(active));expect(document.querySelector<HTMLTextAreaElement>('[aria-label="AI summary suggestion"]')!.value).toBe('User-edited unsaved AI suggestion')
   }
-  expect(active.memory!.versions).toHaveLength(4);expect(f.calls).toHaveLength(1)
+  expect(active.memory!.versions).toHaveLength(2);expect(f.calls).toHaveLength(1)
  }finally{panel.reset(true);dom.window.close();globalThis.document=previous}
 })

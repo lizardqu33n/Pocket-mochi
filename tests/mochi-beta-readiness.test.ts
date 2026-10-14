@@ -49,3 +49,27 @@ test('authoritative expired-session event clears production-shaped private state
   expect(f.session.isDestroyed).toBe(true);expect(f.drafts.size).toBe(0);expect(f.listeners.size).toBe(0)
  }finally{f.cleanup()}
 })
+
+test('explicit logout clears private metadata and delayed owner-less responses cannot repopulate the disposed view',()=>{
+ const f=fixture()
+ try{
+  const controller=new AbortController(),view=f.session.view as unknown as {modelControllers:Set<AbortController>;modelChoices:Map<string,unknown>}
+  view.modelControllers.add(controller);view.modelChoices.set('synthetic',{models:['synthetic']})
+  f.session.authenticatedIdentityChanged(null)
+  f.emit({type:'mochi:state',state:{rooms:[f.room],characters:[],personas:[],warnings:[]}})
+  expect(controller.signal.aborted).toBe(true);expect(view.modelChoices.size).toBe(0)
+  expect(f.session.view.state).toBeNull();expect(f.drafts.size).toBe(0);expect(f.listeners.size).toBe(0)
+ }finally{f.cleanup()}
+})
+
+test('network errors, principal-less reconnects and fictional-account DTOs are not trusted real-user changes',()=>{
+ const f=fixture()
+ try{
+  f.emit({type:'mochi:error',message:'Synthetic temporary outage'})
+  f.emit({type:'CONNECTED',role:'owner'})
+  f.emit({type:'mochi:state',state:{accountId:'account_'+'b'.repeat(32),rooms:[{...f.room,accountId:'account_'+'b'.repeat(32)}],characters:[],personas:[],warnings:[]}})
+  expect(f.session.isDestroyed).toBe(false);expect(f.drafts.get(f.room.id)).toBe('Synthetic unsent draft')
+  f.session.authenticatedIdentityChanged('alice')
+  expect(f.session.isDestroyed).toBe(false)
+ }finally{f.cleanup()}
+})

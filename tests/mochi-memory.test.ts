@@ -41,7 +41,7 @@ for(const fictional of [false,true])test(`summary save/edit/restore/disable/clea
  expect(current.memory!.versions.at(-1)).toMatchObject({text:first.text,coverage:first.coverage,restoredFrom:first.id});expect(current.memory!.versions.at(-1)!.id).not.toBe(first.id)
  await mutate(f,current,'disable');current=await read(f,room);expect((await resolve(current)).messages).toEqual((await resolve({...room,revision:current.revision})).messages)
  await mutate(f,current,'clear');current=await new MochiService(f.host).read('alice',room.id,room.accountId)
- expect(current.memory!.versions).toHaveLength(5);expect(current.memory!.versions.at(-1)).toMatchObject({text:'',enabled:false,excludeCovered:false});expect(current.messages).toEqual(original);expect(f.calls).toHaveLength(0);expect(current.notifications).toEqual(room.notifications)
+ expect(current.memory!.versions).toHaveLength(3);expect(current.memory!.management).toMatchObject({action:'clear',cleared:true});expect((await inspectMemory(current)).current).toMatchObject({text:'',enabled:false,excludeCovered:false});expect(current.messages).toEqual(original);expect(f.calls).toHaveLength(0);expect(current.notifications).toEqual(room.notifications)
 })
 
 for(const fictional of [false,true])test(`summary ownership/stale writes/interrupted saves/receipts (${fictional?'fictional':'legacy'})`,async()=>{
@@ -65,11 +65,9 @@ test('version caps and malformed memory preserve records rather than evicting',a
  const v=current.memory!.versions[0];current.memory!.versions=Array.from({length:MAX_SUMMARY_VERSIONS},(_,i)=>({...v,id:'summary_'+i.toString(16).padStart(32,'0')}));current.memory!.currentId=current.memory!.versions.at(-1)!.id
  f.files.set('alice:mochi/v1/rooms/'+room.id+'.json',structuredClone(current))
  await expect(save(f,current,'limit')).rejects.toThrow('limit');expect((await read(f,room)).memory!.versions).toHaveLength(100)
- // Known capacity recovery limitation: all mutations need a new version slot,
- // including Disable/Clear. Preserve this evidence until a separately reviewed
- // non-destructive capacity policy replaces it; this is not a readiness pass.
- for(const action of ['disable','clear'])await expect(mutate(f,current,action)).rejects.toThrow('limit')
- expect((await read(f,room)).memory).toEqual(current.memory);expect((await read(f,room)).messages).toEqual(room.messages)
+ const retained=structuredClone(current.memory!.versions)
+ await mutate(f,current,'disable');let managed=await read(f,room);await mutate(f,managed,'clear');managed=await read(f,room)
+ expect(managed.memory!.versions).toEqual(retained);expect((await inspectMemory(managed)).current!.enabled).toBe(false);expect(managed.messages).toEqual(room.messages)
  current.memory!.versions[0].coverage!.digest='corrupt';f.files.set('alice:mochi/v1/rooms/'+room.id+'.json',structuredClone(current));await expect(read(f,room)).rejects.toThrow('preserved');expect(f.files.has('alice:mochi/v1/rooms/'+room.id+'.json')).toBe(true)
 })
 
@@ -78,6 +76,55 @@ test('exact ordered prefix rejects missing, duplicate and malformed IDs without 
  expect((await proveCoverage(room,id)).count).toBe(1)
  for(const messages of [[...room.messages,...room.messages],[null], [{...(room.messages[0]as any),id:'../foreign'}]])await expect(proveCoverage({...room,messages},id)).rejects.toThrow()
  await expect(proveCoverage(room,'unknown')).rejects.toThrow('unavailable')
+})
+
+for(const fictional of [false,true])for(const count of [99,100])for(const receipts of [0,10000])test(`bounded memory management: ${fictional?'fictional':'legacy'}, versions ${count}, receipts ${receipts}`,async()=>{
+ const f=fixture(),{room}=await f.create(fictional);await save(f,room,'memory_seed',{excludeCovered:true});let current=await read(f,room)
+ const version=current.memory!.versions[0]
+ current.memory!.versions=Array.from({length:count},(_,i)=>({...structuredClone(version),id:'summary_'+i.toString(16).padStart(32,'0')}));current.memory!.currentId=current.memory!.versions.at(-1)!.id
+ if(receipts)current.receipts=Array.from({length:receipts},(_,i)=>'synthetic_receipt_'+i)
+ const path='alice:mochi/v1/rooms/'+room.id+'.json';f.files.set(path,structuredClone(current))
+ const before=structuredClone(current),first=current.memory!.versions[0].id
+ if(count===100||receipts){await expect(save(f,current,'full_save')).rejects.toThrow('limit');await expect(mutate(f,current,'restore',{versionId:first})).rejects.toThrow('limit')}
+ else{await save(f,current,'last_slot');current=await read(f,room);expect(current.memory!.versions).toHaveLength(100)}
+ const retained=structuredClone(current.memory!.versions),original=structuredClone(current.messages)
+ await expect(f.service.saveMemory('bob',{roomId:room.id,requestId:'foreign',action:'disable',confirmed:true})).rejects.toThrow()
+ await expect(mutate(f,current,'disable',{accountId:fictional?undefined:'account_'+'b'.repeat(32)})).rejects.toThrow()
+ await expect(mutate(f,current,'disable',{associationRevision:(current.associationRevision||0)+1})).rejects.toThrow()
+ await expect(mutate(f,current,'disable',{revision:current.revision-1})).rejects.toThrow('changed')
+ const move=f.host.userStorage.move;f.host.userStorage.move=async()=>{throw Error('Interrupted recovery replacement')}
+ await expect(mutate(f,current,'disable')).rejects.toThrow('Interrupted');expect(await read(f,room)).toEqual(current)
+ f.host.userStorage.move=move;await mutate(f,current,'disable');const disabled=await read(f,room)
+ await mutate(f,current,'disable');expect(await read(f,room)).toEqual(disabled)
+ expect((await inspectMemory(disabled)).current!.enabled).toBe(false);expect((await resolve(disabled)).history.excluded||0).toBe(0)
+ await f.service.handle({type:'mochi:preview',requestId:'management_preview',roomId:room.id,accountId:room.accountId,scenario:'continue',responder:'auto'},'alice');const preview=f.events.at(-1).preview;expect(preview.history.excluded||0).toBe(0);expect(preview.memory!.included).toBe(false)
+ await mutate(f,disabled,'clear');const cleared=await new MochiService(f.host).read('alice',room.id,room.accountId)
+ await mutate(f,disabled,'clear');expect(await read(f,room)).toEqual(cleared)
+ if(receipts)await expect(mutate(f,current,'disable')).rejects.toThrow('changed')
+ else{await mutate(f,current,'disable');expect(await read(f,room)).toEqual(cleared)}
+ expect((await inspectMemory(cleared)).current).toMatchObject({enabled:false,text:'',excludeCovered:false});expect(cleared.memory!.versions).toEqual(retained);expect(cleared.messages).toEqual(original)
+ expect(cleared.receipts!.length).toBeLessThanOrEqual(10000);expect(cleared.notifications).toEqual(before.notifications);expect(f.calls).toHaveLength(0)
+ const rev=cleared.revision;await mutate(f,cleared,'disable',{requestId:'no_op_disable'});await mutate(f,cleared,'clear',{requestId:'no_op_clear'});expect((await read(f,room)).revision).toBe(rev)
+ if(receipts){await expect(mutate(f,disabled,'clear',{confirmed:false})).rejects.toThrow('request changed');await expect(mutate(f,disabled,'disable',{requestId:'clear'})).rejects.toThrow('request changed')}
+})
+
+test('memory management validation fails closed and does not change retained version digests',async()=>{
+ const f=fixture(),{room}=await f.create();await save(f,room);let current=await read(f,room)
+ const retained=structuredClone(current.memory!.versions);await mutate(f,current,'disable');current=await read(f,room)
+ for(const patch of [{cleared:'yes'},{baseRevision:-1},{requestId:'../foreign'},{action:'enable'},{action:'clear',cleared:false}])expect(()=>validateMemory({...current.memory,management:{...current.memory!.management,...patch}},room.id,'alice')).toThrow('management')
+ expect(current.memory!.version).toBe(2);expect(()=>validateMemory({...current.memory,version:1},room.id,'alice')).toThrow('management version');expect(()=>validateMemory({...current.memory,management:undefined},room.id,'alice')).toThrow('management version')
+ expect(current.memory!.versions).toEqual(retained)
+ await save(f,current,'reenable');current=await read(f,room);expect(current.memory!.management).toBeUndefined();expect((await inspectMemory(current)).current!.enabled).toBe(true)
+})
+
+for(const action of ['disable','clear'])test(`memory ${action} cancels pending/active output without consuming version capacity`,async()=>{
+ const f=fixture(),{room}=await f.create();await save(f,room,'active_memory',{excludeCovered:true});const current=await read(f,room),now=Date.now()
+ current.runtime={version:1,enabled:false,jobs:[{id:'recovery_job',kind:'response',dueAt:now+60000,expiresAt:now+120000,nextAttemptAt:now+60000,revision:current.revision,responder:'alice_character',status:'generated',attempts:1,draft:{characterId:'alice_character',name:'Character',avatarUrl:'',text:'Synthetic deferred'}}]};f.files.set('alice:mochi/v1/rooms/'+room.id+'.json',structuredClone(current))
+ let ready!:()=>void,release!:(r:any)=>void;const started=new Promise<void>(r=>ready=r)
+ f.host.generate!.quiet=async r=>{f.calls.push(r);ready();return new Promise(resolve=>release=resolve)}
+ const pending=f.service.message('alice',{roomId:room.id,revision:current.revision,requestId:'active_recovery',content:''}).catch(error=>error);await started
+ await mutate(f,await read(f,room),action);release({content:JSON.stringify({speakerId:'alice_character',text:'Late synthetic reply'})})
+ expect((await pending).name).toBe('AbortError');const saved=await read(f,room);expect(saved.messages).toEqual(current.messages);expect(saved.memory!.versions).toEqual(current.memory!.versions);expect(saved.runtime!.jobs[0].status).toBe('cancelled');expect(saved.runtime!.jobs[0].draft).toBeUndefined();expect(f.calls).toHaveLength(1)
 })
 
 for(const change of ['content','name','character','delete','reorder','reroll'])test(`covered ${change} invalidates digest; restore never silently repairs it`,async()=>{

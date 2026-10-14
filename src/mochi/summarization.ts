@@ -30,7 +30,7 @@ export async function summaryInput(room:MochiRoom,boundaryId:unknown,useCurrent:
  if(JSON.stringify(data).length>SUMMARY_SOURCE_CAP)throw new SummaryError('This prefix is too large for one safe request. Choose an earlier ending message; no source text was truncated.','budget')
  return {coverage,data,inputDigest:await hashSummaryInput(data)}
 }
-export const summaryConfiguration=(room:MochiRoom)=>JSON.stringify([room.accountId||'',room.associationRevision||0,room.title,room.persona,room.characterIds,room.settings,room.preset,room.memory?.currentId||''])
+export const summaryConfiguration=(room:MochiRoom)=>JSON.stringify([room.accountId||'',room.associationRevision||0,room.title,room.persona,room.characterIds,room.settings,room.preset,room.memory?.currentId||'',room.memory?.management||null])
 export async function prepareSummary(host:any,room:MochiRoom,user:string,boundaryId:unknown,useCurrent:boolean,signal:AbortSignal){
  const input=await summaryInput(room,boundaryId,useCurrent),sources=await summarySources(host,room,user)
  if(!host.tokens?.countMessages)throw new SummaryError('This Lumiverse version does not provide the required token counter.','budget')

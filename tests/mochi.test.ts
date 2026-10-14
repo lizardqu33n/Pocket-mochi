@@ -334,7 +334,7 @@ test('invalid token counts block providers, exact budgets pass, and failed model
   await f.service.message('alice',{roomId:room.id,revision:room.revision,requestId:'manual_only',content:'No automatic reply'})
   expect(calls).toBe(0)
   const saved=await f.service.read('alice',room.id),input={roomId:room.id,revision:saved.revision,requestId:'failed_empty',content:''}
-  await expect(f.service.message('alice',input)).rejects.toThrow('invalid message JSON')
+  await expect(f.service.message('alice',input)).rejects.toThrow('The AI returned an empty response. Please try again.')
   await f.service.message('alice',input)
   expect(calls).toBe(1);expect((await f.service.read('alice',room.id)).messages).toEqual(saved.messages)
 })
@@ -477,7 +477,7 @@ test('reroll cancellation and provider failures retain the original reply and do
   saved = await f.service.read('alice',room.id); expect(saved.messages[1]).toEqual(target)
   expect(saved.notifications).toHaveLength(1)
   f.host.generate!.quiet=async()=>({content:'invalid JSON'})
-  await expect(f.service.message('alice', {roomId:room.id,revision:saved.revision,requestId:'bad_reroll',messageId:target.id,confirmed:true},true)).rejects.toThrow('invalid message JSON')
+  await expect(f.service.message('alice', {roomId:room.id,revision:saved.revision,requestId:'bad_reroll',messageId:target.id,confirmed:true},true)).rejects.toThrow('The AI returned malformed message JSON. Please try again.')
   saved=await f.service.read('alice',room.id); expect(saved.messages[1]).toEqual(target)
   f.host.connections!.get=async()=>null
   await expect(f.service.message('alice',{roomId:room.id,revision:saved.revision,requestId:'unowned_reroll',messageId:target.id,confirmed:true},true)).rejects.toThrow('account')
