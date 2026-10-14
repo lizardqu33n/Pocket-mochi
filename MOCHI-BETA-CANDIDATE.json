@@ -1,0 +1,23 @@
+{
+  "assessment": "MOCHI-MEM-01G",
+  "assessmentDate": "2026-10-13",
+  "branch": "codex/mochi-desktop-01b-base-review",
+  "runtimeSourceCommit": "db5bbba9b8efb4d5a389fa97c0028852272523ef",
+  "inspectedLocalHostCommit": "b1a68d9e32e2a2480a0d5ae71422566845f2657b",
+  "extensionIdentifier": "lumiphone",
+  "manifest": "spindle.json",
+  "bundles": {
+    "dist/frontend.js": "A2AE424F1B229E4403E31AAE49E9EE7EE3828CA1A56F6CFC6352222BE2D5368E",
+    "dist/backend.js": "227CC6CA554BC7C2F922FD0ABF2AF708B17E8452131C89EDD9B75B167F92A299"
+  },
+  "runtimeChangedInAssessment": false,
+  "releaseReady": false,
+  "multiUserReady": false,
+  "manualEFReview": "User-reported superficial testing only",
+  "targetedTests": {"passed":195,"failed":0,"assertions":1491,"environment":"synthetic providers/storage and JSDOM"},
+  "blockers": ["Trusted silent real-user transition teardown is not wired", "Memory version capacity blocks Disable/Clear", "Real-host privacy and visual acceptance remain pending"],
+  "report": "MOCHI-MEM-01G.md",
+  "uiProposal": "MOCHI-UI-UX-AUDIT.md",
+  "published": false,
+  "installedByAssessment": false
+}

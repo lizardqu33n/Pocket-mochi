@@ -65,6 +65,11 @@ test('version caps and malformed memory preserve records rather than evicting',a
  const v=current.memory!.versions[0];current.memory!.versions=Array.from({length:MAX_SUMMARY_VERSIONS},(_,i)=>({...v,id:'summary_'+i.toString(16).padStart(32,'0')}));current.memory!.currentId=current.memory!.versions.at(-1)!.id
  f.files.set('alice:mochi/v1/rooms/'+room.id+'.json',structuredClone(current))
  await expect(save(f,current,'limit')).rejects.toThrow('limit');expect((await read(f,room)).memory!.versions).toHaveLength(100)
+ // Known capacity recovery limitation: all mutations need a new version slot,
+ // including Disable/Clear. Preserve this evidence until a separately reviewed
+ // non-destructive capacity policy replaces it; this is not a readiness pass.
+ for(const action of ['disable','clear'])await expect(mutate(f,current,action)).rejects.toThrow('limit')
+ expect((await read(f,room)).memory).toEqual(current.memory);expect((await read(f,room)).messages).toEqual(room.messages)
  current.memory!.versions[0].coverage!.digest='corrupt';f.files.set('alice:mochi/v1/rooms/'+room.id+'.json',structuredClone(current));await expect(read(f,room)).rejects.toThrow('preserved');expect(f.files.has('alice:mochi/v1/rooms/'+room.id+'.json')).toBe(true)
 })
 

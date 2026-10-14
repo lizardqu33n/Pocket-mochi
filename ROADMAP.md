@@ -32,8 +32,13 @@ versions and opt-in outgoing-history exclusion are development-verified with
 matching bundles and targeted synthetic/DOM tests. Real-host acceptance remains
 pending. MEM-01F explicit AI-assisted Generate/Preview/Edit/Apply summarization is
 development-verified with source-proof checks, shared task/quota ownership and
-matching bundles. Combined MEM-01E/01F disposable-host manual acceptance remains
-pending before MEM-01G. Automatic memory extraction/background summarization has
+matching bundles. MEM-01E/01F were reviewed by the user with superficial testing;
+this permits MEM-01G but is not full live regression or multi-user acceptance.
+MEM-01G source/privacy/UI assessment is complete with targeted synthetic tests.
+Multi-user beta readiness is blocked by the unwired trusted real-user transition
+boundary; memory-capacity management and actual-host/visual acceptance also remain.
+See MOCHI-MEM-01G.md and MOCHI-UI-UX-AUDIT.md. No runtime/UI changes were made in G.
+Automatic memory extraction/background summarization has
 not begun. Later UI Modernization & Settings Reorganization must research genuinely
 beginner-friendly interfaces rather than merely rearranging existing controls.
 Messaging order: MSG-01A quotes, MSG-01B reactions, MSG-01C pins, MSG-01D search,
@@ -49,7 +54,7 @@ checks are ready. Data safety, compatibility and testing take priority.
 5. Optional RP Linking — planned wider Beta 2 testing, subject to Kitty's agreement.
 6. Bug Fixes & Stabilization.
 7. Pocket Ecosystem Integration — deeper scope dependent on Kitty's input.
-8. Settings Reorganization.
+8. UI Modernization & Settings Reorganization.
 9. First Theme Pass: Colors — eventual 1.0 when stable and ready.
 
 Essential layout, responsiveness, contrast and accessibility fixes remain allowed
@@ -60,6 +65,45 @@ to share the branch or conduct wider beta testing is implied.
 
 Main Lumi is the evaluation environment. Update LumiTest after this pass, not during it.
 Preserve messaging/candidate commit behavior; changes below are targeted fixes and presentation work.
+
+## MEM-01G UI/UX audit addition — source assessment complete
+
+The user approved proceeding after superficial MEM-01E/01F manual review. Its
+authentication/privacy, real-user and fictional-account isolation, persistence,
+interrupted-write recovery, generation/cancellation, provider/retry and recoverable
+beta-candidate work remain primary. The UI audit must not displace those checks.
+
+Include a comprehensive read-only UI/UX Audit & Modernization Proposal in
+`MOCHI-MEM-01G.md`, or a clearly linked report. Inventory the desktop and narrow
+messenger, sidebar/shortcuts, accounts/room navigation, composer/actions/notices,
+settings/texting preferences, presets/editor/macros, Prompt Preview, Memory/AI
+summaries, Search, Pins & Notes, dialogs, errors and loading states. Review actual
+source, interactions, CSS/container-width behavior and relevant local Lumiverse
+patterns, evaluating their limitations rather than assuming they fit beginners.
+
+Provide the five to ten most significant problems with component/style evidence;
+plain-language labels and explanations; proposed settings/navigation hierarchy;
+a beginner first-use workflow; desktop/narrow-window recommendations; safe pre-beta
+fixes; a prioritized modernization backlog; and screenshot/visual/user-test needs.
+Inspect discoverability, developer terminology, Publish versus Apply, Generate
+versus Save, invalid memory recovery, leaving during generation, provider errors,
+action hierarchy, density, component boundaries, dirty/disabled/selected/loading
+states, nested controls, keyboard focus and scrolling.
+
+Classify proposals as A: beta-critical usability/safety issues, B: safe pre-beta
+clarity/focus polish, and C: post-beta cohesive modernization. Recommend narrow A
+fixes; implement B only when isolated, justified and testable within the approved
+checkpoint; document larger work as proposals. DOM labels/width fixtures do not
+prove usability. Without separately authorized screenshots/browser inspection,
+label findings as source/structure evidence, not verified pixel appearance or
+actual multi-user acceptance. Keep verification narrow and sequential; no push,
+installation, deployment or actual-host/browser startup without separate approval.
+
+UI Modernization & Settings Reorganization is a researched, cohesive design effort:
+reusable cards/fields/toolbars/dialogs, consistent navigation and visual hierarchy,
+approachable default workflows, progressive disclosure of prompt controls and
+cleaner preset/memory/character tools. Merely moving fields into accordions is
+insufficient. The later color Theme Pass does not replace this structural work.
 
 ## Functional fixes
 
