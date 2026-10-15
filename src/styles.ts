@@ -149,6 +149,14 @@ export const PHONE_STYLES = `
   .lumiphone-shell .lp-home-setup p { margin:0; font-size:12px; line-height:1.5; color:var(--lp-muted); }
   .lp-setup .lp-enrichment-stop { border-color:var(--lumiverse-danger,#c65c65); color:var(--lumiverse-danger,#c65c65); }
   .lp-home-head { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; padding:10px 3px 20px; text-shadow:0 2px 12px rgba(0,0,0,.35); }
+  .lp-home-context-controls { display:flex; flex-direction:column; align-items:flex-end; gap:6px; min-width:0; }
+  .lp-rp-context-power { display:grid; place-items:center; width:36px; height:36px; padding:8px; color:#9ca3af; border:1px solid currentColor; border-radius:50%; background:#161b24; cursor:pointer; }
+  .lp-rp-context-power svg { display:block; width:18px; height:18px; }
+  .lp-rp-context-power[aria-pressed="true"] { color:#4ade80; }
+  .lp-rp-context-power[aria-pressed="false"] { color:#f87171; }
+  .lp-rp-context-power:hover:not(:disabled) { background:#232a36; }
+  .lp-rp-context-power:focus-visible { outline:2px solid var(--lp-accent); outline-offset:3px; }
+  .lp-rp-context-power:disabled { color:#9ca3af; cursor:wait; }
   .lp-home-date { font-size:11px; font-weight:650; opacity:.82; }
   .lp-home-clock { margin-top:1px; font-size:34px; line-height:1; font-weight:310; letter-spacing:-.045em; }
   .lp-home-weather { color:inherit; display:flex; align-items:center; gap:8px; padding:8px 10px; border:1px solid rgba(255,255,255,.18); border-radius:15px; background:rgba(15,13,24,.22); backdrop-filter:blur(18px); font-size:11px; }

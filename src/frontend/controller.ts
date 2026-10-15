@@ -1,4 +1,5 @@
 import { POCKET_ICONS as ICONS } from './components/icons.js'
+import { rpContextPowerButton } from './components/rp-context-power.js'
 import { GALLERY_PAGE_SIZE } from '../domain/gallery-page.js'
 import { MochiView } from '../mochi/view.js'
 import { getMochiSession, type MochiSession, type MochiSurface } from '../mochi/session.js'
@@ -142,6 +143,7 @@ class PocketController {
   private dismissMochiNotification: (() => void) | undefined
   private mochi: MochiView
   private state: PhoneState | null = null
+  private rpContextInjection: boolean | null = null
   private preferences: DevicePreferences = defaultPreferences()
   private settingsDraft: DevicePreferences | null = null
   private settingsSaveTimer = 0
@@ -1029,6 +1031,12 @@ class PocketController {
 
   private onBackend(payload: BackendPayload): void {
     if (!payload || typeof payload !== 'object' || typeof payload.type !== 'string') return
+    if (payload.type === 'lumiphone:rp_context_power_state') {
+      if (payload.chatId !== this.ctx.getActiveChat().chatId || payload.chatId !== this.state?.chatId || typeof payload.enabled !== 'boolean') return
+      this.rpContextInjection = payload.enabled
+      if (this.expanded && this.currentApp === 'home') this.render(false)
+      return
+    }
     if (payload.type === 'lumiphone:state' && payload.state) {
       const active = this.ctx.getActiveChat()
       if (active.chatId && payload.state.chatId !== active.chatId) return
@@ -1044,6 +1052,7 @@ class PocketController {
         this.npcDraft = null; this.previousNpcDraft = null
       }
       this.state = payload.state as PhoneState
+      this.rpContextInjection = typeof payload.rpContextInjection === 'boolean' ? payload.rpContextInjection : null
       const personaDeviceId = pocketPersonaActorId(this.state)
       const availableDeviceIds = new Set([personaDeviceId, ...this.state.conversations.flatMap((conversation) => conversationDeviceActorIds(this.state!, conversation))])
       if (!this.deviceOwnerActorId || !availableDeviceIds.has(this.deviceOwnerActorId)) this.deviceOwnerActorId = personaDeviceId
@@ -2029,7 +2038,12 @@ class PocketController {
     weather.type = 'button'
     weather.append(icon('weather'), el('span', '', `${state.weather.temperature}°${state.weather.unit} · ${state.weather.condition}`))
     weather.addEventListener('click', () => this.openApp('weather'))
-    head.append(left, weather)
+    const controls = el('div', 'lp-home-context-controls')
+    const permission = this.ctx.getActiveChat().chatId === state.chatId ? this.rpContextInjection : null
+    controls.append(rpContextPowerButton(permission, enabled => {
+      if (this.ctx.getActiveChat().chatId === state.chatId) this.send('lumiphone:rp_context_power', {enabled})
+    }), weather)
+    head.append(left, controls)
     const grid = el('div', 'lp-app-grid')
     for (const meta of APP_META.filter((entry) => !entry.dock)) grid.appendChild(this.appIcon(meta))
     const activity = el('div', 'lp-home-activity')

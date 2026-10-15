@@ -3,6 +3,7 @@ import {JSDOM,VirtualConsole} from 'jsdom'
 import {MochiView} from '../src/mochi/view.js'
 import {defaultMochiSettings,type MochiRoom} from '../src/mochi/types.js'
 import {MOCHI_DESKTOP_STYLES} from '../src/mochi/desktop-styles.js'
+import image from '../src/mochi/assets/mochi-wordmark.data-url.txt' with {type:'text'}
 
 function fixture(width:number,group=false){
  const errors:unknown[]=[],console=new VirtualConsole();console.on('jsdomError',e=>errors.push(e))
@@ -16,6 +17,18 @@ function fixture(width:number,group=false){
  const click=(label:string)=>{const node=document.querySelector<HTMLElement>(`[aria-label="${label}"]`);if(!node)throw Error('Missing '+label);node.click()}
  return {view,room,sent,dom,redraw,click,cleanup:()=>{view.destroy(false);dom.window.close();Object.assign(globalThis,prior);expect(errors).toEqual([])}}
 }
+for(const width of [320,390,900])test(`${width}px DOM: desktop and compatibility headers share the supplied wordmark and preserve the mascot`,()=>{
+ const f=fixture(width)
+ try{
+  const desktop=document.querySelector<HTMLImageElement>('.mochi-shell-brand .mochi-wordmark-image')!
+  expect(desktop.src).toBe(image);expect(desktop.alt).toBe('Mochi')
+  expect(document.querySelector('.mochi-shell-mascot svg')).not.toBeNull()
+  const compatibility=f.view.render(),mark=compatibility.querySelector<HTMLImageElement>('.mochi-wordmark-image')!
+  expect(mark.src).toBe(image);expect(mark.alt).toBe('Mochi')
+  expect(compatibility.querySelector('.mochi-wordmark svg')).toBeNull()
+  expect(f.sent).toHaveLength(0)
+ }finally{f.cleanup()}
+})
 for(const width of [320,390,900,1200])test(`${width}px DOM: details toggle preserves live thread, composer, tasks and focus`,()=>{
  const f=fixture(width)
  try{
@@ -45,7 +58,7 @@ test('group details, source fallback and search filter do not invent profile fie
   expect(f.view.roomId).toBe(room);expect(f.sent).toHaveLength(0)
   filter.value='Second member';filter.dispatchEvent(new f.dom.window.Event('input'));expect(document.querySelector<HTMLButtonElement>('.mochi-desktop-room')!.hidden).toBe(false)
   f.view.state!.characters=[];f.redraw();expect(document.querySelector('.mochi-profile-panel')!.textContent).toContain('Character source unavailable')
-  expect(document.querySelector('.mochi-profile-panel')!.textContent).not.toContain('Member Since');expect(document.querySelector('.mochi-shell-brand')!.textContent).toBe('Mochi')
+  expect(document.querySelector('.mochi-profile-panel')!.textContent).not.toContain('Member Since');expect(document.querySelector('.mochi-shell-brand img')!.getAttribute('alt')).toBe('Mochi')
   expect(MOCHI_DESKTOP_STYLES).toContain('@container (min-width:1000px)');expect(MOCHI_DESKTOP_STYLES).toContain('@container (max-width:639px)')
  }finally{f.cleanup()}
 })

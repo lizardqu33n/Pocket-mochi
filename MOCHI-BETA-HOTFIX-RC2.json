@@ -1,0 +1,50 @@
+{
+  "candidate": "mochi-closed-beta1-rc2",
+  "supersedes": "mochi-closed-beta1-rc1",
+  "baseCommit": "a542a92891f9091ad0c7e5e3cfa32c4fdfe6dcd9",
+  "sourceState": "uncommitted local working-tree snapshot; no new source commit yet",
+  "branch": "codex/mochi-desktop-01b-base-review",
+  "extensionIdentifier": "lumiphone",
+  "published": false,
+  "installed": false,
+  "status": "local-verified-header-correction-screenshot-review-pending",
+  "bundles": {
+    "dist/backend.js": "FB2478EE6AB4B004955CAF046681A82253B73BE6D16C8609936DEEC67AC329B6",
+    "dist/frontend.js": "E3F6590DADFC63F756B7C54F4E4B0F33EAD6DBFC085616CCAB921EF8F960AED8"
+  },
+  "packageManifest": "MOCHI-BETA-HOTFIX-RC2-PACKAGE.json",
+  "packageManifestSHA256": "1E6D0947DC2E51D066064EA97C21840E89F76343D59D3804C3BFCC628C813C8D",
+  "archive": {
+    "file": "tmp/releases/mochi-closed-beta1-rc2-brand-aligned-source-runtime.zip",
+    "sha256": "B566725B6C92071BAC8F4AEAA93CC3DB3A7FE9858F07ED63EC4EBA61194D277C",
+    "bytes": 3383336,
+    "contentsVerified": true,
+    "format": "zip of exact working-tree bytes; not a Git archive"
+  },
+  "targetedTests": {
+    "passed": 7,
+    "failed": 0,
+    "assertions": 63,
+    "environment": "isolated geometry/asset/JSDOM and compiled header checks; not live browser pixel verification",
+    "testCorrection": "Initial compiled assertion checked only the first style node; corrected to inspect all desktop style nodes, then passed"
+  },
+  "typecheck": "passed once for branding alignment",
+  "productionBuild": "passed once for branding alignment, backend then frontend; backend byte-for-byte unchanged",
+  "visualAcceptancePending": true,
+  "releaseReady": false,
+  "multiUserReady": false,
+  "limitations": "Original RC1 authentication/acceptance limitations remain; this hotfix makes no new security-readiness claim",
+  "priorAssessment": "MOCHI-BETA-CANDIDATE.json",
+  "report": "MOCHI-BETA-RC2-BRAND-ALIGN.md",
+  "revision": "brand-align-1",
+  "previousArchive": {
+    "file": "tmp/releases/mochi-closed-beta1-rc2-hotfix-source-runtime.zip",
+    "sha256": "0447040441B3678B2972A86941039E3828744A75B81EA72FAEDCC6BDF6D88397",
+    "bytes": 3383290,
+    "contentsVerified": true,
+    "format": "zip of exact working-tree bytes; not a Git archive"
+  },
+  "priorVerification": "MOCHI-BETA-HOTFIX-01-MASCOT.md",
+  "liveVisualFeedback": "User reports original RC2 wordmark/mascot/launcher approved; revised header not installed or visually verified by this checkpoint",
+  "installedByThisCheckpoint": false
+}

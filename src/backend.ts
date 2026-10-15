@@ -63,6 +63,7 @@ import { AppReviews } from './backend/app-reviews.js'
 import { storedPhoneKey } from './mochi/phone-selection.js'
 import { IDENTITY_PROFILES_PATH, normalizeIdentityProfiles, saveIdentityProfile, applyIdentityProfile } from './domain/identity-profiles.js'
 import { assemblePocketContext } from './backend/roleplay-context.js'
+import { RpContextPower } from './backend/rp-context-power.js'
 import { narrativeExcerpt, sanitizeNarrativeContent, stripPocketPresentationMarkup } from './backend/narrative-content.js'
 import { conversationTailSnapshot, normalizeReplyDecision, pendingRelayContext, persistentHandoffContext, relayForGeneration, relayIdFromMessages, relayLatestExchange } from './backend/continuity.js'
 import { assertPocketImageResolved, resolvePocketImageSource } from './backend/image-sources.js'
@@ -74,6 +75,14 @@ import { normalizeContactGroups, saveContactGroup } from './domain/contact-group
 import { createPocketReference, latestArmedReference, referenceForGeneration, serializePocketReference } from './backend/references.js'
 
 declare const spindle: import('lumiverse-spindle-types').SpindleAPI
+const rpContextPower = new RpContextPower(spindle.userStorage)
+async function rpContextEnabled(chatId: string, characterId: string, userId?: string): Promise<boolean> {
+  return rpContextPower.enabled(chatId, userId, async () => {
+    const raw = await spindle.userStorage.getJson<unknown>(statePath(chatId, characterId), {fallback:null, userId})
+    // Use the existing setup/legacy-data interpretation without creating a phone.
+    return normalizeState(raw, chatId, characterId, 'Character').setup.initialized
+  })
+}
 const mochi = new MochiService(spindle)
 mochi.resolvePhone = async(user,phone)=>storedPhoneKey(phone,await spindle.userStorage.getJson(statePath(phone.chatId,phone.characterId),{userId:user,fallback:null}))
 const mochiScheduler = new MochiScheduler(spindle, mochi, Date.now, message => spindle.log.warn(message))
@@ -1288,7 +1297,10 @@ async function sendState(state: PhoneState, userId?: string, reason = 'refresh',
     if ('avatarOverrideUrl' in contact) contact.avatarOverrideUrl = image.url
     else contact.avatarUrl = image.url
   }))
-  send({ type: 'lumiphone:state', state: displayState, npcBank, identityProfiles, preferences, jevKeyConfigured: Boolean(await getJevApiKey(userId)), resolvedWallpapers, capabilities: capabilities(), generation, swarmProfile, activePersona, reason, open }, userId)
+  let rpContextInjection: boolean | null = null
+  try { if (userId && state.chatId !== '_lobby') rpContextInjection = await rpContextEnabled(state.chatId, state.characterId, userId) }
+  catch { /* Keep the phone usable; an unreadable permission must not appear On. */ }
+  send({ type: 'lumiphone:state', state: displayState, rpContextInjection, npcBank, identityProfiles, preferences, jevKeyConfigured: Boolean(await getJevApiKey(userId)), resolvedWallpapers, capabilities: capabilities(), generation, swarmProfile, activePersona, reason, open }, userId)
 }
 
 function viewKey(userId?: string): string { return userId || '_default' }
@@ -4780,6 +4792,14 @@ async function handleFrontend(payload: unknown, userId?: string): Promise<void> 
   try {
     const context = await resolveContext(payload, userId)
     switch (payload.type) {
+      case 'lumiphone:rp_context_power': {
+        if (!userId || typeof payload.chatId !== 'string' || payload.chatId !== context.chatId || !spindle.permissions.has('chats')) throw new Error('Select an accessible RP chat first.')
+        const chat = await spindle.chats.get(context.chatId, userId)
+        if (!chat || chat.id !== context.chatId) throw new Error('This RP chat is not accessible.')
+        await rpContextPower.save(context.chatId, userId, payload.enabled)
+        send({type:'lumiphone:rp_context_power_state', requestId, chatId:context.chatId, enabled:payload.enabled}, userId)
+        break
+      }
       case 'lumiphone:get_debug_prompt': {
         const state = await loadState(context.chatId, context.characterId, userId)
         const conversationId = text(payload.conversationId, 180)
@@ -5881,6 +5901,9 @@ function ensureInterceptor(): void {
     try {
       const chatId = context.chatId || '_lobby'
       const characterId = await stateCharacterIdForChat(chatId, context.characterId, context.userId)
+      // Gate all automatic Pocket additions before markup stripping or receipt writes.
+      // OFF leaves the host prompt, pending references and relays untouched.
+      if (!await rpContextEnabled(chatId, characterId, context.userId)) return messages
       const generationId = text(context.generationId, 180)
       let state = await loadState(chatId, characterId, context.userId)
       const cleanMessages = messages.map((message: any) => typeof message?.content === 'string'

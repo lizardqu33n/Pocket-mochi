@@ -72,6 +72,9 @@ test('floating Mochi shortcut directly restores selected account, follows Pocket
     const pocket:any={getPosition:()=>({x:pocketX,y:160}),onDragEnd:(fn:any)=>{drag=fn;return()=>{drag=undefined}}}
     dispose=createMochiLauncher(h.ui,pocket,h.session,h.navigation)
     const launcher=document.querySelector<HTMLButtonElement>('.mochi-launcher')!,host=launcher.closest('.mochi-launcher-root')!.parentElement!
+    expect(launcher.querySelector('svg')!.getAttribute('viewBox')).toBe('83 247 1088 789')
+    expect(launcher.querySelector('image')!.getAttribute('href')).toStartWith('data:image/png;base64,')
+    expect(launcher.getAttribute('aria-label')).toBe('Open Mochi messenger')
     launcher.click();expect(h.floats).toBe(1);expect(h.request('mochi:accounts')).toBeDefined();expect(document.querySelector('.mochi-window')).toBeNull()
     h.accounts();h.select(h.a);h.session.view.select('room_'+h.a)
     expect(host.hidden).toBe(true)
@@ -112,7 +115,7 @@ test('one Pocket rail tab: adjacent internal shortcuts reuse native phones and t
     expect(source).toContain('if(this.mochiSession.owns(this.mochiSurface))this.mochi.leave()')
     const shortcuts=h.pocket.root.querySelectorAll('.pocket-portal-destination')
     expect(shortcuts).toHaveLength(2);expect(shortcuts[0].querySelector('[data-test="original-phone"]')).not.toBeNull()
-    expect(shortcuts[1].querySelector('.pocket-portal-art')!.innerHTML).toContain('viewBox="0 0 24 24"')
+    expect(shortcuts[1].querySelector('.pocket-portal-art svg')!.getAttribute('viewBox')).toBe('83 247 1088 789')
     expect(h.pocket.root.querySelector('[aria-label="Open Mochi window"]')).toBeNull()
     ;(shortcuts[1] as HTMLButtonElement).click();h.accounts();expect(h.pocket.root.contains(h.tabs[0].root)).toBe(true)
     h.select(h.a);expect(h.floats).toBe(1);expect(h.pocket.root.dataset.destination).toBe('mochi')

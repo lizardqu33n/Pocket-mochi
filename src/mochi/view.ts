@@ -32,6 +32,7 @@ import { defaultMochiSettings, type MochiMessage, type MochiNotification, type M
 import { MOCHI_DESKTOP_STYLES } from './desktop-styles.js'
 import {roomDetails} from './details-panel.js'
 import {MOCHI_SIDEBAR_ICON} from './sidebar-icon.js'
+import {mochiWordmark} from './wordmark.js'
 import { referencedMessage, quoteExcerpt } from './replies.js'
 import { MOCHI_REPLY_STYLES } from './reply-styles.js'
 import {REACTION_EMOJI,REACTION_NAMES,readReactions} from './reactions.js'
@@ -495,7 +496,7 @@ export class MochiView {
     page.dataset.mode=this.pickerOpen||this.profilesOpen||!this.state?'account':this.creating||this.editing||this.notificationsOpen?'detail':this.roomId?'chat':'list'
     const sidebar=el('nav','mochi-desktop-list');sidebar.setAttribute('aria-label','Conversations')
     const heading=el('div','mochi-desktop-list-head'),branding=el('div','mochi-shell-brand')
-    const wordmark=el('h2','','Mochi'),mascot=el('span','mochi-shell-mascot');wordmark.setAttribute('aria-label','Mochi');wordmark.innerHTML='Moch<span class="mochi-wordmark-i">i</span>';mascot.innerHTML=MOCHI_SIDEBAR_ICON;mascot.setAttribute('aria-hidden','true');branding.append(wordmark,mascot);heading.append(branding)
+    const wordmark=el('h2'),mascot=el('span','mochi-shell-mascot');wordmark.setAttribute('aria-label','Mochi');wordmark.append(mochiWordmark());mascot.innerHTML=MOCHI_SIDEBAR_ICON;mascot.setAttribute('aria-hidden','true');branding.append(wordmark,mascot);heading.append(branding)
     const account=this.profiles.state?.accounts.find(a=>a.id===this.state?.accountId)
     const identity=el('div','mochi-desktop-account',account?.displayName||(this.state?.accountId?'Selected profile':'Legacy chats'));identity.title=account?`Mochi fictional profile: ${account.displayName}`:this.state?.accountId?'Selected Mochi fictional profile':'Unassigned legacy conversations'
     let newChat:HTMLButtonElement|undefined,noticesButton:HTMLButtonElement|undefined
@@ -570,7 +571,7 @@ export class MochiView {
     page.append(style)
     const header = el('header'); const brand = el('div', 'mochi-brand')
     const wordmark = el('h2', 'mochi-wordmark'); wordmark.setAttribute('aria-label', 'Mochi')
-    wordmark.innerHTML = '<svg viewBox="0 0 88 32" aria-hidden="true" focusable="false" style="width:88px;height:32px;display:block"><text x="0" y="26" fill="currentColor" font-family="Inter,ui-sans-serif,system-ui,sans-serif" font-size="27" font-weight="700" letter-spacing="-1">Moch</text><path d="M76 16v10" stroke="currentColor" stroke-width="4"/><path d="M76 12c-2-2-6-4-6-7a3.3 3.3 0 0 1 6-2 3.3 3.3 0 0 1 6 2c0 3-4 5-6 7Z" fill="var(--mochi-accent,currentColor)"/></svg>'
+    wordmark.append(mochiWordmark())
     brand.append(wordmark); header.append(brand)
     const headerActions = el('div', 'mochi-actions')
     if (surface !== 'chat' && surface !== 'desktop' && this.notificationPolicy().enabled && !this.pickerOpen && !this.profilesOpen) {

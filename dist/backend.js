@@ -5673,6 +5673,37 @@ ${channel}` : "";
   };
 }
 
+// src/backend/rp-context-power.ts
+class RpContextPower {
+  storage;
+  constructor(storage) {
+    this.storage = storage;
+  }
+  path(chatId) {
+    if (!/^[A-Za-z0-9_-]{1,180}$/.test(chatId) || chatId === "_lobby")
+      throw new Error("Select a saved RP chat first.");
+    return `rp-context/${chatId}.json`;
+  }
+  async enabled(chatId, userId, configured) {
+    if (!userId || chatId === "_lobby")
+      return false;
+    const record = await this.storage.getJson(this.path(chatId), { userId, fallback: null });
+    if (record === null)
+      return configured();
+    if (typeof record !== "object" || record === null || record.version !== 1 || typeof record.enabled !== "boolean") {
+      throw new Error("Pocket RP-context permission is unreadable; it has not been overwritten.");
+    }
+    return record.enabled;
+  }
+  async save(chatId, userId, enabled) {
+    if (!userId || typeof enabled !== "boolean")
+      throw new Error("An authenticated user and explicit RP-context permission are required.");
+    const path = this.path(chatId);
+    await this.enabled(chatId, userId, async () => false);
+    await this.storage.setJson(path, { version: 1, enabled }, { userId, indent: 2 });
+  }
+}
+
 // src/backend/continuity.ts
 var PAUSE_REASONS = new Set(["ended", "busy", "away", "sleeping", "unknown"]);
 var LOCAL_REASONS = new Set(["in_scene", "arrived", "took_action", "continued_in_person"]);
@@ -6229,6 +6260,13 @@ function latestArmedReference(state) {
 }
 
 // src/backend.ts
+var rpContextPower = new RpContextPower(spindle.userStorage);
+async function rpContextEnabled(chatId, characterId, userId) {
+  return rpContextPower.enabled(chatId, userId, async () => {
+    const raw = await spindle.userStorage.getJson(statePath(chatId, characterId), { fallback: null, userId });
+    return normalizeState(raw, chatId, characterId, "Character").setup.initialized;
+  });
+}
 var mochi = new MochiService(spindle);
 mochi.resolvePhone = async (user, phone) => storedPhoneKey(phone, await spindle.userStorage.getJson(statePath(phone.chatId, phone.characterId), { userId: user, fallback: null }));
 var mochiScheduler = new MochiScheduler(spindle, mochi, Date.now, (message) => spindle.log.warn(message));
@@ -7555,7 +7593,12 @@ async function sendState(state, userId, reason = "refresh", open = false) {
     else
       contact.avatarUrl = image.url;
   }));
-  send({ type: "lumiphone:state", state: displayState, npcBank, identityProfiles, preferences, jevKeyConfigured: Boolean(await getJevApiKey(userId)), resolvedWallpapers, capabilities: capabilities(), generation, swarmProfile, activePersona, reason, open }, userId);
+  let rpContextInjection = null;
+  try {
+    if (userId && state.chatId !== "_lobby")
+      rpContextInjection = await rpContextEnabled(state.chatId, state.characterId, userId);
+  } catch {}
+  send({ type: "lumiphone:state", state: displayState, rpContextInjection, npcBank, identityProfiles, preferences, jevKeyConfigured: Boolean(await getJevApiKey(userId)), resolvedWallpapers, capabilities: capabilities(), generation, swarmProfile, activePersona, reason, open }, userId);
 }
 function viewKey(userId) {
   return userId || "_default";
@@ -11320,6 +11363,16 @@ async function handleFrontend(payload, userId) {
   try {
     const context = await resolveContext(payload, userId);
     switch (payload.type) {
+      case "lumiphone:rp_context_power": {
+        if (!userId || typeof payload.chatId !== "string" || payload.chatId !== context.chatId || !spindle.permissions.has("chats"))
+          throw new Error("Select an accessible RP chat first.");
+        const chat = await spindle.chats.get(context.chatId, userId);
+        if (!chat || chat.id !== context.chatId)
+          throw new Error("This RP chat is not accessible.");
+        await rpContextPower.save(context.chatId, userId, payload.enabled);
+        send({ type: "lumiphone:rp_context_power_state", requestId, chatId: context.chatId, enabled: payload.enabled }, userId);
+        break;
+      }
       case "lumiphone:get_debug_prompt": {
         const state = await loadState(context.chatId, context.characterId, userId);
         const conversationId = text3(payload.conversationId, 180);
@@ -12589,6 +12642,8 @@ function ensureInterceptor() {
     try {
       const chatId = context.chatId || "_lobby";
       const characterId = await stateCharacterIdForChat(chatId, context.characterId, context.userId);
+      if (!await rpContextEnabled(chatId, characterId, context.userId))
+        return messages;
       const generationId = text3(context.generationId, 180);
       let state = await loadState(chatId, characterId, context.userId);
       const cleanMessages = messages.map((message) => typeof message?.content === "string" ? { ...message, content: stripPocketPresentationMarkup(message.content) } : message);
