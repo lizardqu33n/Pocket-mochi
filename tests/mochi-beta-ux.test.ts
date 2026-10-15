@@ -12,7 +12,7 @@ function fixture(width:number){
  dom.window.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new dom.window.Event('close'))}
  const sent:any[]=[],room:MochiRoom={version:1,id:'room_'+'a'.repeat(32),accountId:'account_'+'b'.repeat(32),revision:1,title:'Synthetic chat',characterIds:['char'],persona:{source:'manual',sourceId:'',name:'Synthetic',description:'',avatarUrl:''},messages:[{id:'msg_synthetic',role:'user',name:'You',content:'Synthetic message',createdAt:'2026-10-13T00:00:00Z',requestId:'seed'}],settings:{...defaultMochiSettings(),responseMode:'instant',connectionId:'connection'},createdAt:'2026-10-13T00:00:00Z',updatedAt:'2026-10-13T00:00:00Z',background:{enabled:true} as any}
  let view:MochiView
- const redraw=()=>document.body.replaceChildren(view.render('desktop'))
+ const redraw=()=>document.body.replaceChildren(view.renderDesktop())
  view=new MochiView(p=>sent.push(p),redraw,()=>redraw())
  view.state={accountId:room.accountId,backgroundEnabled:true,rooms:[room],characters:[{id:'char',name:'Synthetic character',avatarUrl:''}],personas:[],connections:[{id:'connection',name:'Synthetic provider',model:'synthetic'}],warnings:[],notifications:[]};view.select(room.id);redraw()
  const click=(name:string)=>{const b=Array.from(document.querySelectorAll<HTMLElement>('button,[role=button]')).find(n=>n.getAttribute('aria-label')===name||n.textContent===name);if(!b)throw Error('Missing control '+name);b.click()}
@@ -53,10 +53,10 @@ test('room navigation explains reply cancellation; Stay retains selection/draft 
  try{
   const input=document.querySelector<HTMLTextAreaElement>('[aria-label="Message"]')!;input.value='Unsent synthetic draft';input.dispatchEvent(new f.dom.window.Event('input'))
   ;(f.view as any).ownGenerations.set(f.room.id,'synthetic_reply')
-  f.click('Room inbox');expect(document.body.textContent).toContain('A reply is still generating')
+  f.click('Back to conversations');expect(document.body.textContent).toContain('A reply is still generating')
   expect(f.sent.filter(p=>p.type==='mochi:cancel')).toHaveLength(0);f.click('Stay here')
   expect(f.view.roomId).toBe(f.room.id);expect(document.querySelector<HTMLTextAreaElement>('[aria-label="Message"]')!.value).toBe('Unsent synthetic draft')
-  f.click('Room inbox');f.click('Cancel generation & leave')
+  f.click('Back to conversations');f.click('Cancel generation & leave')
   expect(f.view.roomId).toBe('');expect(f.sent.filter(p=>p.type==='mochi:cancel')).toHaveLength(1);expect(f.sent.some(p=>p.type==='mochi:schedule_cancel')).toBe(false)
  }finally{f.cleanup()}
 })

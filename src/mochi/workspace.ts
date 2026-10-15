@@ -59,7 +59,7 @@ export function createMochiWorkspace(options: MochiWorkspaceOptions): MochiWorks
       let replacement = Array.from(node.querySelectorAll<HTMLInputElement>('[aria-label]')).find(n => n.tagName === focused!.tagName && n.getAttribute('aria-label') === label)
       if(options.presentation==='messenger'){
         if(label.startsWith('Open conversation:'))replacement=node.querySelector<HTMLInputElement>('[aria-label="Message"]')||replacement
-        else if(label==='Back to conversations')replacement=node.querySelector<HTMLInputElement>('.mochi-desktop-room')||node.querySelector<HTMLInputElement>('.mochi-desktop-list [aria-label="New room"]')||replacement
+        else if(label==='Back to conversations')replacement=node.querySelector<HTMLInputElement>('.mochi-desktop-room')||node.querySelector<HTMLInputElement>('.mochi-desktop-list [aria-label="New Chat"]')||replacement
         if(replacement&&typeof replacement.checkVisibility==='function'&&!replacement.checkVisibility({visibilityProperty:true}))replacement=Array.from(node.querySelectorAll<HTMLInputElement>('.mochi-desktop-main input,.mochi-desktop-main textarea,.mochi-desktop-main button')).find(candidate=>!candidate.closest('[hidden]')&&candidate.checkVisibility({visibilityProperty:true}))
       }
       replacement?.focus({preventScroll:true})

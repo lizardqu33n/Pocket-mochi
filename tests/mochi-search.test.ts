@@ -95,6 +95,6 @@ for(const width of [320,390,900])test(`${width}px accessible search retains comp
   expect(document.querySelectorAll('.mochi-search-result')).toHaveLength(1);expect(document.querySelector('.mochi-search-result img')).toBeNull();document.querySelector<HTMLButtonElement>('.mochi-search-result')!.click()
   view.receive({...sent.at(-1),type:'mochi:search_target',room});expect((view as any).desktopHistory.get(room.id)).toBe(150);expect(document.activeElement?.getAttribute('data-message-id')).toBe('m0')
   expect((view as any).drafts.get(room.id)).toBe('Unsent draft');expect((view as any).replyTargets.get(JSON.stringify(['',room.id]))).toBe('m149')
-  Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(b=>b.textContent==='Close search')!.click();expect(view.roomId).toBe(room.id);expect(document.querySelector('.mochi-search-panel')).toBeNull();expect(document.activeElement?.getAttribute('aria-label')).toBe('Room options');expect(sent.every(p=>p.type.startsWith('mochi:search'))).toBe(true)
+  Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(b=>b.getAttribute('aria-label')==='Close search')!.click();expect(view.roomId).toBe(room.id);expect(document.querySelector('.mochi-search-panel')).toBeNull();expect(document.activeElement?.getAttribute('aria-label')).toBe('Room options');expect(sent.every(p=>p.type.startsWith('mochi:search'))).toBe(true)
  }finally{view.destroy(false);dom.window.close();globalThis.document=previous}
 })

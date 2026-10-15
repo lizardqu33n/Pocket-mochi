@@ -31,6 +31,16 @@ function fixture(account = false, empty = false) {
   return {dom,session,desktop,portal,sent,listeners,room,second,state,complete,choose,cleanup:()=>{try{session.destroy(false)}finally{dom.window.close();Object.assign(globalThis,prior)}}}
 }
 
+test('desktop: empty-account Back restores focus to the renamed New Chat action',()=>{
+  const h=fixture(true,true)
+  try{
+    const back=document.querySelector<HTMLButtonElement>('[aria-label="Back to conversations"]')!
+    back.focus();back.click()
+    expect(document.activeElement?.getAttribute('aria-label')).toBe('New Chat')
+    expect(h.listeners.size).toBe(1)
+  }finally{h.cleanup()}
+})
+
 test('desktop: list, active room, real unread badges and bounded history use one session',()=>{
   const h=fixture()
   try{
@@ -86,7 +96,7 @@ test('desktop: room switching and list navigation protect unsaved settings; empt
   const empty=fixture(true,true)
   try{
     expect(document.querySelector('.mochi-desktop-rooms')!.textContent).toContain('No conversations yet')
-    expect(document.querySelector('[aria-label="New room"]')).not.toBeNull()
+    expect(document.querySelector('[aria-label="New Chat"]')).not.toBeNull()
     expect(document.querySelector('[aria-label="Mochi notifications"]')).not.toBeNull()
     expect(document.querySelector('.mochi-composer')).toBeNull()
   }finally{empty.cleanup()}

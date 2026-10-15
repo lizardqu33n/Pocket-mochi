@@ -1259,7 +1259,9 @@ var MOCHI_DESKTOP_STYLES = `
 .mochi-workspace[data-presentation=messenger]{container-type:inline-size}
 .mochi-desktop.mochi-view{display:grid;grid-template-columns:minmax(190px,240px) minmax(0,1fr);gap:0;padding:0;overflow:hidden;height:100%;min-height:0}
 .mochi-desktop-list{display:flex;flex-direction:column;min-height:0;min-width:0;border-right:1px solid var(--lp-border,#ffffff26);background:var(--mochi-surface)}
-.mochi-desktop-list-head{padding:12px;flex:none;display:grid;gap:8px}.mochi-desktop-list-head h3{margin:0;font-size:14px}.mochi-desktop-account{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mochi-desktop-list-head{padding:10px;flex:none;display:grid;gap:8px}.mochi-desktop-list-head h3{margin:0;font-size:14px}.mochi-desktop-account{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mochi-shell-account-row{display:flex;align-items:center;gap:2px;min-width:0}.mochi-shell-account-row .mochi-desktop-account{flex:1;min-width:0;font-weight:600}.mochi-shell-account-row button{flex:none;width:40px;height:44px;min-height:44px;padding:8px;background:transparent;border-color:transparent}.mochi-shell-tools{display:flex;gap:6px;min-width:0}.mochi-shell-tools>button:first-child{flex:1;justify-content:center;font-size:12px;min-width:0;padding:8px;min-height:40px;background:transparent}.mochi-shell-tools>button:last-child:not(:first-child){flex:none;width:44px}.mochi-shell-tools svg{width:18px;height:18px}
+.mochi-conversation-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px}.mochi-conversation-filters>.lp-button{min-width:0;min-height:44px;padding:4px 2px;font-size:11px;border:0;background:transparent;white-space:normal;justify-content:center}.mochi-conversation-filters button[aria-pressed=true]{background:var(--lp-surface-2,#ffffff12);box-shadow:inset 0 -2px var(--mochi-accent)}.mochi-shell-notifications{display:flex;justify-content:flex-end;padding:6px 12px;border-bottom:1px solid var(--mochi-border)}.mochi-activity-snapshot{padding:12px 0;border-top:1px solid var(--mochi-border)}.mochi-activity-snapshot h4{font-size:12px;font-weight:600;margin:0 0 6px}
 .mochi-desktop-rooms{flex:1;min-height:0;overflow:auto;padding:6px;display:flex;flex-direction:column;gap:4px}
 .mochi-desktop .mochi-desktop-room{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:10px;border-radius:10px;border:1px solid transparent;background:transparent;color:inherit;min-width:0}
 .mochi-desktop-room[aria-current=true]{background:var(--lp-surface-2,#ffffff12);border-color:var(--mochi-accent)!important}.mochi-desktop-room:hover{background:var(--lp-surface-2,#ffffff12)}
@@ -1269,9 +1271,75 @@ var MOCHI_DESKTOP_STYLES = `
 .mochi-desktop-main .mochi-thread{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain}.mochi-desktop-main .mochi-composer{margin-top:auto}.mochi-desktop-main .mochi-thread:focus-visible{outline:2px solid var(--mochi-accent);outline-offset:-2px}
 .mochi-desktop-back{flex:none;padding:6px 12px;border-bottom:1px solid var(--lp-border,#ffffff26)}.mochi-desktop-back button{font:inherit;color:inherit;background:transparent;border:0;min-height:32px;cursor:pointer}
 .mochi-desktop[data-mode=account]{grid-template-columns:minmax(0,1fr)}.mochi-desktop[data-mode=account]>.mochi-desktop-list{display:none}
+.mochi-shell-brand{display:flex;align-items:center;justify-content:space-between;padding:8px 2px}.mochi-shell-brand h2{font-size:27px;font-weight:800;letter-spacing:-1px}.mochi-shell-mascot{color:var(--mochi-accent);pointer-events:none}.mochi-shell-mascot svg{width:34px;height:34px}
+.mochi-conversation-filter{font:inherit;font-size:12px;padding:10px 12px;min-width:0;width:100%;border:1px solid var(--lp-border,#ffffff26);border-radius:10px;background:var(--lp-bg,transparent);color:inherit;min-height:42px}
+.mochi-desktop-room[hidden],.mochi-desktop-rooms p[hidden]{display:none!important}.mochi-desktop .mochi-conversation-title{font-size:16px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.mochi-desktop-main .mochi-room-header{grid-template-columns:minmax(0,1fr) auto;align-items:center;padding:4px 0 12px;border-bottom:1px solid var(--lp-border,#ffffff26)}.mochi-desktop-main .mochi-room-header>.mochi-actions{gap:2px;padding:0}
+.mochi-profile-panel{display:none;min-width:0;min-height:0;overflow:auto;overscroll-behavior:contain;padding:16px;border-left:1px solid var(--lp-border,#ffffff26);background:var(--mochi-surface)}
+.mochi-profile-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:24px}.mochi-profile-heading h3{font-size:12px;font-weight:500;color:var(--lp-muted,inherit)}.mochi-profile-heading button{width:auto!important;padding:6px 10px;background:transparent;border-color:transparent;font-size:12px}.mochi-profile-person{display:grid;justify-items:start;gap:8px;margin-bottom:20px}.mochi-profile-person h4{font-size:18px;margin:0;overflow-wrap:anywhere}.mochi-profile-person>.mochi-avatar{height:72px;width:72px}.mochi-profile-panel[data-kind=direct] .mochi-profile-person{justify-items:center;text-align:center;padding:12px 0 24px}.mochi-profile-panel[data-kind=group] .mochi-profile-person{grid-template-columns:36px minmax(0,1fr);column-gap:10px;row-gap:2px;align-items:center;margin-bottom:16px}.mochi-profile-panel[data-kind=group] .mochi-avatar{width:36px;height:36px;grid-row:span 2}.mochi-profile-panel[data-kind=group] h4{font-size:13px}.mochi-profile-panel p{font-size:12px;line-height:1.5;margin:0;overflow-wrap:anywhere;color:var(--lp-muted,inherit)}.mochi-profile-panel button{white-space:normal;min-height:44px;width:100%}.mochi-profile-panel .mochi-profile-settings{margin-top:12px;border-width:1px 0 0;border-radius:0;background:transparent;font-size:12px;color:var(--lp-muted,inherit)}
+.mochi-desktop-main .mochi-search-panel{padding:8px 0;max-height:35%;border-top:0}.mochi-desktop-main .mochi-search-controls{display:grid;grid-template-columns:minmax(0,1fr) minmax(72px,110px) auto auto 40px;align-items:center;gap:5px}.mochi-desktop-main .mochi-search-controls :is(input,select){width:100%;min-height:40px;padding:7px;font-size:12px}.mochi-desktop-main .mochi-search-controls button{width:auto;padding:7px 9px;min-height:40px;font-size:12px}.mochi-desktop-main .mochi-search-secondary{background:transparent;border-color:transparent;color:var(--lp-muted,inherit)}.mochi-desktop-main .mochi-search-panel>[role=status]{font-size:11px;margin-top:4px}.mochi-desktop-main .mochi-search-results{margin-top:6px}.mochi-desktop-main .mochi-search-results:empty{display:none}
+.mochi-desktop :is(button,input,summary):focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}.mochi-desktop-main .lp-conversation-menu-action{min-height:44px;white-space:normal}.mochi-desktop-main .lp-conversation-menu-sheet{max-height:min(70vh,440px);overflow:auto;max-width:min(280px,85cqw)}
+.mochi-desktop-main .lp-conversation-menu-action:nth-of-type(3),.mochi-desktop-main .lp-conversation-menu-action:nth-of-type(4),.mochi-desktop-main .lp-conversation-menu-action:last-child{border-top:1px solid var(--lp-border,#ffffff26)}
+.mochi-desktop .lp-conversation-menu{position:relative;z-index:30}.mochi-desktop .lp-conversation-menu>summary{list-style:none;cursor:pointer}.mochi-desktop .lp-conversation-menu>summary::-webkit-details-marker{display:none}.mochi-desktop .lp-conversation-menu-sheet{position:absolute;right:0;top:calc(100% + 6px);z-index:50;width:224px;max-width:85cqw;max-height:300px;padding:8px;display:grid;gap:3px;overflow:auto;overscroll-behavior:contain;background:var(--mochi-surface,#17151d);color:var(--lp-text,var(--lumiverse-text,#f7f5ff));border:1px solid var(--mochi-border,#777);border-radius:12px;box-shadow:0 12px 32px #0006}.mochi-desktop .lp-conversation-menu-action{appearance:none;display:block;width:100%;text-align:left;padding:9px 10px;border:0;border-radius:7px;color:inherit;background:transparent;font:inherit;font-size:12px;min-height:44px;cursor:pointer}.mochi-desktop .lp-conversation-menu-action:is(:hover,:focus-visible){background:var(--lp-surface-2,#ffffff18);outline:2px solid var(--mochi-accent);outline-offset:-2px}.mochi-desktop .lp-conversation-menu-action:active{box-shadow:inset 0 0 0 1px var(--mochi-accent)}.mochi-desktop .mochi-room-header{position:relative;z-index:5}
+@container (min-width:1000px){.mochi-desktop[data-details=true]{grid-template-columns:minmax(180px,210px) minmax(0,1fr) 224px}.mochi-desktop[data-details=true]>.mochi-profile-panel{display:block}}
+.mochi-desktop .lp-conversation-menu:not([open])>.lp-conversation-menu-sheet{display:none}
+/* Keep hidden chat geometry for existing refresh/scroll anchoring; visibility also removes keyboard access. */
+@container (max-width:999px){.mochi-desktop[data-details=true]>.mochi-desktop-main{visibility:hidden;pointer-events:none;grid-column:2;grid-row:1}.mochi-desktop[data-details=true]>.mochi-profile-panel{display:block;grid-column:2;grid-row:1;z-index:1}.mochi-profile-panel{border-left:0}}
 @container (min-width:640px){.mochi-desktop-back{display:none}}
 @container (max-width:639px){.mochi-desktop.mochi-view{grid-template-columns:minmax(0,1fr)}.mochi-desktop[data-mode=list]>.mochi-desktop-main{display:none}.mochi-desktop[data-mode=chat]>.mochi-desktop-list,.mochi-desktop[data-mode=detail]>.mochi-desktop-list{display:none}.mochi-desktop-list{border-right:0}}
+@container (max-width:639px){.mochi-desktop[data-details=true]>.mochi-desktop-main,.mochi-desktop[data-details=true]>.mochi-profile-panel{grid-column:1;grid-row:1}}
+@container (max-width:639px){.mochi-desktop-main .mochi-search-controls{grid-template-columns:minmax(0,1fr) auto 40px}.mochi-desktop-main .mochi-search-controls input{grid-column:1 / 3}.mochi-desktop-main .mochi-search-controls select{grid-column:1;grid-row:2}.mochi-desktop-main .mochi-search-controls button[type=submit]{grid-column:2;grid-row:2}.mochi-desktop-main .mochi-search-controls button:last-child{grid-column:3;grid-row:1}.mochi-desktop-main .mochi-search-controls .mochi-search-secondary:not(:last-child){grid-column:3;grid-row:2;padding:4px;font-size:11px}}
 `;
+
+// src/mochi/details-panel.ts
+function roomDetails(room, characters, close, settings) {
+  const panel = el("aside", "mochi-profile-panel");
+  panel.id = `mochi-room-details-${room.id}`;
+  panel.setAttribute("aria-label", "Conversation details");
+  const heading = el("div", "mochi-profile-heading"), title = el("h3", "", room.characterIds.length === 1 ? "Character details" : "Group participants");
+  const back = button("Back", "lp-button");
+  back.setAttribute("aria-label", "Close conversation details");
+  back.title = "Back to conversation";
+  back.onclick = close;
+  heading.append(title, back);
+  panel.append(heading);
+  panel.dataset.kind = room.characterIds.length === 1 ? "direct" : "group";
+  for (const id of room.characterIds) {
+    const character = characters.find((c) => c.id === id), name = room.settings?.characterNames[id] || character?.name || "Unavailable character";
+    const card = el("section", "mochi-profile-person"), avatar = el("span", "mochi-avatar", name.slice(0, 1));
+    avatar.setAttribute("aria-hidden", "true");
+    if (character?.avatarUrl) {
+      const image = el("img");
+      image.src = character.avatarUrl;
+      image.alt = "";
+      avatar.replaceChildren(image);
+    }
+    const label = el("h4", "", name);
+    label.title = name;
+    const status = el("p", "mochi-profile-status");
+    status.dataset.characterId = id;
+    status.textContent = character ? `Availability: ${statusFor(room, id)}` : "Character source unavailable";
+    status.title = "Availability affects when replies can arrive.";
+    card.append(avatar, label, status);
+    panel.append(card);
+  }
+  const snapshot = el("section", "mochi-activity-snapshot");
+  snapshot.append(el("h4", "", "Schedule snapshot"), el("p", "", "No current activity available."));
+  panel.append(snapshot);
+  const configure = button("Open conversation settings", "lp-button mochi-profile-settings");
+  configure.onclick = settings;
+  panel.append(configure);
+  panel.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      event.stopPropagation();
+      close();
+    }
+  });
+  return panel;
+}
+
+// src/mochi/sidebar-icon.ts
+var MOCHI_SIDEBAR_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16C3 10 7 5 12 5s9 5 9 11c0 3-4 4-9 4s-9-1-9-4Z"/><circle cx="8" cy="13" r=".7"/><circle cx="16" cy="13" r=".7"/><path d="M10 15q2 2 4 0M18 3l1-1"/></svg>';
 
 // src/mochi/reply-styles.ts
 var MOCHI_REPLY_STYLES = `
@@ -1610,6 +1678,7 @@ class MochiSearch {
     root.setAttribute("aria-label", "Search this conversation");
     const form = el("form", "mochi-search-controls"), input = el("input");
     input.type = "search";
+    input.placeholder = "Search this conversation";
     input.maxLength = SEARCH_QUERY_MAX;
     input.value = this.query;
     input.setAttribute("aria-label", "Search conversation text");
@@ -1653,7 +1722,9 @@ class MochiSearch {
     };
     const search = button("Search", "lp-button");
     search.type = "submit";
-    const clear = button("Clear search", "lp-button");
+    const clear = button("Clear", "lp-button mochi-search-secondary");
+    clear.setAttribute("aria-label", "Clear search");
+    clear.title = "Clear search";
     clear.onclick = () => {
       this.cancel();
       this.query = "";
@@ -1662,7 +1733,9 @@ class MochiSearch {
       this.status = "Enter text to search this conversation.";
       this.redraw();
     };
-    const close = button("Close search", "lp-button");
+    const close = button("×", "lp-button mochi-search-secondary");
+    close.setAttribute("aria-label", "Close search");
+    close.title = "Close search";
     close.onclick = () => {
       if (this.pending)
         this.status = "Search canceled. Search again when ready.";
@@ -2427,6 +2500,7 @@ function action(label, icon, compact = false) {
   glyph.setAttribute("aria-hidden", "true");
   const extra = { stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>', copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4H4v12h4"/>', edit: '<path d="m15 4 5 5-11 11H4v-5L15 4Z M12 7l5 5"/>', more: '<path d="M5 12h.01M12 12h.01M19 12h.01"/>', people: '<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6M18 15a5 5 0 0 1 3 5"/>' };
   extra.close = '<path d="m6 6 12 12M18 6 6 18"/>';
+  extra.search = '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/>';
   glyph.innerHTML = POCKET_ICONS[icon] || `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${extra[icon] || '<path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-2l2 2M4 17l2 2a7 7 0 0 0 12-2"/>'}</svg>`;
   node.append(glyph);
   if (!compact)
@@ -2458,6 +2532,9 @@ class MochiView {
   notificationsChanged;
   destroyed = false;
   desktopHistory = new Map;
+  desktopDetails = false;
+  conversationFilter = "";
+  conversationView = "all";
   profiles = new MochiProfiles;
   profilesOpen = false;
   pickerOpen = false;
@@ -2602,6 +2679,9 @@ class MochiView {
     this.dispatch("mochi:accounts");
   }
   resetScope() {
+    this.desktopDetails = false;
+    this.conversationFilter = "";
+    this.conversationView = "all";
     this.memoryPanel.reset();
     this.presetPanel.reset();
     this.preview.reset();
@@ -2887,6 +2967,8 @@ class MochiView {
     const room = this.state?.rooms.find((r) => r.id === this.roomId), root = this.presenceRoot;
     if (!room || !root?.isConnected)
       return;
+    for (const label of root.closest(".mochi-desktop")?.querySelectorAll(".mochi-profile-status") || [])
+      label.textContent = this.state?.characters.some((c) => c.id === label.dataset.characterId) ? `Availability: ${statusFor(room, label.dataset.characterId || "")}` : "Character source unavailable";
     for (const dot of root.querySelectorAll(".mochi-presence-dot")) {
       dot.dataset.status = statusFor(room, dot.dataset.characterId || "");
       dot.title = `Character status: ${dot.dataset.status}`;
@@ -2901,6 +2983,8 @@ class MochiView {
     }
   }
   select(id) {
+    if (this.roomId !== id)
+      this.desktopDetails = false;
     if (this.roomId !== id) {
       this.leave();
       this.selectionVersion++;
@@ -2947,6 +3031,9 @@ class MochiView {
       }
     } finally {
       this.destroyed = true;
+      this.desktopDetails = false;
+      this.conversationFilter = "";
+      this.conversationView = "all";
       this.memoryPanel.reset(true);
       this.presetPanel.reset(true);
       clearTimeout(this.navigationTimeout);
@@ -3294,14 +3381,60 @@ class MochiView {
     page.dataset.mode = this.pickerOpen || this.profilesOpen || !this.state ? "account" : this.creating || this.editing || this.notificationsOpen ? "detail" : this.roomId ? "chat" : "list";
     const sidebar = el("nav", "mochi-desktop-list");
     sidebar.setAttribute("aria-label", "Conversations");
-    const heading = el("div", "mochi-desktop-list-head");
-    heading.append(el("h3", "", "Conversations"));
+    const heading = el("div", "mochi-desktop-list-head"), branding = el("div", "mochi-shell-brand");
+    const wordmark = el("h2", "", "Mochi"), mascot = el("span", "mochi-shell-mascot");
+    wordmark.setAttribute("aria-label", "Mochi");
+    wordmark.innerHTML = 'Moch<span class="mochi-wordmark-i">i</span>';
+    mascot.innerHTML = MOCHI_SIDEBAR_ICON;
+    mascot.setAttribute("aria-hidden", "true");
+    branding.append(wordmark, mascot);
+    heading.append(branding);
     const account = this.profiles.state?.accounts.find((a) => a.id === this.state?.accountId);
-    const identity = el("div", "mochi-desktop-account", account?.displayName || "Legacy chats");
-    identity.title = identity.textContent || "";
-    heading.append(identity);
-    if (this.state)
-      heading.append(this.inboxControls());
+    const identity = el("div", "mochi-desktop-account", account?.displayName || (this.state?.accountId ? "Selected profile" : "Legacy chats"));
+    identity.title = account ? `Mochi fictional profile: ${account.displayName}` : this.state?.accountId ? "Selected Mochi fictional profile" : "Unassigned legacy conversations";
+    let newChat, noticesButton;
+    if (this.state) {
+      const controls = this.inboxControls(), [change, profiles, create, notices] = Array.from(controls.querySelectorAll(":scope > button"));
+      for (const control of [change, profiles]) {
+        control.classList.add("mochi-icon-button");
+        control.lastElementChild?.remove();
+      }
+      const accountRow = el("div", "mochi-shell-account-row");
+      accountRow.append(identity, change, profiles);
+      create.setAttribute("aria-label", "New Chat");
+      create.title = "New Chat";
+      create.textContent = "+ New Chat";
+      newChat = create;
+      noticesButton = notices;
+      heading.append(accountRow);
+    } else
+      heading.append(identity);
+    const filter = el("input", "mochi-conversation-filter");
+    filter.type = "search";
+    filter.placeholder = "Find a conversation";
+    filter.setAttribute("aria-label", "Find a conversation");
+    filter.value = this.conversationFilter;
+    filter.disabled = !this.state;
+    heading.append(filter);
+    const views = el("div", "mochi-conversation-filters");
+    views.setAttribute("role", "group");
+    views.setAttribute("aria-label", "Conversation filters");
+    const viewButtons = new Map;
+    for (const [key, label] of [["all", "All"], ["unread", "Unread"], ["groups", "Groups"]]) {
+      const control = button(label, "lp-button");
+      control.setAttribute("aria-pressed", String(this.conversationView === key));
+      control.onclick = () => {
+        this.conversationView = key;
+        for (const [id, node] of viewButtons)
+          node.setAttribute("aria-pressed", String(id === key));
+        updateFilter();
+      };
+      viewButtons.set(key, control);
+      views.append(control);
+    }
+    if (newChat)
+      views.append(newChat);
+    heading.append(views);
     const rooms = el("div", "mochi-desktop-rooms");
     const unread = new Map;
     for (const notice of this.state?.notifications || [])
@@ -3323,16 +3456,35 @@ class MochiView {
       copy.append(title, el("small", "", preview.slice(0, 180)));
       row.append(avatars, copy);
       const count = unread.get(room.id) || 0;
+      row.dataset.hasUnread = String(count > 0);
+      row.dataset.group = String(room.characterIds.length > 1);
       if (count) {
         const badge = el("span", "mochi-desktop-unread", String(count));
         badge.setAttribute("aria-label", `${count} unread notifications`);
         row.append(badge);
       }
       row.onclick = () => this.exitPortal(() => this.openRoom(room.id), row, room.id !== this.roomId);
+      row.dataset.discovery = [room.title, ...room.characterIds.map((id) => room.settings?.characterNames[id] || this.state?.characters.find((c) => c.id === id)?.name || "")].join(" ").toLocaleLowerCase();
+      row.hidden = !row.dataset.discovery.includes(this.conversationFilter.toLocaleLowerCase());
       rooms.append(row);
     }
     if (this.state && !this.state.rooms.length)
       rooms.append(el("p", "mochi-muted", "No conversations yet. Create a room to get started."));
+    const noMatches = el("p", "mochi-muted", "No matching conversations.");
+    const updateFilter = () => {
+      let found = false;
+      for (const row of rooms.querySelectorAll(".mochi-desktop-room")) {
+        row.hidden = !(row.dataset.discovery || "").includes(filter.value.toLocaleLowerCase()) || this.conversationView === "unread" && row.dataset.hasUnread !== "true" || this.conversationView === "groups" && row.dataset.group !== "true";
+        found ||= !row.hidden;
+      }
+      noMatches.hidden = found || !this.state?.rooms.length;
+    };
+    filter.oninput = () => {
+      this.conversationFilter = filter.value;
+      updateFilter();
+    };
+    rooms.append(noMatches);
+    updateFilter();
     sidebar.append(heading, rooms);
     const main = el("section", "mochi-desktop-main");
     main.setAttribute("aria-label", "Conversation and settings");
@@ -3343,12 +3495,45 @@ class MochiView {
       this.notificationsOpen = false;
       this.select("");
       this.redraw();
-    }, backButton);
+    }, backButton, !!this.roomId);
     back.append(backButton);
     main.append(back, this.render("desktop"));
+    if (noticesButton) {
+      const actions = main.querySelector(".mochi-room-header>.mochi-actions");
+      if (actions)
+        actions.insertBefore(noticesButton, actions.lastChild);
+      else {
+        const toolbar = el("div", "mochi-shell-notifications");
+        toolbar.append(noticesButton);
+        main.prepend(toolbar);
+      }
+    }
     const style = el("style");
     style.textContent = MOCHI_DESKTOP_STYLES;
     page.append(sidebar, main, style);
+    const selected = this.state?.rooms.find((room) => room.id === this.roomId);
+    if (selected && page.dataset.mode === "chat") {
+      page.dataset.details = String(this.desktopDetails);
+      const toggle = main.querySelector('[aria-label="Conversation details"]');
+      const setDetails = (open) => {
+        this.desktopDetails = open;
+        page.dataset.details = String(open);
+        toggle?.setAttribute("aria-expanded", String(open));
+        if (open)
+          page.querySelector('[aria-label="Close conversation details"]')?.focus();
+        else
+          toggle?.focus();
+      };
+      if (toggle) {
+        toggle.setAttribute("aria-controls", `mochi-room-details-${selected.id}`);
+        toggle.setAttribute("aria-expanded", String(this.desktopDetails));
+        toggle.onclick = () => setDetails(!this.desktopDetails);
+      }
+      page.append(roomDetails(selected, this.state.characters, () => setDetails(false), () => {
+        setDetails(false);
+        main.querySelector('[aria-label="Settings"]')?.click();
+      }));
+    }
     return page;
   }
   inboxControls() {
@@ -3437,7 +3622,8 @@ class MochiView {
       bell.setAttribute("aria-description", `${unread} unread notifications`);
     }
     header.append(headerActions);
-    page.append(header);
+    if (surface !== "desktop")
+      page.append(header);
     if (surface === "chat" && (!this.state?.rooms.some((room) => room.id === this.roomId) || this.pickerOpen || this.profilesOpen)) {
       page.append(el("p", "mochi-muted", "Choose a conversation in the Pocket portal."));
       const choose = action("Choose conversation", "back");
@@ -3523,7 +3709,12 @@ class MochiView {
       roomMeta.dataset.status = online ? "online" : statuses.includes("away") ? "away" : statuses.includes("dnd") ? "dnd" : "offline";
       roomMeta.title = room.characterIds.map((id, i) => `${room.settings?.characterNames[id] || this.state?.characters.find((c) => c.id === id)?.name || id}: ${statuses[i]}`).join(`
 `);
-      info.append(roomSelector, roomMeta);
+      if (surface === "desktop") {
+        const title = el("h3", "mochi-conversation-title", room.title);
+        title.title = room.title;
+        info.append(title, roomMeta);
+      } else
+        info.append(roomSelector, roomMeta);
       const controls = el("div", "mochi-actions");
       const inbox = action("Room inbox", "back", true);
       inbox.onclick = () => this.confirmNavigation(() => {
@@ -3581,13 +3772,14 @@ class MochiView {
         this.presetPanel.show(room);
         this.presenceRoot?.querySelector('[aria-label="Mochi presets"] button')?.focus();
       }, more, true)));
-      menuSheet.append(menuAction("Search conversation", () => this.confirmGenerationExit(() => {
+      const openSearch = () => this.confirmGenerationExit(() => {
         this.memoryPanel.reset();
         this.presetPanel.reset();
         this.preview.reset();
         this.search.show(room);
         this.presenceRoot?.querySelector('[aria-label="Search conversation text"]')?.focus();
-      }, more, true)));
+      }, more, true);
+      menuSheet.append(menuAction("Search conversation", openSearch));
       menuSheet.append(menuAction("Preview AI prompt", () => this.confirmGenerationExit(() => {
         this.memoryPanel.reset();
         this.presetPanel.reset();
@@ -3607,6 +3799,12 @@ class MochiView {
         if (event.relatedTarget && !menu.contains(event.relatedTarget))
           menu.open = false;
       });
+      if (surface === "desktop") {
+        const search = action("Search conversation", "search", true);
+        search.onclick = openSearch;
+        const details = action("Conversation details", "people", true);
+        controls.append(search, details);
+      }
       controls.append(menu);
       roomHeader.append(info, controls);
       page.append(roomHeader);
@@ -4749,7 +4947,7 @@ function createMochiWorkspace(options) {
         if (label.startsWith("Open conversation:"))
           replacement = node.querySelector('[aria-label="Message"]') || replacement;
         else if (label === "Back to conversations")
-          replacement = node.querySelector(".mochi-desktop-room") || node.querySelector('.mochi-desktop-list [aria-label="New room"]') || replacement;
+          replacement = node.querySelector(".mochi-desktop-room") || node.querySelector('.mochi-desktop-list [aria-label="New Chat"]') || replacement;
         if (replacement && typeof replacement.checkVisibility === "function" && !replacement.checkVisibility({ visibilityProperty: true }))
           replacement = Array.from(node.querySelectorAll(".mochi-desktop-main input,.mochi-desktop-main textarea,.mochi-desktop-main button")).find((candidate) => !candidate.closest("[hidden]") && candidate.checkVisibility({ visibilityProperty: true }));
       }
@@ -5319,9 +5517,6 @@ function createMochiSidebar(ctx, session, policy, activateSidebar = () => {}) {
     dispose();
   } };
 }
-
-// src/mochi/sidebar-icon.ts
-var MOCHI_SIDEBAR_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16C3 10 7 5 12 5s9 5 9 11c0 3-4 4-9 4s-9-1-9-4Z"/><circle cx="8" cy="13" r=".7"/><circle cx="16" cy="13" r=".7"/><path d="M10 15q2 2 4 0M18 3l1-1"/></svg>';
 
 // src/mochi/launcher.ts
 function createMochiLauncher(ui, pocket, session, navigation) {

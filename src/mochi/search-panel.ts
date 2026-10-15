@@ -49,7 +49,7 @@ export class MochiSearch {
  render(room:MochiRoom):HTMLElement{
   this.sync(room)
   const root=el('section','mochi-search-panel');root.setAttribute('aria-label','Search this conversation')
-  const form=el('form','mochi-search-controls'),input=el('input');input.type='search';input.maxLength=SEARCH_QUERY_MAX;input.value=this.query;input.setAttribute('aria-label','Search conversation text')
+  const form=el('form','mochi-search-controls'),input=el('input');input.type='search';input.placeholder='Search this conversation';input.maxLength=SEARCH_QUERY_MAX;input.value=this.query;input.setAttribute('aria-label','Search conversation text')
   input.oninput=()=>{this.query=input.value;this.cancel();this.page=undefined;this.status='Press Search for current results.';const status=root.querySelector('[role=status]');if(status)status.textContent=this.status;root.querySelector('.mochi-search-results')?.replaceChildren()}
   const filter=el('select');filter.setAttribute('aria-label','Filter search by sender')
   const all=el('option','','All senders');all.value='';filter.append(all);const user=el('option','','You');user.value='user';filter.append(user)
@@ -58,8 +58,8 @@ export class MochiSearch {
   const senders=this.senderOptions.values
   for(const [id,name]of senders){const option=el('option','',name);option.value=id;filter.append(option)}filter.value=this.sender;filter.onchange=()=>{this.sender=filter.value;this.run()}
   const search=button('Search','lp-button');search.type='submit'
-  const clear=button('Clear search','lp-button');clear.onclick=()=>{this.cancel();this.query='';this.sender='';this.page=undefined;this.status='Enter text to search this conversation.';this.redraw()}
-  const close=button('Close search','lp-button');close.onclick=()=>{if(this.pending)this.status='Search canceled. Search again when ready.';this.cancel();this.open=false;this.redraw();this.returned()}
+  const clear=button('Clear','lp-button mochi-search-secondary');clear.setAttribute('aria-label','Clear search');clear.title='Clear search';clear.onclick=()=>{this.cancel();this.query='';this.sender='';this.page=undefined;this.status='Enter text to search this conversation.';this.redraw()}
+  const close=button('×','lp-button mochi-search-secondary');close.setAttribute('aria-label','Close search');close.title='Close search';close.onclick=()=>{if(this.pending)this.status='Search canceled. Search again when ready.';this.cancel();this.open=false;this.redraw();this.returned()}
   form.onsubmit=e=>{e.preventDefault();this.run()};form.append(input,filter,search,clear,close);root.append(form)
   const status=el('p','mochi-muted',this.status);status.setAttribute('role','status');status.setAttribute('aria-live','polite');root.append(status)
   const results=el('div','mochi-search-results')
