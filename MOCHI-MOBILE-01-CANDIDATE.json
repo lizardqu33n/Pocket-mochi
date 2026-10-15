@@ -1,0 +1,31 @@
+{
+  "candidate": "mochi-closed-beta1-rc3-mobile-01",
+  "status": "uncommitted-local-mobile-adaptation-android-acceptance-pending",
+  "baseCommit": "b71abd1f023f62b08906fd3cc47af2b258899525",
+  "publishedRC2Branch": "beta/mochi-closed-beta1-rc2",
+  "extensionIdentifier": "lumiphone",
+  "published": false,
+  "installed": false,
+  "committed": false,
+  "releaseReady": false,
+  "realAndroidAccepted": false,
+  "sourceFingerprintSHA256": "405BDE7E145B96E2891C1E0D4700C5F5AF55E68F7F70F67377F618C9A91196CF",
+  "bundles": {
+    "dist/frontend.js": "3A14C1FE899FDF48D6CC339F00E11583AA66FD44EF163A5D4254A650513B671B",
+    "dist/backend.js": "FB2478EE6AB4B004955CAF046681A82253B73BE6D16C8609936DEEC67AC329B6"
+  },
+  "backendUnchangedFromRC2": true,
+  "typecheck": "passed once",
+  "productionBuild": "passed once, sequential backend/frontend",
+  "tests": {
+    "passed": 35,
+    "failed": 0,
+    "assertions": 493,
+    "environment": "separate narrow synthetic JSDOM/storage and compiled runtime checks; not Android acceptance"
+  },
+  "recoveryPairDirectory": "tmp/mochi-mobile-01-before",
+  "preservedRC2ArchiveSHA256": "B566725B6C92071BAC8F4AEAA93CC3DB3A7FE9858F07ED63EC4EBA61194D277C",
+  "hostSourceInspected": "b1a68d9e32e2a2480a0d5ae71422566845f2657b",
+  "report": "MOCHI-MOBILE-01.md",
+  "knownPrivacyLimitation": "Trusted same-browser real-user identity transition remains unresolved"
+}

@@ -5331,7 +5331,7 @@ var MOCHI_SIDEBAR_STYLES = `
 .mochi-sidebar{height:100%;min-height:0;display:flex;flex-direction:column;color:var(--lumiverse-text,#eee);font:inherit}
 .mochi-sidebar-nav{display:flex;gap:8px;padding:12px;flex-shrink:0}
 .mochi-sidebar-picker{overflow:auto;padding:0 12px 16px;min-height:0}
-.mochi-sidebar button{font:inherit;color:inherit;background:var(--lumiverse-bg-elevated,#29262f);border:1px solid var(--lumiverse-border,#ffffff26);border-radius:10px;min-height:44px;padding:8px 12px;cursor:pointer}
+.mochi-sidebar-nav>button,.mochi-sidebar-picker button{font:inherit;color:inherit;background:var(--lumiverse-bg-elevated,#29262f);border:1px solid var(--lumiverse-border,#ffffff26);border-radius:10px;min-height:44px;padding:8px 12px;cursor:pointer}
 .mochi-sidebar button:focus-visible{outline:2px solid var(--lumiverse-primary,#9399ab);outline-offset:2px}
 .mochi-sidebar button:disabled{opacity:.6;cursor:default}
 .mochi-sidebar-account{display:flex;align-items:center;text-align:left;gap:12px;width:100%;margin:8px 0}
@@ -5343,7 +5343,199 @@ var MOCHI_SIDEBAR_STYLES = `
 .mochi-sidebar-message{margin:12px 0;font-size:.9em;opacity:.8}
 .mochi-sidebar-body{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column}
 .mochi-sidebar [hidden]{display:none!important}
+.mochi-mobile-surface .mochi-sidebar-nav{padding:4px 8px;justify-content:space-between}
+.mochi-sidebar[data-mobile-messenger] .mochi-workspace{flex:1;min-height:0;overflow:hidden}
+.mochi-sidebar[data-mobile-messenger] .mochi-desktop.mochi-view{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);height:100%;overflow:hidden}
+.mochi-sidebar[data-mobile-messenger] .mochi-desktop[data-mode=list]>.mochi-desktop-main{display:none}
+.mochi-sidebar[data-mobile-messenger] .mochi-desktop[data-mode=chat]>.mochi-desktop-list,.mochi-sidebar[data-mobile-messenger] .mochi-desktop[data-mode=detail]>.mochi-desktop-list{display:none}
+.mochi-sidebar[data-mobile-messenger] .mochi-desktop-main,.mochi-sidebar[data-mobile-messenger] .mochi-profile-panel{grid-column:1;grid-row:1}
+.mochi-sidebar[data-mobile-messenger] .mochi-desktop[data-details=true]>.mochi-desktop-main{visibility:hidden;pointer-events:none}
+.mochi-sidebar[data-mobile-messenger] .mochi-desktop[data-details=true]>.mochi-profile-panel{display:block;grid-column:1;grid-row:1;border:0}
+.mochi-sidebar[data-mobile-messenger] .mochi-desktop-back{display:block;padding:2px 8px;flex:none}
+.mochi-sidebar[data-mobile-messenger] .mochi-desktop-back button{min-height:40px}
+.mochi-sidebar[data-mobile-messenger] .mochi-desktop-main>.mochi-view{flex:1;min-height:0;min-width:0;padding:8px;overflow:auto}
+.mochi-sidebar[data-mobile-messenger] .mochi-desktop-main>.mochi-view[data-conversation=true]{overflow:hidden}
+.mochi-sidebar[data-mobile-messenger] .mochi-thread{flex:1 1 0;min-height:0;max-height:none;overflow:auto;overscroll-behavior:contain}
+.mochi-sidebar[data-mobile-messenger] .mochi-room-header{grid-template-columns:minmax(0,1fr) auto;gap:4px;padding-bottom:6px;flex:none}
+.mochi-sidebar[data-mobile-messenger] .mochi-room-header>.mochi-actions{gap:0;flex-wrap:nowrap}
+.mochi-sidebar[data-mobile-messenger] .mochi-room-header .mochi-icon-button{width:36px;min-width:36px;height:40px;min-height:40px;padding:8px}
+.mochi-sidebar[data-mobile-messenger] .mochi-composer{position:static;flex:none;margin-top:0;padding:6px 0 0;gap:4px}
+.mochi-sidebar[data-mobile-messenger] .mochi-composer-row{min-width:0;gap:4px}
+.mochi-sidebar[data-mobile-messenger] .mochi-composer textarea{min-width:0;max-height:min(112px,25dvh);font-size:16px}
+.mochi-sidebar[data-mobile-messenger] .mochi-composer .mochi-icon-button{flex:none;width:44px;min-width:44px;padding:10px}
+.mochi-sidebar[data-mobile-messenger] .mochi-bubble{overflow-wrap:anywhere;min-width:0}
+.mochi-sidebar[data-mobile-messenger] .lp-conversation-menu-sheet{max-width:min(260px,85cqw);max-height:min(300px,55dvh)}
 `;
+
+// src/frontend/surface.ts
+var PHONE_ASPECT = 9 / 18.4;
+var PHONE_BASE_WIDTH = 360;
+var PHONE_SCALE_MIN = 0.8;
+var PHONE_SCALE_MAX = 1.25;
+var surfaceStyles = new WeakMap;
+function currentViewport() {
+  const visual = window.visualViewport;
+  return {
+    width: Math.max(1, Math.floor(visual?.width || window.innerWidth)),
+    height: Math.max(1, Math.floor(visual?.height || window.innerHeight))
+  };
+}
+function calculatePhoneSurface(scale, viewport = currentViewport(), allowFullscreen = true) {
+  const normalizedScale = Math.max(PHONE_SCALE_MIN, Math.min(PHONE_SCALE_MAX, Number(scale) || 1));
+  const fullscreen = allowFullscreen && (viewport.width <= 720 || viewport.height <= 540);
+  if (fullscreen)
+    return { ...viewport, fullscreen: true, x: 0, y: 0 };
+  const margin = 24;
+  const desiredWidth = PHONE_BASE_WIDTH * normalizedScale;
+  const width = Math.max(240, Math.floor(Math.min(desiredWidth, viewport.width - margin, (viewport.height - margin) * PHONE_ASPECT)));
+  const height = Math.floor(width / PHONE_ASPECT);
+  return {
+    width,
+    height,
+    fullscreen: false,
+    x: Math.max(12, Math.floor(viewport.width - width - 18)),
+    y: Math.max(12, Math.floor((viewport.height - height) / 2))
+  };
+}
+function applyMobilePhoneSurface(widget, _scale = 1) {
+  const geometry = calculatePhoneSurface(1);
+  if (widget.isFullscreen() !== geometry.fullscreen)
+    widget.setFullscreen(geometry.fullscreen);
+  if (!geometry.fullscreen) {
+    widget.setSize(geometry.width, geometry.height);
+    widget.moveTo(geometry.x, geometry.y);
+  }
+  return geometry;
+}
+function applyVisualViewportSurface(host, toLayoutPx = (pixels) => pixels) {
+  const visual = window.visualViewport;
+  const width = Math.max(1, Math.round(visual?.width || window.innerWidth));
+  const height = Math.max(1, Math.round(visual?.height || window.innerHeight));
+  const offsetLeft = Math.round(visual?.offsetLeft || 0);
+  const offsetTop = Math.round(visual?.offsetTop || 0);
+  const styles = {
+    width: `${toLayoutPx(width)}px`,
+    height: `${toLayoutPx(height)}px`,
+    position: "absolute",
+    left: "0px",
+    top: "0px",
+    margin: "0px",
+    transform: `translate3d(${toLayoutPx(offsetLeft)}px,${toLayoutPx(offsetTop)}px,0)`,
+    "--lp-visual-height": `${toLayoutPx(height)}px`
+  };
+  let previous = surfaceStyles.get(host);
+  if (!previous) {
+    previous = new Map;
+    surfaceStyles.set(host, previous);
+  }
+  for (const [property, value] of Object.entries(styles)) {
+    const saved = previous.get(property);
+    if (saved?.requested === value && host.style.getPropertyValue(property) === saved.applied)
+      continue;
+    host.style.setProperty(property, value);
+    previous.set(property, { requested: value, applied: host.style.getPropertyValue(property) });
+  }
+  return { width, height, offsetLeft, offsetTop };
+}
+function clearVisualViewportSurface(host) {
+  surfaceStyles.delete(host);
+  for (const property of ["width", "height", "position", "left", "top", "transform", "margin"])
+    host.style.removeProperty(property);
+  host.style.removeProperty("--lp-visual-height");
+}
+function desktopDockSize(scale, viewport = currentViewport()) {
+  const geometry = calculatePhoneSurface(scale, viewport, false);
+  return Math.min(viewport.width - 40, Math.max(geometry.width + 32, 292));
+}
+
+// src/mochi/mobile-surface.ts
+function createMochiMobileSurface(ui, content) {
+  const viewport = currentViewport();
+  const options = { width: viewport.width, height: viewport.height, initialPosition: { x: 0, y: 0 }, fullscreen: true, chromeless: true, snapToEdge: false, resizable: false, persistGeometry: false, touchScrollMode: "native", tooltip: "Mochi" };
+  const widget = ui.createFloatWidget(options);
+  if (typeof widget.setFullscreen !== "function") {
+    widget.destroy();
+    throw Error("Full-screen Mochi is unavailable in this host.");
+  }
+  widget.setVisible(false);
+  const panel = document.createElement("section");
+  panel.className = "mochi-mobile-surface";
+  panel.setAttribute("aria-label", "Mochi mobile messenger");
+  const style = document.createElement("style");
+  style.textContent = ".mochi-mobile-surface{display:flex;flex-direction:column;overflow:hidden;box-sizing:border-box;background:var(--lumiverse-bg-elevated,#201e25);color:var(--lumiverse-text,#eee);padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);font:400 13px/1.5 Inter,ui-sans-serif,system-ui,sans-serif}.mochi-mobile-surface>.mochi-sidebar{flex:1;min-width:0;min-height:0;width:100%;overflow:hidden}.mochi-mobile-surface [hidden]{display:none!important}";
+  panel.append(style);
+  widget.root.style.height = "100%";
+  widget.root.append(panel);
+  let opened = false, disposed = false, placeholder, opener;
+  const sync = () => {
+    if (!opened || disposed)
+      return;
+    applyVisualViewportSurface(panel, (pixels) => {
+      const geometry = ui.geometry;
+      if (geometry?.toLayoutPx)
+        return geometry.toLayoutPx(pixels);
+      const scale = Number.parseFloat(window.getComputedStyle(document.documentElement).getPropertyValue("--lumiverse-ui-scale"));
+      return pixels / (Number.isFinite(scale) && scale > 0 ? scale : 1);
+    });
+  };
+  const listen = (add) => {
+    const method = add ? "addEventListener" : "removeEventListener";
+    window[method]("resize", sync);
+    window.visualViewport?.[method]("resize", sync);
+    window.visualViewport?.[method]("scroll", sync);
+    panel[method]("focusin", sync);
+  };
+  const blockDrag = (event) => event.stopPropagation();
+  const context = (event) => event.preventDefault();
+  panel.addEventListener("pointerdown", blockDrag);
+  panel.addEventListener("contextmenu", context);
+  const hide = () => {
+    if (!opened)
+      return;
+    opened = false;
+    listen(false);
+    widget.setVisible(false);
+    content.removeAttribute("data-mobile-messenger");
+    if (placeholder?.parentNode)
+      placeholder.replaceWith(content);
+    placeholder = undefined;
+    clearVisualViewportSurface(panel);
+    if (opener?.isConnected && !opener.closest("[hidden]"))
+      opener.focus({ preventScroll: true });
+  };
+  return {
+    get isOpen() {
+      return opened && !disposed && widget.isVisible();
+    },
+    open() {
+      if (disposed)
+        throw Error("Mochi mobile surface is disposed.");
+      if (!opened) {
+        opener = document.activeElement;
+        placeholder = document.createComment("Mochi mobile return point");
+        content.before(placeholder);
+        panel.append(content);
+        opened = true;
+        listen(true);
+      }
+      content.dataset.mobileMessenger = "true";
+      widget.setFullscreen(true);
+      sync();
+      widget.setVisible(true);
+    },
+    hide,
+    destroy() {
+      if (disposed)
+        return;
+      hide();
+      disposed = true;
+      panel.removeEventListener("pointerdown", blockDrag);
+      panel.removeEventListener("contextmenu", context);
+      panel.remove();
+      widget.destroy();
+    }
+  };
+}
 
 // src/mochi/sidebar.ts
 function createMochiSidebar(ctx, session, policy, activateSidebar = () => {}) {
@@ -5353,6 +5545,10 @@ function createMochiSidebar(ctx, session, policy, activateSidebar = () => {}) {
   const style = document.createElement("style");
   style.textContent = MOCHI_SIDEBAR_STYLES;
   const nav = document.createElement("nav"), picker = document.createElement("div"), body = document.createElement("div"), editor = document.createElement("div");
+  const fallbackStatus = document.createElement("p");
+  fallbackStatus.className = "mochi-sidebar-message";
+  fallbackStatus.setAttribute("role", "status");
+  fallbackStatus.hidden = true;
   editor.className = "mochi-sidebar-picker";
   editor.hidden = true;
   nav.className = "mochi-sidebar-nav";
@@ -5360,9 +5556,10 @@ function createMochiSidebar(ctx, session, policy, activateSidebar = () => {}) {
   picker.className = "mochi-sidebar-picker";
   body.className = "mochi-sidebar-body";
   body.hidden = true;
-  root.append(style, nav, picker, body, editor);
+  root.append(style, nav, fallbackStatus, picker, body, editor);
   let disposed = false, workspace, fallback = "", rendered = "", pickerRequested = true;
   let ownedWindow, offWindow;
+  let mobileSurface;
   const visibility = new Set;
   const button = (label, click) => {
     const node = document.createElement("button");
@@ -5384,6 +5581,7 @@ function createMochiSidebar(ctx, session, policy, activateSidebar = () => {}) {
   const present = () => {
     const mobile = window.innerWidth <= 600 || window.matchMedia?.("(pointer: coarse)").matches;
     if (!mobile) {
+      mobileSurface?.hide();
       try {
         const next = createMochiWindow(ctx.ui, session, policy);
         if (ownedWindow !== next) {
@@ -5402,21 +5600,51 @@ function createMochiSidebar(ctx, session, policy, activateSidebar = () => {}) {
         fallback = "Floating windows are unavailable in this host. Mochi is open in this drawer.";
       }
     }
-    activateSidebar();
-    workspace ||= createMochiWorkspace({ root: body, session, notificationPolicy: policy, presentation: "messenger", onVisibilityChange: (visible) => {
+    let fullscreen = false;
+    if (mobile) {
+      try {
+        mobileSurface ||= createMochiMobileSurface(ctx.ui, root);
+        mobileSurface.open();
+        fullscreen = true;
+        fallback = "";
+      } catch {
+        mobileSurface?.destroy();
+        mobileSurface = undefined;
+        fallback = "Full-screen Mochi is unavailable. The messenger is open below in the Pocket drawer.";
+      }
+    }
+    if (!fullscreen)
+      activateSidebar();
+    workspace ||= createMochiWorkspace({ root: body, session, notificationPolicy: policy, presentation: "messenger", isHostVisible: () => !root.hasAttribute("data-mobile-messenger") || !!mobileSurface?.isOpen, onVisibilityChange: (visible) => {
+      if (!visible)
+        mobileSurface?.hide();
       for (const fn of visibility)
         fn(visible);
     } });
+    pickerRequested = false;
     picker.hidden = true;
     body.hidden = false;
     workspace.open();
     render();
+    if (fullscreen)
+      body.querySelector(session.view.roomId ? '[aria-label="Back to conversations"]' : '.mochi-desktop-room,[aria-label="New Chat"]')?.focus({ preventScroll: true });
   };
   const accounts = button("Accounts", () => showPicker()), open = button("Open messenger", () => present());
-  nav.append(accounts, open);
+  const close = button("Close", (anchor) => session.view.confirmGenerationExit(() => {
+    workspace?.close();
+    mobileSurface?.hide();
+    showPicker();
+  }, anchor));
+  close.setAttribute("aria-label", "Close Mochi messenger");
+  close.hidden = true;
+  nav.append(accounts, open, close);
   function render() {
     if (disposed)
       return;
+    fallbackStatus.hidden = !fallback;
+    fallbackStatus.textContent = fallback;
+    close.hidden = !mobileSurface?.isOpen;
+    open.hidden = !!mobileSurface?.isOpen && !pickerRequested;
     editor.hidden = !session.view.isSidebarProfileOpen || pickerRequested;
     if (session.view.isSidebarProfileOpen && !pickerRequested) {
       picker.hidden = true;
@@ -5449,8 +5677,6 @@ function createMochiSidebar(ctx, session, policy, activateSidebar = () => {}) {
       p.setAttribute("role", text === state.error ? "alert" : "status");
       picker.append(p);
     };
-    if (fallback)
-      message(fallback);
     if (state.loading)
       message("Loading accounts…");
     if (state.error) {
@@ -5517,17 +5743,20 @@ function createMochiSidebar(ctx, session, policy, activateSidebar = () => {}) {
     visibility.clear();
     session.view.setAccountNavigation(undefined);
     workspace?.destroy();
+    mobileSurface?.destroy();
     root.remove();
   };
   const detach = session.observeNavigation({ redraw: render, disposed: dispose });
   render();
   const openPicker = () => {
     session.assertActive();
-    activateSidebar();
+    if (!mobileSurface?.isOpen)
+      activateSidebar();
     showPicker();
   };
   const settings = (anchor) => {
-    activateSidebar();
+    if (!mobileSurface?.isOpen)
+      activateSidebar();
     pickerRequested = false;
     if (session.view.isSidebarProfileOpen)
       render();
@@ -6832,87 +7061,6 @@ function conversationTitleForDevice(state, conversation, deviceOwnerActorId) {
 function notificationBelongsToDevice(state, deviceOwnerActorId, targetOwnerActorId) {
   const owner = deviceOwnerActorId || pocketPersonaActorId(state);
   return (targetOwnerActorId || pocketPersonaActorId(state)) === owner;
-}
-
-// src/frontend/surface.ts
-var PHONE_ASPECT = 9 / 18.4;
-var PHONE_BASE_WIDTH = 360;
-var PHONE_SCALE_MIN = 0.8;
-var PHONE_SCALE_MAX = 1.25;
-var surfaceStyles = new WeakMap;
-function currentViewport() {
-  const visual = window.visualViewport;
-  return {
-    width: Math.max(1, Math.floor(visual?.width || window.innerWidth)),
-    height: Math.max(1, Math.floor(visual?.height || window.innerHeight))
-  };
-}
-function calculatePhoneSurface(scale, viewport = currentViewport(), allowFullscreen = true) {
-  const normalizedScale = Math.max(PHONE_SCALE_MIN, Math.min(PHONE_SCALE_MAX, Number(scale) || 1));
-  const fullscreen = allowFullscreen && (viewport.width <= 720 || viewport.height <= 540);
-  if (fullscreen)
-    return { ...viewport, fullscreen: true, x: 0, y: 0 };
-  const margin = 24;
-  const desiredWidth = PHONE_BASE_WIDTH * normalizedScale;
-  const width = Math.max(240, Math.floor(Math.min(desiredWidth, viewport.width - margin, (viewport.height - margin) * PHONE_ASPECT)));
-  const height = Math.floor(width / PHONE_ASPECT);
-  return {
-    width,
-    height,
-    fullscreen: false,
-    x: Math.max(12, Math.floor(viewport.width - width - 18)),
-    y: Math.max(12, Math.floor((viewport.height - height) / 2))
-  };
-}
-function applyMobilePhoneSurface(widget, _scale = 1) {
-  const geometry = calculatePhoneSurface(1);
-  if (widget.isFullscreen() !== geometry.fullscreen)
-    widget.setFullscreen(geometry.fullscreen);
-  if (!geometry.fullscreen) {
-    widget.setSize(geometry.width, geometry.height);
-    widget.moveTo(geometry.x, geometry.y);
-  }
-  return geometry;
-}
-function applyVisualViewportSurface(host, toLayoutPx = (pixels) => pixels) {
-  const visual = window.visualViewport;
-  const width = Math.max(1, Math.round(visual?.width || window.innerWidth));
-  const height = Math.max(1, Math.round(visual?.height || window.innerHeight));
-  const offsetLeft = Math.round(visual?.offsetLeft || 0);
-  const offsetTop = Math.round(visual?.offsetTop || 0);
-  const styles = {
-    width: `${toLayoutPx(width)}px`,
-    height: `${toLayoutPx(height)}px`,
-    position: "absolute",
-    left: "0px",
-    top: "0px",
-    margin: "0px",
-    transform: `translate3d(${toLayoutPx(offsetLeft)}px,${toLayoutPx(offsetTop)}px,0)`,
-    "--lp-visual-height": `${toLayoutPx(height)}px`
-  };
-  let previous = surfaceStyles.get(host);
-  if (!previous) {
-    previous = new Map;
-    surfaceStyles.set(host, previous);
-  }
-  for (const [property, value] of Object.entries(styles)) {
-    const saved = previous.get(property);
-    if (saved?.requested === value && host.style.getPropertyValue(property) === saved.applied)
-      continue;
-    host.style.setProperty(property, value);
-    previous.set(property, { requested: value, applied: host.style.getPropertyValue(property) });
-  }
-  return { width, height, offsetLeft, offsetTop };
-}
-function clearVisualViewportSurface(host) {
-  surfaceStyles.delete(host);
-  for (const property of ["width", "height", "position", "left", "top", "transform", "margin"])
-    host.style.removeProperty(property);
-  host.style.removeProperty("--lp-visual-height");
-}
-function desktopDockSize(scale, viewport = currentViewport()) {
-  const geometry = calculatePhoneSurface(scale, viewport, false);
-  return Math.min(viewport.width - 40, Math.max(geometry.width + 32, 292));
 }
 
 // src/frontend/touch-scroll.ts

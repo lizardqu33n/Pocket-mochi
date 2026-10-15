@@ -23,7 +23,8 @@ function fixture(width=900, geometry=true) {
     const tab={options,root,onActivate:(fn:()=>void)=>{activate=fn;return()=>{activate=undefined}},activate:()=>activate?.(),destroy:()=>root.remove()};tabs.push(tab);return tab
   },createFloatWidget:(options:any)=>{
     floats++;const root=document.createElement('div');document.body.append(root);let position={...options.initialPosition}
-    return {root,setVisible:(visible:boolean)=>{root.hidden=!visible},isVisible:()=>!root.hidden,setSize:()=>{},moveTo:(x:number,y:number)=>{position={x,y}},getPosition:()=>position,onDragEnd:()=>()=>{},destroy:()=>root.remove()}
+    let fullscreen=false
+    return {root,setVisible:(visible:boolean)=>{root.hidden=!visible},isVisible:()=>!root.hidden,setFullscreen:(value:boolean)=>{fullscreen=value},isFullscreen:()=>fullscreen,setSize:()=>{},moveTo:(x:number,y:number)=>{position={x,y}},getPosition:()=>position,onDragEnd:()=>()=>{},destroy:()=>root.remove()}
   }}
   if(geometry)ui.geometry={layoutViewportSize:()=>({width,height:850}),createResizeController:()=>()=>{}}
   const navigation=createMochiSidebar({ui} as Pick<SpindleFrontendContext,'ui'>,session,()=>({enabled:true,previews:false}))
@@ -143,20 +144,57 @@ test('desktop selection restores rooms per account, reuses one window and falls 
   }finally{h.cleanup()}
 })
 
-for(const width of [320,390,600])test(`mobile ${width}: account selection stays in Mochi drawer; legacy scope preserved`,()=>{
+for(const width of [320,360,390,430])test(`mobile ${width}: account selection uses supported fullscreen Mochi; legacy scope preserved`,()=>{
   const h=fixture(width)
   try{
     h.tabs[0].activate();h.accounts();h.select(h.a)
-    expect(h.floats).toBe(0);expect(h.tabs[0].root.querySelector('.mochi-desktop')).not.toBeNull()
+    expect(h.floats).toBe(1);expect(h.tabs[0].root.closest('.mochi-mobile-surface')).not.toBeNull();expect(h.tabs[0].root.querySelector('.mochi-desktop')).not.toBeNull()
+    expect(h.pocket.root.querySelector('.mochi-desktop')).toBeNull()
     h.tabs[0].root.querySelector<HTMLButtonElement>('.mochi-desktop-room')!.click()
     h.emit({type:'mochi:state',requestId:h.request('mochi:list').requestId,state:h.state(h.a)})
     expect(h.tabs[0].root.querySelector<HTMLElement>('.mochi-desktop')!.dataset.mode).toBe('chat')
     h.tabs[0].root.querySelector<HTMLButtonElement>('[aria-label="Back to conversations"]')!.click()
     expect(h.tabs[0].root.querySelector<HTMLElement>('.mochi-desktop')!.dataset.mode).toBe('list')
     h.tabs[0].activate();h.accounts();h.select(undefined)
-    expect(h.session.view.state?.accountId).toBeUndefined();expect(h.floats).toBe(0);expect(h.listeners.size).toBe(1)
+    expect(h.session.view.state?.accountId).toBeUndefined();expect(h.floats).toBe(1);expect(h.listeners.size).toBe(1)
     h.session.view.select('room_legacy');h.tabs[0].activate();h.accounts();h.select(h.a)
     h.tabs[0].activate();h.accounts();h.select(undefined);expect(h.session.view.roomId).toBe('room_legacy')
+  }finally{h.cleanup()}
+})
+
+test('mobile Open messenger, details/back and Close reuse one owner, retain drafts and warn for a pending reply',()=>{
+  const h=fixture(390)
+  try{
+    h.tabs[0].activate();h.accounts();h.select(h.a)
+    const root=h.navigation.root,roomId=h.session.view.state!.rooms[0].id
+    root.querySelector<HTMLButtonElement>('.mochi-desktop-room')!.click()
+    const state:any=h.state(h.a);state.rooms[0].characterIds=['one','two'];state.characters=[{id:'one',name:'Very long character '.repeat(10)},{id:'two',name:'Second'}]
+    state.rooms[0].messages=[{id:'synthetic_message',role:'assistant',characterId:'one',name:state.characters[0].name,content:'Long message '.repeat(120),createdAt:'2026-10-15T00:00:00Z'}]
+    state.rooms[0].messages.push({id:'synthetic_quote',role:'user',name:'You',content:'Quoted reply',replyTo:'synthetic_message',createdAt:'2026-10-15T00:01:00Z'})
+    h.emit({type:'mochi:state',requestId:h.request('mochi:list').requestId,state})
+    expect(root.querySelector('.mochi-quote')).not.toBeNull()
+    root.querySelector<HTMLButtonElement>('.mochi-message-actions')!.click();expect(document.querySelector('dialog')).not.toBeNull()
+    document.querySelector<HTMLButtonElement>('dialog .lp-sheet-close')!.click()
+    const input=root.querySelector<HTMLTextAreaElement>('[aria-label="Message"]')!;input.value='Unsent mobile draft';input.dispatchEvent(new window.Event('input'))
+    root.querySelector<HTMLButtonElement>('[aria-label="Conversation details"]')!.click();expect(root.querySelector<HTMLElement>('.mochi-desktop')!.dataset.details).toBe('true')
+    root.querySelector<HTMLButtonElement>('[aria-label="Close conversation details"]')!.click();expect(root.querySelector<HTMLElement>('.mochi-desktop')!.dataset.details).toBe('false')
+    expect(root.querySelector('[aria-label="Message"]')).toBe(input);expect(input.value).toBe('Unsent mobile draft')
+    ;(h.session.view as any).ownGenerations.set(roomId,'pending')
+    root.querySelector<HTMLButtonElement>('[aria-label="Close Mochi messenger"]')!.click()
+    expect(document.querySelector('dialog')!.textContent).toContain('A reply is still generating')
+    Array.from(document.querySelectorAll<HTMLButtonElement>('dialog button')).find(b=>b.textContent==='Stay here')!.click()
+    expect(root.closest('.mochi-mobile-surface')).not.toBeNull()
+    ;(h.session.view as any).ownGenerations.clear()
+    ;(h.session.view as any).memoryPanel.generating=true
+    root.querySelector<HTMLButtonElement>('[aria-label="Close Mochi messenger"]')!.click();expect(document.querySelector('dialog')!.textContent).toContain('A summary is still generating')
+    Array.from(document.querySelectorAll<HTMLButtonElement>('dialog button')).find(b=>b.textContent==='Stay here')!.click()
+    ;(h.session.view as any).memoryPanel.generating=false
+    root.querySelector<HTMLButtonElement>('[aria-label="Back to conversations"]')!.click();expect(h.session.view.roomId).toBe('')
+    root.querySelector<HTMLButtonElement>('[aria-label="Close Mochi messenger"]')!.click();expect(root.closest('.mochi-mobile-surface')).toBeNull()
+    Array.from(root.querySelectorAll<HTMLButtonElement>('nav button')).find(b=>b.textContent==='Open messenger')!.click()
+    expect(root.closest('.mochi-mobile-surface')).not.toBeNull();expect(h.floats).toBe(1);expect(h.listeners.size).toBe(1)
+    expect((h.session.view as any).drafts.get(roomId)).toBe('Unsent mobile draft')
+    h.session.authenticatedIdentityChanged(null);expect(document.querySelector('.mochi-mobile-surface')).toBeNull();expect(h.listeners.size).toBe(0)
   }finally{h.cleanup()}
 })
 
