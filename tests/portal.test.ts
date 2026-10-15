@@ -107,7 +107,7 @@ test('Mochi exposes room connections and protects edited room settings', async (
     expect(root.textContent).not.toContain('Dedicated connection')
     const menu=root.querySelector<HTMLDetailsElement>('.lp-conversation-menu')!
     expect(menu.querySelector('summary')!.getAttribute('aria-label')).toBe('Room options')
-    expect([...menu.querySelectorAll('button')].map(n=>n.textContent)).toEqual(['Participants','Settings'])
+    expect([...menu.querySelectorAll('button')].map(n=>n.textContent)).toEqual(['Participants','Settings','Pins & Notes','Conversation Memory','Presets','Search conversation','Preview AI prompt'])
     menu.open=true
     menu.querySelector<HTMLButtonElement>('button')!.click()
     const participants=document.querySelector<HTMLDialogElement>('dialog[aria-label="Room participants"]')!
@@ -115,9 +115,10 @@ test('Mochi exposes room connections and protects edited room settings', async (
     expect(participants.closest('details')).toBeNull()
     participants.querySelector<HTMLButtonElement>('.lp-sheet-close')!.click()
     menu.open=true
-    menu.querySelector<HTMLButtonElement>('button:last-child')!.click()
+    // Messaging tools follow Settings; locate its action rather than its old index.
+    Array.from(menu.querySelectorAll<HTMLButtonElement>('button')).find(button=>button.textContent==='Settings')!.click()
     expect(menu.open).toBe(false)
-    expect(root.querySelectorAll('fieldset').length).toBe(2)
+    expect(Array.from(root.querySelectorAll('fieldset > legend')).map(node=>node.textContent)).toEqual(expect.arrayContaining(['Conversation','Connection & replies']))
     expect(root.querySelectorAll('details:not([open])').length).toBe(4)
     expect(root.querySelector<HTMLSelectElement>('[aria-label="Generation connection"]')!.value).toBe('custom')
     expect(view.hasUnsavedChanges()).toBe(false)
