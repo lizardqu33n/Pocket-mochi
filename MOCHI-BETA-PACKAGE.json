@@ -1,0 +1,805 @@
+{
+  "archive": {
+    "reproduceArguments": [
+      "-c",
+      "core.autocrlf=false",
+      "archive",
+      "--format=zip",
+      "--output=tmp/releases/mochi-closed-beta1-rc1-0f8f9ae-source-runtime.zip",
+      "0f8f9ae9dfae42a467a08b375c1eeb767bb7e6b4",
+      "--",
+      "spindle.json",
+      "src",
+      "dist/frontend.js",
+      "dist/backend.js",
+      "package.json",
+      "bun.lock",
+      "tsconfig.json"
+    ],
+    "format": "git archive zip",
+    "sha256": "942B8A4A5DB452FF60AB603DED74F481C75D061243BCB9A35856424A92ADD28A",
+    "file": "tmp/releases/mochi-closed-beta1-rc1-0f8f9ae-source-runtime.zip"
+  },
+  "extensionManifestVersion": "0.2.0",
+  "candidate": "mochi-closed-beta1-rc1",
+  "payloadPaths": [
+    "spindle.json",
+    "src",
+    "dist/frontend.js",
+    "dist/backend.js",
+    "package.json",
+    "bun.lock",
+    "tsconfig.json"
+  ],
+  "files": [
+    {
+      "path": "bun.lock",
+      "bytes": 9058,
+      "gitBlob": "0812590ce226bfbe3ac4e840a27f74ec7d24f53e",
+      "sha256": "720E434F24221C94667689A8CADDD5EF09AC6C906DECCADE9E42248D4D80FD01"
+    },
+    {
+      "path": "dist/backend.js",
+      "bytes": 757465,
+      "gitBlob": "e075574769c928bc47e14c204e912b6d2c3a90ae",
+      "sha256": "8E125CC98969D45B3EF61C2580E162AD652847516D3AD0CF41A6E50F75CCD11B"
+    },
+    {
+      "path": "dist/frontend.js",
+      "bytes": 979788,
+      "gitBlob": "33e52f3c46e0c458feb0e12bf8aa001bbd04cb99",
+      "sha256": "58A35491BD91D49663A9E3E27DA006D071A2E4C3B7F9BDB779F1AC12DD261C14"
+    },
+    {
+      "path": "package.json",
+      "bytes": 2099,
+      "gitBlob": "f44b72856d76b713962e95b783732be128ed31b5",
+      "sha256": "0B1812A7F65DDCB0213DABF8EA9E07656BD7DA222305F7ABFE76D07082E35B95"
+    },
+    {
+      "path": "spindle.json",
+      "bytes": 756,
+      "gitBlob": "d24439bfd5ccd92cdde7ea118700a027afd09b01",
+      "sha256": "456EFD54E509DCA986983763FF84997938E5BEE1A7456F124F033D1822B41B33"
+    },
+    {
+      "path": "src/backend.ts",
+      "bytes": 430980,
+      "gitBlob": "b5308c245401770a9a6ba534c4ee79c55cf1ab92",
+      "sha256": "272405FD3927B816880F53EB79195AF5D8AC45341FA3A612B0C4393B8DD82F2F"
+    },
+    {
+      "path": "src/backend/app-reviews.ts",
+      "bytes": 7087,
+      "gitBlob": "a3f00b4dc6bccb894279561031be3cf42f3b170f",
+      "sha256": "2AED60D9E992999442310B70E38B113AF696077D156B50918C7FAE7C9C6758D5"
+    },
+    {
+      "path": "src/backend/arrival-idle.ts",
+      "bytes": 1009,
+      "gitBlob": "296de75618d6142e66cb1815b18aa5a2a5b58776",
+      "sha256": "B16922521CD7163FF17BE52DD667E99EDAEC56D778C36077FF33094D4F83AE74"
+    },
+    {
+      "path": "src/backend/continuity.ts",
+      "bytes": 9620,
+      "gitBlob": "36fb8b9f0dc242fb2d4a4275aefd48c59c14ea01",
+      "sha256": "BB6A6E90E6E279A00B219BD295C20E9FAD1BDFF815EE81EB434F6D054262137A"
+    },
+    {
+      "path": "src/backend/generation.ts",
+      "bytes": 8160,
+      "gitBlob": "ccf492f4c7a7da80abe0576d54ecd860539bbcf6",
+      "sha256": "D617AE3B05F7D94B05ED630E30B44A9985EF0999285D27ADF933B8BBF60EEC44"
+    },
+    {
+      "path": "src/backend/image-jobs.ts",
+      "bytes": 5805,
+      "gitBlob": "79fb39dac22687469dca83e575a6c8f5b774a70a",
+      "sha256": "F82BA91AC7EB5C7336505B2E7C01EB08271FE20C0845F76A97B3A263BE337DAD"
+    },
+    {
+      "path": "src/backend/image-sources.ts",
+      "bytes": 6405,
+      "gitBlob": "050a660906a5d4ae980d35d98d1b8c51b37d6d5a",
+      "sha256": "D4258F919C02E3810C74CA1C20865D47B4380EB3A51DBE64CD549A85180D4753"
+    },
+    {
+      "path": "src/backend/jev.ts",
+      "bytes": 4633,
+      "gitBlob": "56d6712190830dbf07364557eda4cb42d21cbcd1",
+      "sha256": "801DCC74BB0378A9A9DB3D6A0553509391C34DED20652D395E637C9299650735"
+    },
+    {
+      "path": "src/backend/narrative-content.ts",
+      "bytes": 3929,
+      "gitBlob": "724d46aab0cecbc7e994abbbca7512f0a24be70a",
+      "sha256": "695E9A78E52E7E5431951F0758B89C4FF1E1564886EEA4A76DBFE9366BE22D4C"
+    },
+    {
+      "path": "src/backend/references.ts",
+      "bytes": 5900,
+      "gitBlob": "8a81b23d09579d5266d951acb7ab27e6a0e0e3c0",
+      "sha256": "BA953C37D548D1AAD208E097E93FDF5BF1357F5A33A123C7069824F32C731CB5"
+    },
+    {
+      "path": "src/backend/reply-jobs.ts",
+      "bytes": 1009,
+      "gitBlob": "b327a9cdde47acb12d01adbc0529abfed28a7349",
+      "sha256": "84D11CE011FB602557AE317144B43D15D040A1C7A60AC245862BE12CCA57B48F"
+    },
+    {
+      "path": "src/backend/roleplay-context.ts",
+      "bytes": 11450,
+      "gitBlob": "bbe1731b197c835952e0e630599c315b27ceded3",
+      "sha256": "BB549FEC68B25824B2805F1A30F57907266F6563ADD3A66B8882AF9C4F75FF3E"
+    },
+    {
+      "path": "src/backend/structured.ts",
+      "bytes": 2701,
+      "gitBlob": "ec3396d11be4605ebb0874d1ddf6dcbf59e5e96a",
+      "sha256": "9F2F31FA8D82E33A853F21A0E840D2AF7A37F3226B4695B981FA7D776E989313"
+    },
+    {
+      "path": "src/css.d.ts",
+      "bytes": 82,
+      "gitBlob": "e06adfd97cfaa2714dd76de399d15dbf5e2289ca",
+      "sha256": "EB66B55CA47925D8D06866D28DB9B1107E8747C36893D86F944174026B635952"
+    },
+    {
+      "path": "src/domain/activity-clock.ts",
+      "bytes": 2576,
+      "gitBlob": "594d299ee28bb98de089b4e84c42edb1876ef335",
+      "sha256": "5AB26494F4AD5C903987EB7B7793760E4E86FAA94F9BAAC1D4479CAE37806517"
+    },
+    {
+      "path": "src/domain/actor-memory.ts",
+      "bytes": 5562,
+      "gitBlob": "4a1b4da16014d75f4b3e0e05a68f4fb2ea28b3f0",
+      "sha256": "7431398555B0B1BD966D927C999ACED190E6B2962E90BFE2F219468F8C580441"
+    },
+    {
+      "path": "src/domain/actors.ts",
+      "bytes": 12406,
+      "gitBlob": "4645d3c46a0d4bb1ccd10b40c769669c0ab8f47e",
+      "sha256": "0B1BB6642EEAC9A06DFF611D44FCD619DEEACD31D0E5C65DA4B7C9551E063A62"
+    },
+    {
+      "path": "src/domain/app-review.ts",
+      "bytes": 3039,
+      "gitBlob": "e6fe980047f1c61f302925100c2ae9370e4a12af",
+      "sha256": "3B0DA9CF3FFA339545889D897B08549E21AD948200BFBCD540AB93E50A2EDD3C"
+    },
+    {
+      "path": "src/domain/clock-label.ts",
+      "bytes": 1092,
+      "gitBlob": "5deb0c9423b0eff6bbc847c517066b1ff36a777c",
+      "sha256": "4666BFC5A7F9BC08A153CD9ED93194878E82B88AA7D0F7DC4ECDD6A7579E7D68"
+    },
+    {
+      "path": "src/domain/contact-groups.ts",
+      "bytes": 2136,
+      "gitBlob": "68ed9f460295e72b4203503552da792905d35cae",
+      "sha256": "4EEFB7166504F04BE6C9F145AE7E6A8D649C216EE9014AAF975B5A088A2FE0A7"
+    },
+    {
+      "path": "src/domain/contacts.ts",
+      "bytes": 26141,
+      "gitBlob": "6ba8d1b14085bef21c36e4fa3523fb617e1ca253",
+      "sha256": "92FCC60EFB897BCB52B99D56E64748489D38F2F98E357553EEBE02C26C68AC6B"
+    },
+    {
+      "path": "src/domain/device.ts",
+      "bytes": 7364,
+      "gitBlob": "f2700dfe42554fe081ba872e0294ea2eac111d28",
+      "sha256": "C7B4F5C961DE593F4E352327AAD20E72A2BD15082D618410482719D93ED540B6"
+    },
+    {
+      "path": "src/domain/gallery-page.ts",
+      "bytes": 218,
+      "gitBlob": "ba712fd8912f783e8ea2d4bf038285437a102e80",
+      "sha256": "4D9E1E18DAE2EAF615EFA49630780D5FC8ECC5D37E896F56188E395D5ED1527C"
+    },
+    {
+      "path": "src/domain/identity-profiles.ts",
+      "bytes": 3075,
+      "gitBlob": "e08212021b9efb2226d693de8c671f45dcb2cc16",
+      "sha256": "043F872EE667014DDFD0822D4A4D371371D6718F6721443FF4442CF846B18C1B"
+    },
+    {
+      "path": "src/domain/jev.ts",
+      "bytes": 7087,
+      "gitBlob": "3da56a2da05662268b6570a6bf0612d90eff73c7",
+      "sha256": "E248F4243BA7AFE85AB4D3B32FC7CE707DFEA490F15F7D050ED636D55CC80A6E"
+    },
+    {
+      "path": "src/domain/messaging.ts",
+      "bytes": 1347,
+      "gitBlob": "e3675199716b5bdc0197d07706cfef3690e3c23a",
+      "sha256": "AA2A42EF8DE15A75D799C5952775B3A996CF57923BB157AA632C0D6EBA615406"
+    },
+    {
+      "path": "src/domain/navigation.ts",
+      "bytes": 2923,
+      "gitBlob": "8369c216fd8e9962cd9001f17db3a902d673d4c3",
+      "sha256": "652A5D63EF5530C9BD719B6755082361AC1F3A91794C65A99C695809D6E9E7A6"
+    },
+    {
+      "path": "src/domain/notifications.ts",
+      "bytes": 1805,
+      "gitBlob": "9d4dc284dd5a1234475840f06776043790c029a5",
+      "sha256": "BF86DB91088B900A964522D48DF5CAEAB863C52794179DBD4710918921B4E589"
+    },
+    {
+      "path": "src/domain/npc-bank.ts",
+      "bytes": 9034,
+      "gitBlob": "9edbebaacea16ad16b38254bf6f8934c03a3db2e",
+      "sha256": "426902E747413B5577DDA527D0D5C9D86B0FDA77818994BF40AC5356F1ABFE42"
+    },
+    {
+      "path": "src/domain/phone-events.ts",
+      "bytes": 1512,
+      "gitBlob": "269d375d07b0dc369be1a0a9b4315af41899532f",
+      "sha256": "EF251713C471DDC241E276E568AA09E6C366D5CDF8C5AEB59FA0789951AD0976"
+    },
+    {
+      "path": "src/domain/preferences.ts",
+      "bytes": 14777,
+      "gitBlob": "510bd1a9d7632143bb620cf10b63629257eda83e",
+      "sha256": "3B39CA696E735622C126E340304BDB7F6FE4A14A8DBFFCE92513AD2106A5BBF4"
+    },
+    {
+      "path": "src/domain/projection.ts",
+      "bytes": 4580,
+      "gitBlob": "9b01941a421ac1e73a8cebb5e3784996462412d8",
+      "sha256": "CC25B8AA0548E56516072A824B1A9F8E6A0A776D63C9A88F8F72C604937DEEC8"
+    },
+    {
+      "path": "src/domain/samplers.ts",
+      "bytes": 1142,
+      "gitBlob": "7e2fdc4cfb1620da466a1b0005c1aeb0190bee55",
+      "sha256": "E5CC5F8C71D30DF5D27A0C7C071A6A1D3E6E2909AD60D705DA20EBDC4863694E"
+    },
+    {
+      "path": "src/domain/scheduler.ts",
+      "bytes": 2349,
+      "gitBlob": "73bc95d80d603ccc7606323d049f5a49618ff4fd",
+      "sha256": "CAB4F4DF0782C14E6CC4568698E201FFA9D6299359D3991388BA41FEB0A4F312"
+    },
+    {
+      "path": "src/domain/trackers.ts",
+      "bytes": 20364,
+      "gitBlob": "646308e5dfb227330ba4f9d530d56a0dbf672c66",
+      "sha256": "67DB68794D4B3398D78CE925DC6344028387EAAB1460D97906BA7E091E332BB3"
+    },
+    {
+      "path": "src/domain/voice.ts",
+      "bytes": 173,
+      "gitBlob": "7339620967b4dd58fd093e55ab2530cafbeee633",
+      "sha256": "C310D9ECB1BD7CD5F8EA030CF4C7AB205801129ABB744C147FE2F99D182423A7"
+    },
+    {
+      "path": "src/domain/wallpapers.ts",
+      "bytes": 6675,
+      "gitBlob": "dc7981e3fe30008f5b38b63a08fec3a5649db7c8",
+      "sha256": "D407D005EBD4642CCD8F5A6825C471EFC5CDE95CF72C30AD777A0A65D158C703"
+    },
+    {
+      "path": "src/frontend.ts",
+      "bytes": 732,
+      "gitBlob": "1c68ba130115e7ffcffa83caa56a9c3415743099",
+      "sha256": "09705D3A32BC7D777B385FBD739A0CDF1CE1C7D68E37F164628FA8D0626A9FA3"
+    },
+    {
+      "path": "src/frontend/activity.ts",
+      "bytes": 15404,
+      "gitBlob": "3f780a2187abbd78ab703eb9b1035cfde99714c5",
+      "sha256": "2901E8946F57F3272561567C2ECF9E2348212F1F97EDCC5B1BAAA23928596D11"
+    },
+    {
+      "path": "src/frontend/apps/contact-groups.ts",
+      "bytes": 11342,
+      "gitBlob": "a48f206e61053edf13a4317d99772ba873503b4e",
+      "sha256": "092FBFE683338A4C5B3CBD07134CBCB8B01688D13578AB7272D3BADE265DFFCE"
+    },
+    {
+      "path": "src/frontend/apps/contacts.ts",
+      "bytes": 37817,
+      "gitBlob": "bb814c95f3eaa8c504bec277ea4718a335d1a0aa",
+      "sha256": "A9D61B55D2661E71DF03D0891A703F442932AA2FDB1B77AA19253C418CB919DD"
+    },
+    {
+      "path": "src/frontend/apps/messages.ts",
+      "bytes": 41692,
+      "gitBlob": "059b78bf91fc842de20bba51124b9de83c5148e3",
+      "sha256": "05BF669A480B9AF26F9EE05152741FBAB5A75DE3A2E62529B8A32DEC4011939C"
+    },
+    {
+      "path": "src/frontend/apps/notifications.ts",
+      "bytes": 3696,
+      "gitBlob": "ca6564012eefbe0bc3258e752a164c5f328bfd60",
+      "sha256": "3A7F7FE07B412315CF6A640E7DACB0679FB4BAC63E511A6FF7093C072BF32B92"
+    },
+    {
+      "path": "src/frontend/apps/settings.ts",
+      "bytes": 54742,
+      "gitBlob": "5745202f56d8db3de520af83740ab40d9b575762",
+      "sha256": "76FFD9FAE8FDA761B42D4939BA427548E14E5F03CF9EE41DBF172F037F658A89"
+    },
+    {
+      "path": "src/frontend/apps/tracker-editor.ts",
+      "bytes": 16451,
+      "gitBlob": "acbbe13003c8e755d7916bb6360d92a88900559e",
+      "sha256": "FDCF4184E99D78F427169156F2D7207A00D397AE6E75CF490D30BCF25C9BD980"
+    },
+    {
+      "path": "src/frontend/apps/trackers.ts",
+      "bytes": 11242,
+      "gitBlob": "d25f66316f4c8a9b5a109fbf20dc65b130bedc84",
+      "sha256": "296CDBED06F524DA128A1BB9982B23A3061CF7DE5F720DAD71D5E7941AC575B4"
+    },
+    {
+      "path": "src/frontend/components/activity-connectors.ts",
+      "bytes": 5275,
+      "gitBlob": "5dd4f4f0b2fd828e729d270f59d1a179b2fd33ac",
+      "sha256": "A604D4B5F7015D175E9E3B62E144DCA5F30DE08B961B7CFFC292CD441980CA98"
+    },
+    {
+      "path": "src/frontend/components/activity-shadow.ts",
+      "bytes": 1311,
+      "gitBlob": "efa70ebc3210b0148b64c5ba101a6c500d374cea",
+      "sha256": "AE50AB4BD32793878E03AB4BF191C06E36D4D60C2D6DC931EE1B166B7A334150"
+    },
+    {
+      "path": "src/frontend/components/app-review-control.ts",
+      "bytes": 2452,
+      "gitBlob": "368e6f7e068460d3f196ee157be1ab1b10b27ccb",
+      "sha256": "04FA8D31FCAE488FD6C5BF67337A253762E224D79774835C568FB0E62E41A6E8"
+    },
+    {
+      "path": "src/frontend/components/avatar-crop.ts",
+      "bytes": 1180,
+      "gitBlob": "f4bbe07d5e60ea8c966ba1fea21fa835ea9de7cb",
+      "sha256": "6F21E3B0864404BD1CBF79B682F37DF91D772F9E687EDC5F8BC7327B416F34BF"
+    },
+    {
+      "path": "src/frontend/components/design-system.ts",
+      "bytes": 14201,
+      "gitBlob": "f6e5687af6b71b339b9d1d82d3f26abc2c5a6676",
+      "sha256": "B01864BEBAC815775AE16DA1F5718A195F702D6A3A15A273FF84172C4D187984"
+    },
+    {
+      "path": "src/frontend/components/device-picker.ts",
+      "bytes": 6741,
+      "gitBlob": "34033abdb097ed8c8b72474ebeaf9c1414f836ee",
+      "sha256": "FE22983FCC56A31AC372297B2FB4F6CEF25612DD970ED41DEF931F39203988CA"
+    },
+    {
+      "path": "src/frontend/components/event-invite.ts",
+      "bytes": 2416,
+      "gitBlob": "2555286d4e9f5d1ec87fa0a81515791e66d467f7",
+      "sha256": "E8B96C092D04356292CF5D2DA45F96ABC4B8ED6E0FD318B0BE1A06654713FFB1"
+    },
+    {
+      "path": "src/frontend/components/icons.ts",
+      "bytes": 3889,
+      "gitBlob": "84942cf01150eb67fb2954f9619db67b38390c4a",
+      "sha256": "26AF78BE3759284651264D1A91F33AD166F48C6989B774877F6DC3B94D75B9F1"
+    },
+    {
+      "path": "src/frontend/components/identity-profiles.ts",
+      "bytes": 2636,
+      "gitBlob": "e0ed9a672abfe8fe1a80c30e6509cce18b549140",
+      "sha256": "F2B648D18BEDD8760E34E9CB26E4536213AE6A0AC9C7BAF26AAF3B4A10B54AF0"
+    },
+    {
+      "path": "src/frontend/components/image-picker.ts",
+      "bytes": 3928,
+      "gitBlob": "2999cd75a81c2da8b5f7c13619dc2fbef34b0a4e",
+      "sha256": "6DA11D27EB974F9265F9A72ED11169CB7F3631F432D1CEADFBBDBC37C2D2D9FE"
+    },
+    {
+      "path": "src/frontend/components/inline-styles.ts",
+      "bytes": 3441,
+      "gitBlob": "0f05502b490973ce36e064a2333695546e9281e4",
+      "sha256": "534CFAA32A5339C81AF24063C7A27DB85DDF1CBBCF59A7BB83C47A805F9A4B64"
+    },
+    {
+      "path": "src/frontend/components/pocket-inline-redesign.css",
+      "bytes": 31298,
+      "gitBlob": "c5e2a02c40fb3bbdfb731bdf54d2d951258fa2f1",
+      "sha256": "B018E39811E1C291BCBCD4052E706B000FCE16107540C45FE0CB39FA8C427DA9"
+    },
+    {
+      "path": "src/frontend/components/portal.ts",
+      "bytes": 13818,
+      "gitBlob": "68c1c9ae116b51c148611b873f369fa3f48155a9",
+      "sha256": "11ED069F3790605AD5F1178D9EE5C4591583534B2DF25BD90FA271870187C7B8"
+    },
+    {
+      "path": "src/frontend/components/ranked-search.ts",
+      "bytes": 1143,
+      "gitBlob": "97572a536c7bd5f6f08bd2ae59d469c4ac1274de",
+      "sha256": "4DBCC678FA7010F3C68C3600CEFA0EA8923F198CA495090DE24B5F3EBED3AA12"
+    },
+    {
+      "path": "src/frontend/components/style-tokens.ts",
+      "bytes": 833,
+      "gitBlob": "eae2d0576b41646f565f4e6061a7a9eb68744d0d",
+      "sha256": "BCCC42F28A1F6EA55E4C160B312D5AD41364EB35518E2E1800F9644A6586173E"
+    },
+    {
+      "path": "src/frontend/components/tracker-display.ts",
+      "bytes": 13422,
+      "gitBlob": "29e18b97a0c1a516b10fe95005bf20495b5bb957",
+      "sha256": "7DE1827777A0C303AD540E9D333B459F8098A6F50C0D55339B761FB3A8DAFA8C"
+    },
+    {
+      "path": "src/frontend/components/tts-connection.ts",
+      "bytes": 2731,
+      "gitBlob": "0076cfdb97d07c2a42e5992a553bbd712c6ffed0",
+      "sha256": "FDE0954B07EDD014675C3CF4B7C54CF45EA477ABD5600AB366C4B7D40F1603EF"
+    },
+    {
+      "path": "src/frontend/components/tts-settings.ts",
+      "bytes": 6401,
+      "gitBlob": "990d672d47b3eaa5085dcea998a5aae50dd43539",
+      "sha256": "A6CF8AE5C887865E2670F8AD9BCA3DE7FEEE8B93EAE5D904653DAEC13EEE3564"
+    },
+    {
+      "path": "src/frontend/components/ui.ts",
+      "bytes": 5690,
+      "gitBlob": "26f539308b7a463b1f94e5b92014f76f019a6d70",
+      "sha256": "68FF3EDFF4C25DC3D6B0641A34DF511A3923420832950E497F78B4BDD2BFBDD8"
+    },
+    {
+      "path": "src/frontend/components/voice-message-styles.ts",
+      "bytes": 670,
+      "gitBlob": "dc254f2facc142f2b1a13c9c5202327a68a29a92",
+      "sha256": "9B46417ECA5DE3FF119B687BC48360E1A750EE577FC1EAE2982E2AE5AACB8561"
+    },
+    {
+      "path": "src/frontend/components/voice-message.ts",
+      "bytes": 5303,
+      "gitBlob": "acebb49651b9cbc84dc57f0208bbf0c4ef184ce4",
+      "sha256": "6AE0979EE32DF03B9DB7105805D444AC39838EE3D89DA0CA1ED9DAC21E3D92B5"
+    },
+    {
+      "path": "src/frontend/components/wallpaper-gallery.ts",
+      "bytes": 2884,
+      "gitBlob": "8925abc76d0a0cb59efaa2098968faabe5e15b16",
+      "sha256": "3BA775294D20723F8FE4DC6E28A7C7742E6A8E292DB82D9A4A7A0BC5A718D195"
+    },
+    {
+      "path": "src/frontend/components/weather-outlook.ts",
+      "bytes": 6540,
+      "gitBlob": "22fbd1149dafe42c4854c491b4cd6d577d308ab6",
+      "sha256": "BCA9B4862E36450E74C28402789BC719F34BFB123585D45934C6951915F0C2CB"
+    },
+    {
+      "path": "src/frontend/controller.ts",
+      "bytes": 204879,
+      "gitBlob": "01e4b6b3f11316fb87b684853a285f4d4d8d92fe",
+      "sha256": "5F78076656C8301473C09071690AA43885535CB6F4C74E76F28BB1C58F22DEBF"
+    },
+    {
+      "path": "src/frontend/phone-screen.ts",
+      "bytes": 13018,
+      "gitBlob": "967daca7df303a9cf2cb29b9544705c4cb91ee42",
+      "sha256": "E2EAF0CCB2252C0BC72D0EA45E73362C78719CE306B34C45C58B2B6180DA6B67"
+    },
+    {
+      "path": "src/frontend/router.ts",
+      "bytes": 1672,
+      "gitBlob": "8291d96835a881d2ba60c954be5a68fa81f48712",
+      "sha256": "4547768CFB3CD02EE23E11081A766F28F507D384BF4724447CE1C0F00593CA4A"
+    },
+    {
+      "path": "src/frontend/shared.ts",
+      "bytes": 1805,
+      "gitBlob": "7b84eb16f755163f6be47dc4f9952933967a57d0",
+      "sha256": "1F2CB289CDDDB9330C8020FD72F3A24C8AFCA5293C375E605FF712B2C13E2054"
+    },
+    {
+      "path": "src/frontend/surface.ts",
+      "bytes": 4358,
+      "gitBlob": "6f3643fedc4dc92ac4209e99fb30a6f0826b28fe",
+      "sha256": "A4A7E3A4F203D2729B2770EDEA73C5B731C0E6D6660EC52AB139264079D16E37"
+    },
+    {
+      "path": "src/frontend/touch-scroll.ts",
+      "bytes": 945,
+      "gitBlob": "844c26dd197c8f01d378684141d1843bee484e47",
+      "sha256": "94C08FC8D39397BFC5C5D81BFE956B3F4F94F921D36A9F49B0823B7462DE632D"
+    },
+    {
+      "path": "src/mochi/account-picker.ts",
+      "bytes": 2548,
+      "gitBlob": "b75371f035d12c56f7141c031e4c71b4b1b64077",
+      "sha256": "3F1C6B9D660682DEDB482B1A83811FEDC8BDFCA37613F779AEEF1050A9F7191D"
+    },
+    {
+      "path": "src/mochi/accounts.ts",
+      "bytes": 12133,
+      "gitBlob": "ad574e8bd84d2cbff2651f307269b9cbe7e4e403",
+      "sha256": "B235ADB42FF9FA86BA718AAA424D76B308DFE1CE1FAF3AF1077524CAFCA9A9BE"
+    },
+    {
+      "path": "src/mochi/behavior.ts",
+      "bytes": 1408,
+      "gitBlob": "05e2d5c5cb3cdcc17c6df8131c23c9f2f54affa9",
+      "sha256": "5A99279136E266D4FF5D2E2ADD2621451739AD3507F3B20E3CEA955C51E29F2B"
+    },
+    {
+      "path": "src/mochi/context.ts",
+      "bytes": 11348,
+      "gitBlob": "b84ad3ca7889dd3f9ecb6f87e2c1a919fcdae5cf",
+      "sha256": "0A617B800A0BCB42EF562F05FF4F6DE1955D2B1E3F776D08BDC1735936A05316"
+    },
+    {
+      "path": "src/mochi/desktop-styles.ts",
+      "bytes": 10973,
+      "gitBlob": "af0553a9aedf0873f1f7c3cfac2699b2e7996649",
+      "sha256": "8E5A4687827C872B1A51A044B7A72B3DFB71A6E49FABD468FEBCE3015DDF70EC"
+    },
+    {
+      "path": "src/mochi/details-panel.ts",
+      "bytes": 2112,
+      "gitBlob": "3c1119802058f7e4d7d9e32c3a024f562a1418a7",
+      "sha256": "A39310F4BFFD6F325CB46E374693664197EF0DDCDFD3539D1EDF980EBEC322AD"
+    },
+    {
+      "path": "src/mochi/generation.ts",
+      "bytes": 5239,
+      "gitBlob": "8cac9c8784acd029613b0e7559cfdbadd65aa660",
+      "sha256": "269CD21C482BF3259981E68DC5F98B315FA4073FBF10BE8EACF1E138DE4D36BB"
+    },
+    {
+      "path": "src/mochi/launcher.ts",
+      "bytes": 2578,
+      "gitBlob": "17a39c46fa8dfcfed450f5109de04a3d7f585ae3",
+      "sha256": "1342703F0F8CC2B258C89265D99881151B0AB9F1BC790D0AA164D835A331A2F1"
+    },
+    {
+      "path": "src/mochi/macros.ts",
+      "bytes": 3574,
+      "gitBlob": "92aa60e119243243717c031b7dccd0cd97a4c4c0",
+      "sha256": "888E505B407A68981C554193AD3C4E951B233628D14D03EFC0C4D3B2F6452A40"
+    },
+    {
+      "path": "src/mochi/memory-panel.ts",
+      "bytes": 22506,
+      "gitBlob": "a602241b6e98221474870c8cbe0060a190f46bee",
+      "sha256": "798DD6F674F542AB6A7A1BD5909BC3874687285223A617C60EF61BA6A611D925"
+    },
+    {
+      "path": "src/mochi/memory.ts",
+      "bytes": 5805,
+      "gitBlob": "4b5feab5edc609bfbcbbe0b2e0938046103d85ed",
+      "sha256": "885BD1854C51CCCE8D7DDD6D28F06A21C924C0E30D5CF138138F5AB27F660197"
+    },
+    {
+      "path": "src/mochi/models.ts",
+      "bytes": 3167,
+      "gitBlob": "8b70bef6bcf35551d4d5531f3e444d7474f9f5b6",
+      "sha256": "28B53B227E1C3ADC5FB8B30523CB2C130A783CE9621C86B8D804B93823DA7661"
+    },
+    {
+      "path": "src/mochi/notifications.ts",
+      "bytes": 2593,
+      "gitBlob": "5fca396f863ea16652d672891c3d7c1c9a043c1e",
+      "sha256": "4D9555BDBEBB62E12EC0F6A35BFABB9370AED42FEBB13FD2ADFE8574698F16B8"
+    },
+    {
+      "path": "src/mochi/phone-selection.ts",
+      "bytes": 1012,
+      "gitBlob": "fe3001958bb7f64649b314891636794f522a6365",
+      "sha256": "8B712B518F21694707C2D0F4583A319C916D67C16B7AD3A16123F628F7120304"
+    },
+    {
+      "path": "src/mochi/pins-panel.ts",
+      "bytes": 6874,
+      "gitBlob": "3d9c2f24462d472977a399f098996cf06fbe0722",
+      "sha256": "2FDBE606655841D8ABA2F2EDCE8FD577A21C73B573844B340C11A2F5569FCF12"
+    },
+    {
+      "path": "src/mochi/pins.ts",
+      "bytes": 2006,
+      "gitBlob": "7e25f09738b6d5bf53ed5997c8fba0e03a8003ed",
+      "sha256": "0432E7091A94965CA4DE58056044C1031C07D31B8ED3B7C622B7A15BAA2CE045"
+    },
+    {
+      "path": "src/mochi/placement-controls.ts",
+      "bytes": 3475,
+      "gitBlob": "68a0fc69bc3fa4ef026d9149a5d8ca67b9d44989",
+      "sha256": "6DE28276396D02FE6D0E559E1216C149D1AF6EEFC0B38068620F353B0232A0E4"
+    },
+    {
+      "path": "src/mochi/presence.ts",
+      "bytes": 2225,
+      "gitBlob": "096557368bc5eac4fb2e7a2cc036299029c88649",
+      "sha256": "B98F69344139550E860160897930EB6E24C6D4C6787C85B3E3C3D1BAC999AF8F"
+    },
+    {
+      "path": "src/mochi/preset-panel.ts",
+      "bytes": 14726,
+      "gitBlob": "fc709136201bcb5814ff06b07ea6d783210a7bc2",
+      "sha256": "4944FAABC8D8DFB557FCC64426FF272FAE40D5DAC348029EBD4AAEDC13BC817F"
+    },
+    {
+      "path": "src/mochi/presets.ts",
+      "bytes": 7464,
+      "gitBlob": "63e988507a4437eba6b3b3150f53f0e791ae62fc",
+      "sha256": "06C552BDD6EFEEE3130E6E4A069EAE861B820BD5DC0CCCF83FCCA305B8C07D8B"
+    },
+    {
+      "path": "src/mochi/preview-panel.ts",
+      "bytes": 7830,
+      "gitBlob": "d6a138451551f3a035b9813ed3a1ea33ecd65351",
+      "sha256": "2390411873425D66A28EC92E3562AD7212D5C1CF2E32E2900830959CAFCD48D7"
+    },
+    {
+      "path": "src/mochi/preview.ts",
+      "bytes": 3385,
+      "gitBlob": "14d518c0f9e3decee8887316522be7346d75409b",
+      "sha256": "17405DCF0F91630879A8188005B006D4C7F704089C94F2E65A30FEED2E917DAF"
+    },
+    {
+      "path": "src/mochi/profile-screen.ts",
+      "bytes": 9955,
+      "gitBlob": "189e97134f11c991eadfae15e527280a13ce0bbc",
+      "sha256": "5F662E90C1B8A16576D175AD21B6B0ECFCB8115333787A8B8958BB064EF9B00D"
+    },
+    {
+      "path": "src/mochi/reaction-styles.ts",
+      "bytes": 1201,
+      "gitBlob": "157f946a39e342a2c816bcb1850d7c3e223bd48c",
+      "sha256": "A705643F5E3592871556A98E5FF53F4697EB8913994613B4BD6F38D80FC5B2E5"
+    },
+    {
+      "path": "src/mochi/reactions.ts",
+      "bytes": 1251,
+      "gitBlob": "17c1481be15940e4512cccb2c9f45d86dac25f12",
+      "sha256": "8C13145755FD0F69D7891C6E244805FA22276181AB0A88C3AC13459B4EF93262"
+    },
+    {
+      "path": "src/mochi/replies.ts",
+      "bytes": 809,
+      "gitBlob": "e2390380602f79cab386676ff7b8835a9ed1db04",
+      "sha256": "BD1C114696F1562739770EA3A98FF5F2189A4288B779CA3DA960F89DF27E9F92"
+    },
+    {
+      "path": "src/mochi/reply-styles.ts",
+      "bytes": 896,
+      "gitBlob": "f936b130236abcdc2c359d73689bbb4dbf4f632e",
+      "sha256": "AAF6DA73D5796887627E2379B7CFEDB4019F6F20A7935A8224E9688ED58E7247"
+    },
+    {
+      "path": "src/mochi/scheduler.ts",
+      "bytes": 8903,
+      "gitBlob": "ee63e3e124c44b784ffcb9f8a9e67ad3b9456283",
+      "sha256": "549C8E743A5E56D124BC2BF079B7DB4C0BD8EC91C1D045F7889A46ECC298A597"
+    },
+    {
+      "path": "src/mochi/scheduling.ts",
+      "bytes": 8078,
+      "gitBlob": "4812e32f4bb3907310072f33d0e6f4d414ddc95f",
+      "sha256": "88E082146612DF49740AA622F1CA626BD6252AD3EF996A171A679AD93EED0ADE"
+    },
+    {
+      "path": "src/mochi/search-panel.ts",
+      "bytes": 8780,
+      "gitBlob": "457c78b6a356a3b4f52fb8dd35392238fc7124c9",
+      "sha256": "0F142739D5287380A3DA42F26AD689320E35B64DC802FCE4975D20823EF5352A"
+    },
+    {
+      "path": "src/mochi/search.ts",
+      "bytes": 2722,
+      "gitBlob": "f8efe62845f68bf33cd83548fb23876910ebcee2",
+      "sha256": "5363698FC1F50E5ADAAB240A275D64FDA997B68E61ABA28E7D3972EB939F0FEB"
+    },
+    {
+      "path": "src/mochi/service.ts",
+      "bytes": 89457,
+      "gitBlob": "3e708eb8396d601418363d53542f81cac26f2f94",
+      "sha256": "BC715F869FDD703AB21E824FFE6C5548F1A65BFC2AD0B7BF8C034355AD1AC12E"
+    },
+    {
+      "path": "src/mochi/session.ts",
+      "bytes": 6965,
+      "gitBlob": "c7a4f06e435df12a9b30da42699a97c2a41c4bee",
+      "sha256": "266BD0F01A63B0C78B7F5C47DBB95471E136065B7B4D3A168F796890A458F877"
+    },
+    {
+      "path": "src/mochi/sidebar-icon.ts",
+      "bytes": 561,
+      "gitBlob": "595a3901e730317c5be451db0f31a575946ba466",
+      "sha256": "CCCE32C49147A3DA632C8AA0B84AB66F689848AB9D22F8FA08A1B4977A0C01F5"
+    },
+    {
+      "path": "src/mochi/sidebar-styles.ts",
+      "bytes": 1450,
+      "gitBlob": "f9e251a6f291014bdfeb1a5b245dba034c238ba3",
+      "sha256": "C544E614693F67952559C5E490228BBD4433052FEFFD72CDE9E31C56AE1F692A"
+    },
+    {
+      "path": "src/mochi/sidebar.ts",
+      "bytes": 8097,
+      "gitBlob": "8e250c7fccbfb332b463a920d689717c945177e3",
+      "sha256": "7D8F5559A3050F2C598C88589D1EB161AC21A6EF6C2EB293E25D686D7C7CDC74"
+    },
+    {
+      "path": "src/mochi/styles.ts",
+      "bytes": 25539,
+      "gitBlob": "b859b53e0633e2bfaf633831d933e9c16e2dfc38",
+      "sha256": "107FFC69DC8D79EFA150E156B959CA67B70A1127CA6406F514BFDA927E562807"
+    },
+    {
+      "path": "src/mochi/summarization.ts",
+      "bytes": 7429,
+      "gitBlob": "c9fec2f58e896fc93e6fdfd67fbf1e03fefac53e",
+      "sha256": "B0E1C1E400C942C98973ABCADA797AF29D4C908F331941E4270D28108185685C"
+    },
+    {
+      "path": "src/mochi/texting-controls.ts",
+      "bytes": 2553,
+      "gitBlob": "0cba6f06ded8e18086ff2f2206b2da37ec1e747c",
+      "sha256": "65169C36EDCA14E85CB56164C5224B615970747B7600B34A87D35E8387AD8092"
+    },
+    {
+      "path": "src/mochi/texting.ts",
+      "bytes": 2318,
+      "gitBlob": "dbb8d2b57e8e0aaa4316b092739a3d70ba454b20",
+      "sha256": "C85EAE219843F9C2A7AF142CA5C8C40F12DD26698BF7C8FBA7D1F84F8E786B2A"
+    },
+    {
+      "path": "src/mochi/types.ts",
+      "bytes": 2683,
+      "gitBlob": "9770edf8bbe82ce0216ab9d02a6ff343fcc33a21",
+      "sha256": "D494075BD8D9E3DF1E498841FF9FE7728D33E4EFC9522F5FEA7B156427DB6220"
+    },
+    {
+      "path": "src/mochi/view.ts",
+      "bytes": 93673,
+      "gitBlob": "328aca9383349f06a8878162389c25c5b139ea44",
+      "sha256": "26D3D804B919AFDA5FA9122CC29EA77AD1BB47B7E5FAAFFF8DAF8F8203BFADA1"
+    },
+    {
+      "path": "src/mochi/window.ts",
+      "bytes": 10335,
+      "gitBlob": "9f4e0d7653e9c0d3102b14030b0d58afe8d17105",
+      "sha256": "BE19F18BFC2F54646E02D0E24ED78082E65024C1FC5E31B9011E76ED90CDB09C"
+    },
+    {
+      "path": "src/mochi/workspace.ts",
+      "bytes": 6791,
+      "gitBlob": "bbb4fb43938404e122a8044e080fc80aaa061d3b",
+      "sha256": "555694633BBC695C52C550285BD52BFB66F4ABCD076233E5D3A4DD1CBAB4FB78"
+    },
+    {
+      "path": "src/styles.ts",
+      "bytes": 117461,
+      "gitBlob": "7f2f5a69af6cf3c19d814b163807ba44422ae1c7",
+      "sha256": "ED32C65D8CE446DF7DDF65FE454D38690A783651F62042FD863A1BA5E78152F1"
+    },
+    {
+      "path": "src/types.ts",
+      "bytes": 30656,
+      "gitBlob": "6ba8ee26aa3c04d53dc4e94370365a9653ad2229",
+      "sha256": "AC677FEA34AD495214FD2DA8716CC5B7BB2EFDACAFF6DF050497BC002F3A247B"
+    },
+    {
+      "path": "tsconfig.json",
+      "bytes": 272,
+      "gitBlob": "0be1a3cbd0884b8f963daf1a2d6cfb17043d00cb",
+      "sha256": "A9327BB51F76B7B8A4E8BD6F67F5EBD01F82052F5D501FE0FB4569A22FFE2A38"
+    }
+  ],
+  "preparedDate": "2026-10-15",
+  "schemaVersion": 1,
+  "sourceTree": "bbc20dbe11b9ed13ffde7f6c0f7b6cd8061c903a",
+  "extensionIdentifier": "lumiphone",
+  "sourceCommit": "0f8f9ae9dfae42a467a08b375c1eeb767bb7e6b4",
+  "releaseReady": false,
+  "distributionNote": "Frozen source/runtime artifact only. Supply release dossier and privacy precautions separately; installation and friend access require approval."
+}

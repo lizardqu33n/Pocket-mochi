@@ -1,5 +1,57 @@
 # Pocket evaluation backlog — 2026-10-06
 
+## Closed Beta 1 release freeze — 2026-10-15
+
+Current feature set and simplified UI are provisionally accepted and frozen. No
+new runtime feature or redesign. Acceptance evidence is locally checkpointed at
+7bcb422; approved UI/source/pair at 0f8f9ae. Release metadata pins the full source
+commit and a 127-file source/runtime package with verified Git blobs and SHA-256.
+480 distinct targeted tests / 3,590 assertions and one typecheck passed; one test
+is an unresolved auth-gap reproduction, not privacy safety. No rebuild was needed
+because runtime source/pair remained unchanged from the verified UI-01C/01D build.
+Disposable disk bundles now match; running/browser identity remains unverified.
+Restricted beta awaits simultaneous real-user separate-browser host acceptance,
+consistent backup/recovery verification and explicit residual-risk/access approval.
+General beta remains blocked. See MOCHI-BETA-RELEASE-01.md and the candidate/package
+inventories. No push, installation, deployment or friend access is authorized.
+
+## UI-01C / UI-01D follow-up — 2026-10-15
+
+Local navigation/menu refinement adds scoped All/Unread/Groups/+ New Chat filters,
+moves notification access to main/header chrome, adds a truthful activity snapshot
+placeholder and supplies independent Mochi popup surface/contrast/layering styles.
+No new activity model, rails, backend or schema changes. 240 targeted tests / 2,099
+assertions, one typecheck and one sequential build passed. Actual browser contrast,
+clipping and narrow layout acceptance remain pending. See MOCHI-UI-01CD.md for
+hashes, limitations and manual checklist. Prior work remains uncommitted; beta
+candidate/readiness and the known auth limitation are unchanged. No installation,
+publication or next milestone started.
+
+## UI-01B refinement — 2026-10-14
+
+Screenshot-driven shell refinement is source-implemented: compact original account/
+creation controls, character-first Details, smaller integrated Search and corrected
+magnifier glyph. Existing handlers/data boundaries are retained; no backend profile
+contract, activity data, settings redesign or theme system. 256 distinct focused
+tests / 2,247 assertions, one typecheck and one sequential build passed; backend
+bundle is unchanged. Actual rendered visual acceptance is pending, not established
+by JSDOM. See MOCHI-UI-01B.md for hashes and the Windows manual checklist.
+Prior UI/acceptance work remains uncommitted and preserved. No installed runtime,
+publication, privacy/readiness status or next milestone changed.
+
+## UI-01A foundation — 2026-10-14
+
+Dedicated Mochi shell now has scoped conversation discovery, left branding/account
+tools, a direct room Search action and a collapsible read-only DM/group details
+panel. It reuses the session, message components and guarded secondary handlers.
+No bio/banner/routines source is exposed by the current DTO; honest fallbacks remain.
+327 distinct focused synthetic tests / 2,818 assertions passed, plus one typecheck
+and one sequential matching build. Backend bundle is unchanged. Real container
+layout, focus, zoom and visual acceptance are pending; JSDOM is not pixel approval.
+See MOCHI-UI-01A.md for hashes, manual checklist and proposed UI-01B scope.
+Settings modernization and theme work have not started. Existing restricted-preview
+limitations/readiness remain unchanged; no installation or publication occurred.
+
 ## Mochi development order (user-approved update, 2026-10-13)
 
 Desktop foundation 01B–01F is source-implemented with targeted simulated tests.
@@ -35,15 +87,26 @@ development-verified with source-proof checks, shared task/quota ownership and
 matching bundles. MEM-01E/01F were reviewed by the user with superficial testing;
 this permits MEM-01G but is not full live regression or multi-user acceptance.
 MEM-01G source/privacy/UI assessment is complete with targeted synthetic tests.
-Multi-user beta readiness is blocked by the unwired trusted real-user transition
-boundary. Memory-capacity management was a G blocker; BETA-FIX-02 now provides
+General beta readiness is blocked by the unwired trusted real-user transition
+boundary. The user has deferred this issue for a proposed restricted preview using
+separate real accounts in dedicated browser profiles/devices; it is unresolved,
+not harmless or fixed. Memory-capacity management was a G blocker; BETA-FIX-02 provides
 bounded, revision-safe Disable/Clear without evicting saved versions. It uses
 explicit managed-memory v2 records (legacy v1 loads unchanged); old memory readers
 refuse v2, so rollback must not strip this state or overwrite newer histories.
 Small cancellation/scope/save-state wording fixes are development-verified with
 337 targeted synthetic tests, one typecheck and one matching build. BETA-FIX-01
 cannot implement automatic trusted auth teardown within the approved host boundary.
-Host cooperation and actual-host/visual acceptance remain required; beta is blocked.
+Host cooperation remains required for unrestricted beta. BETA-ACCEPTANCE-01 passed
+473 distinct targeted synthetic tests / 3,489 assertions across 26 files, including
+simultaneous Alice/Bob legacy and fictional rooms and independent frontend-context
+fixtures. One passing known-gap reproduction confirms the auth limitation, not
+privacy safety. One typecheck passed; unchanged source/bundles required no rebuild.
+Restricted preview remains pending matching-runtime installation, controlled
+actual-host separate-browser, memory/visual/native acceptance and an explicit user
+residual-risk/access decision. The disposable instance still has older MEM-01F
+bundles; it was not updated. General beta remains blocked, releaseReady stays false.
+See MOCHI-BETA-ACCEPTANCE-01.md and user-facing MOCHI-BETA-PREVIEW.md.
 See MOCHI-BETA-FIX-01-02.md and the updated MOCHI-BETA-CANDIDATE.json. No publication,
 installation or next feature milestone is authorized by these development checks.
 See MOCHI-MEM-01G.md and MOCHI-UI-UX-AUDIT.md. No runtime/UI changes were made in G.
