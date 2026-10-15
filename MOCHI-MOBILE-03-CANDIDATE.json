@@ -1,0 +1,30 @@
+{
+  "candidate": "mochi-mobile-rc4-drawer-handoff",
+  "status": "uncommitted-local-drawer-handoff-android-acceptance-pending",
+  "baseCommit": "4927b63034e2389bc359a856790fcf15ca770b10",
+  "publishedRecoveryBranch": "beta/mochi-mobile-rc3",
+  "published": false,
+  "installed": false,
+  "committed": false,
+  "releaseReady": false,
+  "realAndroidDrawerFixAccepted": false,
+  "priorFullscreenAndroidResult": "User reports fullscreen RC3 works; blank underlying drawer observed",
+  "sourceFingerprintSHA256": "53F596A9361C598FF7ECDCCD9A456A37675EA8F512E0AAC4D0E89372AC341A17",
+  "bundles": {
+    "dist/frontend.js": "764BCA8E9D5F7C4C8A62EECD72391105D4FB3FC7090986A3B21F7F00954F8915",
+    "dist/backend.js": "FB2478EE6AB4B004955CAF046681A82253B73BE6D16C8609936DEEC67AC329B6"
+  },
+  "backendUnchanged": true,
+  "typecheck": "passed once",
+  "build": "passed once, sequential backend then frontend",
+  "targetedTests": {
+    "passed": 12,
+    "failed": 0,
+    "assertions": 122,
+    "environment": "small sequential JSDOM and compiled-backend simulations; not live Android"
+  },
+  "recoveryPairDirectory": "tmp/mochi-mobile-03-before",
+  "hostSourceInspected": "b1a68d9e32e2a2480a0d5ae71422566845f2657b",
+  "report": "MOCHI-MOBILE-03.md",
+  "knownLimitation": "Existing same-browser real-user authentication-transition limitation unchanged; existing close bridge has no client acknowledgment"
+}

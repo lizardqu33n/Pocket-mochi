@@ -425,7 +425,8 @@ class PocketController {
     }
     this.cleanups.push(this.mochiSession.attach(this.mochiSurface))
     this.mochiSidebar = createMochiSidebar(this.ctx, this.mochiSession,
-      () => ({enabled:this.preferences.notifyMessages,previews:this.preferences.notificationPreviews}),()=>this.openMochiPortal())
+      () => ({enabled:this.preferences.notifyMessages,previews:this.preferences.notificationPreviews}),()=>this.openMochiPortal(),
+      () => this.ctx.sendToBackend({type:'mochi:open_shell'}))
     this.cleanups.push(() => this.mochiSidebar.destroy())
     this.cleanups.push(this.ctx.events.on('CHAT_SWITCHED', () => {
       this.setupModalDismiss?.()

@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs'
 import { createMochiLauncher } from '../src/mochi/launcher.js'
 import type { SpindleFrontendContext } from 'lumiverse-spindle-types'
 
-function fixture(width=900, geometry=true) {
+function fixture(width=900, geometry=true, dismissDrawer?:()=>void) {
   const dom=new JSDOM('<body><main id="portal"></main></body>',{pretendToBeVisual:true})
   const previous={document:globalThis.document,window:globalThis.window};Object.assign(globalThis,{document:dom.window.document,window:dom.window})
   Object.defineProperty(window,'innerWidth',{value:width,configurable:true})
@@ -27,7 +27,7 @@ function fixture(width=900, geometry=true) {
     return {root,setVisible:(visible:boolean)=>{root.hidden=!visible},isVisible:()=>!root.hidden,setFullscreen:(value:boolean)=>{fullscreen=value},isFullscreen:()=>fullscreen,setSize:()=>{},moveTo:(x:number,y:number)=>{position={x,y}},getPosition:()=>position,onDragEnd:()=>()=>{},destroy:()=>root.remove()}
   }}
   if(geometry)ui.geometry={layoutViewportSize:()=>({width,height:850}),createResizeController:()=>()=>{}}
-  const navigation=createMochiSidebar({ui} as Pick<SpindleFrontendContext,'ui'>,session,()=>({enabled:true,previews:false}))
+  const navigation=createMochiSidebar({ui} as Pick<SpindleFrontendContext,'ui'>,session,()=>({enabled:true,previews:false}),()=>{},dismissDrawer)
   const pocket=new PocketPortal(()=>{const node=document.createElement('p');node.textContent='Native Pocket phones and settings';return node},()=>navigation.root,()=>navigation.open(),undefined,{phones:'<svg data-test="original-phone" viewBox="0 0 24 24"></svg>',mochi:MOCHI_SIDEBAR_ICON})
   document.body.append(pocket.root)
   const pane={root:navigation.root,activate:()=>pocket.show('mochi')}
@@ -196,6 +196,49 @@ test('mobile Open messenger, details/back and Close reuse one owner, retain draf
     expect((h.session.view as any).drafts.get(roomId)).toBe('Unsent mobile draft')
     h.session.authenticatedIdentityChanged(null);expect(document.querySelector('.mochi-mobile-surface')).toBeNull();expect(h.listeners.size).toBe(0)
   }finally{h.cleanup()}
+})
+
+test('mobile drawer-close handoff keeps the selected chat, draft, generation and owner alive; Back and Close/reopen stay independent',()=>{
+  const pending:Array<()=>void>=[];let ready=false,requests=0
+  const h=fixture(390,true,()=>{requests++;ready=!!h.navigation.root.closest('.mochi-mobile-surface')&&!!h.navigation.root.querySelector('.mochi-workspace');pending.push(()=>{h.pocket.root.hidden=true})})
+  try{
+    h.tabs[0].activate();h.accounts();h.select(h.a)
+    expect(ready).toBe(true);expect(requests).toBe(1)
+    const root=h.navigation.root
+    root.querySelector<HTMLButtonElement>('.mochi-desktop-room')!.click()
+    h.emit({type:'mochi:state',requestId:h.request('mochi:list').requestId,state:h.state(h.a)})
+    const id=h.session.view.roomId,input=root.querySelector<HTMLTextAreaElement>('[aria-label="Message"]')!,thread=root.querySelector('.mochi-thread')!
+    input.value='Retained during drawer close';input.dispatchEvent(new window.Event('input'))
+    const view=h.session.view as any;view.ownGenerations.set(id,'interactive')
+    const before=h.sent.length;pending.shift()!()
+    expect(h.pocket.root.hidden).toBe(true);expect(root.closest('.mochi-mobile-surface')!.closest('[hidden]')).toBeNull()
+    expect(h.session.view.roomId).toBe(id);expect(root.querySelector('.mochi-thread')).toBe(thread);expect(root.querySelector('[aria-label="Message"]')).toBe(input)
+    expect(input.value).toBe('Retained during drawer close');expect(view.ownGenerations.get(id)).toBe('interactive');expect(h.sent.length).toBe(before);expect(h.listeners.size).toBe(1)
+    view.ownGenerations.clear()
+    root.querySelector<HTMLButtonElement>('[aria-label="Back to conversations"]')!.click();expect(root.querySelector<HTMLElement>('.mochi-desktop')!.dataset.mode).toBe('list');expect(requests).toBe(1)
+    root.querySelector<HTMLButtonElement>('[aria-label="Close Mochi messenger"]')!.click()
+    expect(h.pocket.root.hidden).toBe(true);expect(h.pocket.root.contains(root)).toBe(true);expect(root.querySelector('.mochi-sidebar-picker')!.hasAttribute('hidden')).toBe(false)
+    h.navigation.openMessenger();expect(requests).toBe(2);pending.shift()!();expect(h.floats).toBe(1);expect(h.listeners.size).toBe(1)
+    expect(view.drafts.get(id)).toBe('Retained during drawer close')
+    h.navigation.root.querySelector<HTMLButtonElement>('[aria-label="Close Mochi messenger"]')!.click()
+    h.pocket.root.hidden=false;h.pocket.show('phones');expect(h.pocket.root.textContent).toContain('Native Pocket phones and settings')
+  }finally{h.cleanup()}
+})
+
+test('drawer-close is mobile-success-only; unsupported host or bridge failure leaves Mochi usable',()=>{
+  let requests=0;const desktop=fixture(900,true,()=>{requests++})
+  try{desktop.tabs[0].activate();desktop.accounts();desktop.select(desktop.a);expect(requests).toBe(0);expect(document.querySelector('.mochi-window')).not.toBeNull()}finally{desktop.cleanup()}
+  const unsupported=fixture(390,true,()=>{requests++})
+  try{
+    unsupported.ui.createFloatWidget=()=>{throw Error('Unsupported host')}
+    unsupported.tabs[0].activate();unsupported.accounts();unsupported.select(unsupported.a)
+    expect(requests).toBe(0);expect(unsupported.navigation.root.closest('.pocket-portal')).not.toBeNull();expect(unsupported.navigation.root.querySelector('.mochi-desktop')).not.toBeNull()
+  }finally{unsupported.cleanup()}
+  const failed=fixture(390,true,()=>{throw Error('Bridge unavailable')})
+  try{
+    failed.tabs[0].activate();failed.accounts();failed.select(failed.a)
+    expect(failed.navigation.root.closest('.mochi-mobile-surface')).not.toBeNull();expect(failed.navigation.root.textContent).toContain('Close the Pocket drawer manually');expect(failed.listeners.size).toBe(1)
+  }finally{failed.cleanup()}
 })
 
 test('navigation refresh stays metadata-only before selection; hidden mobile picker does not acknowledge notifications',()=>{

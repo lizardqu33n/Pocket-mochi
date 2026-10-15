@@ -9,7 +9,7 @@ import {createMochiMobileSurface} from './mobile-surface.js'
 /** Navigation only; conversation rendering always leases the existing session. */
 export interface MochiSidebar {readonly root:HTMLElement; open():void; openMessenger():void; settings(anchor:HTMLElement):void; onMessengerVisibility(handler:(visible:boolean)=>void):()=>void; destroy():void}
 export function createMochiSidebar(ctx: Pick<SpindleFrontendContext,'ui'>, session: MochiSession,
-  policy: () => Pick<MochiNotificationPolicy,'enabled'|'previews'>, activateSidebar:()=>void=()=>{}): MochiSidebar {
+  policy: () => Pick<MochiNotificationPolicy,'enabled'|'previews'>, activateSidebar:()=>void=()=>{}, dismissDrawer?:()=>void): MochiSidebar {
   const root=document.createElement('section');root.className='mochi-sidebar';root.setAttribute('aria-label','Mochi account navigation')
   const style=document.createElement('style');style.textContent=MOCHI_SIDEBAR_STYLES
   const nav=document.createElement('nav'),picker=document.createElement('div'),body=document.createElement('div'),editor=document.createElement('div')
@@ -24,6 +24,7 @@ export function createMochiSidebar(ctx: Pick<SpindleFrontendContext,'ui'>, sessi
   const button=(label:string,click:(node:HTMLButtonElement)=>void)=>{const node=document.createElement('button');node.type='button';node.textContent=label;node.onclick=()=>click(node);return node}
   const showPicker=()=>{pickerRequested=true;picker.hidden=false;body.hidden=true;if(workspace?.isOpen&&!ownedWindow?.isOpen)for(const fn of visibility)fn(false);session.prepareNavigation();render()}
   const present=()=>{
+    const wasFullscreen=mobileSurface?.isOpen===true
     // Match the inspected host's narrow viewport/coarse-pointer definition.
     const mobile=window.innerWidth<=600||window.matchMedia?.('(pointer: coarse)').matches
     if(!mobile){
@@ -39,6 +40,12 @@ export function createMochiSidebar(ctx: Pick<SpindleFrontendContext,'ui'>, sessi
     if(!fullscreen)activateSidebar()
     workspace ||= createMochiWorkspace({root:body,session,notificationPolicy:policy,presentation:'messenger',isHostVisible:()=>!root.hasAttribute('data-mobile-messenger')||!!mobileSurface?.isOpen,onVisibilityChange:visible=>{if(!visible)mobileSurface?.hide();for(const fn of visibility)fn(visible)}})
     pickerRequested=false;picker.hidden=true;body.hidden=false;workspace.open();render()
+    // The subtree is now outside the drawer and its workspace owns the session.
+    // Use the caller's supported host bridge; never destroy the drawer/session.
+    if(fullscreen&&!wasFullscreen){
+      try{dismissDrawer?.()}
+      catch{fallback='Mochi is open. Close the Pocket drawer manually.';render()}
+    }
     if(fullscreen)body.querySelector<HTMLElement>(session.view.roomId?'[aria-label="Back to conversations"]':'.mochi-desktop-room,[aria-label="New Chat"]')?.focus({preventScroll:true})
   }
   const accounts=button('Accounts',()=>showPicker()),open=button('Open messenger',()=>present())

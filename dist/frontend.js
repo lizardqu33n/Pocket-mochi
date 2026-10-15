@@ -5538,7 +5538,7 @@ function createMochiMobileSurface(ui, content) {
 }
 
 // src/mochi/sidebar.ts
-function createMochiSidebar(ctx, session, policy, activateSidebar = () => {}) {
+function createMochiSidebar(ctx, session, policy, activateSidebar = () => {}, dismissDrawer) {
   const root = document.createElement("section");
   root.className = "mochi-sidebar";
   root.setAttribute("aria-label", "Mochi account navigation");
@@ -5579,6 +5579,7 @@ function createMochiSidebar(ctx, session, policy, activateSidebar = () => {}) {
     render();
   };
   const present = () => {
+    const wasFullscreen = mobileSurface?.isOpen === true;
     const mobile = window.innerWidth <= 600 || window.matchMedia?.("(pointer: coarse)").matches;
     if (!mobile) {
       mobileSurface?.hide();
@@ -5626,6 +5627,14 @@ function createMochiSidebar(ctx, session, policy, activateSidebar = () => {}) {
     body.hidden = false;
     workspace.open();
     render();
+    if (fullscreen && !wasFullscreen) {
+      try {
+        dismissDrawer?.();
+      } catch {
+        fallback = "Mochi is open. Close the Pocket drawer manually.";
+        render();
+      }
+    }
     if (fullscreen)
       body.querySelector(session.view.roomId ? '[aria-label="Back to conversations"]' : '.mochi-desktop-room,[aria-label="New Chat"]')?.focus({ preventScroll: true });
   };
@@ -13134,7 +13143,7 @@ class PocketController {
       }
     };
     this.cleanups.push(this.mochiSession.attach(this.mochiSurface));
-    this.mochiSidebar = createMochiSidebar(this.ctx, this.mochiSession, () => ({ enabled: this.preferences.notifyMessages, previews: this.preferences.notificationPreviews }), () => this.openMochiPortal());
+    this.mochiSidebar = createMochiSidebar(this.ctx, this.mochiSession, () => ({ enabled: this.preferences.notifyMessages, previews: this.preferences.notificationPreviews }), () => this.openMochiPortal(), () => this.ctx.sendToBackend({ type: "mochi:open_shell" }));
     this.cleanups.push(() => this.mochiSidebar.destroy());
     this.cleanups.push(this.ctx.events.on("CHAT_SWITCHED", () => {
       this.setupModalDismiss?.();

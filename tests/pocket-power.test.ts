@@ -12,8 +12,10 @@ const storage = {
 }
 let intercept: any, frontend: any
 const replies: any[] = []
+const drawerClosures: unknown[] = []
 ;(globalThis as any).spindle = {
   userStorage:storage,
+  ui:{closeDrawer:async(options:unknown)=>{drawerClosures.push(options)}},
   permissions:{has:(name:string)=>['interceptor','chats','characters'].includes(name),onChanged:()=>()=>{}},
   frontendCapabilities:{declare:()=>()=>{}},
   registerInterceptor:(handler:any)=>{intercept=handler;return ()=>{}},
@@ -27,6 +29,16 @@ await import(process.env.POCKET_POWER_BACKEND || '../src/backend.js')
 const prompt = [{role:'user',content:'Keep this <pocket-commit ref="old"/> history unchanged.'}]
 const context = (chatId:string,userId='alice')=>({chatId,characterId:'char-a',userId})
 const configured = (chatId:string)=>records.set(key(`phones/${chatId}__char-a.json`,'alice'),{version:1,setup:{initialized:true}})
+
+test('existing drawer-close bridge targets the authenticated user and does not touch stored state',async()=>{
+  records.clear();drawerClosures.length=0
+  records.set(key('mochi/synthetic.json','alice'),{messages:['saved'],jobs:['queued']})
+  const before=structuredClone([...records])
+  await frontend({type:'mochi:open_shell',userId:'bob'},'alice')
+  expect(drawerClosures).toEqual([{userId:'alice'}])
+  await frontend({type:'mochi:open_shell'},undefined)
+  expect(drawerClosures).toHaveLength(1);expect([...records]).toEqual(before)
+})
 
 test('actual interceptor defaults unconfigured OFF, configured ON, and OFF preserves prompts and phone records',async()=>{
   records.clear();configured('rp-a')
