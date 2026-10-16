@@ -217,6 +217,7 @@ export class MochiView {
   private settingsDraft: MochiSettings | null = null
   private draftRevision = 0
   private timeout: ReturnType<typeof setTimeout> | undefined
+  private generationErrorRoom = ''
   private presenceTimer?: ReturnType<typeof setInterval>
   private presenceRoot?: HTMLElement
   private draft: { title: string; characterIds: string[]; persona: string; name: string; description: string } | null = null
@@ -289,6 +290,7 @@ export class MochiView {
     if(this.state){if(id)this.lastRooms.set(this.state.accountId||'',id);else this.lastRooms.delete(this.state.accountId||'')}
   }
   leave(): void {
+    if (this.generationErrorRoom) { this.error = ''; this.generationErrorRoom = '' }
     this.memoryPanel.reset()
     this.presetPanel.reset()
     this.preview.reset()
@@ -322,7 +324,7 @@ export class MochiView {
     if (type === 'mochi:send' || type === 'mochi:regenerate') this.ownGenerations.set(this.roomId, this.request)
     if (type === 'mochi:send') this.pendingSends.set(this.request, { roomId: this.roomId, content: String(values.content ?? ''),replyTo:typeof values.replyTo==='string'?values.replyTo:undefined,replyKey:JSON.stringify([this.state?.accountId||'',this.roomId]) })
     this.operation = type
-    this.busy = true; this.error = ''; this.feedback = ''
+    this.busy = true; this.error = ''; this.generationErrorRoom = ''; this.feedback = ''
     clearTimeout(this.timeout)
     this.timeout = setTimeout(() => {
       this.busy = false
@@ -334,6 +336,10 @@ export class MochiView {
   }
   receive(payload: any): boolean {
     if (this.destroyed) return false
+    if (payload?.type === 'mochi:error' && payload.roomId &&
+        (payload.accountId !== this.state?.accountId || payload.roomId !== this.roomId ||
+         this.ownGenerations.get(payload.roomId) !== payload.requestId ||
+         this.state?.rooms.find(r => r.id === payload.roomId)?.revision !== payload.roomRevision)) return true
     if(this.memoryPanel.receive(payload))return true
     if(this.presetPanel.receive(payload))return true
     if(this.preview.receive(payload))return true
@@ -401,6 +407,7 @@ export class MochiView {
     if (payload?.type === 'mochi:room_updated') {
       const room = this.state?.rooms.find(r => r.id === payload.room?.id)
       if (room && payload.room.revision > room.revision && !this.editing && !this.creating) {
+        if (this.generationErrorRoom === room.id) { this.error = ''; this.generationErrorRoom = '' }
         payload.room.background = this.mergeScheduling(room, payload.room.background, payload.room.revision)
         Object.assign(room, payload.room)
         this.redraw()
@@ -447,7 +454,7 @@ export class MochiView {
     if (payload.requestId !== this.request) return true
     clearTimeout(this.timeout)
     this.busy = false
-    if (payload.type === 'mochi:error') { this.pendingNoteSave=undefined; if (this.requestVersion === this.selectionVersion) this.error = String(payload.message) }
+    if (payload.type === 'mochi:error') { this.pendingNoteSave=undefined; if (this.requestVersion === this.selectionVersion) { this.error = String(payload.message); this.generationErrorRoom = payload.roomId || '' } }
     else {
       payload.state.rooms=payload.state.rooms.filter((r:MochiRoom)=>{const known=this.associations.get(r.id);return !known||(known.accountId===payload.state.accountId&&(r.associationRevision||0)>=known.revision)})
       payload.state.notifications=(payload.state.notifications||[]).filter((n:MochiNotification)=>{const known=this.associations.get(n.roomId);return !known||known.accountId===payload.state.accountId})
@@ -954,7 +961,11 @@ export class MochiView {
     input.onkeydown = event => { if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) { event.preventDefault(); form.requestSubmit() } }
     const job = this.state?.jobs?.[room.id]
     const submit = action('Send', 'send', true); submit.classList.add('mochi-primary'); submit.type = 'submit'; submit.disabled = this.busy || Boolean(job) || this.memoryPanel.generating
-    const stop = action('Stop reply', 'stop', true); stop.disabled = !job; stop.hidden = !job; stop.onclick = () => this.send({ type: 'mochi:cancel', accountId: this.state?.accountId, roomId: room.id, generationRequestId: job })
+    const stop = action('Stop reply', 'stop', true); stop.disabled = !job; stop.hidden = !job; stop.onclick = () => {
+      if (this.ownGenerations.get(room.id) === job) this.ownGenerations.delete(room.id)
+      this.error = ''; this.generationErrorRoom = ''
+      this.send({ type: 'mochi:cancel', accountId: this.state?.accountId, roomId: room.id, generationRequestId: job })
+    }
     form.onsubmit = event => { event.preventDefault(); if (!this.busy && !job && !this.memoryPanel.generating) this.dispatch('mochi:send', { roomId: room.id, revision: room.revision, content: input.value, responder: responder.value,...(input.value.trim()&&this.replyTargets.get(this.replyKey(room))?{replyTo:this.replyTargets.get(this.replyKey(room))}:{}) }) }
     const actions = el('div', 'mochi-composer-row'); actions.append(input, submit, stop)
     const target=this.replyTargets.get(this.replyKey(room))

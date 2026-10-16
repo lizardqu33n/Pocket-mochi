@@ -1,6 +1,7 @@
 import { callPocketProvider } from '../backend/generation.js'
 import { defaultMochiSettings, type MochiRoom } from './types.js'
 import { parseBehavior, type Behavior } from './behavior.js'
+import { MochiGenerationError, providerFailure } from './generation-errors.js'
 
 export {type PromptMessage} from './context.js'
 import {resolveMochiContext,type PromptMessage} from './context.js'
@@ -10,10 +11,11 @@ export async function buildMochiPrompt(room:MochiRoom,characters:any[],responder
 }
 export async function validateMochiSources(host: any, room: MochiRoom, userId: string): Promise<any> {
   const settings = room.settings || defaultMochiSettings()
-  if (!host.permissions.has('generation')) throw new Error('Generation permission is required.')
-  if (!settings.connectionId) throw new Error('Choose a generation connection in Room settings.')
-  const connection = await host.connections.get(settings.connectionId, userId)
-  if (!connection) throw new Error('This connection is not available to your account.')
+  if (!host.permissions.has('generation') || !settings.connectionId || !host.connections?.get) throw new MochiGenerationError('connection')
+  let connection: any
+  try { connection = await host.connections.get(settings.connectionId, userId) }
+  catch (error) { throw providerFailure(error) }
+  if (!connection) throw new MochiGenerationError('connection')
   if (room.persona.source === 'lumiverse' && (!host.permissions.has('personas') || !await host.personas.get(room.persona.sourceId, userId))) throw new Error('The room persona is no longer available to your account. Select another identity.')
   if (room.persona.source === 'pocket') {
     const bank = await host.userStorage.getJson('identity-profiles.json', { userId, fallback: null })
@@ -41,19 +43,34 @@ export interface GeneratedReply { character:any; text:string; behavior:Behavior 
 export async function generateMochiReply(host: any, room: MochiRoom, userId: string, responder: string, signal: AbortSignal, eligibleIds = room.characterIds, natural = false): Promise<GeneratedReply & { replies: GeneratedReply[]; silent: boolean }> {
   const settings = room.settings || defaultMochiSettings()
   const {connection,characters,speaker,preset}=await resolveGenerationSources(host,room,userId,responder,eligibleIds)
-  const messages = await buildMochiPrompt(room, characters, speaker, async messages => (await host.tokens.countMessages(messages, { model: settings.model || connection.model, userId })).total_tokens, signal, natural,preset)
-  const response = await callPocketProvider(host, { messages, connection_id: settings.connectionId, userId, signal, reasoning: { source: 'off' }, parameters: { max_tokens: settings.outputTokens, temperature: 0.8, ...(settings.model ? { model: settings.model } : {}) } })
+  const messages = await buildMochiPrompt(room, characters, speaker, async messages => {
+    try { return (await host.tokens.countMessages(messages, { model: settings.model || connection.model, userId })).total_tokens }
+    catch (error) { signal.throwIfAborted(); throw providerFailure(error) }
+  }, signal, natural,preset)
+  let response: any
+  try { response = await callPocketProvider(host, { messages, connection_id: settings.connectionId, userId, signal, reasoning: { source: 'off' }, parameters: { max_tokens: settings.outputTokens, temperature: 0.8, ...(settings.model ? { model: settings.model } : {}) } }) }
+  catch (error) { signal.throwIfAborted(); throw providerFailure(error) }
   let parsed: any
   const raw=response?.content
-  if(raw===undefined||raw===null||typeof raw==='string'&&!raw.trim())throw Error('The AI returned an empty response. Please try again.')
-  try { parsed = JSON.parse(String(raw).trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')) } catch { throw new Error('The AI returned malformed message JSON. Please try again.') }
+  const limited=response?.finish_reason==='length'
+  if(raw===undefined||raw===null||typeof raw==='string'&&!raw.trim())throw new MochiGenerationError(limited?'output_limit':'empty_output')
+  if(typeof raw!=='string')throw new MochiGenerationError('invalid_schema')
+  const body=raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')
+  try { parsed = JSON.parse(body) } catch {
+    if(limited)throw new MochiGenerationError('output_limit')
+    // A deliberately conservative hint, never proof, fallback text or JSON repair.
+    const suspected=/^[\p{L}*_]/u.test(body)&&!/[{}\[\]]/.test(body)
+    throw new MochiGenerationError(suspected?'suspected_plain_text':'malformed_json')
+  }
+  if(!parsed||typeof parsed!=='object'||Array.isArray(parsed)||(natural&&Object.hasOwn(parsed,'messages')&&!Array.isArray(parsed.messages)))throw new MochiGenerationError('invalid_schema')
   const rows = natural && Array.isArray(parsed?.messages) ? parsed.messages : [parsed]
-  if(rows.length>3) throw new Error('The model exceeded the natural reply limit.')
+  if(rows.length>3) throw new MochiGenerationError('invalid_schema')
   const replies:GeneratedReply[]=[],seen=new Set<string>()
   for(const row of rows) {
+    if(!row||typeof row!=='object'||Array.isArray(row)||typeof row.speakerId!=='string')throw new MochiGenerationError('invalid_schema')
     const character = characters.find(c => c.id === row?.speakerId)
-    if (!character || seen.has(character.id) || (speaker !== 'auto' && character.id !== speaker)) throw new Error('The model returned an invalid responder.')
-    if (typeof row.text !== 'string' || !row.text.trim() || row.text.length > 32000) throw new Error('The model returned an empty or oversized message.')
+    if (!character || (speaker !== 'auto' && character.id !== speaker)) throw new MochiGenerationError('ineligible_speaker')
+    if (seen.has(character.id) || typeof row.text !== 'string' || !row.text.trim() || row.text.length > 32000) throw new MochiGenerationError('invalid_schema')
     seen.add(character.id);replies.push({character,text:row.text.trim(),behavior:settings.aiBehavior?parseBehavior(row.behavior):{delayMs:0}})
   }
   return { ...(replies[0] || {character:characters[0],text:'',behavior:{delayMs:0}}), replies, silent:!replies.length }

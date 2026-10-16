@@ -2,6 +2,7 @@ import {SummaryError,prepareSummary,requestSummary,summaryInput,summarySources,s
 import {validateMemory,proveCoverage,inspectMemory,MAX_SUMMARY_TEXT,MAX_SUMMARY_VERSIONS,type SummaryVersion} from './memory.js'
 import { roomId, defaultMochiSettings, type MochiSettings, type MochiMessage, type MochiPersona, type MochiRoom, type MochiState } from './types.js'
 import { generateMochiReply, validateMochiSources,resolveGenerationSources } from './generation.js'
+import { MochiGenerationError, publicGenerationFailure } from './generation-errors.js'
 import { identifier, MAX_JOBS, publicRuntime, scheduleInput, temporaryFailure, TERMINAL, validateRuntime, type ScheduledJob } from './scheduling.js'
 import { delayFor, eligibleResponders, minimumDelay, statusFor, validatePresence } from './presence.js'
 import { applyDeliveredStatus } from './behavior.js'
@@ -766,7 +767,7 @@ export class MochiService {
         const room = await this.readStored(user, id), j = room.runtime?.jobs.find(j => j.id === occurrenceId)
         if (!j || j.claim !== claim || TERMINAL.has(j.status)) return
         if ((j.kind !== 'response' && (!room.runtime!.enabled || !await allowed())) || j.revision !== room.revision) { j.status = 'cancelled'; delete j.draft; delete j.additional }
-        else if (controller.signal.aborted || temporaryFailure(error)) {
+        else if (controller.signal.aborted || (error instanceof MochiGenerationError ? error.temporary : temporaryFailure(error))) {
           j.status = j.draft ? 'generated' : j.kind !== 'idle' && j.attempts < 3 ? 'queued' : 'failed'
           j.nextAttemptAt = now() + Math.min(900000, 60000 * 2 ** Math.max(0, j.attempts - 1)); j.leaseUntil = 0
         } else { j.status = 'paused'; j.reason = 'Scheduled messaging needs attention. Check room sources, provider and storage.' }
@@ -778,7 +779,7 @@ export class MochiService {
       if(generate) this.releaseAutomatic(user,id)
     }
   }
-  async message(userId: string, input: any, regenerate = false): Promise<void> {
+  async message(userId: string, input: any, regenerate = false, reportFailure = false): Promise<void> {
     const user = this.account(userId), id = roomId(input.roomId), requestId = entityId(input.requestId)
     const key = this.jobKey(user, id), controller = new AbortController()
     let phoneKey: string | undefined
@@ -888,12 +889,28 @@ export class MochiService {
         await this.persist(user, current, controller.signal)
         for(const event of notifications) this.host.sendToFrontend({ type: 'mochi:notification', notification:event.notification, notificationRevision:event.revision, accountId: event.notification.accountId }, user)
       })
+    } catch (error) {
+      if (!reportFailure) throw error
+      // Publish while the originating job and room snapshot still own this failure.
+      // Cancellation/invalidation suppress diagnostics even if a provider ignores abort.
+      await this.locked(user, id, async () => {
+        if (controller.signal.aborted || this.jobs.get(key)?.controller !== controller) return
+        let current: MochiRoom
+        try { await selectedOnPhone(); current = await this.read(user, id, input.accountId) } catch { return }
+        if (controller.signal.aborted || current.revision !== launched.room.revision ||
+            (current.associationRevision || 0) !== (launched.room.associationRevision || 0)) return
+        this.host.sendToFrontend({ type: 'mochi:error', requestId, roomId: id, accountId: current.accountId, roomRevision: current.revision,
+          ...publicGenerationFailure(error) }, user)
+      })
     } finally {
       clearTimeout(timeout)
       if(automaticReserved) this.releaseAutomatic(user,id)
       if (this.jobs.get(key)?.controller === controller) this.jobs.delete(key)
       this.host.sendToFrontend({ type: 'mochi:job_finished', roomId: id, requestId, accountId: input.accountId }, user)
-      await publish(false)
+      if (reportFailure) {
+        // A failed refresh must not replace a classified failure or emit a stale one.
+        try { await publish(false) } catch { /* job_finished already released frontend ownership. */ }
+      } else await publish(false)
     }
   }
   async handle(payload: any, userId?: string): Promise<void> {
@@ -972,8 +989,8 @@ export class MochiService {
         this.host.sendToFrontend({type:'mochi:choices',requestId:payload.requestId,personas:state.personas,characters:state.characters,connections:state.connections},userId)
         return
       }
-      if (payload.type === 'mochi:send') { await this.message(userId, payload); return }
-      if (payload.type === 'mochi:regenerate') { await this.message(userId, payload, true); return }
+      if (payload.type === 'mochi:send') { await this.message(userId, payload, false, true); return }
+      if (payload.type === 'mochi:regenerate') { await this.message(userId, payload, true, true); return }
       if (payload.type === 'mochi:message_action') await this.action(userId, payload)
       else if(payload.type==='mochi:room_assign')await this.assignRoom(userId,payload)
       else if (payload.type === 'mochi:notification_read') {
@@ -992,6 +1009,16 @@ export class MochiService {
       else if (payload.type !== 'mochi:list' && payload.type !== 'mochi:message_action' && payload.type !== 'mochi:notification_clear' && payload.type !== 'mochi:room_assign') throw new Error('Unsupported Mochi action.')
       this.host.sendToFrontend({ type: 'mochi:state', requestId: payload.requestId, selectedRoomId, state: await this.state(userId, payload.accountId) }, userId)
     } catch (error) {
+      if (payload.type === 'mochi:send' || payload.type === 'mochi:regenerate') {
+        let scope: { roomId?: string; accountId?: string; roomRevision?: number } = {}
+        try {
+          scope = { roomId: roomId(payload.roomId), accountId: payload.accountId === undefined ? undefined : fictionalAccountId(payload.accountId),
+            roomRevision: Number.isSafeInteger(payload.revision) ? payload.revision : undefined }
+        } catch { /* Invalid scope must not be echoed as diagnostic metadata. */ }
+        this.host.sendToFrontend({ type: 'mochi:error', requestId: payload.requestId, ...scope,
+          ...publicGenerationFailure(error) }, userId)
+        return
+      }
       const message = error instanceof Error ? error.name === 'AbortError' ? 'Reply stopped. Your messages are saved.' : error.message : 'Unable to save Mochi room.'
       const safeMessage = message.replace(/\b(?:sk-|key-|Bearer\s+)[A-Za-z0-9._-]{8,}\b/gi, '[redacted]').replace(/\s+/g, ' ').trim().slice(0, 500)
       this.host.sendToFrontend({ type: 'mochi:error', requestId: payload.requestId, message: safeMessage || 'Unable to save Mochi room.' }, userId)

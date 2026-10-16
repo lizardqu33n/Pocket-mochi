@@ -216,13 +216,13 @@ test('an accepted send after room switching clears only its unchanged originatin
   } finally {globalThis.document=before;dom.window.close()}
 })
 
-test('provider failures redact credential-like strings instead of exposing them to the frontend', async () => {
+test('provider failures use a fixed message instead of exposing upstream text to the frontend', async () => {
   const f=messagingFixture(),room=await f.create()
   const credential='sk-'+'x'.repeat(36)
   f.host.generate!.quiet=async()=>{throw new Error('Provider rejected Bearer '+credential)}
   await f.service.handle({type:'mochi:send',roomId:room.id,revision:room.revision,requestId:'credential_failure',content:'Hello'},'alice')
   const error=f.responses.findLast(r=>r.payload.type==='mochi:error').payload.message
-  expect(error).not.toContain(credential);expect(error).toContain('[redacted]')
+  expect(error).not.toContain(credential);expect(error).toBe('The AI connection reported an error. Check the connection or provider settings.')
   expect((await f.service.read('alice',room.id)).messages).toHaveLength(1)
   expect(f.requests).toHaveLength(0)
 })
@@ -477,7 +477,7 @@ test('reroll cancellation and provider failures retain the original reply and do
   saved = await f.service.read('alice',room.id); expect(saved.messages[1]).toEqual(target)
   expect(saved.notifications).toHaveLength(1)
   f.host.generate!.quiet=async()=>({content:'invalid JSON'})
-  await expect(f.service.message('alice', {roomId:room.id,revision:saved.revision,requestId:'bad_reroll',messageId:target.id,confirmed:true},true)).rejects.toThrow('The AI returned malformed message JSON. Please try again.')
+  await expect(f.service.message('alice', {roomId:room.id,revision:saved.revision,requestId:'bad_reroll',messageId:target.id,confirmed:true},true)).rejects.toThrow('appears to have returned ordinary text')
   saved=await f.service.read('alice',room.id); expect(saved.messages[1]).toEqual(target)
   f.host.connections!.get=async()=>null
   await expect(f.service.message('alice',{roomId:room.id,revision:saved.revision,requestId:'unowned_reroll',messageId:target.id,confirmed:true},true)).rejects.toThrow('account')
@@ -565,7 +565,7 @@ test('group auto-selection and manual selection enforce current membership and r
   await f.service.message('alice', { roomId: room.id, revision: saved.revision, requestId: 'group_manual', content: '', responder: 'c3' })
   saved = await f.service.read('alice', room.id)
   await expect(f.service.message('alice', { roomId: room.id, revision: saved.revision, requestId: 'bad_speaker', content: '', responder: 'c2' })).rejects.toThrow('not in')
-  await expect(f.service.message('alice', { roomId: room.id, revision: saved.revision, requestId: 'wrong_model_speaker', content: '', responder: 'c1' })).rejects.toThrow('invalid responder')
+  await expect(f.service.message('alice', { roomId: room.id, revision: saved.revision, requestId: 'wrong_model_speaker', content: '', responder: 'c1' })).rejects.toThrow("isn't eligible")
   expect((await f.service.read('alice', room.id)).messages).toHaveLength(2)
 })
 test('token trimming preserves stored history and newest turn; oversize prompts never reach provider', async () => {

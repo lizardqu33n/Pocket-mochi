@@ -48,7 +48,8 @@ test('quota rejection and provider failures surface errors without losing user h
    if(quota)f.service.reserveAutomatic=async()=>false
    else f.host.generate!.quiet=async r=>{f.calls.push(r);throw Error('503 provider temporarily unavailable')}
    await f.service.handle({type:'mochi:send',accountId,roomId:room.id,revision:room.revision,requestId:'safe_failure',content:'Keep accepted text'},'alice')
-   expect(f.events.at(-1)!.payload.type).toBe('mochi:error');expect(f.events.at(-1)!.payload.message).toContain(quota?'limit':'503')
+   const failure=f.events.findLast(e=>e.payload.type==='mochi:error')!.payload
+   expect(failure.message).toBe(quota?"Mochi couldn't complete the reply. Your saved messages are preserved.":'The AI connection reported an error. Check the connection or provider settings.')
    await f.scheduler.tick();expect(f.calls).toHaveLength(quota?0:1)
    const saved=await f.service.read('alice',room.id,accountId);expect(saved.messages).toHaveLength(1);expect(saved.receipts).toContain('safe_failure');expect(saved.runtime!.jobs).toEqual([])
   }finally{f.scheduler.stop()}
