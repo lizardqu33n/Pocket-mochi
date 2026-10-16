@@ -1,3 +1,4 @@
+import {validateBlocks} from './prompt-blocks.js'
 import {resolveMochiContext} from './context.js'
 import {resolveGenerationSources} from './generation.js'
 import {eligibleResponders,minimumDelay} from './presence.js'
@@ -12,14 +13,17 @@ export async function previewContext(host:any,room:MochiRoom,user:string,input:a
  const natural=input.scenario==='automatic'&&settings.responseMode==='natural'&&responder==='auto'
  const allowBehavior=Boolean(settings.aiBehavior&&room.runtime?.enabled&&backgroundAllowed)
  const promptRoom={...room,settings:{...settings,aiBehavior:allowBehavior}}
+ const draftBlocks=input.draftBlocks===undefined?undefined:validateBlocks(input.draftBlocks)
+ const preset=draftBlocks?{...sources.preset,layout:'blocks-v1' as const,blocks:draftBlocks,placement:undefined,dmInstructions:'',groupInstructions:''}:sources.preset
  let tokenResult:any
- const plan=await resolveMochiContext(promptRoom,sources.characters,sources.speaker,async messages=>{tokenResult=await host.tokens.countMessages(messages,{model:settings.model||sources.connection.model,userId:user});return tokenResult.total_tokens},signal,natural,sources.preset,sources.personaContext)
+ const plan=await resolveMochiContext(promptRoom,sources.characters,sources.speaker,async messages=>{tokenResult=await host.tokens.countMessages(messages,{model:settings.model||sources.connection.model,userId:user});return tokenResult.total_tokens},signal,natural,preset,sources.personaContext)
  const assumptions=['Read-only snapshot of saved history; no new user message is included. Future replies and scheduled context may change.','Quota, delivery eligibility and provider-side transformations are not executed or predicted.','Connection preset parameters may be inherited by Lumiverse quiet generation. They are not available through this preview; explicit Mochi parameters are shown.']
  if(input.scenario==='automatic'&&(settings.responseMode==='manual'||!settings.autoReply))assumptions.push('Automatic replies are disabled: this is hypothetical context, not a request that would be dispatched.')
+ if(draftBlocks)assumptions.unshift('DRAFT BLOCK PREVIEW: not published or applied. Uses this draft with saved room context; no library or conversation data is changed.')
  const delay=minimumDelay(room,responder,now)
  if(delay>0)assumptions.push('Current presence delays immediate delivery. This shows current eligible character context, not an exact future scheduled prompt.')
  // Revalidate these sources after async counting in the service before exposing content.
- return {preview:{...plan,resolvedAt:new Date(now).toISOString(),scenario:input.scenario,responder:sources.speaker,natural,assumptions,tokenization:{model:typeof tokenResult.model==='string'?tokenResult.model:settings.model||sources.connection.model,approximate:typeof tokenResult.approximate==='boolean'?tokenResult.approximate:null,tokenizerName:typeof tokenResult.tokenizer_name==='string'?tokenResult.tokenizer_name:null},parameters:{max_tokens:settings.outputTokens,temperature:0.8,...(settings.model?{model:settings.model}:{})},reasoning:{source:'off'}},sources,ids,promptRoom,allowBehavior}
+ return {preview:{...plan,draft:!!draftBlocks,resolvedAt:new Date(now).toISOString(),scenario:input.scenario,responder:sources.speaker,natural,assumptions,tokenization:{model:typeof tokenResult.model==='string'?tokenResult.model:settings.model||sources.connection.model,approximate:typeof tokenResult.approximate==='boolean'?tokenResult.approximate:null,tokenizerName:typeof tokenResult.tokenizer_name==='string'?tokenResult.tokenizer_name:null},parameters:{max_tokens:settings.outputTokens,temperature:0.8,...(settings.model?{model:settings.model}:{})},reasoning:{source:'off'}},sources,ids,promptRoom,allowBehavior}
 }
 export function sourceSignature(sources:Awaited<ReturnType<typeof resolveGenerationSources>>):string {
  // Secrets are compared privately for changes, never returned or logged.
