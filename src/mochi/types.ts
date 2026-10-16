@@ -56,7 +56,7 @@ export interface MochiState {
   characters: MochiCharacter[]
   personas: MochiPersona[]
   warnings: string[]
-  connections?: Array<{ id: string; name: string; model: string }>
+  connections?: Array<{ id: string; name: string; model: string; isDefault?: boolean }>
   jobs?: Record<string, string>
   notifications?: MochiNotification[]
 }

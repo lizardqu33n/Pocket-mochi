@@ -47,6 +47,29 @@ function fixture(width=900, geometry=true, dismissDrawer?:()=>void) {
   return {session,ui,navigation,tabs:[pane],registrations:tabs,pocket,sent,listeners,bank,a,b,emit,accounts,request,state,select,cleanup,get floats(){return floats}}
 }
 
+test('desktop drawer handoff runs once per opening and leaves manual reopening alone through rerenders, resize and room selection',()=>{
+  let closes=0,drawerOpen=true
+  const h=fixture(900,true,()=>{closes++;drawerOpen=false})
+  try{
+    h.navigation.open();h.accounts();h.select(h.a)
+    expect(closes).toBe(1);expect(drawerOpen).toBe(false)
+    drawerOpen=true
+    h.navigation.openMessenger()
+    window.dispatchEvent(new window.Event('resize'))
+    h.emit({type:'mochi:state',requestId:h.request('mochi:list').requestId,state:h.state(h.a)})
+    const roomButton=document.querySelector<HTMLButtonElement>('.mochi-window .mochi-desktop-room')!
+    roomButton.click()
+    expect(closes).toBe(1);expect(drawerOpen).toBe(true)
+    document.querySelector<HTMLButtonElement>('[aria-label="Hide Mochi window"]')!.click()
+    h.navigation.openMessenger();expect(closes).toBe(2);expect(drawerOpen).toBe(false)
+  }finally{h.cleanup()}
+})
+
+test('desktop geometry fallback keeps its host drawer open',()=>{
+  let closes=0;const h=fixture(900,false,()=>{closes++})
+  try{h.navigation.open();h.accounts();h.select(h.a);expect(closes).toBe(0);expect(h.navigation.root.querySelector('.mochi-workspace')).not.toBeNull()}finally{h.cleanup()}
+})
+
 test('sidebar is navigation only: one subscription, no cancellation/read receipt or independent view',()=>{
   const h=fixture()
   try{
@@ -225,9 +248,10 @@ test('mobile drawer-close handoff keeps the selected chat, draft, generation and
   }finally{h.cleanup()}
 })
 
-test('drawer-close is mobile-success-only; unsupported host or bridge failure leaves Mochi usable',()=>{
+test('drawer-close runs for successful desktop/mobile openings; unsupported host or bridge failure leaves Mochi usable',()=>{
   let requests=0;const desktop=fixture(900,true,()=>{requests++})
-  try{desktop.tabs[0].activate();desktop.accounts();desktop.select(desktop.a);expect(requests).toBe(0);expect(document.querySelector('.mochi-window')).not.toBeNull()}finally{desktop.cleanup()}
+  try{desktop.tabs[0].activate();desktop.accounts();desktop.select(desktop.a);expect(requests).toBe(1);expect(document.querySelector('.mochi-window')).not.toBeNull()}finally{desktop.cleanup()}
+  requests=0
   const unsupported=fixture(390,true,()=>{requests++})
   try{
     unsupported.ui.createFloatWidget=()=>{throw Error('Unsupported host')}

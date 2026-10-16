@@ -534,7 +534,8 @@ class PocketController {
     try {
       // The inspected host geometry API extends the older published typings.
       this.mochiWindow ||= createMochiWindow(this.ctx.ui as unknown as MochiWindowUI, this.mochiSession,
-        () => ({enabled:this.preferences.notifyMessages,previews:this.preferences.notificationPreviews}))
+        () => ({enabled:this.preferences.notifyMessages,previews:this.preferences.notificationPreviews}),
+        () => this.ctx.sendToBackend({type:'mochi:open_shell'}))
       this.mochiWindow.open()
     } catch {
       this.showError('Mochi window is unavailable on this host. Use the Pocket portal.')

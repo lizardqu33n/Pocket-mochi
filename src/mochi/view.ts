@@ -3,6 +3,7 @@ import { button, el, requestId } from '../frontend/shared.js'
 import { POCKET_ICONS } from '../frontend/components/icons.js'
 import { MOCHI_STYLES } from './styles.js'
 import { mochiModelPicker, type MochiModelChoices } from './models.js'
+import { GENERATION_ERROR_MESSAGES } from './generation-errors.js'
 import { showPocketSheet } from '../frontend/components/ui.js'
 import { notificationBody, type MochiNotificationPolicy } from './notifications.js'
 import { defaultPresence, STATUSES, statusFor } from './presence.js'
@@ -591,7 +592,14 @@ export class MochiView {
       page.append(el('p', 'mochi-muted', 'Choose a conversation in the Pocket portal.'))
       const choose = action('Choose conversation', 'back'); choose.onclick = configure; page.append(choose); return page
     }
-    if (this.error) { const error = el('p', 'mochi-error', this.error); error.setAttribute('role', 'alert'); page.append(error) }
+    if (this.error) {
+      const error = el('p', 'mochi-error', this.error); error.setAttribute('role', 'alert'); page.append(error)
+      if (this.error === GENERATION_ERROR_MESSAGES.connection && this.roomId && !this.editing) {
+        const choose = action('Choose connection', 'settings')
+        choose.onclick = () => this.confirmGenerationExit(() => { this.leave(); this.editing = true; this.draft = null; this.settingsDraft = null; this.refreshChoices(); this.redraw() }, choose)
+        page.append(choose)
+      }
+    }
     if(this.profilesOpen){page.append(this.profiles.render(this.busy,(type,input)=>this.dispatch(type,input),()=>this.redraw(),()=>{this.profilesOpen=false;this.redraw()},(next,anchor)=>this.confirmNavigation(next,anchor),()=>this.refreshChoices()));return page}
     if(this.pickerOpen&&surface==='desktop'&&this.accountNavigation){page.append(el('p','mochi-muted',this.busy?'Loading selected account…':'Choose a Mochi account in the Pocket sidebar.'));return page}
     if(this.pickerOpen){page.append(accountPicker(this.profiles.state,this.busy,id=>this.chooseAccount(id),()=>{this.profiles.start();this.profilesOpen=true;this.refreshChoices();this.redraw()},()=>{this.leave();this.resetScope();this.pickerOpen=false;this.load()},preference=>this.dispatch('mochi:account_startup',{preference,revision:this.profiles.state?.revision}),()=>{this.profilesOpen=true;this.profiles.draft=null;this.redraw()},()=>this.dispatch('mochi:accounts')));return page}
@@ -708,12 +716,15 @@ export class MochiView {
     if (room) {
       section('Connection & replies')
       const connection = el('select')
-      const empty = el('option', '', 'Choose connection'); empty.value = ''; connection.append(empty)
+      const defaults = (state.connections || []).filter(c => c.isDefault)
+      const fallback = defaults.length === 1 ? defaults[0] : undefined
+      const empty = el('option', '', fallback ? `Use Lumiverse default · ${fallback.name}` : 'Use Lumiverse default (none available)'); empty.value = ''; connection.append(empty)
       for (const c of state.connections || []) { const o = el('option', '', `${c.name} · ${c.model}`); o.value = c.id; connection.append(o) }
       if(settings.connectionId&&!state.connections?.some(c=>c.id===settings.connectionId)){const missing=el('option','','Unavailable connection');missing.value=settings.connectionId;connection.append(missing)}
       connection.value = settings.connectionId; connection.onchange = () => { settings.connectionId = connection.value; delete settings.model; this.redraw() }; field('Generation connection', connection)
       const refresh=button('Refresh connections & personas','lp-button mochi-secondary-action');refresh.onclick=()=>this.refreshChoices();group.append(refresh)
-      group.append(mochiModelPicker(settings.connectionId,state.connections?.find(c=>c.id===settings.connectionId)?.model||'',settings.model||'',value=>{if(value)settings.model=value;else delete settings.model},this.modelChoices,this.modelControllers))
+      const effectiveConnection = settings.connectionId ? state.connections?.find(c => c.id === settings.connectionId) : fallback
+      group.append(mochiModelPicker(effectiveConnection?.id||'',effectiveConnection?.model||'',settings.model||'',value=>{if(value)settings.model=value;else delete settings.model},this.modelChoices,this.modelControllers))
       const auto = el('input'); auto.type = 'checkbox'; auto.checked = settings.autoReply; auto.onchange = () => { settings.autoReply = auto.checked }; field('Reply automatically after sending', auto)
       const mode=el('select');if(settings.responseMode===undefined){const legacy=el('option','','Existing behavior');legacy.value='';mode.append(legacy)}
       for(const [value,label] of [['natural','Natural group chat'],['instant','Instant replies'],['manual','Manual']] as const){const option=el('option','',label);option.value=value;mode.append(option)}

@@ -19,7 +19,7 @@ export interface MochiWindow {open():void; hide():void; destroy():void; readonly
 const windows = new WeakMap<MochiSession, MochiWindow>()
 
 export function createMochiWindow(ui: MochiWindowUI, session: MochiSession,
-  notificationPolicy: () => Pick<MochiNotificationPolicy,'enabled'|'previews'>): MochiWindow {
+  notificationPolicy: () => Pick<MochiNotificationPolicy,'enabled'|'previews'>, onOpen?: () => void): MochiWindow {
   session.assertActive()
   const existing = windows.get(session)
   if (existing) return existing
@@ -40,7 +40,7 @@ export function createMochiWindow(ui: MochiWindowUI, session: MochiSession,
   let rect = clamp({x:64,y:64,width:840,height:720})
   const options = {width:rect.width,height:rect.height,initialPosition:{x:rect.x,y:rect.y},chromeless:true,snapToEdge:false,resizable:false,persistGeometry:false,touchScrollMode:'native' as const,tooltip:'Mochi'}
   const widget: SpindleFloatWidgetHandle = ui.createFloatWidget(options)
-  let disposed = false, resizeCleanup: (()=>void)|undefined, dragCleanup: (()=>void)|undefined
+  let disposed = false, visibleBefore = false, resizeCleanup: (()=>void)|undefined, dragCleanup: (()=>void)|undefined
   const visibility = new Set<(visible:boolean)=>void>()
   let savedRect:WindowRect|undefined,opener:HTMLElement|undefined,lastFocus:HTMLElement|undefined
   const maximized=()=>typeof widget.isFullscreen==='function'&&widget.isFullscreen()
@@ -83,7 +83,7 @@ export function createMochiWindow(ui: MochiWindowUI, session: MochiSession,
     resizeCleanup=disposeResize
     dragCleanup=widget.onDragEnd(position=>{rect={...rect,...position}})
     workspace=createMochiWorkspace({root:body,session,notificationPolicy,presentation:'messenger',isHostVisible:()=>widget.isVisible(),
-      onVisibilityChange:visible=>{if(!disposed){widget.setVisible(visible);for(const handler of visibility)handler(visible)}},onDispose:cleanup})
+      onVisibilityChange:visible=>{if(!disposed){const opening=visible&&!visibleBefore;visibleBefore=visible;widget.setVisible(visible);if(opening)try{onOpen?.()}catch{/* A host handoff failure must not destroy the messenger. */}for(const handler of visibility)handler(visible)}},onDispose:cleanup})
     close.addEventListener('click',requestHide)
     syncControls()
     grip.addEventListener('keydown',event=>{

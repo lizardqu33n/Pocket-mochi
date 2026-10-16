@@ -29,7 +29,7 @@ export function createMochiSidebar(ctx: Pick<SpindleFrontendContext,'ui'>, sessi
     const mobile=window.innerWidth<=600||window.matchMedia?.('(pointer: coarse)').matches
     if(!mobile){
       mobileSurface?.hide()
-      try { const next=createMochiWindow(ctx.ui as unknown as MochiWindowUI,session,policy);if(ownedWindow!==next){offWindow?.();ownedWindow=next;offWindow=next.onVisibilityChange(visible=>{for(const fn of visibility)fn(visible)})};next.open();fallback='';render();return }
+      try { const next=createMochiWindow(ctx.ui as unknown as MochiWindowUI,session,policy,dismissDrawer);if(ownedWindow!==next){offWindow?.();ownedWindow=next;offWindow=next.onVisibilityChange(visible=>{for(const fn of visibility)fn(visible)})};next.open();fallback='';render();return }
       catch { fallback='Floating windows are unavailable in this host. Mochi is open in this drawer.' }
     }
     let fullscreen=false

@@ -11,10 +11,21 @@ export async function buildMochiPrompt(room:MochiRoom,characters:any[],responder
 }
 export async function validateMochiSources(host: any, room: MochiRoom, userId: string): Promise<any> {
   const settings = room.settings || defaultMochiSettings()
-  if (!host.permissions.has('generation') || !settings.connectionId || !host.connections?.get) throw new MochiGenerationError('connection')
+  if (!host.permissions.has('generation') || !host.connections?.get) throw new MochiGenerationError('connection')
   let connection: any
-  try { connection = await host.connections.get(settings.connectionId, userId) }
-  catch (error) { throw providerFailure(error) }
+  try {
+    let id = settings.connectionId
+    if (!id) {
+      if (typeof host.connections.list !== 'function') throw new MochiGenerationError('connection')
+      const defaults = (await host.connections.list(userId)).filter((c: any) => c.is_default === true)
+      // Never substitute the first/active profile or guess between ambiguous defaults.
+      if (defaults.length !== 1 || typeof defaults[0].id !== 'string' || !defaults[0].id) throw new MochiGenerationError('connection')
+      id = defaults[0].id
+    }
+    connection = await host.connections.get(id, userId)
+    if (!connection || connection.id !== id || !settings.connectionId && connection.is_default !== true) throw new MochiGenerationError('connection')
+  }
+  catch (error) { if (error instanceof MochiGenerationError) throw error; throw providerFailure(error) }
   if (!connection) throw new MochiGenerationError('connection')
   if (room.persona.source === 'lumiverse' && (!host.permissions.has('personas') || !await host.personas.get(room.persona.sourceId, userId))) throw new Error('The room persona is no longer available to your account. Select another identity.')
   if (room.persona.source === 'pocket') {
@@ -48,7 +59,7 @@ export async function generateMochiReply(host: any, room: MochiRoom, userId: str
     catch (error) { signal.throwIfAborted(); throw providerFailure(error) }
   }, signal, natural,preset)
   let response: any
-  try { response = await callPocketProvider(host, { messages, connection_id: settings.connectionId, userId, signal, reasoning: { source: 'off' }, parameters: { max_tokens: settings.outputTokens, temperature: 0.8, ...(settings.model ? { model: settings.model } : {}) } }) }
+  try { response = await callPocketProvider(host, { messages, connection_id: connection.id, userId, signal, reasoning: { source: 'off' }, parameters: { max_tokens: settings.outputTokens, temperature: 0.8, ...(settings.model ? { model: settings.model } : {}) } }) }
   catch (error) { signal.throwIfAborted(); throw providerFailure(error) }
   let parsed: any
   const raw=response?.content
