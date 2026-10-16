@@ -65,7 +65,7 @@ test('Natural accepts three eligible distinct speakers and intentional silence w
 test('unreadable output distinguishes malformed JSON, heuristic text, empty and metadata-supported output limit', async () => {
   const cases: Array<[unknown, any, string]> = [
     ['{"speakerId":"alice_c1","text":', {}, 'malformed_json'],
-    ['Hello ' + secret, {}, 'suspected_plain_text'],
+    ['Hello ' + secret, {}, 'ambiguous_response'],
     ['   ', {}, 'empty_output'], [null, {}, 'empty_output'], [undefined, {}, 'empty_output'],
     ['{"text":', { finish_reason: 'length' }, 'output_limit'],
     ['', { finish_reason: 'length' }, 'output_limit'],
@@ -73,7 +73,7 @@ test('unreadable output distinguishes malformed JSON, heuristic text, empty and 
     ['{"text":', { finishReason: 'length' }, 'malformed_json'],
   ]
   for (const [content, metadata, category] of cases) {
-    const f = fixture(), room = await f.create(); f.output(content, metadata)
+    const f = fixture(), room = await f.create('alice',2); f.output(content, metadata)
     await f.service.handle(f.request(room, 'invalid'), 'alice')
     const failure = f.events.find(e => e.payload.type === 'mochi:error')!
     expect(failure.user).toBe('alice'); expect(failure.payload.message).toBe(GENERATION_ERROR_MESSAGES[category as keyof typeof GENERATION_ERROR_MESSAGES])
@@ -161,7 +161,7 @@ test('token/source exceptions are safe at UI boundary and failed regeneration re
     saved = await f.service.read('alice', room.id)
     const messages = structuredClone(saved.messages), notices = structuredClone(saved.notifications), target = saved.messages[1] as any
     const tokens = f.host.tokens, get = f.host.characters.get
-    f.output('Ordinary text ' + secret)
+    f.output('{"text": "' + secret)
     if (mode === 'provider') f.host.generate!.quiet = async () => { throw Error(secret) }
     if (mode === 'tokens') f.host.tokens = { countMessages: async () => { throw Error(secret) } }
     if (mode === 'source') f.host.characters.get = async () => { throw Error(secret) }
@@ -175,17 +175,17 @@ test('token/source exceptions are safe at UI boundary and failed regeneration re
 })
 
 test('cancellation and room invalidation suppress late diagnostics from providers ignoring abort', async () => {
-  for (const mode of ['cancel_resolve', 'cancel_reject', 'revision']) {
+  for (const mode of ['cancel_resolve', 'cancel_reject', 'revision', 'revision_plain']) {
     const f = fixture(), room = await f.create(); let resolve!: (v: any) => void, reject!: (e: unknown) => void, started!: () => void
     const ready = new Promise<void>(r => { started = r })
     f.host.generate!.quiet = async request => { f.calls.push(request); started(); return new Promise((yes, no) => { resolve = yes; reject = no }) }
     const pending = f.service.handle(f.request(room, 'pending'), 'alice'); await ready
-    if (mode === 'revision') {
+    if (mode === 'revision'||mode==='revision_plain') {
       const saved = await f.service.read('alice', room.id)
       // Simulate a separately committed revision without relying on local abort.
       f.files.set('alice:mochi/v1/rooms/' + room.id + '.json', { ...saved, revision: saved.revision + 1 })
     } else await f.service.cancel('alice', room.id, 'pending')
-    if (mode === 'cancel_resolve') resolve({ content: secret }); else reject(Error(secret))
+    if (mode === 'cancel_resolve'||mode==='revision_plain') resolve({ content: secret }); else reject(Error(secret))
     await pending
     expect(f.events.filter(e => e.payload.type === 'mochi:error')).toEqual([])
     expect((await f.service.read('alice', room.id)).messages).toHaveLength(1)
@@ -242,4 +242,31 @@ test('view ignores canceled/foreign/stale diagnostics and clears displayed diagn
     view.receive({ ...packet, requestId: next.requestId }); expect(view.error).toBe('')
     expect(sent.some(p => p.type === 'mochi:cancel' && p.generationRequestId === next.requestId)).toBe(true)
   } finally { view.destroy(); globalThis.document = previous; dom.window.close() }
+})
+
+test('hybrid replies use validated DM/explicit speakers and preserve regeneration and history',async()=>{
+ for(const mode of ['instant','manual','natural'] as const){
+  const f=fixture();let room=await f.create('alice',mode==='natural'?1:2)
+  room=await f.service.update('alice',{roomId:room.id,revision:room.revision,title:room.title,characterIds:room.characterIds,persona:room.persona,settings:{...room.settings,responseMode:mode}})
+  const text='Hey 💜\nA natural reply, with punctuation!';f.output(text)
+  await f.service.handle(f.request(room,'hybrid_'+mode,mode==='natural'?{}:{responder:'alice_c2',...(mode==='manual'?{content:''}:{})}),'alice')
+  const saved=await f.service.read('alice',room.id);expect(saved.messages.at(-1)!.content).toBe(text);expect(saved.messages.at(-1)!.characterId).toBe(mode==='natural'?'alice_c1':'alice_c2');expect(f.calls).toHaveLength(1)
+ }
+})
+
+test('ineligible explicit responder is rejected before provider; unsupported envelopes persist no partial batch',async()=>{
+ const f=fixture(),room=await f.create('alice',2)
+ await expect(generateMochiReply(f.host,room,'alice','alice_c2',new AbortController().signal,['alice_c1'])).rejects.toMatchObject({category:'ineligible_speaker'});expect(f.calls).toHaveLength(0)
+ f.output(JSON.stringify({protocol:'mochi.response',version:1,messages:[{speakerId:'alice_c1',text:secret}],actions:[{type:'delete',messageId:'user_message'}]}))
+ await f.service.handle(f.request(room,'inactive_action'),'alice')
+ const saved=await f.service.read('alice',room.id);expect(saved.messages).toHaveLength(1);expect(saved.notifications).toEqual([]);expect(JSON.stringify([...f.files])).not.toContain(secret)
+ expect(f.events.find(e=>e.payload.type==='mochi:error')!.payload.diagnostic).toEqual({category:'unsupported_action'})
+})
+
+test('plain regeneration keeps later messages and reversible versions',async()=>{
+ const f=fixture(),room=await f.create();await f.service.message('alice',f.request(room,'plain_seed'))
+ let saved=await f.service.read('alice',room.id);await f.service.message('alice',f.request(saved,'plain_later',{content:'Later user text'}));saved=await f.service.read('alice',room.id)
+ const before=structuredClone(saved.messages),target=before[1] as any;f.output('Replacement 💜\nTwo lines')
+ await f.service.handle({...f.request(saved,'plain_regeneration'),type:'mochi:regenerate',messageId:target.id,confirmed:true},'alice')
+ const after=await f.service.read('alice',room.id);expect(after.messages).toHaveLength(before.length);expect(after.messages.slice(2)).toEqual(before.slice(2));expect(after.messages[1].content).toBe('Replacement 💜\nTwo lines');expect((after.messages[1] as any).previousVersions[0].content).toBe(target.content)
 })

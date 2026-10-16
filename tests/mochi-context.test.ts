@@ -7,7 +7,7 @@ import {MochiView} from '../src/mochi/view.js'
 import {resolveMochiContext} from '../src/mochi/context.js'
 import {generateMochiReply} from '../src/mochi/generation.js'
 import {contextCases,syntheticCount} from './fixtures/mochi-context-cases.js'
-import golden from './fixtures/mochi-context-golden.json'
+import golden from './fixtures/mochi-context-hybrid-golden.json'
 import {MochiPreview} from '../src/mochi/preview-panel.js'
 
 function fixture(){
@@ -36,7 +36,7 @@ for(const fixture of contextCases())test(`golden ${fixture.name}: exact provider
  if(fixture.name==='trimmed'){expect(plan.history.trimmed).toBeGreaterThan(0);expect(plan.history.lastId).toBe('m29')}
 })
 
-test('durable scheduled dispatch still sends the exact pre-extraction golden prompt',async()=>{
+test('durable scheduled dispatch still sends the verified hybrid golden prompt',async()=>{
  const f=fixture(),entry=contextCases().find(c=>c.name==='scheduled')!,room=entry.room,now=Date.now()
  room.runtime={version:1,enabled:true,jobs:[{id:'golden_scheduled',kind:'scheduled',createdAt:now,dueAt:now,expiresAt:now+60000,nextAttemptAt:now,status:'queued',revision:room.revision,responder:'first',attempts:0}]}
  f.files.set('alice:mochi/v1/rooms/'+room.id+'.json',room);f.host.characters.get=async id=>entry.characters.find(c=>c.id===id);f.host.tokens!.countMessages=async m=>({total_tokens:syntheticCount(m)});f.host.connections!.get=async(id:string)=>({id,model:'synthetic-model'})
@@ -104,4 +104,12 @@ for(const width of [320,390,900])test(`${width}px prompt preview retains compose
   view.receive({...sent.at(-1),type:'mochi:preview',revision:1,associationRevision:0,preview:data});expect(document.querySelector('.mochi-preview-text')!.textContent).toContain('{{mochi_summary}}');expect(document.querySelector('.mochi-preview-panel img')).toBeNull();expect(document.querySelector('.mochi-preview-panel')!.textContent).toContain('approximate fallback');expect((view as any).drafts.get(room.id)).toBe('Private draft')
   Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(b=>b.textContent==='Close preview')!.click();expect(document.querySelector('.mochi-preview-panel')).toBeNull();expect(document.activeElement?.getAttribute('aria-label')).toBe('Room options');expect(sent.every(p=>p.type==='mochi:preview')).toBe(true)
  }finally{view.destroy(false);dom.window.close();globalThis.document=previous}
+})
+
+test('scheduled single-speaker plain output uses existing durable persistence and completion safeguards',async()=>{
+ const f=fixture(),entry=contextCases().find(c=>c.name==='scheduled')!,room=entry.room,now=Date.now()
+ room.runtime={version:1,enabled:true,jobs:[{id:'hybrid_scheduled',kind:'scheduled',createdAt:now,dueAt:now,expiresAt:now+60000,nextAttemptAt:now,status:'queued',revision:room.revision,responder:'first',attempts:0}]}
+ f.files.set('alice:mochi/v1/rooms/'+room.id+'.json',room);f.host.characters.get=async id=>entry.characters.find(c=>c.id===id);f.host.connections!.get=async(id:string)=>({id,model:'synthetic-model'});f.host.generate!.quiet=async r=>{f.calls.push(r);return{content:'Scheduled plain reply 💜\nSecond line'}}
+ await f.service.dispatchScheduled('alice',room.id,'hybrid_scheduled',()=>now,async()=>true,async()=>true)
+ const saved=await f.service.read('alice',room.id);expect(saved.runtime!.jobs[0].status).toBe('delivered');expect(saved.messages.at(-1)!.content).toBe('Scheduled plain reply 💜\nSecond line');expect(saved.messages.at(-1)!.characterId).toBe('first');expect(f.calls).toHaveLength(1)
 })

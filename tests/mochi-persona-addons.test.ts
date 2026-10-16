@@ -121,3 +121,13 @@ test('account add-on changes during provider execution discard stale replies',as
   expect((await f.service.read('alice',room.id,a.id)).messages).toEqual([])
  }finally{f.scheduler.stop()}
 })
+
+test('plain hybrid replies retain authorized native persona add-on context without changing stored history',async()=>{
+ const f=addonsFixture()
+ try{
+  const a=await f.create(['local','outlet','global']),room=await f.room(a.id),before=JSON.stringify(room)
+  f.host.generate!.quiet=async request=>{f.calls.push(request);return{content:'Plain persona reply 💜\nSecond line'}}
+  const reply=await f.run(room);expect(reply.text).toBe('Plain persona reply 💜\nSecond line');expect(reply.character.id).toBe(room.characterIds[0])
+  const body=JSON.stringify(f.calls.at(-1).messages);expect(body.match(/LOCAL_BODY/g)).toHaveLength(1);expect(body.match(/GLOBAL_BODY/g)).toHaveLength(1);expect(body).not.toContain('OUTLET_BODY');expect(JSON.stringify(await f.service.read('alice',room.id,a.id))).toBe(before)
+ }finally{f.scheduler.stop()}
+})

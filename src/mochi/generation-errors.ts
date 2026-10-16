@@ -10,6 +10,8 @@ export const GENERATION_ERROR_MESSAGES = {
   output_limit: 'The AI response reached its output limit before a complete message could be received.',
   invalid_schema: "The AI returned JSON that doesn't match Mochi's message format or limits.",
   ineligible_speaker: "The AI returned a message from a character who isn't eligible to respond in this conversation.",
+  ambiguous_response: 'The AI returned plain text without a single eligible responder. Select a character or request structured message JSON.',
+  unsupported_action: 'The AI requested a structured action that this Mochi version does not support. No response actions were applied.',
 } as const
 export type GenerationErrorCategory = keyof typeof GENERATION_ERROR_MESSAGES
 
