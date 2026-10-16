@@ -30,7 +30,7 @@ for(const fixture of contextCases())test(`golden ${fixture.name}: exact provider
  const plan=await resolveMochiContext(fixture.room,fixture.characters,fixture.responder,async m=>{const n=syntheticCount(m);counts.push(n);return n},new AbortController().signal,fixture.natural)
  expect(JSON.stringify(plan.messages)).toBe(JSON.stringify(baseline.messages));expect(counts).toEqual(baseline.counts);expect(plan.budget.inputTokens).toBe(counts.at(-1)!);expect(plan.budget.envelopeTokens).toBe(256);expect(plan.budget.outputTokens).toBe(fixture.room.settings!.outputTokens);expect(fixture.room).toEqual(before)
  expect(await buildMochiPrompt(fixture.room,fixture.characters,fixture.responder,async m=>syntheticCount(m),new AbortController().signal,fixture.natural)).toEqual(baseline.messages)
- const calls:any[]=[],host:any={permissions:{has:()=>true},connections:{get:async()=>({model:'synthetic-model'})},characters:{get:async(id:string)=>fixture.characters.find(c=>c.id===id)},tokens:{countMessages:async m=>({total_tokens:syntheticCount(m)})},generate:{quiet:async r=>{calls.push(r);return{content:JSON.stringify({speakerId:fixture.characters[0].id,text:'Synthetic response'})}}}}
+ const calls:any[]=[],host:any={permissions:{has:()=>true},connections:{get:async(id:string)=>({id,model:'synthetic-model'})},characters:{get:async(id:string)=>fixture.characters.find(c=>c.id===id)},tokens:{countMessages:async m=>({total_tokens:syntheticCount(m)})},generate:{quiet:async r=>{calls.push(r);return{content:JSON.stringify({speakerId:fixture.characters[0].id,text:'Synthetic response'})}}}}
  await generateMochiReply(host,fixture.room,'synthetic_user',fixture.responder,new AbortController().signal,fixture.room.characterIds,fixture.natural)
  expect(calls).toHaveLength(1);expect(calls[0].messages).toEqual(baseline.messages);expect(calls[0].parameters).toEqual({max_tokens:fixture.room.settings!.outputTokens,temperature:0.8,model:'synthetic-model'});expect(calls[0].reasoning).toEqual({source:'off'})
  if(fixture.name==='trimmed'){expect(plan.history.trimmed).toBeGreaterThan(0);expect(plan.history.lastId).toBe('m29')}
@@ -39,7 +39,7 @@ for(const fixture of contextCases())test(`golden ${fixture.name}: exact provider
 test('durable scheduled dispatch still sends the exact pre-extraction golden prompt',async()=>{
  const f=fixture(),entry=contextCases().find(c=>c.name==='scheduled')!,room=entry.room,now=Date.now()
  room.runtime={version:1,enabled:true,jobs:[{id:'golden_scheduled',kind:'scheduled',createdAt:now,dueAt:now,expiresAt:now+60000,nextAttemptAt:now,status:'queued',revision:room.revision,responder:'first',attempts:0}]}
- f.files.set('alice:mochi/v1/rooms/'+room.id+'.json',room);f.host.characters.get=async id=>entry.characters.find(c=>c.id===id);f.host.tokens!.countMessages=async m=>({total_tokens:syntheticCount(m)});f.host.connections!.get=async()=>({model:'synthetic-model'})
+ f.files.set('alice:mochi/v1/rooms/'+room.id+'.json',room);f.host.characters.get=async id=>entry.characters.find(c=>c.id===id);f.host.tokens!.countMessages=async m=>({total_tokens:syntheticCount(m)});f.host.connections!.get=async(id:string)=>({id,model:'synthetic-model'})
  f.host.generate!.quiet=async r=>{f.calls.push(r);return{content:JSON.stringify({speakerId:'first',text:'Scheduled synthetic response'})}}
  await f.service.dispatchScheduled('alice',room.id,'golden_scheduled',()=>now,async()=>true,async()=>true)
  expect(f.calls).toHaveLength(1);expect(f.calls[0].messages).toEqual(golden.goldens.find(g=>g.name==='scheduled')!.messages);expect((await f.service.read('alice',room.id)).runtime!.jobs[0].status).toBe('delivered')
@@ -48,7 +48,7 @@ test('durable scheduled dispatch still sends the exact pre-extraction golden pro
 const preview=(f:ReturnType<typeof fixture>,room:any,values:any={})=>f.service.handle({type:'mochi:preview',requestId:'preview',roomId:room.id,accountId:room.accountId,scenario:'continue',responder:'auto',...values},'alice')
 for(const fictional of [false,true])test(`authorized ${fictional?'fictional':'legacy'} preview is read-only, source-scoped and secret-free`,async()=>{
  const f=fixture(),{room}=await f.create(fictional),before=structuredClone(f.files);f.events.length=0
- f.host.connections!.get=async()=>({model:'synthetic',api_key:'SYNTHETIC_SECRET_SENTINEL',authenticationToken:'SYNTHETIC_TOKEN_SENTINEL',parameters:{credential:'DO_NOT_RETURN'}})
+ f.host.connections!.get=async(id:string)=>({id,model:'synthetic',api_key:'SYNTHETIC_SECRET_SENTINEL',authenticationToken:'SYNTHETIC_TOKEN_SENTINEL',parameters:{credential:'DO_NOT_RETURN'}})
  f.host.tokens!.countMessages=async m=>({total_tokens:syntheticCount(m),model:'synthetic',approximate:true,tokenizer_name:'Synthetic fallback',unexpectedSecret:'TOKENIZER_SECRET_SENTINEL'})
  await preview(f,room);const response=f.events.at(-1);expect(response.type).toBe('mochi:preview');expect(response.accountId).toBe(room.accountId);expect(response.preview.tokenization.approximate).toBe(true);expect(response.preview.budget.inputTokens).toBe(syntheticCount(response.preview.messages));expect(response.preview.assumptions.join(' ')).toContain('preset parameters')
  for(const secret of ['SYNTHETIC_SECRET_SENTINEL','SYNTHETIC_TOKEN_SENTINEL','TOKENIZER_SECRET_SENTINEL','DO_NOT_RETURN'])expect(JSON.stringify(response)).not.toContain(secret)

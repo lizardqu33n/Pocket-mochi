@@ -14,13 +14,13 @@ export function validatePlacement(value:unknown):Placement {
  if(size>8000)throw Error('Manual context plan is too large.')
  return p
 }
-export function expandPlacement(p:Placement,values:Record<string,string>,history:Array<{role:'system'|'user'|'assistant';content:string}>,notes:Array<{role:'system';content:string}>){
+export function expandPlacement(p:Placement,values:Record<string,string>,history:Array<{role:'system'|'user'|'assistant';content:string}>,notes:Array<{role:'system';content:string}>,personaOutlets:Record<string,string>={}){
  validatePlacement(p);const seen=new Set<string>(),warnings:string[]=[],messages:Array<{role:'system'|'user'|'assistant';content:string}>=[],sections:Array<{id:string;active:boolean;providerMessages:number[]}>=[]
  for(const row of p.rows){
   const tokens=[...row.template.matchAll(expression)],standalone=tokens.length===1&&row.template.trim()===tokens[0][0],name=standalone?tokens[0][1].trim():''
   const start=messages.length,already=seen.has(name)
   const content=row.template.replace(expression,(literal,key:string)=>{
-   key=key.trim();if(!CONTEXT_MACROS.includes(key as any)){warnings.push(`Unknown expression ${literal}; kept literal.`);return literal}
+   key=key.trim();const outlet=/^(?:persona_outlet|personaOutlet)::(.+)$/i.exec(key);if(outlet){const name=outlet[1].trim().toLowerCase(),token='persona_outlet::'+name;if(seen.has(token))return '';seen.add(token);return Object.hasOwn(personaOutlets,name)?personaOutlets[name]:''}if(!CONTEXT_MACROS.includes(key as any)){warnings.push(`Unknown expression ${literal}; kept literal.`);return literal}
    if(seen.has(key)){warnings.push(`Duplicate ${key}; expanded only once.`);return ''}seen.add(key)
    if(key==='mochi_summary'){if(!standalone){warnings.push('Summary requires a standalone row; inline placeholders remain inactive.');seen.delete(key);return ''}if(!values[key])warnings.push('Summary is inactive: absent, disabled or coverage requires review.');return values[key]||''}
    return values[key]||''

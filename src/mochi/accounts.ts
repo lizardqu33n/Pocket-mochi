@@ -1,11 +1,13 @@
 import type { MochiHost } from './service.js'
 import type { MochiPersona } from './types.js'
+import { validateAddonSelection, saveAddonSelection, type PersonaAddonSelection } from './persona-addons.js'
 import { identifier } from './scheduling.js'
 
 const PATH = 'mochi/v1/fictional-accounts.json'
 export interface MochiAccount {
   version: 1; id: string; ownerId: string; revision: number
   displayName: string; username: string; avatarUrl: string; persona: MochiPersona
+  personaAddons?: PersonaAddonSelection
   createdAt: string; updatedAt: string; archived: boolean
 }
 export interface MochiAccountBank {
@@ -53,6 +55,7 @@ export class MochiAccounts {
       field(account.avatarUrl, 500)
       if (!account.persona || !['manual','lumiverse','pocket'].includes(account.persona.source)) throw new Error('Invalid fictional persona snapshot; stored data was preserved.')
       field(account.persona.name, 120, true); field(account.persona.description, 12000); field(account.persona.sourceId, 180); field(account.persona.avatarUrl, 500)
+      if(account.personaAddons!==undefined){const selection=validateAddonSelection(account.personaAddons);if(account.persona.source!=='lumiverse'||selection.personaId!==account.persona.sourceId)throw Error('Invalid saved add-on persona; stored data was preserved.')}
       if (account.persona.source !== 'manual') identifier(account.persona.sourceId)
       for (const date of [account.createdAt, account.updatedAt]) if (typeof date !== 'string' || !Number.isFinite(Date.parse(date))) throw new Error('Invalid fictional account metadata; stored data was preserved.')
     }
@@ -96,6 +99,7 @@ export class MochiAccounts {
       if (bank.accounts.some(a => a.id === id)) throw new Error('Fictional account identifier collision; retry creation.')
       const account: MochiAccount = { version: 1, id, ownerId: user, revision: 1, displayName: field(input.displayName ?? persona.name, 120, true), username: username(input.username), avatarUrl: persona.avatarUrl, persona, createdAt: timestamp, updatedAt: timestamp, archived: false }
       if (input.avatarId !== undefined) account.avatarUrl = await this.avatar(user, input.avatarId)
+      if(input.personaAddons!==undefined)account.personaAddons=await saveAddonSelection(this.host,user,persona,input.personaAddons)
       bank.accounts.push(account); await this.save(user, bank)
       return account
     })
@@ -107,6 +111,8 @@ export class MochiAccounts {
       if (input.revision !== account.revision) throw new Error('This fictional profile changed elsewhere. Refresh before saving.')
       // Explicit resnapshot applies only to future rooms; existing room snapshots/authorship stay unchanged.
       if (input.persona !== undefined) { account.persona = await this.snapshot(user, input.persona); account.avatarUrl = account.persona.avatarUrl }
+      if(input.persona!==undefined&&(account.persona.source!=='lumiverse'||account.personaAddons?.personaId!==account.persona.sourceId))delete account.personaAddons
+      if(input.personaAddons!==undefined)account.personaAddons=await saveAddonSelection(this.host,user,account.persona,input.personaAddons)
       if (input.displayName !== undefined) account.displayName = field(input.displayName, 120, true)
       if (input.username !== undefined) account.username = username(input.username)
       if (input.avatarId !== undefined) account.avatarUrl = await this.avatar(user, input.avatarId)

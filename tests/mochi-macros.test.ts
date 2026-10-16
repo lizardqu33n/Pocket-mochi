@@ -1,3 +1,4 @@
+import { GENERATION_ERROR_MESSAGES } from '../src/mochi/generation-errors.js'
 import {test,expect} from 'bun:test'
 import {JSDOM} from 'jsdom'
 import {MochiService,type MochiHost} from '../src/mochi/service.js'
@@ -62,17 +63,17 @@ test('missing history is an explicit omission, optional fields expand empty and 
  await expect(resolveMochiContext(room,[],'auto',async()=>100000,new AbortController().signal,false,preset)).rejects.toThrow('budget')
 })
 
-for(const [label,content]of [['empty',''],['whitespace',' \n '],['missing',undefined],['malformed','not JSON'],['valid','{"speakerId":"alice_character","text":"Valid"}']] as const)test(`provider ${label} classification preserves accepted messages and never retries`,async()=>{
+for(const [label,content]of [['empty',''],['whitespace',' \n '],['missing',undefined],['malformed','{"text":'],['valid','{"speakerId":"alice_character","text":"Valid"}']] as const)test(`provider ${label} classification preserves accepted messages and never retries`,async()=>{
  const f=fixture(),{room}=await f.create();let calls=0;f.host.generate!.quiet=async()=>{calls++;return{content}}
  const outcome=await f.service.message('alice',{roomId:room.id,revision:room.revision,requestId:'continue',content:''}).catch(error=>error)
  if(['empty','whitespace','missing'].includes(label))expect(outcome.message).toContain('empty response')
- else if(label==='malformed')expect(outcome.message).toContain('malformed message JSON')
+ else if(label==='malformed')expect(outcome.message).toBe(GENERATION_ERROR_MESSAGES.malformed_json)
  else expect((await f.service.read('alice',room.id)).messages.at(-1)).toMatchObject({content:'Valid'})
  expect(calls).toBe(1);expect((await f.service.read('alice',room.id)).messages[0]).toEqual(room.messages[0])
 })
-test('provider transport errors remain transport errors',async()=>{
+test('provider transport errors remain classified and sanitized',async()=>{
  const f=fixture(),{room}=await f.create();f.host.generate!.quiet=async()=>{throw Error('Synthetic transport 503')}
- await expect(f.service.message('alice',{roomId:room.id,revision:room.revision,requestId:'continue',content:''})).rejects.toThrow('Synthetic transport 503')
+ await expect(f.service.message('alice',{roomId:room.id,revision:room.revision,requestId:'continue',content:''})).rejects.toThrow(GENERATION_ERROR_MESSAGES.provider)
 })
 test('empty Instant reply preserves newly accepted text and receipt replay does not retry the provider',async()=>{
  const f=fixture(),{room}=await f.create();const saved=await f.service.update('alice',{roomId:room.id,revision:room.revision,title:room.title,characterIds:room.characterIds,settings:{...room.settings!,autoReply:true,responseMode:'instant'}});let calls=0;f.host.generate!.quiet=async()=>{calls++;return{content:' '}}

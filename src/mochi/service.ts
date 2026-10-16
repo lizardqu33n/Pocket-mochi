@@ -1,6 +1,7 @@
 import {SummaryError,prepareSummary,requestSummary,summaryInput,summarySources,summaryConfiguration,hashSummaryInput,type SummarySuggestion} from './summarization.js'
 import {validateMemory,proveCoverage,inspectMemory,MAX_SUMMARY_TEXT,MAX_SUMMARY_VERSIONS,type SummaryVersion} from './memory.js'
 import { roomId, defaultMochiSettings, type MochiSettings, type MochiMessage, type MochiPersona, type MochiRoom, type MochiState } from './types.js'
+import { discoverPersonaAddons } from './persona-addons.js'
 import { generateMochiReply, validateMochiSources,resolveGenerationSources } from './generation.js'
 import { MochiGenerationError, publicGenerationFailure } from './generation-errors.js'
 import { identifier, MAX_JOBS, publicRuntime, scheduleInput, temporaryFailure, TERMINAL, validateRuntime, type ScheduledJob } from './scheduling.js'
@@ -29,6 +30,7 @@ export interface MochiHost {
     list(prefix: string, userId: string): Promise<string[]>
   }
   characters: { get(id: string, userId: string): Promise<any>; list(options: any): Promise<any> }
+  global_addons?: { get(id:string,userId:string):Promise<any> }
   personas: { get(id: string, userId: string): Promise<any>; list(options: any): Promise<any> }
   permissions: { has(name: string): boolean }
   sendToFrontend(payload: unknown, userId: string): void
@@ -440,7 +442,8 @@ export class MochiService {
     const characters = this.host.permissions.has('characters') ? await collect(options => this.host.characters.list(options)) : []
     const personas = this.host.permissions.has('personas') ? await collect(options => this.host.personas.list(options)) : []
     const bank: any = await this.host.userStorage.getJson('identity-profiles.json', { userId: user, fallback: null })
-    const choices: MochiPersona[] = personas.map(p => ({ source: 'lumiverse', sourceId: p.id, name: p.name, description: '', avatarUrl: p.image_id ? `/api/v1/images/${p.image_id}` : '' }))
+    const choices: MochiPersona[] = []
+    for(const p of personas)choices.push({source:'lumiverse',sourceId:p.id,name:p.name,description:'',avatarUrl:p.image_id?`/api/v1/images/${p.image_id}`:'',addons:await discoverPersonaAddons(this.host,p,user)})
     if (bank?.version === 1 && Array.isArray(bank.entries)) for (const p of bank.entries.filter((p: any) => p.kind === 'persona')) choices.push({ source: 'pocket', sourceId: p.id, name: p.name, description: '', avatarUrl: '' })
     const connections = this.host.permissions.has('generation') && this.host.connections ? (await this.host.connections.list(user)).map(c => ({ id: c.id, name: c.name || c.model, model: c.model, isDefault: c.is_default === true })) : []
     const jobs: Record<string, string> = {}

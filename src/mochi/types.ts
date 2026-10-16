@@ -1,4 +1,5 @@
 export interface MochiPersona {
+  addons?: import('./persona-addons.js').PersonaAddonChoice[]
   source: 'manual' | 'lumiverse' | 'pocket'
   sourceId: string
   name: string

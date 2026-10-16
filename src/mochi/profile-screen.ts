@@ -15,10 +15,10 @@ export class MochiProfiles {
   hasUnsavedChanges(): boolean { return !!this.draft && JSON.stringify(this.draft) !== this.baseline }
   private confirmation?: {kind:'archive'|'restore';account:MochiAccount}
   state: AccountScreenState | null = null
-  draft: { id: string; revision: number; displayName: string; username: string; persona: string; description: string; avatarId: string } | null = null
+  draft: { id: string; revision: number; displayName: string; username: string; persona: string; description: string; avatarId: string; addonIds:string[] } | null = null
   start(account?: MochiAccount): void {
     this.confirmation=undefined
-    this.draft = { id: account?.id || '', revision: account?.revision || 0, displayName: account?.displayName || '', username: account?.username || '', persona: account ? 'keep' : 'manual', description: account?.persona.description||'', avatarId: account ? account.avatarUrl.split('/api/v1/images/')[1] || '' : 'persona' }
+    this.draft = { id: account?.id || '', revision: account?.revision || 0, displayName: account?.displayName || '', username: account?.username || '', persona: account ? 'keep' : 'manual', description: account?.persona.description||'', avatarId: account ? account.avatarUrl.split('/api/v1/images/')[1] || '' : 'persona', addonIds:[...(account?.personaAddons?.enabledIds||[])] }
     this.baseline = JSON.stringify(this.draft)
   }
   render(busy: boolean, send: (type: string, input?: Record<string,unknown>) => void, redraw: () => void, exit: () => void, confirmDiscard: (next: () => void, anchor: HTMLElement) => void = next => next(), refreshSources: () => void = () => send('mochi:choices')): HTMLElement {
@@ -56,20 +56,35 @@ export class MochiProfiles {
     const persona=el('select');const option=(value:string,label:string)=>{const o=el('option','',label);o.value=value;persona.append(o)}
     if(draft.id)option('keep','Keep saved persona snapshot')
     option('manual','Custom fictional identity');for(const p of this.state.personas)option(p.source+':'+p.sourceId,p.name+' · '+p.source)
-    persona.value=draft.persona;persona.onchange=()=>{draft.persona=persona.value;const p=this.state!.personas.find(p=>p.source+':'+p.sourceId===persona.value);if(p&&!draft.displayName)draft.displayName=p.name;redraw()};field('Profile persona',persona)
+    persona.value=draft.persona;persona.onchange=()=>{draft.persona=persona.value;const p=this.state!.personas.find(p=>p.source+':'+p.sourceId===persona.value);draft.addonIds=persona.value==='keep'?[...(saved?.personaAddons?.enabledIds||[])]:p?.addons?.filter(a=>a.available&&a.enabled).map(a=>a.id)||[];if(p&&!draft.displayName)draft.displayName=p.name;redraw()};field('Profile persona',persona)
     const refresh=button('Refresh personas','lp-button mochi-secondary-action');refresh.onclick=refreshSources;identity.append(refresh)
     if(draft.persona==='manual'){const description=el('textarea');description.maxLength=12000;description.rows=3;description.value=draft.description;description.oninput=()=>{draft.description=description.value};field('Profile identity description',description)}
+    const source=draft.persona==='keep'?saved?.persona:chosen
+    if(source?.source==='lumiverse'){
+      const native=this.state.personas.find(p=>p.source==='lumiverse'&&p.sourceId===source.sourceId)
+      const addons=el('fieldset','mochi-profile-fields');addons.append(el('legend','','Persona add-ons'),el('p','mochi-muted','Selections belong to this Mochi profile and affect future replies in its matching-persona chats. Saved messages and native Lumiverse settings stay unchanged.'))
+      if(!native)addons.append(el('p','mochi-muted','The source persona is unavailable. Add-ons will not be included.'))
+      else if(!native.addons?.length)addons.append(el('p','mochi-muted','No native add-ons are attached to this persona.'))
+      for(const addon of native?.addons||[]){
+        const label=el('label','',addon.label),check=el('input');check.type='checkbox';check.checked=draft.addonIds.includes(addon.id)&&addon.available;check.disabled=busy||!addon.available;check.setAttribute('aria-label','Enable add-on '+addon.label)
+        check.onchange=()=>{draft.addonIds=check.checked?[...new Set([...draft.addonIds,addon.id])]:draft.addonIds.filter(id=>id!==addon.id)}
+        label.prepend(check);addons.append(label,el('p','mochi-muted',addon.available?addon.content:'Unavailable; omitted from replies.'))
+        if(addon.outletName)addons.append(el('small','mochi-muted',`Placed only at {{persona_outlet::${addon.outletName}}} in chat or preset instructions.`))
+      }
+      if(draft.addonIds.some(id=>!native?.addons?.some(a=>a.id===id&&a.available)))addons.append(el('p','mochi-muted','Some saved add-ons are missing or inaccessible. They are omitted from replies and removed from selections on Save.'))
+      form.append(addons)
+    }
     const appearance=el('fieldset','mochi-profile-fields');appearance.append(el('legend','','Appearance'));form.append(appearance);fields=appearance
     const avatar=el('select');for(const [value,label] of [['persona','Use selected persona portrait'],['','No portrait'],...this.state.avatars.map(a=>[a.id,a.name])]){const o=el('option','',label);o.value=value;avatar.append(o)}
     if(draft.avatarId&&!['persona',...this.state.avatars.map(a=>a.id)].includes(draft.avatarId)){const o=el('option','','Keep saved portrait');o.value=draft.avatarId;avatar.append(o)}
     avatar.value=draft.avatarId;avatar.onchange=()=>{draft.avatarId=avatar.value;redraw()};field('Profile portrait',avatar)
 
     if(this.state.canUploadAvatar){const upload=el('input');upload.type='file';upload.accept='image/png,image/jpeg,image/webp';upload.disabled=busy;upload.onchange=()=>{const file=upload.files?.[0];if(!file)return;if(file.size>2097152){upload.setCustomValidity('Choose a portrait up to 2 MB.');upload.reportValidity();return}const reader=new FileReader();reader.onload=()=>{if(this.draft===draft&&form.isConnected)send('mochi:account_avatar_upload',{dataUrl:reader.result})};reader.readAsDataURL(file)};field('Upload profile portrait',upload)}
-    form.append(el('p','mochi-muted','Profile changes apply to new chats. Existing chats keep their saved identity and authorship.'))
+    form.append(el('p','mochi-muted','Name, identity and portrait changes apply to new chats. Add-on selections apply to future replies in matching-persona chats. Existing messages and authorship are preserved.'))
     if(saved){const archive=button('Archive profile','lp-button mochi-secondary-action');archive.disabled=busy;archive.onclick=()=>{this.confirmation={kind:'archive',account:saved};redraw()};form.append(archive)}
     const save=button(busy?'Saving…':'Save profile','lp-button mochi-primary');save.type='submit';save.disabled=busy
     const cancel=button('Cancel profile changes','lp-button');cancel.disabled=busy;cancel.onclick=()=>confirmDiscard(()=>{this.draft=null;redraw()},cancel);const actions=el('div','mochi-profile-actions');actions.append(save,cancel);form.append(actions)
-    form.onsubmit=e=>{e.preventDefault();const p=draft.persona==='keep'?undefined:draft.persona==='manual'?{source:'manual',name:draft.displayName,description:draft.description}:this.state!.personas.find(p=>p.source+':'+p.sourceId===draft.persona);const unchangedPortrait=!p&&saved&&draft.avatarId===(saved.avatarUrl.split('/api/v1/images/')[1]||'');send(draft.id?'mochi:account_update':'mochi:account_create',{accountId:draft.id||undefined,revision:draft.revision,displayName:draft.displayName,username:draft.username,persona:p,...(unchangedPortrait?{}:draft.avatarId==='persona'?(p?{}:{avatarId:saved?.persona.avatarUrl.split('/api/v1/images/')[1]||''}):{avatarId:draft.avatarId})})}
+    form.onsubmit=e=>{e.preventDefault();const p=draft.persona==='keep'?undefined:draft.persona==='manual'?{source:'manual',name:draft.displayName,description:draft.description}:this.state!.personas.find(p=>p.source+':'+p.sourceId===draft.persona);const unchangedPortrait=!p&&saved&&draft.avatarId===(saved.avatarUrl.split('/api/v1/images/')[1]||'');send(draft.id?'mochi:account_update':'mochi:account_create',{accountId:draft.id||undefined,revision:draft.revision,displayName:draft.displayName,username:draft.username,persona:p,...((p||saved?.persona)?.source==='lumiverse'&&this.state!.personas.some(native=>native.source==='lumiverse'&&native.sourceId===((p as MochiPersona)||saved!.persona).sourceId)?{personaAddons:{personaId:((p as MochiPersona)||saved!.persona).sourceId,enabledIds:draft.addonIds}}:{}),...(unchangedPortrait?{}:draft.avatarId==='persona'?(p?{}:{avatarId:saved?.persona.avatarUrl.split('/api/v1/images/')[1]||''}):{avatarId:draft.avatarId})})}
     return form
   }
 }
