@@ -546,11 +546,11 @@ export class MochiView {
     const back=el('div','mochi-desktop-back'),backButton=button('← Conversations');backButton.setAttribute('aria-label','Back to conversations')
     back.hidden=this.pickerOpen||!this.state
     backButton.onclick=()=>this.exitPortal(()=>{this.notificationsOpen=false;this.select('');this.redraw()},backButton,!!this.roomId);back.append(backButton)
-    main.append(back,this.render('desktop'))
-    if(noticesButton){const actions=main.querySelector('.mochi-room-header>.mochi-actions');if(actions)actions.insertBefore(noticesButton,actions.lastChild);else{const toolbar=el('div','mochi-shell-notifications');toolbar.append(noticesButton);main.prepend(toolbar)}}
+    main.append(back,this.render('desktop'));if(main.querySelector('[data-preset-workspace=true]'))page.dataset.presetWorkspace='true'
+    if(noticesButton&&!page.dataset.presetWorkspace){const actions=main.querySelector('.mochi-room-header>.mochi-actions');if(actions)actions.insertBefore(noticesButton,actions.lastChild);else{const toolbar=el('div','mochi-shell-notifications');toolbar.append(noticesButton);main.prepend(toolbar)}}
     const style=el('style');style.textContent=MOCHI_DESKTOP_STYLES;page.append(sidebar,main,style)
     const selected=this.state?.rooms.find(room=>room.id===this.roomId)
-    if(selected&&page.dataset.mode==='chat'){
+    if(selected&&page.dataset.mode==='chat'&&!page.dataset.presetWorkspace){
       page.dataset.details=String(this.desktopDetails)
       const toggle=main.querySelector<HTMLButtonElement>('[aria-label="Conversation details"]')
       const setDetails=(open:boolean)=>{this.desktopDetails=open;page.dataset.details=String(open);toggle?.setAttribute('aria-expanded',String(open));if(open)page.querySelector<HTMLButtonElement>('[aria-label="Close conversation details"]')?.focus();else toggle?.focus()}
@@ -609,6 +609,7 @@ export class MochiView {
     if (surface !== 'chat' && this.notificationsOpen && this.notificationPolicy().enabled) { page.append(this.notificationList()); return page }
     const room = this.state.rooms.find(room => room.id === this.roomId)
     if (surface !== 'chat' && (this.creating || this.editing)) { page.append(this.form(this.editing ? room : undefined)); return page }
+    if(room&&surface!=='choices'&&(this.presetPanel.open||(this.preview.open&&this.preview.isDraft))){this.preview.sync(room);page.replaceChildren(style,this.presetPanel.open?this.presetPanel.render(room):this.preview.render(room));page.dataset.presetWorkspace='true';page.dataset.conversation='true';return page}
     if (room && surface !== 'choices') {
       const roomHeader = el('div', 'mochi-room-header')
       const info = el('div', 'mochi-room-info'), selector = el('select', 'mochi-room-selector'); selector.setAttribute('aria-label', 'Select room')

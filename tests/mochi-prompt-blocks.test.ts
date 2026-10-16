@@ -121,7 +121,9 @@ for(const width of [320,390,1100])test(`${width}px block workspace supports cate
   let lock=root!.querySelector<HTMLInputElement>('[aria-label="Lock block against accidental edits"]')!;lock.checked=true;lock.dispatchEvent(new dom.window.Event('change'))
   expect(root!.querySelector<HTMLTextAreaElement>('[aria-label="Block content"]')!.disabled).toBe(true)
   lock=root!.querySelector<HTMLInputElement>('[aria-label="Lock block against accidental edits"]')!;lock.checked=false;lock.dispatchEvent(new dom.window.Event('change'));expect(doc.categories[0].blocks[0].locked).toBe(false)
-  click('+ Add category');expect(doc.categories).toHaveLength(2)
+  expect(root!.querySelector('.mochi-category-list')).toBeNull();expect(root!.querySelector('[aria-label="Block content"]')).not.toBeNull()
+  click('Back to Blocks');expect(root!.querySelector('[aria-label="Block content"]')).toBeNull()
+  click('+ Add category');expect(doc.categories).toHaveLength(2);click('Edit block Editable')
   const move=root!.querySelector<HTMLSelectElement>('[aria-label="Move block to category"]')!;move.value=doc.categories[1].id;move.dispatchEvent(new dom.window.Event('change'));expect(doc.categories[1].blocks).toHaveLength(1)
   expect(PROMPT_BLOCK_STYLES).toContain('var(--mochi-surface)');expect(PROMPT_BLOCK_STYLES).not.toMatch(/#[0-9a-f]{3,8}/i)
  }finally{globalThis.document=prior;dom.window.close()}

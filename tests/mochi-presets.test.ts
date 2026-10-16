@@ -109,3 +109,37 @@ for(const width of [320,390,900])test(`${width}px preset panel has separate publ
   panel.receive({type:'mochi:error',requestId:sent.at(-1).requestId,message:'Stale synthetic library'});expect(panel.draft).toBeDefined();current={...room,id:'other'};panel.receive({...sent.at(-1),type:'mochi:presets',bank:{revision:1,presets:[]}});expect(panel.bank?.revision).toBe(0);panel.reset(true);expect(panel.open).toBe(false);expect(panel.draft).toBeUndefined()
  }finally{panel.reset(true);dom.window.close();globalThis.document=previous}
 })
+
+test('two-level navigation restores overview scroll, expansion and draft without publishing or leaking block content',async()=>{
+ const dom=new JSDOM('<body></body>'),previous=globalThis.document;globalThis.document=dom.window.document
+ const room:any={id:'ux_room',revision:1,characterIds:['c'],messages:[]},sent:any[]=[],bindings:any[]=[];let root:HTMLElement
+ const render=()=>{root=panel.render(room);document.body.replaceChildren(root)}
+ const panel=new MochiPresetPanel(p=>sent.push(p),()=>room,render,(id,r)=>bindings.push([id,r]),()=>{})
+ const click=(label:string)=>{const button=root.querySelector<HTMLButtonElement>(`[aria-label="${label}"]`)||Array.from(root.querySelectorAll<HTMLButtonElement>('button')).find(b=>b.textContent===label);expect(button).toBeDefined();button!.click()}
+ try{
+  panel.show(room);panel.receive({...sent.at(-1),type:'mochi:presets',bank:{version:1,revision:0,presets:[]},effective:{id:DEFAULT_PRESET_ID,name:'Mochi Default',builtIn:true,revision:1}})
+  click('Create preset');await Promise.resolve();const doc=panel.draft!.blocks!,second=doc.categories[0].blocks[1],secondContent=second.content
+  doc.categories[1].collapsed=true;root!.scrollTop=287;root!.dispatchEvent(new dom.window.Event('scroll'))
+  click('Edit block Base Messaging');await Promise.resolve();expect(root!.scrollTop).toBe(0);expect(root!.querySelector('.mochi-category-list')).toBeNull();expect(root!.querySelector('button[type=submit]')).toBeNull()
+  const area=root!.querySelector<HTMLTextAreaElement>('[aria-label="Block content"]')!;area.value='UX retained draft';area.dispatchEvent(new dom.window.Event('input'))
+  click('Back to Blocks');await Promise.resolve();expect(root!.scrollTop).toBe(287);expect(doc.categories[1].collapsed).toBe(true);expect(root!.querySelector('[aria-label="Block content"]')).toBeNull()
+  click('Edit block '+second.name);await Promise.resolve();expect(root!.querySelector<HTMLTextAreaElement>('[aria-label="Block content"]')!.value).toBe(secondContent)
+  click('Done editing block');await Promise.resolve();click('Edit block Base Messaging');expect(root!.querySelector<HTMLTextAreaElement>('[aria-label="Block content"]')!.value).toBe('UX retained draft')
+  expect(sent).toHaveLength(1);expect(bindings).toHaveLength(0)
+ }finally{panel.reset(true);globalThis.document=previous;dom.window.close()}
+})
+
+test('preset workspace replaces conversation and retains its stylesheet on desktop and handset',async()=>{
+ const dom=new JSDOM('<body></body>'),previous=globalThis.document;globalThis.document=dom.window.document
+ const f=fixture(),{room}=await f.create(),sent:any[]=[];const view=new MochiView(p=>sent.push(p),()=>{},()=>{})
+ try{
+  view.state=await f.service.state('alice');view.select(room.id)
+  for(const surface of ['desktop','chat'] as const){
+   const chat=view.render(surface);expect(chat.querySelector('.mochi-composer')).not.toBeNull()
+   chat.querySelector<HTMLButtonElement>('[aria-label="Presets"]')!.click()
+   const page=view.render(surface);expect(page.dataset.presetWorkspace).toBe('true');expect(page.querySelector('style')!.textContent).toContain('.mochi-block-detail');expect(page.querySelector('.mochi-room-header')).toBeNull();expect(page.querySelector('.mochi-composer')).toBeNull()
+   Array.from(page.querySelectorAll<HTMLButtonElement>('button')).find(b=>b.textContent==='Return to conversation')!.click()
+   expect(view.render(surface).querySelector('.mochi-composer')).not.toBeNull()
+  }
+ }finally{view.destroy();globalThis.document=previous;dom.window.close()}
+})
