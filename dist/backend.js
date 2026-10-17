@@ -1102,6 +1102,38 @@ CHARACTER TEXTING TENDENCIES: ` + JSON.stringify(rows) + `
 Apply only the matching character's optional style tendencies. Character identity, conversation meaning and server-enforced reply rules take precedence. These are prose preferences, not delivery commands; do not add extra speakers, calls or independently delivered bubbles.` : "";
 }
 
+// src/mochi/default-preset.ts
+var DEFAULT_V2_PRESET_ID = "mochi_default_v2";
+function defaultV2Blocks() {
+  let serial = 0;
+  const id = (kind) => kind + "_" + (++serial).toString(16).padStart(32, "0");
+  const block = (name, content, options = {}) => ({ id: id("block"), name, content, role: "system", position: "before-history", audience: "all", enabled: true, locked: false, ...options });
+  const category = (name, blocks) => ({ id: id("category"), name, collapsed: false, blocks });
+  return validateBlocks({ version: 1, categories: [
+    category("Core Instructions", [
+      block("Base Messaging", "Write as the eligible fictional character in a private messenger. Stay faithful to the supplied character information, personality, and conversation history. Communicate naturally as that character rather than as a generic AI assistant. Do not speak or decide actions for the user. Do not invent shared events, memories, or knowledge. Avoid unprompted scene or action narration."),
+      block("Direct Message Behavior", "Reply naturally to the other person and respond to what they actually said. Match the mood and flow of the conversation. Not every message needs a question, explanation, or conversation-ending phrase.", { audience: "dm" }),
+      block("Group Chat Behavior", "Let eligible characters contribute when they have something relevant to say. Preserve each character\u2019s distinct personality and relationships. Avoid repetitive agreement, round-robin replies, and forcing every participant to speak.", { audience: "group" })
+    ]),
+    category("Character & Persona", [
+      block("Character Information", "CHARACTERS: {{mochi_characters}}"),
+      block("Persona Information", "USER IDENTITY: {{mochi_persona}}"),
+      block("Character Texting Preferences", "{{mochi_texting_styles}}")
+    ]),
+    category("Writing & Texting", [
+      block("Natural Character Voice", "Let the character\u2019s established personality shape vocabulary, emotion, humor, and mannerisms. Avoid generic assistant language, repetitive phrasing, and artificial enthusiasm. Keep the character recognizable without exaggerating every personality trait."),
+      block("Conversational Rhythm", "Write messages appropriate to the moment. A quick exchange may need only a few words, while an emotional or complicated conversation may deserve more detail. Avoid unnecessary exposition, forced slang, repetitive questions, and formulaic endings."),
+      block("Texting Preferences", "Respect the saved capitalization, punctuation, length, emoji frequency, and tone settings. Do not impose lowercase texting, emojis, abbreviations, or any particular style on every character. These creative defaults yield to explicit character preferences.")
+    ]),
+    category("Conversation Context", [
+      block("Room Information", `ROOM: {{mochi_room}}
+ROOM INSTRUCTIONS: {{mochi_room_instructions}}`),
+      block("Chat Memory", "{{mochi_summary}}", { role: "user" }),
+      block("Conversation History", "{{mochi_history}}", { position: "history" }),
+      block("System Notes", "{{mochi_system_notes}}", { position: "after-history" })
+    ])
+  ] });
+}
 // src/mochi/macros.ts
 var CONTEXT_MACROS = ["mochi_characters", "mochi_persona", "mochi_room_instructions", "mochi_texting_styles", "mochi_system_notes", "mochi_history", "mochi_summary"];
 var expression2 = /\{\{\s*([^{}]*?)\s*\}\}/g;
@@ -1182,6 +1214,8 @@ function expandPlacement(p, values, history, notes, personaOutlets = {}) {
 // src/mochi/presets.ts
 var DEFAULT_PRESET_ID = "mochi_default";
 var defaultPreset = () => ({ id: DEFAULT_PRESET_ID, name: "Mochi Default", builtIn: true, revision: 1, layout: "legacy-v1", dmInstructions: "", groupInstructions: "" });
+var defaultV2Preset = () => ({ id: DEFAULT_V2_PRESET_ID, name: "Mochi Default v2", builtIn: true, revision: 1, layout: "blocks-v1", blocks: defaultV2Blocks(), dmInstructions: "", groupInstructions: "" });
+var isBuiltInPreset = (id) => id === DEFAULT_PRESET_ID || id === DEFAULT_V2_PRESET_ID;
 function presetId(value) {
   if (typeof value !== "string" || !/^preset_[a-f0-9]{32}$/.test(value))
     throw Error("Invalid custom preset identifier.");
@@ -1196,9 +1230,9 @@ function validateBinding(value, accountId) {
   if (!value || typeof value !== "object")
     throw Error("Invalid preset binding; room data was preserved.");
   const b = value;
-  if (b.id !== DEFAULT_PRESET_ID)
+  if (!isBuiltInPreset(b.id))
     presetId(b.id);
-  if (!Number.isSafeInteger(b.revision) || b.revision < 1 || b.accountId !== accountId || b.id === DEFAULT_PRESET_ID && b.revision !== 1)
+  if (!Number.isSafeInteger(b.revision) || b.revision < 1 || b.accountId !== accountId || isBuiltInPreset(b.id) && b.revision !== 1)
     throw Error("Invalid preset revision or account binding; room data was preserved.");
   return { id: b.id, revision: b.revision, ...accountId ? { accountId } : {} };
 }
@@ -1254,6 +1288,8 @@ class MochiPresets {
     const b = validateBinding(room.preset, room.accountId);
     if (b.id === DEFAULT_PRESET_ID)
       return defaultPreset();
+    if (b.id === DEFAULT_V2_PRESET_ID)
+      return defaultV2Preset();
     const bank = await this.read(user, room.accountId), p = bank.presets.find((p) => p.id === b.id), r = p?.revisions.find((r) => r.revision === b.revision);
     if (!p || !r)
       throw Error("The bound preset revision is unavailable. Restore Mochi Default explicitly or recover the library.");
@@ -1280,14 +1316,16 @@ class MochiPresets {
         throw Error("Block presets cannot also inject legacy context.");
       if (layout !== "blocks-v1" && input.blocks !== undefined)
         throw Error("Legacy presets cannot carry blocks.");
-      const source = input.action === "create" || input.id === DEFAULT_PRESET_ID ? undefined : bank.presets.find((p) => p.id === presetId(input.id));
+      const source = input.action === "create" || isBuiltInPreset(input.id) ? undefined : bank.presets.find((p) => p.id === presetId(input.id));
       if (!["create", "duplicate"].includes(input.action) && !source)
         throw Error("This custom preset is unavailable; Mochi Default cannot be modified.");
       if (input.action === "create" || input.action === "duplicate") {
         if (bank.presets.length >= 100)
           throw Error("Preset library limit reached; archive history was retained.");
-        let content = defaultPreset();
-        if (input.action === "duplicate" && input.id !== DEFAULT_PRESET_ID) {
+        let content = input.id === DEFAULT_V2_PRESET_ID ? defaultV2Preset() : defaultPreset();
+        if (input.action === "duplicate" && isBuiltInPreset(input.id) && input.sourceRevision !== undefined && input.sourceRevision !== 1)
+          throw Error("Built-in revision is unavailable.");
+        if (input.action === "duplicate" && !isBuiltInPreset(input.id)) {
           if (!source)
             throw Error("Preset to duplicate is unavailable.");
           const r = source.revisions.find((r) => r.revision === input.sourceRevision);
@@ -1911,13 +1949,15 @@ class MochiService {
         throw new Error("The chat or its assignment changed elsewhere. Refresh before assigning.");
       if (room.accountId === target)
         throw new Error("This chat already belongs to that account.");
-      if (room.preset && room.preset.id !== DEFAULT_PRESET_ID)
+      if (room.preset && !isBuiltInPreset(room.preset.id))
         throw Error("Restore Mochi Default before assigning this chat to another account. Custom presets are account-scoped.");
       if (this.jobs.has(this.jobKey(user, id)) || (this.pending.get(this.jobKey(user, id))?.size || 0) > 0 || room.runtime?.jobs.some((j) => j.status === "generating" && (j.leaseUntil || 0) > this.now()))
         throw new Error("Wait for active generation to finish or stop it before assigning this chat. Saved schedules remain intact.");
       const sourceAccountId = room.accountId;
       room.accountId = target;
       room.associationRevision = (room.associationRevision || 0) + 1;
+      if (room.preset)
+        room.preset = { ...room.preset, accountId: target };
       for (const notice of room.notifications || [])
         notice.accountId = target;
       await this.persist(user, room);
@@ -2059,6 +2099,10 @@ class MochiService {
         await this.persona(user, profile.persona);
       const now = new Date().toISOString();
       const room = { version: 1, id, ...profile ? { accountId: profile.id } : {}, revision: 1, title: text(input.title, 120, true), characterIds: await this.membership(user, input.characterIds), persona: profile ? { ...profile.persona, name: profile.displayName, avatarUrl: profile.avatarUrl } : await this.persona(user, input.persona), messages: [], createdAt: now, updatedAt: now, settings: { ...defaultMochiSettings(), responseMode: "natural" }, receipts: [], notifications: [], notificationRevision: 0 };
+      room.preset = validateBinding(input.preset ?? { id: DEFAULT_V2_PRESET_ID, revision: 1, accountId: room.accountId }, room.accountId);
+      const preset = await this.presets.resolve(user, room);
+      if (!preset.builtIn && (await this.presets.read(user, room.accountId)).presets.find((p) => p.id === preset.id)?.archived)
+        throw Error("Restore this archived preset before binding another chat.");
       await this.persist(user, room);
       return room;
     });

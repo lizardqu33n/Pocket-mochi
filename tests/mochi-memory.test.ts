@@ -17,7 +17,10 @@ function fixture(){
  const create=async(fictional=false)=>{
   const accountId=fictional?(await service.fictionalAccounts.create('alice',{displayName:'Synthetic profile',username:'',persona:{source:'manual',name:'Synthetic',description:''}})).id:undefined
   const input={accountId,title:'Synthetic',characterIds:['alice_character'],persona:fictional?undefined:{source:'manual',name:'Me',description:''}}
-  let room=await service.create('alice',input);room=await service.update('alice',{...input,roomId:room.id,revision:room.revision,settings:{...defaultMochiSettings(),autoReply:false,responseMode:'manual',connectionId:'alice_connection'}})
+  let room=await service.create('alice',input)
+  // These legacy layout assertions exercise previously persisted, unbound rooms.
+  delete room.preset;files.set('alice:mochi/v1/rooms/'+room.id+'.json',structuredClone(room))
+  room=await service.update('alice',{...input,roomId:room.id,revision:room.revision,settings:{...defaultMochiSettings(),autoReply:false,responseMode:'manual',connectionId:'alice_connection'}})
   await service.message('alice',{accountId,roomId:room.id,revision:room.revision,requestId:'seed',content:'Original message'})
   return{room:await service.read('alice',room.id,accountId),accountId,input}
  }

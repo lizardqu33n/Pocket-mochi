@@ -1,4 +1,6 @@
 import {validateBlocks,type BlockDocument} from './prompt-blocks.js'
+import {DEFAULT_V2_PRESET_ID,defaultV2Blocks} from './default-preset.js'
+export {DEFAULT_V2_PRESET_ID} from './default-preset.js'
 import type {MochiHost} from './service.js'
 import type {MochiRoom} from './types.js'
 import {fictionalAccountId} from './accounts.js'
@@ -11,12 +13,15 @@ export interface PresetBinding {id:string;revision:number;accountId?:string}
 export interface ResolvedPreset extends PresetRevision {id:string;name:string;builtIn:boolean}
 export interface PresetBank {version:1;ownerId:string;accountId?:string;revision:number;presets:MochiPreset[];receipts:string[]}
 export const defaultPreset=():ResolvedPreset=>({id:DEFAULT_PRESET_ID,name:'Mochi Default',builtIn:true,revision:1,layout:'legacy-v1',dmInstructions:'',groupInstructions:''})
+export const defaultV2Preset=():ResolvedPreset=>({id:DEFAULT_V2_PRESET_ID,name:'Mochi Default v2',builtIn:true,revision:1,layout:'blocks-v1',blocks:defaultV2Blocks(),dmInstructions:'',groupInstructions:''})
+export const isBuiltInPreset=(id:string)=>id===DEFAULT_PRESET_ID||id===DEFAULT_V2_PRESET_ID
+export const builtInPresets=():ResolvedPreset[]=>[defaultV2Preset(),defaultPreset()]
 function presetId(value:unknown):string{if(typeof value!=='string'||!/^preset_[a-f0-9]{32}$/.test(value))throw Error('Invalid custom preset identifier.');return value}
 function bounded(value:unknown,max:number,required=false):string{if(typeof value!=='string'||value.length>max||required&&!value.trim())throw Error('Invalid preset name or instructions.');return required?value.trim():value}
 export function validateBinding(value:unknown,accountId?:string):PresetBinding {
  if(!value||typeof value!=='object')throw Error('Invalid preset binding; room data was preserved.')
- const b=value as PresetBinding;if(b.id!==DEFAULT_PRESET_ID)presetId(b.id)
- if(!Number.isSafeInteger(b.revision)||b.revision<1||b.accountId!==accountId||b.id===DEFAULT_PRESET_ID&&b.revision!==1)throw Error('Invalid preset revision or account binding; room data was preserved.')
+ const b=value as PresetBinding;if(!isBuiltInPreset(b.id))presetId(b.id)
+ if(!Number.isSafeInteger(b.revision)||b.revision<1||b.accountId!==accountId||isBuiltInPreset(b.id)&&b.revision!==1)throw Error('Invalid preset revision or account binding; room data was preserved.')
  return{id:b.id,revision:b.revision,...(accountId?{accountId}:{})}
 }
 export class MochiPresets {
@@ -36,7 +41,7 @@ export class MochiPresets {
  }
  async resolve(user:string,room:Pick<MochiRoom,'accountId'|'preset'>):Promise<ResolvedPreset>{
   if(!room.preset)return defaultPreset()
-  const b=validateBinding(room.preset,room.accountId);if(b.id===DEFAULT_PRESET_ID)return defaultPreset()
+  const b=validateBinding(room.preset,room.accountId);if(b.id===DEFAULT_PRESET_ID)return defaultPreset();if(b.id===DEFAULT_V2_PRESET_ID)return defaultV2Preset()
   const bank=await this.read(user,room.accountId),p=bank.presets.find(p=>p.id===b.id),r=p?.revisions.find(r=>r.revision===b.revision)
   if(!p||!r)throw Error('The bound preset revision is unavailable. Restore Mochi Default explicitly or recover the library.')
   return{...r,id:p.id,name:p.name,builtIn:false}
@@ -54,12 +59,13 @@ export class MochiPresets {
    const blocks=layout==='blocks-v1'?validateBlocks(input.blocks):undefined
    if(layout==='blocks-v1'&&(input.placement!==undefined||input.dmInstructions||input.groupInstructions))throw Error('Block presets cannot also inject legacy context.')
    if(layout!=='blocks-v1'&&input.blocks!==undefined)throw Error('Legacy presets cannot carry blocks.')
-   const source=input.action==='create'||input.id===DEFAULT_PRESET_ID?undefined:bank.presets.find(p=>p.id===presetId(input.id))
+   const source=input.action==='create'||isBuiltInPreset(input.id)?undefined:bank.presets.find(p=>p.id===presetId(input.id))
    if(!['create','duplicate'].includes(input.action)&&!source)throw Error('This custom preset is unavailable; Mochi Default cannot be modified.')
    if(input.action==='create'||input.action==='duplicate'){
     if(bank.presets.length>=100)throw Error('Preset library limit reached; archive history was retained.')
-    let content=defaultPreset()
-    if(input.action==='duplicate'&&input.id!==DEFAULT_PRESET_ID){if(!source)throw Error('Preset to duplicate is unavailable.');const r=source.revisions.find(r=>r.revision===input.sourceRevision);if(!r)throw Error('Preset revision to duplicate is unavailable.');content={...r,id:source.id,name:source.name,builtIn:false}}
+    let content=input.id===DEFAULT_V2_PRESET_ID?defaultV2Preset():defaultPreset()
+    if(input.action==='duplicate'&&isBuiltInPreset(input.id)&&input.sourceRevision!==undefined&&input.sourceRevision!==1)throw Error('Built-in revision is unavailable.')
+    if(input.action==='duplicate'&&!isBuiltInPreset(input.id)){if(!source)throw Error('Preset to duplicate is unavailable.');const r=source.revisions.find(r=>r.revision===input.sourceRevision);if(!r)throw Error('Preset revision to duplicate is unavailable.');content={...r,id:source.id,name:source.name,builtIn:false}}
     bank.presets.push({id:`preset_${crypto.randomUUID().replaceAll('-','')}`,name:bounded(input.name,80,true),archived:false,revisions:[{revision:1,layout:input.action==='duplicate'?content.layout:layout,...(input.action==='duplicate'?{...(content.placement?{placement:content.placement}:{}),...(content.blocks?{blocks:structuredClone(content.blocks)}:{})}:{...(placement?{placement}:{}),...(blocks?{blocks}:{})}),dmInstructions:input.action==='create'?bounded(input.dmInstructions??'',4000):content.dmInstructions,groupInstructions:input.action==='create'?bounded(input.groupInstructions??'',4000):content.groupInstructions}]})
    }else if(input.action==='publish'){
     if(source!.archived)throw Error('Restore this preset before publishing.');if(source!.revisions.length>=50)throw Error('Published revision limit reached. Duplicate into a new preset; existing revisions stay intact.')

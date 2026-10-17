@@ -337,7 +337,7 @@ class ChatSettingsLayout {
       }
       if (name === "Connection & replies")
         node.querySelector("legend,summary").textContent = "Connection & model";
-      if (node.tagName === "DETAILS" && name !== "Chat ownership")
+      if (node.tagName === "DETAILS" && name !== "Chat ownership" && name !== "Background messaging")
         node.open = true;
       categories.get(target).append(node);
     }
@@ -2279,6 +2279,146 @@ function textingControls(settings, id, name) {
 }
 var MOCHI_TEXTING_STYLES = `.mochi-view .mochi-texting-controls{min-width:0;display:grid;gap:8px;border:1px solid var(--mochi-border);border-radius:10px;padding:10px}.mochi-view .mochi-texting-controls label{min-width:0;display:grid;gap:4px;overflow-wrap:anywhere}.mochi-view .mochi-texting-controls select,.mochi-view .mochi-texting-controls textarea{box-sizing:border-box;min-width:0;width:100%;max-width:100%}.mochi-view .mochi-texting-controls :focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}`;
 
+// src/mochi/disclosure.ts
+var MOCHI_DISCLOSURE_STYLES = `
+.mochi-view details.mochi-disclosure,.mochi-view .mochi-preset-navigation>details.mochi-disclosure,.mochi-view .mochi-settings-scroll details.mochi-disclosure{min-width:0;max-width:100%;box-sizing:border-box;border:1px solid var(--mochi-border);border-radius:12px;padding:0;margin:6px 0;background:var(--lp-surface-2,#ffffff06);overflow:hidden}
+.mochi-view details.mochi-disclosure>summary,.mochi-view .mochi-preset-navigation>details.mochi-disclosure>summary,.mochi-view .mochi-settings-scroll details.mochi-disclosure>summary{display:block;position:relative;box-sizing:border-box;min-height:44px;max-width:100%;padding:12px 36px 12px 12px;margin:0;line-height:20px;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;list-style:none;cursor:pointer;border:0;border-radius:11px;color:inherit}
+.mochi-view details.mochi-disclosure>summary::-webkit-details-marker{display:none}.mochi-view details.mochi-disclosure>summary::after{content:'';position:absolute;right:16px;top:17px;width:7px;height:7px;border-right:2px solid var(--lp-muted,currentColor);border-bottom:2px solid var(--lp-muted,currentColor);transform:rotate(-45deg)}.mochi-view details.mochi-disclosure[open]>summary::after{transform:rotate(45deg);top:15px}.mochi-view details.mochi-disclosure[open]>summary{border-bottom:1px solid var(--mochi-border);border-radius:11px 11px 0 0}.mochi-view details.mochi-disclosure>summary:hover{background:color-mix(in srgb,var(--mochi-accent) 8%,transparent)}.mochi-view details.mochi-disclosure>summary:focus-visible{outline:2px solid var(--mochi-accent);outline-offset:-3px}.mochi-view details.mochi-disclosure>:not(summary){margin:10px 12px;max-width:calc(100% - 24px);box-sizing:border-box;min-width:0;overflow-wrap:anywhere}.mochi-view .mochi-settings-scroll details.mochi-disclosure[open]>:not(summary){margin:12px;max-width:calc(100% - 24px)}.mochi-view .mochi-preset-navigation{border:0;gap:8px}.mochi-view .mochi-preset-navigation>details.mochi-disclosure{flex:1 1 240px;align-self:start}.mochi-view .mochi-preview-overview{display:flex;flex-wrap:wrap;gap:6px 16px;padding:10px 0}.mochi-view .mochi-preview-overview>span{font-size:12px}.mochi-view .mochi-preview-group{min-width:0}.mochi-view .mochi-preview-warning{border-left:3px solid var(--mochi-accent);padding:8px 12px;background:color-mix(in srgb,var(--mochi-accent) 7%,transparent)}.mochi-view .mochi-preview-panel pre{white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%;font:inherit}.mochi-view .mochi-preview-identity{font-size:13px;margin:6px 0}.mochi-view .mochi-preset-entry{min-width:0}
+.mochi-view .mochi-preview-controls select{width:auto;flex:1 1 200px}.mochi-view .mochi-preview-controls button{flex:0 0 auto}
+@container(max-width:550px){.mochi-view .mochi-preset-heading h3{flex:1 0 100%;min-width:0;overflow-wrap:normal}.mochi-view .mochi-preset-heading{gap:8px}.mochi-view .mochi-preset-heading button{flex:0 1 auto}}
+`;
+
+// src/mochi/prompt-blocks.ts
+var blockId = (kind = "block") => kind + "_" + crypto.randomUUID().replaceAll("-", "");
+var expression = /\{\{\s*([^{}]*?)\s*\}\}/g;
+function validateBlocks(value) {
+  const doc = value, ids = new Set;
+  let count = 0, size = 0;
+  const text = (v, max, required = false) => typeof v === "string" && v.length <= max && (!required || !!v.trim());
+  if (!doc || doc.version !== 1 || !Array.isArray(doc.categories) || doc.categories.length > 12 || Object.keys(doc).some((k) => !["version", "categories"].includes(k)))
+    throw Error("Invalid block document; saved revisions were preserved.");
+  for (const c of doc.categories) {
+    if (!c || !/^category_[a-f0-9]{32}$/.test(c.id) || ids.has(c.id) || !text(c.name, 80, true) || typeof c.collapsed !== "boolean" || !Array.isArray(c.blocks) || Object.keys(c).some((k) => !["id", "name", "collapsed", "blocks"].includes(k)))
+      throw Error("Invalid prompt category.");
+    ids.add(c.id);
+    for (const b of c.blocks) {
+      if (!b || !/^block_[a-f0-9]{32}$/.test(b.id) || ids.has(b.id) || !text(b.name, 80, true) || !text(b.content, 8000) || !["system", "user", "assistant"].includes(b.role) || !["before-history", "history", "after-history"].includes(b.position) || !["all", "dm", "group"].includes(b.audience) || typeof b.enabled !== "boolean" || typeof b.locked !== "boolean" || Object.keys(b).some((k) => !["id", "name", "content", "role", "position", "audience", "enabled", "locked"].includes(k)))
+        throw Error("Invalid prompt block.");
+      ids.add(b.id);
+      count++;
+      size += b.content.length;
+      if (/[{}]{2}/.test(b.content.replace(expression, "")))
+        throw Error("Unbalanced macro expression in " + b.name + ".");
+      for (const m of b.content.matchAll(expression))
+        if (["mochi_history", "mochi_system_notes"].includes(m[1].trim()) && b.content.trim() !== m[0])
+          throw Error("History and system notes each require their own block.");
+      if (/\{\{\s*mochi_history\s*\}\}/.test(b.content) && b.position !== "history")
+        throw Error("Chat History must use the At chat history position.");
+    }
+  }
+  if (count > 60 || size > 48000)
+    throw Error("Preset exceeds 60 blocks or 48,000 content characters.");
+  return structuredClone(doc);
+}
+var MACRO_REFERENCE = [
+  { name: "Character information", syntax: "{{mochi_characters}}", description: "Eligible character IDs, names and descriptions. Not just a character name.", source: "Mochi", context: "Authorized room characters" },
+  { name: "Persona information", syntax: "{{mochi_persona}}", description: "Saved identity plus enabled account add-on context, once.", source: "Mochi", context: "Saved room identity; matching account selections" },
+  { name: "Room information", syntax: "{{mochi_room}}", description: "The saved room title.", source: "Mochi blocks", context: "Current room" },
+  { name: "Room instructions", syntax: "{{mochi_room_instructions}}", description: "Saved room instructions, including supported persona outlets.", source: "Mochi", context: "Current room settings" },
+  { name: "Character texting preferences", syntax: "{{mochi_texting_styles}}", description: "Resolved character texting preferences; does not alter saved preferences.", source: "Mochi", context: "Room character preferences" },
+  { name: "Chat history", syntax: "{{mochi_history}}", description: "Structured dialogue with original roles. Use alone in a block at the history position.", source: "Mochi", context: "Current room history" },
+  { name: "System notes", syntax: "{{mochi_system_notes}}", description: "Enabled saved notes with their system role. Use alone in a block.", source: "Mochi", context: "Current room notes" },
+  { name: "Chat memory", syntax: "{{mochi_summary}}", description: "Verified enabled memory as untrusted user-role reference. Use alone in a block.", source: "Mochi", context: "Valid enabled room memory" },
+  { name: "Persona add-on outlet", syntax: "{{persona_outlet::name}}", description: "Enabled named native persona outlet. Replace name with its outlet name. Alias: {{personaOutlet::name}}.", source: "Lumiverse-compatible bounded reference", context: "Enabled matching account add-on with a named outlet" },
+  { name: "Native character name (unsupported)", syntax: "{{char}}", description: "Requires the native active-scene macro environment; unavailable in independent Mochi generation. Kept literal with a diagnostic.", source: "Unsupported native host context", context: "Not available here" }
+];
+var BLOCK_TEMPLATES = [
+  { name: "Blank block", category: "Custom", description: "Write your own instructions.", content: "" },
+  { name: "Base Messaging", category: "Core Instructions", description: "A private, conversation-first messenger.", content: "Write as the eligible character in a private messenger. Use only the supplied context. Do not invent an external shared scene or speak for the user." },
+  { name: "Direct Message Behavior", category: "Core Instructions", description: "Focused one-to-one replies.", content: "Respond to the other person directly. Follow the thread naturally and leave room for their next message.", audience: "dm" },
+  { name: "Group Chat Behavior", category: "Core Instructions", description: "Selective participation in a group.", content: "Let relevant speakers contribute naturally. Avoid round-robin replies, repeated points, and making every participant speak.", audience: "group" },
+  { name: "Character Information", category: "Character & Persona", description: "Include authorized character information once.", content: "CHARACTERS: {{mochi_characters}}" },
+  { name: "Persona Information", category: "Character & Persona", description: "Include the saved identity and enabled non-outlet add-ons once.", content: "USER IDENTITY: {{mochi_persona}}" },
+  { name: "Persona Add-on References", category: "Character & Persona", description: "Place a named enabled add-on; replace name with your outlet name.", content: "{{persona_outlet::name}}" },
+  { name: "Character Texting Preferences", category: "Character & Persona", description: "Reuse saved character preferences.", content: "{{mochi_texting_styles}}" },
+  { name: "Casual Dialogue", category: "Writing & Texting", description: "Conversational phrasing without forcing slang.", content: "Use relaxed, natural dialogue appropriate to the character. Avoid unnecessary exposition and formulaic closing questions." },
+  { name: "Short Replies", category: "Writing & Texting", description: "Prefer concise messages when the moment allows.", content: "Prefer a short reply that adds something meaningful. Expand only when the conversation needs detail." },
+  { name: "Texting Style", category: "Writing & Texting", description: "Adapt to the character and conversational pace.", content: "Use messaging rhythm and punctuation that suit the character. Do not force abbreviations, emojis, or narration into every reply." },
+  { name: "Expressive Dialogue", category: "Writing & Texting", description: "Convey personality through the reply.", content: "Show emotion and personality through word choice and rhythm. Keep expressive flourishes relevant and avoid repeating the same mannerisms." },
+  ...["1990s", "2000s", "2010s", "2020s"].map((era) => ({ name: era, category: "Time & Setting", description: "Optional era guidance; edit for your setting.", content: `When consistent with the supplied setting, use everyday references and communication habits plausible for the ${era}. Do not override established facts or assume every character shares the same culture or technology.` })),
+  { name: "Chat Memory", category: "Conversation Context", description: "Include verified conversation memory once.", content: "{{mochi_summary}}" },
+  { name: "Room Information", category: "Conversation Context", description: "Include room title and separate room instructions.", content: `ROOM: {{mochi_room}}
+ROOM INSTRUCTIONS: {{mochi_room_instructions}}` },
+  { name: "System Notes", category: "Conversation Context", description: "Include enabled saved room notes.", content: "{{mochi_system_notes}}", position: "after-history" },
+  { name: "Supported Context References", category: "Conversation Context", description: "Keep structured saved dialogue in the history slot.", content: "{{mochi_history}}", position: "history" }
+];
+function fromTemplate(t) {
+  return { id: blockId(), name: t.name, content: t.content, role: "system", position: t.position || "before-history", audience: t.audience || "all", enabled: true, locked: false };
+}
+function starterBlocks() {
+  const names = ["Base Messaging", "Direct Message Behavior", "Group Chat Behavior", "Character Information", "Persona Information", "Character Texting Preferences", "Room Information", "Chat Memory", "Supported Context References", "System Notes"], categories = [];
+  for (const name of names) {
+    const t = BLOCK_TEMPLATES.find((t) => t.name === name);
+    let c = categories.find((c) => c.name === t.category);
+    if (!c) {
+      c = { id: blockId("category"), name: t.category, collapsed: false, blocks: [] };
+      categories.push(c);
+    }
+    c.blocks.push(fromTemplate(t));
+  }
+  return { version: 1, categories };
+}
+function convertLegacy(r) {
+  const doc = starterBlocks();
+  if (r.layout === "manual-v1")
+    doc.categories = doc.categories.filter((c) => c.name === "Core Instructions").concat([{ id: blockId("category"), name: "Previous context rows", collapsed: false, blocks: r.placement.rows.map((row) => ({ ...fromTemplate({ name: row.title, category: "", description: "", content: row.template, position: "history" }), role: row.template.trim() === "{{mochi_summary}}" ? "user" : "system" })) }]);
+  const core = doc.categories[0];
+  core.blocks = core.blocks.filter((b) => b.name === "Base Messaging");
+  for (const [name, content, audience] of [["DM instructions", r.dmInstructions, "dm"], ["Group instructions", r.groupInstructions, "group"]])
+    if (content)
+      core.blocks.push({ ...fromTemplate({ name, content, category: "", description: "" }), audience });
+  return doc;
+}
+
+// src/mochi/default-preset.ts
+var DEFAULT_V2_PRESET_ID = "mochi_default_v2";
+function defaultV2Blocks() {
+  let serial = 0;
+  const id = (kind) => kind + "_" + (++serial).toString(16).padStart(32, "0");
+  const block = (name, content, options = {}) => ({ id: id("block"), name, content, role: "system", position: "before-history", audience: "all", enabled: true, locked: false, ...options });
+  const category = (name, blocks) => ({ id: id("category"), name, collapsed: false, blocks });
+  return validateBlocks({ version: 1, categories: [
+    category("Core Instructions", [
+      block("Base Messaging", "Write as the eligible fictional character in a private messenger. Stay faithful to the supplied character information, personality, and conversation history. Communicate naturally as that character rather than as a generic AI assistant. Do not speak or decide actions for the user. Do not invent shared events, memories, or knowledge. Avoid unprompted scene or action narration."),
+      block("Direct Message Behavior", "Reply naturally to the other person and respond to what they actually said. Match the mood and flow of the conversation. Not every message needs a question, explanation, or conversation-ending phrase.", { audience: "dm" }),
+      block("Group Chat Behavior", "Let eligible characters contribute when they have something relevant to say. Preserve each character’s distinct personality and relationships. Avoid repetitive agreement, round-robin replies, and forcing every participant to speak.", { audience: "group" })
+    ]),
+    category("Character & Persona", [
+      block("Character Information", "CHARACTERS: {{mochi_characters}}"),
+      block("Persona Information", "USER IDENTITY: {{mochi_persona}}"),
+      block("Character Texting Preferences", "{{mochi_texting_styles}}")
+    ]),
+    category("Writing & Texting", [
+      block("Natural Character Voice", "Let the character’s established personality shape vocabulary, emotion, humor, and mannerisms. Avoid generic assistant language, repetitive phrasing, and artificial enthusiasm. Keep the character recognizable without exaggerating every personality trait."),
+      block("Conversational Rhythm", "Write messages appropriate to the moment. A quick exchange may need only a few words, while an emotional or complicated conversation may deserve more detail. Avoid unnecessary exposition, forced slang, repetitive questions, and formulaic endings."),
+      block("Texting Preferences", "Respect the saved capitalization, punctuation, length, emoji frequency, and tone settings. Do not impose lowercase texting, emojis, abbreviations, or any particular style on every character. These creative defaults yield to explicit character preferences.")
+    ]),
+    category("Conversation Context", [
+      block("Room Information", `ROOM: {{mochi_room}}
+ROOM INSTRUCTIONS: {{mochi_room_instructions}}`),
+      block("Chat Memory", "{{mochi_summary}}", { role: "user" }),
+      block("Conversation History", "{{mochi_history}}", { position: "history" }),
+      block("System Notes", "{{mochi_system_notes}}", { position: "after-history" })
+    ])
+  ] });
+}
+// src/mochi/presets.ts
+var DEFAULT_PRESET_ID = "mochi_default";
+var defaultPreset = () => ({ id: DEFAULT_PRESET_ID, name: "Mochi Default", builtIn: true, revision: 1, layout: "legacy-v1", dmInstructions: "", groupInstructions: "" });
+var defaultV2Preset = () => ({ id: DEFAULT_V2_PRESET_ID, name: "Mochi Default v2", builtIn: true, revision: 1, layout: "blocks-v1", blocks: defaultV2Blocks(), dmInstructions: "", groupInstructions: "" });
+var isBuiltInPreset = (id) => id === DEFAULT_PRESET_ID || id === DEFAULT_V2_PRESET_ID;
+var builtInPresets = () => [defaultV2Preset(), defaultPreset()];
+
 // src/mochi/preview-panel.ts
 var scope2 = (r) => JSON.stringify([r.accountId || "", r.id, r.associationRevision || 0]);
 var fingerprint = (r) => JSON.stringify([r.revision, r.background?.presence, r.background?.enabled]);
@@ -2297,6 +2437,7 @@ class MochiPreview {
   get isDraft() {
     return !!this.draftBlocks;
   }
+  expanded = new Set;
   draftBlocks;
   scope = "";
   snapshot = "";
@@ -2310,6 +2451,7 @@ class MochiPreview {
     this.characterName = characterName;
   }
   reset() {
+    this.expanded.clear();
     this.cancel();
     this.open = false;
     this.draftBlocks = undefined;
@@ -2435,138 +2577,79 @@ class MochiPreview {
     root.append(status);
     if (this.data) {
       const data = this.data, b = data.budget;
-      root.append(el("p", "", `Input ${b.inputTokens} · output reserve ${b.outputTokens} · envelope ${b.envelopeTokens} · budget ${b.contextTokens} · remaining ${b.remainingTokens}`), el("p", "mochi-muted", `Host tokenizer: ${data.tokenization.tokenizerName || "not reported"}; ${data.tokenization.approximate === true ? "approximate fallback" : data.tokenization.approximate === false ? "matched tokenizer; provider usage may differ" : "precision not reported"}. Model: ${data.tokenization.model}`), el("p", "", `${data.history.retained} of ${data.history.stored} saved messages retained; ${data.history.trimmed} trimmed from outgoing context. Range: ${data.history.firstId || "none"} → ${data.history.lastId || "none"}. Saved history is unchanged.`));
-      if (data.history.excluded)
-        root.append(el("p", "mochi-muted", `${data.history.excluded} saved messages deliberately excluded by verified summary coverage. This is separate from token trimming.`));
-      if (data.memory)
-        root.append(el("p", "mochi-muted", `Conversation memory: ${data.memory.included ? "included" : "omitted"}; coverage ${data.memory.valid ? "verified" : "requires review"}.`));
-      if (data.history.omitted)
-        root.append(el("p", "mochi-preview-warning", `${data.history.omitted} saved messages omitted by the manual plan; they are still stored.`));
-      root.append(el("p", "mochi-muted", `Snapshot time: ${data.resolvedAt ? new Date(data.resolvedAt).toLocaleString() : "not reported"}. Responder: ${data.responder || "not reported"}.`));
+      const overview = el("div", "mochi-preview-overview");
+      overview.setAttribute("aria-label", "Prompt overview");
+      overview.append(el("span", "", `${b.inputTokens} input tokens · ${b.remainingTokens} remaining`), el("span", "", `${data.history.retained} / ${data.history.stored} history messages retained`));
+      root.append(overview);
       if (data.preset)
-        root.append(el("p", "mochi-preview-identity", `${data.draft ? "Unpublished block draft" : `${data.preset.builtIn ? "Built-in" : "Custom"} preset: ${data.preset.name} · revision ${data.preset.revision}`} · ${data.preset.variant} · ${data.preset.layout === "blocks-v1" ? "Ordered prompt blocks" : data.preset.layout === "manual-v1" ? "Manual placement" : "Automatic placement"}`), el("pre", "mochi-preview-text", data.preset.appliedInstructions || "No additional preset instructions."));
+        root.append(el("p", "mochi-preview-identity", data.draft ? "Unpublished draft · not applied" : `${data.preset.name} · revision ${data.preset.revision}`));
+      if (data.history.omitted)
+        root.append(el("p", "mochi-preview-warning", `${data.history.omitted} saved messages omitted by this preset; still stored.`));
+      for (const assumption of data.assumptions.filter((a) => a.startsWith("Automatic replies are disabled") || a.startsWith("Current presence delays")))
+        root.append(el("p", "mochi-preview-warning", assumption));
+      const informational = (data.warnings || []).filter((w) => w === "Chat memory is absent, disabled or requires review; omitted." && !data.memory?.enabled);
+      for (const warning of (data.warnings || []).filter((w) => !informational.includes(w)))
+        root.append(el("p", "mochi-preview-warning", warning));
+      const disclosure = (label, key = label) => {
+        const details = el("details", "mochi-disclosure"), summary = el("summary", "", label);
+        summary.title = label;
+        details.open = this.expanded.has(key);
+        details.ontoggle = () => {
+          if (details.open)
+            this.expanded.add(key);
+          else
+            this.expanded.delete(key);
+        };
+        details.append(summary);
+        return details;
+      };
+      const groups = [];
+      for (const [index, message] of data.messages.entries()) {
+        const section = data.sections.find((s) => s.active && s.providerMessages.includes(index)), full = section?.id || "Resolved message";
+        const category = data.preset.blocks?.categories.find((c) => full.startsWith(c.name + " / "));
+        const name = category?.name || (index === 0 ? "Runtime instructions" : index === data.messages.length - 1 ? "Continuation" : section?.id === "conversation_memory" ? "Conversation memory" : section?.id === "history" ? "Conversation history" : section?.id === "system_notes" ? "System notes" : "Resolved context");
+        let group = groups.at(-1);
+        if (!group || group.name !== name) {
+          group = { name, messages: [] };
+          groups.push(group);
+        }
+        group.messages.push({ index, role: message.role, content: message.content, section: full });
+      }
+      for (const [groupIndex, { name, messages }] of groups.entries()) {
+        const group = disclosure(`${name} · ${messages.length}`, `group:${groupIndex}:${name}`), body = el("div", "mochi-preview-group");
+        for (const message of messages) {
+          const short = message.section.split(" · ")[0].split(" / ").at(-1) || "Message", item = disclosure(`${short} · ${message.role}`, `message:${message.index}`);
+          item.append(el("p", "mochi-muted", `Provider message ${message.index + 1} · ${message.role} · ${message.section}`), el("pre", "mochi-preview-text", message.content));
+          body.append(item);
+        }
+        group.append(body);
+        root.append(group);
+      }
       if (data.resolvedMacros?.length) {
-        const resolved = el("details");
-        resolved.append(el("summary", "", "Resolved macro references"));
+        const resolved = disclosure("Resolved macros");
         for (const macro of data.resolvedMacros)
           resolved.append(el("p", "", macro));
         root.append(resolved);
       }
-      for (const warning of data.warnings || [])
-        root.append(el("p", "mochi-preview-warning", warning));
+      const advanced = disclosure("Advanced diagnostics");
+      advanced.append(el("p", "", `Input ${b.inputTokens} · output reserve ${b.outputTokens} · envelope ${b.envelopeTokens} · budget ${b.contextTokens} · remaining ${b.remainingTokens}`), el("p", "", `Host tokenizer: ${data.tokenization.tokenizerName || "not reported"}; ${data.tokenization.approximate === true ? "approximate fallback" : data.tokenization.approximate === false ? "matched tokenizer; provider usage may differ" : "precision not reported"}. Model: ${data.tokenization.model}`), el("p", "", `${data.history.trimmed} trimmed from outgoing context; ${data.history.excluded || 0} excluded by verified summary coverage. Range: ${data.history.firstId || "none"} → ${data.history.lastId || "none"}. Saved history is unchanged.`), el("p", "", `Snapshot: ${data.resolvedAt || "not reported"}. Responder: ${data.responder || "not reported"}.`));
+      if (data.memory)
+        advanced.append(el("p", "", `Conversation memory: ${data.memory.included ? "included" : "omitted"}; coverage ${data.memory.valid ? "verified" : "requires review"}.`));
+      advanced.append(el("p", "", `Preset: ${data.preset.id} · revision ${data.preset.revision} · ${data.preset.variant} · ${data.preset.layout}`), el("p", "", `Explicit Mochi parameters: ${JSON.stringify(data.parameters)} · reasoning ${JSON.stringify(data.reasoning)}`));
+      for (const text of informational)
+        advanced.append(el("p", "mochi-muted", text));
       for (const text of data.assumptions)
-        root.append(el("p", "mochi-muted", text));
-      root.append(el("p", "", `Explicit Mochi parameters: ${JSON.stringify(data.parameters)} · reasoning ${JSON.stringify(data.reasoning)}`));
-      const sections = el("details");
-      sections.append(el("summary", "", "Logical sections (provider message numbers)"));
+        advanced.append(el("p", "", text));
+      const sections = disclosure("Logical section mapping");
       for (const section of data.sections)
         sections.append(el("p", "", `${section.id}: ${section.active ? "active · " + section.providerMessages.map((i) => i + 1).join(", ") : "inactive / omitted"}`));
-      root.append(sections);
-      for (const [i, message] of data.messages.entries()) {
-        const block = el("details");
-        block.append(el("summary", "", `${i + 1}. ${message.role}`), el("pre", "mochi-preview-text", message.content));
-        root.append(block);
-      }
+      advanced.append(sections);
+      root.append(advanced);
     }
     return root;
   }
 }
 var MOCHI_PREVIEW_STYLES = `.mochi-view .mochi-preview-panel{min-width:0;min-height:0;max-height:40%;overflow:auto;flex:0 1 auto;padding:10px;border-bottom:1px solid var(--mochi-border);overflow-wrap:anywhere}.mochi-view .mochi-preview-controls{display:flex;flex-wrap:wrap;gap:6px;min-width:0}.mochi-view .mochi-preview-controls select{max-width:100%;min-width:0;background:var(--lp-surface-2,#ffffff0c);color:inherit;border:1px solid var(--mochi-border);padding:8px;border-radius:8px}.mochi-view .mochi-preview-panel button{min-height:40px}.mochi-view .mochi-preview-text{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;max-width:100%}.mochi-view .mochi-preview-panel :focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}`;
-
-// src/mochi/prompt-blocks.ts
-var blockId = (kind = "block") => kind + "_" + crypto.randomUUID().replaceAll("-", "");
-var expression = /\{\{\s*([^{}]*?)\s*\}\}/g;
-function validateBlocks(value) {
-  const doc = value, ids = new Set;
-  let count = 0, size = 0;
-  const text = (v, max, required = false) => typeof v === "string" && v.length <= max && (!required || !!v.trim());
-  if (!doc || doc.version !== 1 || !Array.isArray(doc.categories) || doc.categories.length > 12 || Object.keys(doc).some((k) => !["version", "categories"].includes(k)))
-    throw Error("Invalid block document; saved revisions were preserved.");
-  for (const c of doc.categories) {
-    if (!c || !/^category_[a-f0-9]{32}$/.test(c.id) || ids.has(c.id) || !text(c.name, 80, true) || typeof c.collapsed !== "boolean" || !Array.isArray(c.blocks) || Object.keys(c).some((k) => !["id", "name", "collapsed", "blocks"].includes(k)))
-      throw Error("Invalid prompt category.");
-    ids.add(c.id);
-    for (const b of c.blocks) {
-      if (!b || !/^block_[a-f0-9]{32}$/.test(b.id) || ids.has(b.id) || !text(b.name, 80, true) || !text(b.content, 8000) || !["system", "user", "assistant"].includes(b.role) || !["before-history", "history", "after-history"].includes(b.position) || !["all", "dm", "group"].includes(b.audience) || typeof b.enabled !== "boolean" || typeof b.locked !== "boolean" || Object.keys(b).some((k) => !["id", "name", "content", "role", "position", "audience", "enabled", "locked"].includes(k)))
-        throw Error("Invalid prompt block.");
-      ids.add(b.id);
-      count++;
-      size += b.content.length;
-      if (/[{}]{2}/.test(b.content.replace(expression, "")))
-        throw Error("Unbalanced macro expression in " + b.name + ".");
-      for (const m of b.content.matchAll(expression))
-        if (["mochi_history", "mochi_system_notes"].includes(m[1].trim()) && b.content.trim() !== m[0])
-          throw Error("History and system notes each require their own block.");
-      if (/\{\{\s*mochi_history\s*\}\}/.test(b.content) && b.position !== "history")
-        throw Error("Chat History must use the At chat history position.");
-    }
-  }
-  if (count > 60 || size > 48000)
-    throw Error("Preset exceeds 60 blocks or 48,000 content characters.");
-  return structuredClone(doc);
-}
-var MACRO_REFERENCE = [
-  { name: "Character information", syntax: "{{mochi_characters}}", description: "Eligible character IDs, names and descriptions. Not just a character name.", source: "Mochi", context: "Authorized room characters" },
-  { name: "Persona information", syntax: "{{mochi_persona}}", description: "Saved identity plus enabled account add-on context, once.", source: "Mochi", context: "Saved room identity; matching account selections" },
-  { name: "Room information", syntax: "{{mochi_room}}", description: "The saved room title.", source: "Mochi blocks", context: "Current room" },
-  { name: "Room instructions", syntax: "{{mochi_room_instructions}}", description: "Saved room instructions, including supported persona outlets.", source: "Mochi", context: "Current room settings" },
-  { name: "Character texting preferences", syntax: "{{mochi_texting_styles}}", description: "Resolved character texting preferences; does not alter saved preferences.", source: "Mochi", context: "Room character preferences" },
-  { name: "Chat history", syntax: "{{mochi_history}}", description: "Structured dialogue with original roles. Use alone in a block at the history position.", source: "Mochi", context: "Current room history" },
-  { name: "System notes", syntax: "{{mochi_system_notes}}", description: "Enabled saved notes with their system role. Use alone in a block.", source: "Mochi", context: "Current room notes" },
-  { name: "Chat memory", syntax: "{{mochi_summary}}", description: "Verified enabled memory as untrusted user-role reference. Use alone in a block.", source: "Mochi", context: "Valid enabled room memory" },
-  { name: "Persona add-on outlet", syntax: "{{persona_outlet::name}}", description: "Enabled named native persona outlet. Replace name with its outlet name. Alias: {{personaOutlet::name}}.", source: "Lumiverse-compatible bounded reference", context: "Enabled matching account add-on with a named outlet" },
-  { name: "Native character name (unsupported)", syntax: "{{char}}", description: "Requires the native active-scene macro environment; unavailable in independent Mochi generation. Kept literal with a diagnostic.", source: "Unsupported native host context", context: "Not available here" }
-];
-var BLOCK_TEMPLATES = [
-  { name: "Blank block", category: "Custom", description: "Write your own instructions.", content: "" },
-  { name: "Base Messaging", category: "Core Instructions", description: "A private, conversation-first messenger.", content: "Write as the eligible character in a private messenger. Use only the supplied context. Do not invent an external shared scene or speak for the user." },
-  { name: "Direct Message Behavior", category: "Core Instructions", description: "Focused one-to-one replies.", content: "Respond to the other person directly. Follow the thread naturally and leave room for their next message.", audience: "dm" },
-  { name: "Group Chat Behavior", category: "Core Instructions", description: "Selective participation in a group.", content: "Let relevant speakers contribute naturally. Avoid round-robin replies, repeated points, and making every participant speak.", audience: "group" },
-  { name: "Character Information", category: "Character & Persona", description: "Include authorized character information once.", content: "CHARACTERS: {{mochi_characters}}" },
-  { name: "Persona Information", category: "Character & Persona", description: "Include the saved identity and enabled non-outlet add-ons once.", content: "USER IDENTITY: {{mochi_persona}}" },
-  { name: "Persona Add-on References", category: "Character & Persona", description: "Place a named enabled add-on; replace name with your outlet name.", content: "{{persona_outlet::name}}" },
-  { name: "Character Texting Preferences", category: "Character & Persona", description: "Reuse saved character preferences.", content: "{{mochi_texting_styles}}" },
-  { name: "Casual Dialogue", category: "Writing & Texting", description: "Conversational phrasing without forcing slang.", content: "Use relaxed, natural dialogue appropriate to the character. Avoid unnecessary exposition and formulaic closing questions." },
-  { name: "Short Replies", category: "Writing & Texting", description: "Prefer concise messages when the moment allows.", content: "Prefer a short reply that adds something meaningful. Expand only when the conversation needs detail." },
-  { name: "Texting Style", category: "Writing & Texting", description: "Adapt to the character and conversational pace.", content: "Use messaging rhythm and punctuation that suit the character. Do not force abbreviations, emojis, or narration into every reply." },
-  { name: "Expressive Dialogue", category: "Writing & Texting", description: "Convey personality through the reply.", content: "Show emotion and personality through word choice and rhythm. Keep expressive flourishes relevant and avoid repeating the same mannerisms." },
-  ...["1990s", "2000s", "2010s", "2020s"].map((era) => ({ name: era, category: "Time & Setting", description: "Optional era guidance; edit for your setting.", content: `When consistent with the supplied setting, use everyday references and communication habits plausible for the ${era}. Do not override established facts or assume every character shares the same culture or technology.` })),
-  { name: "Chat Memory", category: "Conversation Context", description: "Include verified conversation memory once.", content: "{{mochi_summary}}" },
-  { name: "Room Information", category: "Conversation Context", description: "Include room title and separate room instructions.", content: `ROOM: {{mochi_room}}
-ROOM INSTRUCTIONS: {{mochi_room_instructions}}` },
-  { name: "System Notes", category: "Conversation Context", description: "Include enabled saved room notes.", content: "{{mochi_system_notes}}", position: "after-history" },
-  { name: "Supported Context References", category: "Conversation Context", description: "Keep structured saved dialogue in the history slot.", content: "{{mochi_history}}", position: "history" }
-];
-function fromTemplate(t) {
-  return { id: blockId(), name: t.name, content: t.content, role: "system", position: t.position || "before-history", audience: t.audience || "all", enabled: true, locked: false };
-}
-function starterBlocks() {
-  const names = ["Base Messaging", "Direct Message Behavior", "Group Chat Behavior", "Character Information", "Persona Information", "Character Texting Preferences", "Room Information", "Chat Memory", "Supported Context References", "System Notes"], categories = [];
-  for (const name of names) {
-    const t = BLOCK_TEMPLATES.find((t) => t.name === name);
-    let c = categories.find((c) => c.name === t.category);
-    if (!c) {
-      c = { id: blockId("category"), name: t.category, collapsed: false, blocks: [] };
-      categories.push(c);
-    }
-    c.blocks.push(fromTemplate(t));
-  }
-  return { version: 1, categories };
-}
-function convertLegacy(r) {
-  const doc = starterBlocks();
-  if (r.layout === "manual-v1")
-    doc.categories = doc.categories.filter((c) => c.name === "Core Instructions").concat([{ id: blockId("category"), name: "Previous context rows", collapsed: false, blocks: r.placement.rows.map((row) => ({ ...fromTemplate({ name: row.title, category: "", description: "", content: row.template, position: "history" }), role: row.template.trim() === "{{mochi_summary}}" ? "user" : "system" })) }]);
-  const core = doc.categories[0];
-  core.blocks = core.blocks.filter((b) => b.name === "Base Messaging");
-  for (const [name, content, audience] of [["DM instructions", r.dmInstructions, "dm"], ["Group instructions", r.groupInstructions, "group"]])
-    if (content)
-      core.blocks.push({ ...fromTemplate({ name, content, category: "", description: "" }), audience });
-  return doc;
-}
-
-// src/mochi/presets.ts
-var DEFAULT_PRESET_ID = "mochi_default";
 
 // src/mochi/block-editor.ts
 class PromptBlockEditor {
@@ -3014,6 +3097,8 @@ class MochiPresetPanel {
   drafts = new Map;
   selectedId;
   selectedRevision;
+  customizing = false;
+  disclosures = new Set;
   blockEditor = new PromptBlockEditor;
   scrollTop = 0;
   overviewScroll = 0;
@@ -3040,6 +3125,8 @@ class MochiPresetPanel {
     this.overviewScroll = 0;
     this.wasEditingBlock = false;
     this.blockEditor = new PromptBlockEditor;
+    this.customizing = false;
+    this.disclosures.clear();
     if (privateState)
       this.drafts.clear();
   }
@@ -3058,6 +3145,8 @@ class MochiPresetPanel {
     const room = this.current();
     if (!room || !this.open || scope3(room) !== this.key)
       return;
+    if (values.action !== "duplicate")
+      this.customizing = false;
     clearTimeout(this.timer);
     this.ticket = requestId("mochi_presets");
     const ticket = this.ticket;
@@ -3067,6 +3156,7 @@ class MochiPresetPanel {
     this.timer = setTimeout(() => {
       if (this.ticket === ticket) {
         this.ticket = "";
+        this.customizing = false;
         this.status = "No response. Refresh the library before retrying.";
         this.redraw();
       }
@@ -3091,6 +3181,7 @@ class MochiPresetPanel {
     if (!this.open || !room || scope3(room) !== this.key)
       return true;
     if (p.type === "mochi:error") {
+      this.customizing = false;
       this.status = String(p.message);
       this.redraw();
       return true;
@@ -3103,6 +3194,14 @@ class MochiPresetPanel {
     if (this.submitted) {
       this.drafts.delete(this.key);
       this.draft = undefined;
+    }
+    if (this.customizing) {
+      this.customizing = false;
+      const copy = this.bank.presets.at(-1);
+      if (copy) {
+        this.selectedId = copy.id;
+        this.edit("publish", copy, 1);
+      }
     }
     this.redraw();
     return true;
@@ -3174,9 +3273,11 @@ class MochiPresetPanel {
     if (this.bank) {
       const select = el("select");
       select.setAttribute("aria-label", "Preset to apply");
-      const base = el("option", "", "Mochi Default · built-in");
-      base.value = DEFAULT_PRESET_ID;
-      select.append(base);
+      for (const p of builtInPresets()) {
+        const base = el("option", "", p.name + " · built-in");
+        base.value = p.id;
+        select.append(base);
+      }
       for (const p of this.bank.presets.filter((p) => !p.archived || p.id === room.preset?.id)) {
         const option = el("option", "", `${p.name} · revision ${p.revisions.length}${p.archived ? " · archived" : ""}`);
         option.value = p.id;
@@ -3227,17 +3328,26 @@ class MochiPresetPanel {
       if (!this.draft)
         heading.append(create);
       controls.append(duplicate);
+      const customize = button("Customize Mochi Default v2", "lp-button");
+      customize.disabled = Boolean(this.ticket) || Boolean(this.draft);
+      customize.onclick = () => {
+        this.customizing = true;
+        this.request({ action: "duplicate", id: DEFAULT_V2_PRESET_ID, sourceRevision: 1, name: "Mochi Default v2 copy", revision: this.bank.revision });
+      };
+      if (!this.draft)
+        heading.append(customize);
       if (!this.bank.presets.length)
         controls.append(el("p", "mochi-muted", "No custom presets in this account yet."));
       const workspace = el("div", "mochi-preset-workspace"), library = el("details", "mochi-preset-library"), editor = el("div", "mochi-preset-edit-pane");
       library.setAttribute("aria-label", "Preset library");
-      library.append(el("summary", "", "Browse saved presets · " + this.bank.presets.length));
+      library.append(el("summary", "", "Browse saved presets · " + (this.bank.presets.length + 2)));
       editor.append(el("h4", "", this.draft ? "Draft · " + (this.draft.name || "Untitled preset") : "Published preset"));
       workspace.append(library, editor);
       root.append(workspace);
-      const selected = this.selectedId || room.preset?.id || this.bank.presets[0]?.id;
-      for (const p of this.bank.presets) {
-        const item = button(`${p.name} · r${p.revisions.length}${p.archived ? " · archived" : ""}`, "mochi-preset-library-item");
+      const inspectable = [...builtInPresets().map((p) => ({ id: p.id, name: p.name, archived: false, revisions: [p] })), ...this.bank.presets];
+      const selected = this.selectedId || room.preset?.id || DEFAULT_PRESET_ID;
+      for (const p of inspectable) {
+        const item = button(`${p.name} · r${p.revisions.length}${isBuiltInPreset(p.id) ? " · built-in" : p.archived ? " · archived" : ""}`, "mochi-preset-library-item");
         item.setAttribute("aria-pressed", String(selected === p.id));
         item.onclick = () => {
           const choose = () => {
@@ -3257,6 +3367,8 @@ class MochiPresetPanel {
         };
         library.append(item);
       }
+      if (!this.draft && !inspectable.some((p) => p.id === selected))
+        editor.append(el("p", "mochi-muted", "No published preset selected. Browse the library to inspect a revision, or create a draft."));
       if (this.draft) {
         const d = this.draft, form = el("form", "mochi-preset-editor"), name = el("input");
         name.maxLength = 80;
@@ -3350,7 +3462,7 @@ class MochiPresetPanel {
           form.append(dirty, publish, cancel);
         editor.append(form);
       } else
-        for (const p of this.bank.presets.filter((p) => p.id === selected)) {
+        for (const p of inspectable.filter((p) => p.id === selected)) {
           const published = p.revisions.find((r) => r.revision === this.selectedRevision) || p.revisions.at(-1);
           const row = el("section", "mochi-preset-entry");
           row.append(el("strong", "", `${p.name} · revision ${published.revision}${p.archived ? " · archived" : ""}`));
@@ -3373,9 +3485,12 @@ class MochiPresetPanel {
           const rename = button("Rename", "lp-button");
           rename.disabled = Boolean(this.ticket);
           rename.onclick = () => this.edit("rename", p);
-          const copy = button("Duplicate", "lp-button");
+          const copy = button(isBuiltInPreset(p.id) ? "Duplicate / customize" : "Duplicate", "lp-button");
           copy.disabled = Boolean(this.ticket);
-          copy.onclick = () => this.request({ action: "duplicate", id: p.id, sourceRevision: published.revision, name: (p.name + " copy").slice(0, 80), revision: this.bank.revision });
+          copy.onclick = () => {
+            this.customizing = isBuiltInPreset(p.id);
+            this.request({ action: "duplicate", id: p.id, sourceRevision: published.revision, name: (p.name + " copy").slice(0, 80), revision: this.bank.revision });
+          };
           const archive = button(p.archived ? "Restore archived preset" : "Archive", "lp-button");
           archive.disabled = Boolean(this.ticket);
           archive.onclick = () => this.request({ action: p.archived ? "restore" : "archive", id: p.id, revision: this.bank.revision });
@@ -3389,7 +3504,10 @@ class MochiPresetPanel {
             }
           } else
             row.append(el("p", "mochi-muted", published.layout === "manual-v1" ? "Legacy manual context placement" : "Legacy automatic context placement"), el("pre", "", published.dmInstructions || "No additional DM instructions."), el("pre", "", published.groupInstructions || "No additional Group instructions."));
-          row.append(edit, rename, copy, archive);
+          if (isBuiltInPreset(p.id))
+            row.append(el("p", "mochi-muted", "Stable built-in revision. Duplicate to customize an independent copy; publishing and applying remain separate."), copy);
+          else
+            row.append(edit, rename, copy, archive);
           editor.append(row);
         }
     }
@@ -3407,6 +3525,20 @@ class MochiPresetPanel {
       root.insertBefore(navigation, status);
     }
     status.hidden = this.status === "Library loaded.";
+    for (const details of root.querySelectorAll("details")) {
+      if (details.closest(".mochi-block-editor"))
+        continue;
+      const key = details.querySelector("summary")?.textContent || "";
+      details.classList.add("mochi-disclosure");
+      details.querySelector("summary")?.setAttribute("title", key);
+      details.open = this.disclosures.has(key);
+      details.ontoggle = () => {
+        if (details.open)
+          this.disclosures.add(key);
+        else
+          this.disclosures.delete(key);
+      };
+    }
     return root;
   }
 }
@@ -4594,7 +4726,7 @@ class MochiView {
       });
     }
     const style = el("style");
-    style.textContent = MOCHI_STYLES + MOCHI_REPLY_STYLES + MOCHI_REACTION_STYLES + MOCHI_PIN_STYLES + MOCHI_SEARCH_STYLES + MOCHI_TEXTING_STYLES + MOCHI_PREVIEW_STYLES + MOCHI_PRESET_STYLES + MOCHI_PRESET_WORKSPACE_STYLES + MOCHI_MEMORY_STYLES + SETTINGS_WORKSPACE_STYLES;
+    style.textContent = MOCHI_STYLES + MOCHI_REPLY_STYLES + MOCHI_REACTION_STYLES + MOCHI_PIN_STYLES + MOCHI_SEARCH_STYLES + MOCHI_TEXTING_STYLES + MOCHI_PREVIEW_STYLES + MOCHI_PRESET_STYLES + MOCHI_PRESET_WORKSPACE_STYLES + MOCHI_MEMORY_STYLES + SETTINGS_WORKSPACE_STYLES + MOCHI_DISCLOSURE_STYLES;
     page.append(style);
     const header = el("header");
     const brand = el("div", "mochi-brand");
@@ -4688,7 +4820,7 @@ class MochiView {
       return page;
     }
     const room = this.state.rooms.find((room) => room.id === this.roomId);
-    if (room && surface !== "choices" && (this.presetPanel.open || this.preview.open && (this.preview.isDraft || this.settingsPage) || this.memoryPanel.open && this.settingsPage)) {
+    if (room && surface !== "choices" && (this.presetPanel.open || this.preview.open || this.memoryPanel.open && this.settingsPage)) {
       this.preview.sync(room);
       page.replaceChildren(style, this.presetPanel.open ? this.presetPanel.render(room) : this.memoryPanel.open ? this.memoryPanel.render(room) : this.preview.render(room));
       page.dataset.presetWorkspace = "true";
@@ -5051,7 +5183,7 @@ class MochiView {
     const freshDraft = !this.draft;
     if (freshDraft)
       this.draftRevision = room?.revision || 0;
-    this.draft ||= { title: room?.title || "", characterIds: [...room?.characterIds || []], persona: room ? "keep" : "manual", name: room?.persona.name || "You", description: room?.persona.description || "" };
+    this.draft ||= { title: room?.title || "", characterIds: [...room?.characterIds || []], persona: room ? "keep" : "manual", name: room?.persona.name || "You", description: room?.persona.description || "", ...!room ? { presetId: DEFAULT_V2_PRESET_ID } : {} };
     const draft = this.draft;
     this.settingsDraft ||= structuredClone(room?.settings || defaultMochiSettings());
     const settings = this.settingsDraft;
@@ -5092,6 +5224,19 @@ class MochiView {
       draft.title = title.value;
     };
     field("Room name", title);
+    if (!room) {
+      const preset = el("select");
+      for (const [id, name] of [[DEFAULT_V2_PRESET_ID, "Mochi Default v2"], [DEFAULT_PRESET_ID, "Mochi Default (legacy)"]]) {
+        const option = el("option", "", name);
+        option.value = id;
+        preset.append(option);
+      }
+      preset.value = draft.presetId || DEFAULT_V2_PRESET_ID;
+      preset.onchange = () => {
+        draft.presetId = preset.value;
+      };
+      field("Initial preset", preset);
+    }
     const picker = el("div", "mochi-picker");
     picker.setAttribute("role", "group");
     picker.setAttribute("aria-label", "Room characters");
@@ -5218,7 +5363,7 @@ class MochiView {
       nextResponder.setAttribute("aria-description", "This conversation · Next reply selection applies now in this frontend session; it does not change saved response mode.");
       auto.disabled = !!settings.responseMode;
       group.append(el("p", "mochi-muted", "This conversation · Requires Save. Natural may choose silence or delayed replies; Instant requests an eligible reply; Manual disables automatic replies, while Continue still works. A selected mode controls automatic replies; Existing behavior uses the automatic-reply checkbox. Ordinary replies do not require idle/background autonomy."));
-      section("Background messaging", true);
+      section("Background messaging", true).classList.add("mochi-disclosure");
       group.append(el("p", "mochi-muted", "Permission, presence and schedule actions apply now. AI timing/status suggestions require Save. Background autonomy is separate from ordinary replies to your messages."));
       const accountBackground = el("input");
       accountBackground.type = "checkbox";
@@ -5385,7 +5530,7 @@ class MochiView {
     form.onsubmit = (event) => {
       event.preventDefault();
       const selected = state.accountId ? undefined : draft.persona === "keep" ? undefined : draft.persona === "manual" ? { source: "manual", name: draft.name, description: draft.description } : state.personas.find((p) => p.source + ":" + p.sourceId === draft.persona);
-      this.dispatch(room ? "mochi:update" : "mochi:create", { roomId: room?.id, revision: room ? this.draftRevision : undefined, title: draft.title, characterIds: draft.characterIds, persona: selected, ...room ? { settings } : {} });
+      this.dispatch(room ? "mochi:update" : "mochi:create", { roomId: room?.id, revision: room ? this.draftRevision : undefined, title: draft.title, characterIds: draft.characterIds, persona: selected, ...room ? { settings } : { preset: { id: draft.presetId, revision: 1, ...state.accountId ? { accountId: state.accountId } : {} } } });
     };
     return room && this.settingsPage === "chat" ? this.settingsLayout.adapt(form, room, state, () => this.redraw(), (name, anchor) => this.openSettingsTool(name, anchor, room)) : form;
   }

@@ -8,10 +8,11 @@ const fingerprint=(r:MochiRoom)=>JSON.stringify([r.revision,r.background?.presen
 export class MochiPreview {
  open=false;data?:Preview;status='';scenario='continue';responder='auto'
  get isDraft():boolean{return !!this.draftBlocks}
+ private expanded=new Set<string>()
  private draftBlocks?:BlockDocument
  private scope='';private snapshot='';private ticket='';private timer?:ReturnType<typeof setTimeout>
  constructor(private send:(p:any)=>void,private current:()=>MochiRoom|undefined,private redraw:()=>void,private returned:()=>void,private characterName:(id:string)=>string=id=>id){}
- reset():void{this.cancel();this.open=false;this.draftBlocks=undefined;this.data=undefined;this.scope='';this.snapshot='';this.status='';this.scenario='continue';this.responder='auto'}
+ reset():void{this.expanded.clear();this.cancel();this.open=false;this.draftBlocks=undefined;this.data=undefined;this.scope='';this.snapshot='';this.status='';this.scenario='continue';this.responder='auto'}
  private cancel():void{clearTimeout(this.timer);this.ticket=''}
  invalidate(message='Context changed. Refresh preview.'):void{this.cancel();this.data=undefined;this.status=message}
  sync(room:MochiRoom):void{if(this.scope&&this.scope!==scope(room)){this.reset();return}if(this.snapshot&&this.snapshot!==fingerprint(room))this.invalidate();this.scope=scope(room);this.snapshot=fingerprint(room)}
@@ -40,18 +41,39 @@ export class MochiPreview {
   const refresh=button('Refresh preview','lp-button');refresh.onclick=()=>this.refresh();const close=button(this.draftBlocks?'Back to preset draft':'Close preview','lp-button');close.onclick=()=>{this.cancel();this.open=false;this.redraw();this.returned()};controls.append(scenario,responder,refresh,close);root.append(controls)
   const status=el('p','mochi-muted',this.status);status.setAttribute('role','status');status.setAttribute('aria-live','polite');root.append(status)
   if(this.data){
-   const data=this.data,b=data.budget;root.append(el('p','',`Input ${b.inputTokens} · output reserve ${b.outputTokens} · envelope ${b.envelopeTokens} · budget ${b.contextTokens} · remaining ${b.remainingTokens}`),el('p','mochi-muted',`Host tokenizer: ${data.tokenization.tokenizerName||'not reported'}; ${data.tokenization.approximate===true?'approximate fallback':data.tokenization.approximate===false?'matched tokenizer; provider usage may differ':'precision not reported'}. Model: ${data.tokenization.model}`),el('p','',`${data.history.retained} of ${data.history.stored} saved messages retained; ${data.history.trimmed} trimmed from outgoing context. Range: ${data.history.firstId||'none'} → ${data.history.lastId||'none'}. Saved history is unchanged.`))
-   if(data.history.excluded)root.append(el('p','mochi-muted',`${data.history.excluded} saved messages deliberately excluded by verified summary coverage. This is separate from token trimming.`))
-   if(data.memory)root.append(el('p','mochi-muted',`Conversation memory: ${data.memory.included?'included': 'omitted'}; coverage ${data.memory.valid?'verified':'requires review'}.`))
-   if(data.history.omitted)root.append(el('p','mochi-preview-warning',`${data.history.omitted} saved messages omitted by the manual plan; they are still stored.`))
-   root.append(el('p','mochi-muted',`Snapshot time: ${data.resolvedAt?new Date(data.resolvedAt).toLocaleString():'not reported'}. Responder: ${data.responder||'not reported'}.`))
-   if(data.preset)root.append(el('p','mochi-preview-identity',`${data.draft?'Unpublished block draft':`${data.preset.builtIn?'Built-in':'Custom'} preset: ${data.preset.name} · revision ${data.preset.revision}`} · ${data.preset.variant} · ${data.preset.layout==='blocks-v1'?'Ordered prompt blocks':data.preset.layout==='manual-v1'?'Manual placement':'Automatic placement'}`),el('pre','mochi-preview-text',data.preset.appliedInstructions||'No additional preset instructions.'))
-   if(data.resolvedMacros?.length){const resolved=el('details');resolved.append(el('summary','','Resolved macro references'));for(const macro of data.resolvedMacros)resolved.append(el('p','',macro));root.append(resolved)}
-   for(const warning of data.warnings||[])root.append(el('p','mochi-preview-warning',warning))
-   for(const text of data.assumptions)root.append(el('p','mochi-muted',text))
-   root.append(el('p','',`Explicit Mochi parameters: ${JSON.stringify(data.parameters)} · reasoning ${JSON.stringify(data.reasoning)}`))
-   const sections=el('details');sections.append(el('summary','','Logical sections (provider message numbers)'));for(const section of data.sections)sections.append(el('p','',`${section.id}: ${section.active?'active · '+section.providerMessages.map(i=>i+1).join(', '):'inactive / omitted'}`));root.append(sections)
-   for(const [i,message]of data.messages.entries()){const block=el('details');block.append(el('summary','',`${i+1}. ${message.role}`),el('pre','mochi-preview-text',message.content));root.append(block)}
+   const data=this.data,b=data.budget
+   const overview=el('div','mochi-preview-overview');overview.setAttribute('aria-label','Prompt overview')
+   overview.append(el('span','',`${b.inputTokens} input tokens · ${b.remainingTokens} remaining`),el('span','',`${data.history.retained} / ${data.history.stored} history messages retained`))
+   root.append(overview)
+   if(data.preset)root.append(el('p','mochi-preview-identity',data.draft?'Unpublished draft · not applied':`${data.preset.name} · revision ${data.preset.revision}`))
+   if(data.history.omitted)root.append(el('p','mochi-preview-warning',`${data.history.omitted} saved messages omitted by this preset; still stored.`))
+   for(const assumption of data.assumptions.filter(a=>a.startsWith('Automatic replies are disabled')||a.startsWith('Current presence delays')))root.append(el('p','mochi-preview-warning',assumption))
+   const informational=(data.warnings||[]).filter(w=>w==='Chat memory is absent, disabled or requires review; omitted.'&&!data.memory?.enabled)
+   for(const warning of (data.warnings||[]).filter(w=>!informational.includes(w)))root.append(el('p','mochi-preview-warning',warning))
+   const disclosure=(label:string,key=label)=>{const details=el('details','mochi-disclosure'),summary=el('summary','',label);summary.title=label;details.open=this.expanded.has(key);details.ontoggle=()=>{if(details.open)this.expanded.add(key);else this.expanded.delete(key)};details.append(summary);return details}
+   // Group the actual resolved messages, exactly once. Legacy logical sections can
+   // share message indexes, so they remain diagnostic mappings rather than copies.
+   const groups:Array<{name:string;messages:Array<{index:number;role:string;content:string;section:string}>}>=[]
+   for(const [index,message]of data.messages.entries()){
+    const section=data.sections.find(s=>s.active&&s.providerMessages.includes(index)),full=section?.id||'Resolved message'
+    const category=data.preset.blocks?.categories.find(c=>full.startsWith(c.name+' / '))
+    const name=category?.name||(index===0?'Runtime instructions':index===data.messages.length-1?'Continuation':section?.id==='conversation_memory'?'Conversation memory':section?.id==='history'?'Conversation history':section?.id==='system_notes'?'System notes':'Resolved context')
+    // Only merge adjacent messages: custom blocks may interleave categories at
+    // different positions, and the displayed order must match provider order.
+    let group=groups.at(-1);if(!group||group.name!==name){group={name,messages:[]};groups.push(group)}group.messages.push({index,role:message.role,content:message.content,section:full})
+   }
+   for(const [groupIndex,{name,messages}]of groups.entries()){const group=disclosure(`${name} · ${messages.length}`,`group:${groupIndex}:${name}`),body=el('div','mochi-preview-group')
+    for(const message of messages){const short=message.section.split(' · ')[0].split(' / ').at(-1)||'Message',item=disclosure(`${short} · ${message.role}`,`message:${message.index}`);item.append(el('p','mochi-muted',`Provider message ${message.index+1} · ${message.role} · ${message.section}`),el('pre','mochi-preview-text',message.content));body.append(item)}
+    group.append(body);root.append(group)
+   }
+   if(data.resolvedMacros?.length){const resolved=disclosure('Resolved macros');for(const macro of data.resolvedMacros)resolved.append(el('p','',macro));root.append(resolved)}
+   const advanced=disclosure('Advanced diagnostics')
+   advanced.append(el('p','',`Input ${b.inputTokens} · output reserve ${b.outputTokens} · envelope ${b.envelopeTokens} · budget ${b.contextTokens} · remaining ${b.remainingTokens}`),el('p','',`Host tokenizer: ${data.tokenization.tokenizerName||'not reported'}; ${data.tokenization.approximate===true?'approximate fallback':data.tokenization.approximate===false?'matched tokenizer; provider usage may differ':'precision not reported'}. Model: ${data.tokenization.model}`),el('p','',`${data.history.trimmed} trimmed from outgoing context; ${data.history.excluded||0} excluded by verified summary coverage. Range: ${data.history.firstId||'none'} → ${data.history.lastId||'none'}. Saved history is unchanged.`),el('p','',`Snapshot: ${data.resolvedAt||'not reported'}. Responder: ${data.responder||'not reported'}.`))
+   if(data.memory)advanced.append(el('p','',`Conversation memory: ${data.memory.included?'included':'omitted'}; coverage ${data.memory.valid?'verified':'requires review'}.`))
+   advanced.append(el('p','',`Preset: ${data.preset.id} · revision ${data.preset.revision} · ${data.preset.variant} · ${data.preset.layout}`),el('p','',`Explicit Mochi parameters: ${JSON.stringify(data.parameters)} · reasoning ${JSON.stringify(data.reasoning)}`))
+   for(const text of informational)advanced.append(el('p','mochi-muted',text))
+   for(const text of data.assumptions)advanced.append(el('p','',text))
+   const sections=disclosure('Logical section mapping');for(const section of data.sections)sections.append(el('p','',`${section.id}: ${section.active?'active · '+section.providerMessages.map(i=>i+1).join(', '):'inactive / omitted'}`));advanced.append(sections);root.append(advanced)
   }
   return root
  }

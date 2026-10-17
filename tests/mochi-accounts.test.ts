@@ -81,7 +81,7 @@ test('profile edits are revision-safe and prospective, preserving room persona a
   await expect(f.service.fictionalAccounts.update('alice',{accountId:a.id,revision:a.revision,displayName:'Stale'})).rejects.toThrow('changed elsewhere')
   expect(await f.service.read('alice',room.id,a.id)).toEqual(before)
   const later=await f.room(a.id);expect(later.persona.name).toBe('Future Jane');expect(later.persona.description).toBe('JANE_PRIVATE')
-  expect(f.calls[0].messages[0].content).toContain('MARY_PRIVATE');expect(f.calls[0].messages[0].content).not.toContain('JANE_PRIVATE')
+  expect(JSON.stringify(f.calls[0].messages)).toContain('MARY_PRIVATE');expect(JSON.stringify(f.calls[0].messages)).not.toContain('JANE_PRIVATE')
   await expect(f.service.update('alice',{accountId:a.id,roomId:room.id,revision:before.revision,persona:{source:'manual',name:'Unexpected'}})).rejects.toThrow('snapshot')
   f.scheduler.stop()
 })
@@ -124,7 +124,7 @@ test('server jobs retain their owning fictional account after selection changes 
   await f.select(b.id);f.restart();await f.scheduler.tick()
   expect((await f.service.state('alice',a.id)).notifications).toHaveLength(1)
   expect((await f.service.state('alice',b.id)).notifications).toEqual([])
-  expect(f.calls[0].messages[0].content).toContain('MARY_PRIVATE');expect(f.calls[0].messages[0].content).not.toContain('JANE_PRIVATE')
+  expect(JSON.stringify(f.calls[0].messages)).toContain('MARY_PRIVATE');expect(JSON.stringify(f.calls[0].messages)).not.toContain('JANE_PRIVATE')
   const event=f.events.find(e=>e.payload.type==='mochi:notification')!
   expect(event.user).toBe('alice');expect(event.payload.accountId).toBe(a.id)
   const view=new MochiView(()=>{},()=>{},()=>{});view.state=await f.service.state('alice',b.id);view.receive(event.payload)

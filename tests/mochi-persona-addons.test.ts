@@ -91,7 +91,7 @@ test('outlet placement is case insensitive, nonrecursive and separate from perso
   room.messages=[{id:'m',role:'user',name:'You',content:'{{persona_outlet::mood}}',createdAt:'2026-10-16T00:00:00Z',requestId:'r',avatarUrl:''}]
   const sources=await resolveGenerationSources(f.host,room,'alice','auto')
   const context=await resolveMochiContext(room,sources.characters,sources.speaker,async()=>100,new AbortController().signal,false,sources.preset,sources.personaContext)
-  expect(context.messages[0].content.match(/OUTLET_BODY/g)).toHaveLength(1);expect(context.messages[1].content).toContain('{{persona_outlet::mood}}')
+  expect(JSON.stringify(context.messages).match(/OUTLET_BODY/g)).toHaveLength(1);expect(context.messages.find(m=>m.role==='user'&&m.content.includes('{{persona_outlet::mood}}'))).toBeDefined()
   const preset={...defaultPreset(),layout:'manual-v1' as const,placement:{version:1 as const,rows:[{id:'section_'+'a'.repeat(32),title:'Identity',template:'{{mochi_persona}}'},{id:'section_'+'b'.repeat(32),title:'Mood',template:'{{persona_outlet::mood}} {{personaOutlet::MOOD}}'}]}}
   const manual=await resolveMochiContext(room,sources.characters,sources.speaker,async()=>100,new AbortController().signal,false,preset,sources.personaContext)
   expect(JSON.stringify(manual.messages).match(/OUTLET_BODY/g)).toHaveLength(1)

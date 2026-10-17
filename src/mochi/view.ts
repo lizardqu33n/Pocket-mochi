@@ -44,6 +44,8 @@ import {MOCHI_REACTION_STYLES} from './reaction-styles.js'
 import {pinsPanel,MOCHI_PIN_STYLES,type NoteDraft} from './pins-panel.js'
 import {MochiSearch,MOCHI_SEARCH_STYLES} from './search-panel.js'
 import {textingControls,MOCHI_TEXTING_STYLES} from './texting-controls.js'
+import {MOCHI_DISCLOSURE_STYLES} from './disclosure.js'
+import {DEFAULT_PRESET_ID,DEFAULT_V2_PRESET_ID} from './presets.js'
 import {MochiPreview,MOCHI_PREVIEW_STYLES} from './preview-panel.js'
 import {MochiPresetPanel,MOCHI_PRESET_STYLES,MOCHI_PRESET_WORKSPACE_STYLES} from './preset-panel.js'
 
@@ -234,7 +236,7 @@ export class MochiView {
   private generationErrorRoom = ''
   private presenceTimer?: ReturnType<typeof setInterval>
   private presenceRoot?: HTMLElement
-  private draft: { title: string; characterIds: string[]; persona: string; name: string; description: string } | null = null
+  private draft: { title: string; characterIds: string[]; persona: string; name: string; description: string; presetId?:string } | null = null
   constructor(private send: (payload: unknown) => void, private redraw: () => void, private navigate: (roomId?: string) => void,
     private notificationPolicy: () => MochiNotificationPolicy = () => ({ enabled: true, previews: true, visible: true }),
     private notify: (n: MochiNotification) => void = () => {},
@@ -593,7 +595,7 @@ export class MochiView {
     if (surface !== 'choices') this.presenceRoot=page
     if(this.settingsReturnFocus){this.settingsReturnFocus=false;queueMicrotask(()=>{const target=Array.from(page.querySelectorAll<HTMLElement>('[aria-label]')).find(n=>n.getAttribute('aria-label')===this.settingsInvoker&&!n.closest('[hidden]'));(target||page.querySelector<HTMLElement>('[aria-label="Room options"]'))?.focus({preventScroll:true})})}
     const style = el('style')
-    style.textContent = MOCHI_STYLES+MOCHI_REPLY_STYLES+MOCHI_REACTION_STYLES+MOCHI_PIN_STYLES+MOCHI_SEARCH_STYLES+MOCHI_TEXTING_STYLES+MOCHI_PREVIEW_STYLES+MOCHI_PRESET_STYLES+MOCHI_PRESET_WORKSPACE_STYLES+MOCHI_MEMORY_STYLES+SETTINGS_WORKSPACE_STYLES
+    style.textContent = MOCHI_STYLES+MOCHI_REPLY_STYLES+MOCHI_REACTION_STYLES+MOCHI_PIN_STYLES+MOCHI_SEARCH_STYLES+MOCHI_TEXTING_STYLES+MOCHI_PREVIEW_STYLES+MOCHI_PRESET_STYLES+MOCHI_PRESET_WORKSPACE_STYLES+MOCHI_MEMORY_STYLES+SETTINGS_WORKSPACE_STYLES+MOCHI_DISCLOSURE_STYLES
     page.append(style)
     const header = el('header'); const brand = el('div', 'mochi-brand')
     const wordmark = el('h2', 'mochi-wordmark'); wordmark.setAttribute('aria-label', 'Mochi')
@@ -626,7 +628,7 @@ export class MochiView {
     for (const warning of this.state.warnings) page.append(el('p', 'mochi-error', warning))
     if (surface !== 'chat' && this.notificationsOpen && this.notificationPolicy().enabled) { page.append(this.notificationList()); return page }
     const room = this.state.rooms.find(room => room.id === this.roomId)
-    if(room&&surface!=='choices'&&(this.presetPanel.open||(this.preview.open&&(this.preview.isDraft||this.settingsPage))||(this.memoryPanel.open&&this.settingsPage))){this.preview.sync(room);page.replaceChildren(style,this.presetPanel.open?this.presetPanel.render(room):this.memoryPanel.open?this.memoryPanel.render(room):this.preview.render(room));page.dataset.presetWorkspace='true';page.dataset.conversation='true';return page}
+    if(room&&surface!=='choices'&&(this.presetPanel.open||this.preview.open||(this.memoryPanel.open&&this.settingsPage))){this.preview.sync(room);page.replaceChildren(style,this.presetPanel.open?this.presetPanel.render(room):this.memoryPanel.open?this.memoryPanel.render(room):this.preview.render(room));page.dataset.presetWorkspace='true';page.dataset.conversation='true';return page}
     if(this.settingsPage&&surface!=='choices'){page.replaceChildren(style,this.renderSettings(room));page.dataset.settingsWorkspace='true';page.dataset.conversation='true';return page}
     if (surface !== 'chat' && (this.creating || this.editing)) { page.append(this.form(this.editing ? room : undefined)); return page }
     if (room && surface !== 'choices') {
@@ -738,7 +740,7 @@ export class MochiView {
     const state = this.state!
     const freshDraft = !this.draft
     if (freshDraft) this.draftRevision = room?.revision || 0
-    this.draft ||= { title: room?.title || '', characterIds: [...room?.characterIds || []], persona: room ? 'keep' : 'manual', name: room?.persona.name || 'You', description: room?.persona.description || '' }
+    this.draft ||= { title: room?.title || '', characterIds: [...room?.characterIds || []], persona: room ? 'keep' : 'manual', name: room?.persona.name || 'You', description: room?.persona.description || '', ...(!room?{presetId:DEFAULT_V2_PRESET_ID}:{}) }
     const draft = this.draft
     this.settingsDraft ||= structuredClone(room?.settings || defaultMochiSettings())
     const settings = this.settingsDraft
@@ -750,6 +752,7 @@ export class MochiView {
     const field = (label: string, input: HTMLElement) => { input.setAttribute('aria-label', label); const node = el('label', input.tagName === 'INPUT' && (input as HTMLInputElement).type === 'checkbox' ? 'mochi-toggle' : '', label); node.append(input); group.append(node) }
     const title = el('input'); title.required = true; title.maxLength = 120; title.value = draft.title
     title.oninput = () => { draft.title = title.value }; field('Room name', title)
+    if(!room){const preset=el('select');for(const [id,name]of [[DEFAULT_V2_PRESET_ID,'Mochi Default v2'],[DEFAULT_PRESET_ID,'Mochi Default (legacy)']]){const option=el('option','',name);option.value=id;preset.append(option)}preset.value=draft.presetId||DEFAULT_V2_PRESET_ID;preset.onchange=()=>{draft.presetId=preset.value};field('Initial preset',preset)}
     const picker = el('div', 'mochi-picker'); picker.setAttribute('role', 'group'); picker.setAttribute('aria-label', 'Room characters')
     for (const character of state.characters) {
       const choice = button('', 'mochi-choice')
@@ -790,7 +793,7 @@ export class MochiView {
       const nextResponder=el('select');for(const id of ['auto',...room.characterIds]){const option=el('option','',id==='auto'?'Automatic responder':state.characters.find(c=>c.id===id)?.name||id);option.value=id;nextResponder.append(option)}nextResponder.value=this.responders.get(room.id)||'auto';nextResponder.onchange=()=>this.responders.set(room.id,nextResponder.value);field('Next responder',nextResponder);group.append(el('p','mochi-muted','Next responder applies now for the next reply in this frontend session. It does not require Save or change the saved response mode.'));nextResponder.setAttribute('aria-description','This conversation · Next reply selection applies now in this frontend session; it does not change saved response mode.')
       auto.disabled=!!settings.responseMode
       group.append(el('p','mochi-muted','This conversation · Requires Save. Natural may choose silence or delayed replies; Instant requests an eligible reply; Manual disables automatic replies, while Continue still works. A selected mode controls automatic replies; Existing behavior uses the automatic-reply checkbox. Ordinary replies do not require idle/background autonomy.'))
-      section('Background messaging',true)
+      section('Background messaging',true).classList.add('mochi-disclosure')
       group.append(el('p','mochi-muted','Permission, presence and schedule actions apply now. AI timing/status suggestions require Save. Background autonomy is separate from ordinary replies to your messages.'))
       const accountBackground = el('input'); accountBackground.type = 'checkbox'; accountBackground.checked = !!state.backgroundEnabled; accountBackground.disabled = this.busy
       const aiBehavior = el('input'); aiBehavior.type='checkbox';aiBehavior.checked=!!settings.aiBehavior;aiBehavior.disabled=this.busy||(!settings.aiBehavior&&(!state.backgroundEnabled||!room.background?.enabled));aiBehavior.onchange=()=>{settings.aiBehavior=aiBehavior.checked};field('Allow AI delivery timing and status suggestions',aiBehavior)
@@ -837,7 +840,7 @@ export class MochiView {
     form.onsubmit = event => {
       event.preventDefault()
       const selected = state.accountId ? undefined : draft.persona === 'keep' ? undefined : draft.persona === 'manual' ? { source: 'manual', name: draft.name, description: draft.description } : state.personas.find(p=>p.source+':'+p.sourceId===draft.persona)
-      this.dispatch(room ? 'mochi:update' : 'mochi:create', { roomId: room?.id, revision: room ? this.draftRevision : undefined, title: draft.title, characterIds: draft.characterIds, persona: selected, ...(room ? { settings } : {}) })
+      this.dispatch(room ? 'mochi:update' : 'mochi:create', { roomId: room?.id, revision: room ? this.draftRevision : undefined, title: draft.title, characterIds: draft.characterIds, persona: selected, ...(room ? { settings } : {preset:{id:draft.presetId,revision:1,...(state.accountId?{accountId:state.accountId}:{})}}) })
     }
     return room&&this.settingsPage==='chat'?this.settingsLayout.adapt(form,room,state,()=>this.redraw(),(name,anchor)=>this.openSettingsTool(name,anchor,room)):form
   }

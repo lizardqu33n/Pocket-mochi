@@ -16,7 +16,7 @@ import {validatePinnedContent,validateNote,noteId,MAX_CHAT_PINS} from './pins.js
 import {searchRoom} from './search.js'
 import {validateTextingStyles} from './texting.js'
 import {previewContext,sourceSignature} from './preview.js'
-import {MochiPresets,validateBinding,DEFAULT_PRESET_ID} from './presets.js'
+import {MochiPresets,validateBinding,DEFAULT_PRESET_ID,DEFAULT_V2_PRESET_ID,isBuiltInPreset} from './presets.js'
 
 // New implementation. No Character Chatroom source is included.
 export interface MochiHost {
@@ -158,10 +158,11 @@ export class MochiService {
       await this.fictionalAccounts.get(user,target)
       if(input.revision!==room.revision||input.associationRevision!==(room.associationRevision||0))throw new Error('The chat or its assignment changed elsewhere. Refresh before assigning.')
       if(room.accountId===target)throw new Error('This chat already belongs to that account.')
-      if(room.preset&&room.preset.id!==DEFAULT_PRESET_ID)throw Error('Restore Mochi Default before assigning this chat to another account. Custom presets are account-scoped.')
+      if(room.preset&&!isBuiltInPreset(room.preset.id))throw Error('Restore Mochi Default before assigning this chat to another account. Custom presets are account-scoped.')
       if(this.jobs.has(this.jobKey(user,id))||(this.pending.get(this.jobKey(user,id))?.size||0)>0||room.runtime?.jobs.some(j=>j.status==='generating'&&(j.leaseUntil||0)>this.now()))throw new Error('Wait for active generation to finish or stop it before assigning this chat. Saved schedules remain intact.')
       const sourceAccountId=room.accountId
       room.accountId=target;room.associationRevision=(room.associationRevision||0)+1
+      if(room.preset)room.preset={...room.preset,accountId:target}
       for(const notice of room.notifications||[])notice.accountId=target
       // Ownership-only transaction: content revisions, source persona, receipts and runtime are unchanged.
       await this.persist(user,room)
@@ -260,6 +261,9 @@ export class MochiService {
       if (profile) await this.persona(user, profile.persona) // Recheck ownership; preserve the saved snapshot.
       const now = new Date().toISOString()
       const room: MochiRoom = { version: 1, id, ...(profile ? { accountId: profile.id } : {}), revision: 1, title: text(input.title, 120, true), characterIds: await this.membership(user, input.characterIds), persona: profile ? { ...profile.persona, name: profile.displayName, avatarUrl: profile.avatarUrl } : await this.persona(user, input.persona), messages: [], createdAt: now, updatedAt: now, settings: { ...defaultMochiSettings(), responseMode: 'natural' }, receipts: [], notifications: [], notificationRevision: 0 }
+      room.preset=validateBinding(input.preset??{id:DEFAULT_V2_PRESET_ID,revision:1,accountId:room.accountId},room.accountId)
+      const preset=await this.presets.resolve(user,room)
+      if(!preset.builtIn&&(await this.presets.read(user,room.accountId)).presets.find(p=>p.id===preset.id)?.archived)throw Error('Restore this archived preset before binding another chat.')
       await this.persist(user, room)
       return room
     })

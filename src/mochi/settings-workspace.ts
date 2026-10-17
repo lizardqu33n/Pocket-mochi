@@ -21,7 +21,7 @@ export class ChatSettingsLayout {
     const help=Array.from(node.querySelectorAll('p')).find(p=>p.textContent?.includes('Natural may choose'));if(help)texting.append(help);const responderHelp=Array.from(node.querySelectorAll('p')).find(p=>p.textContent?.startsWith('Next responder applies now'));if(responderHelp)texting.append(responderHelp)
    }
    if(name==='Connection & replies')node.querySelector('legend,summary')!.textContent='Connection & model'
-   if(node.tagName==='DETAILS'&&name!=='Chat ownership')(node as HTMLDetailsElement).open=true
+   if(node.tagName==='DETAILS'&&name!=='Chat ownership'&&name!=='Background messaging')(node as HTMLDetailsElement).open=true
    categories.get(target)!.append(node)
   }
   const characters=sections.filter(s=>s.dataset.characterId),overview=()=>{
