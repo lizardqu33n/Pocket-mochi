@@ -48,7 +48,7 @@ test('window: one owner, portal handoff, hide/restore retains room/composer/sett
     expect(h.sent.filter(p=>p.type==='mochi:cancel')).toEqual([{type:'mochi:cancel',accountId:undefined,roomId:h.room.id,generationRequestId:'interactive'}])
     expect(h.sent.some(p=>p.type==='mochi:schedule_cancel')).toBe(false)
     win.open();expect(h.session.view.roomId).toBe(h.room.id)
-    document.querySelector<HTMLButtonElement>('.mochi-window [aria-label="Settings"]')!.click()
+    document.querySelector<HTMLButtonElement>('.mochi-window [aria-label="Settings"]')!.click();Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(b=>b.textContent==='Advanced')!.click()
     const instructions=document.querySelector<HTMLTextAreaElement>('.mochi-window [aria-label="Room instructions"]')!;instructions.value='Draft';instructions.dispatchEvent(new h.dom.window.Event('input'))
     document.querySelector<HTMLButtonElement>('[aria-label="Hide Mochi window"]')!.click();win.open()
     expect(document.querySelector('.mochi-window [aria-label="Room instructions"]')).toBe(instructions)

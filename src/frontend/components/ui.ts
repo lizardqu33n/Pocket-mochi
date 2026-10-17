@@ -89,8 +89,8 @@ export function disclosure(label: string, ...children: Node[]): HTMLDetailsEleme
 }
 
 /** A surface-local modal sheet. Never attaches persona styling to document.body. */
-export function showPocketSheet(anchor: HTMLElement, title: string, content: HTMLElement): { dismiss: () => void } | undefined {
-  const parent = anchor.closest('.lumiphone-shell') || anchor.closest('[role="dialog"]') || anchor.parentElement
+export function showPocketSheet(anchor: HTMLElement, title: string, content: HTMLElement, surfaceRoot?: HTMLElement): { dismiss: () => void } | undefined {
+  const parent = surfaceRoot || anchor.closest('.lumiphone-shell') || anchor.closest('[role="dialog"]') || anchor.parentElement
   if (!parent) return
   const dialog = el('dialog', 'lp-sheet')
   const panel = el('div', 'lp-sheet-panel')

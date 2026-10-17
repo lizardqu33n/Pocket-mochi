@@ -78,7 +78,7 @@ test('refined sidebar keeps compact labeled account controls and original create
  const f=fixture(1080)
  try{
   const account=document.querySelector('.mochi-shell-account-row')!,tools=document.querySelector('.mochi-conversation-filters')!
-  expect(account.querySelectorAll('button')).toHaveLength(2)
+  expect(account.querySelectorAll('button')).toHaveLength(1);expect(account.querySelector('[aria-label="Switch fictional profile"]')).not.toBeNull()
   for(const control of account.querySelectorAll('button')){expect(control.title).toBeTruthy();expect(control.getAttribute('aria-label')).toBeTruthy();expect(control.classList.contains('mochi-icon-button')).toBe(true)}
   expect(tools.textContent).toContain('+ New Chat')
   expect(document.querySelector('.mochi-desktop-list [aria-label="Mochi notifications"]')).toBeNull()

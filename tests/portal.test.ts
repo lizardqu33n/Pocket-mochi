@@ -107,7 +107,7 @@ test('Mochi exposes room connections and protects edited room settings', async (
     expect(root.textContent).not.toContain('Dedicated connection')
     const menu=root.querySelector<HTMLDetailsElement>('.lp-conversation-menu')!
     expect(menu.querySelector('summary')!.getAttribute('aria-label')).toBe('Room options')
-    expect([...menu.querySelectorAll('button')].map(n=>n.textContent)).toEqual(['Participants','Settings','Pins & Notes','Conversation Memory','Presets','Search conversation','Preview AI prompt'])
+    expect([...menu.querySelectorAll('button')].map(n=>n.textContent)).toEqual(['Participants','Settings','Pins & Notes','Conversation Memory','Presets','Search conversation','Personal Settings','Mochi notifications','Preview AI prompt'])
     menu.open=true
     menu.querySelector<HTMLButtonElement>('button')!.click()
     const participants=document.querySelector<HTMLDialogElement>('dialog[aria-label="Room participants"]')!
@@ -118,17 +118,22 @@ test('Mochi exposes room connections and protects edited room settings', async (
     // Messaging tools follow Settings; locate its action rather than its old index.
     Array.from(menu.querySelectorAll<HTMLButtonElement>('button')).find(button=>button.textContent==='Settings')!.click()
     expect(menu.open).toBe(false)
-    expect(Array.from(root.querySelectorAll('fieldset > legend')).map(node=>node.textContent)).toEqual(expect.arrayContaining(['Conversation','Connection & replies']))
-    expect(root.querySelectorAll('details:not([open])').length).toBe(4)
+    expect(root.querySelector('[aria-label="General settings"]')).not.toBeNull()
+    Array.from(root.querySelectorAll<HTMLButtonElement>('button')).find(b=>b.textContent==='Advanced')!.click()
+    expect(root.querySelector('[aria-label="Advanced settings"]')).not.toBeNull()
     expect(root.querySelector<HTMLSelectElement>('[aria-label="Generation connection"]')!.value).toBe('custom')
     expect(view.hasUnsavedChanges()).toBe(false)
+    Array.from(root.querySelectorAll<HTMLButtonElement>('button')).find(b=>b.textContent==='General')!.click()
     const title=root.querySelector<HTMLInputElement>('[aria-label="Room name"]')!;title.value='Changed';title.dispatchEvent(new dom.window.Event('input'))
     expect(view.hasUnsavedChanges()).toBe(true)
+    Array.from(root.querySelectorAll<HTMLButtonElement>('button')).find(b=>b.textContent==='Advanced')!.click()
     const refresh=root.querySelector<HTMLButtonElement>('.mochi-secondary-action')!;refresh.click()
     const request=sent.at(-1)
     expect(request.type).toBe('mochi:choices')
     view.receive({type:'mochi:choices',requestId:request.requestId,personas:[{source:'lumiverse',sourceId:'new',name:'New persona'}],characters:[{id:'char',name:'Character'}],connections:[{id:'custom',name:'Renamed connection',model:'Changed model'},{id:'new',name:'New connection',model:'Other model'}]})
+    Array.from(root.querySelectorAll<HTMLButtonElement>('button')).find(b=>b.textContent==='General')!.click()
     expect(root.querySelector<HTMLInputElement>('[aria-label="Room name"]')!.value).toBe('Changed')
+    Array.from(root.querySelectorAll<HTMLButtonElement>('button')).find(b=>b.textContent==='Advanced')!.click()
     expect(root.querySelector<HTMLSelectElement>('[aria-label="Generation connection"]')!.value).toBe('custom')
     expect(root.textContent).toContain('Renamed connection')
     expect(root.textContent).toContain('New connection')

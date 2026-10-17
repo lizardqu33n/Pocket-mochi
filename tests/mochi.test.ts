@@ -334,7 +334,7 @@ test('invalid token counts block providers, exact budgets pass, and failed model
   await f.service.message('alice',{roomId:room.id,revision:room.revision,requestId:'manual_only',content:'No automatic reply'})
   expect(calls).toBe(0)
   const saved=await f.service.read('alice',room.id),input={roomId:room.id,revision:saved.revision,requestId:'failed_empty',content:''}
-  await expect(f.service.message('alice',input)).rejects.toThrow('The AI returned an empty response. Please try again.')
+  await expect(f.service.message('alice',input)).rejects.toThrow('The AI response reached its output limit before a complete message could be received.')
   await f.service.message('alice',input)
   expect(calls).toBe(1);expect((await f.service.read('alice',room.id)).messages).toEqual(saved.messages)
 })
@@ -476,8 +476,8 @@ test('reroll cancellation and provider failures retain the original reply and do
   await f.service.cancel('alice', room.id, 'cancel_reroll'); release({content:'{"speakerId":"c1","text":"Discarded"}'}); await pending
   saved = await f.service.read('alice',room.id); expect(saved.messages[1]).toEqual(target)
   expect(saved.notifications).toHaveLength(1)
-  f.host.generate!.quiet=async()=>({content:'invalid JSON'})
-  await expect(f.service.message('alice', {roomId:room.id,revision:saved.revision,requestId:'bad_reroll',messageId:target.id,confirmed:true},true)).rejects.toThrow('appears to have returned ordinary text')
+  f.host.generate!.quiet=async()=>({content:'{"text":'})
+  await expect(f.service.message('alice', {roomId:room.id,revision:saved.revision,requestId:'bad_reroll',messageId:target.id,confirmed:true},true)).rejects.toThrow("couldn't read as valid message JSON")
   saved=await f.service.read('alice',room.id); expect(saved.messages[1]).toEqual(target)
   f.host.connections!.get=async()=>null
   await expect(f.service.message('alice',{roomId:room.id,revision:saved.revision,requestId:'unowned_reroll',messageId:target.id,confirmed:true},true)).rejects.toThrow('account')
@@ -624,7 +624,7 @@ test('foreign connections and deleted source personas fail without losing accept
 test('malformed replies and unavailable tokenizer fail safely without appending AI output', async () => {
   for (const failure of ['json', 'tokens']) {
     const f = messagingFixture(), room = await f.create()
-    if (failure === 'json') f.host.generate!.quiet = async () => ({ content: 'invalid JSON' })
+    if (failure === 'json') f.host.generate!.quiet = async () => ({ content: '{"text":' })
     else f.host.tokens = undefined
     await expect(f.service.message('alice', { roomId: room.id, revision: room.revision, requestId: 'bad_result', content: 'Keep my message' })).rejects.toThrow()
     expect((await f.service.read('alice', room.id)).messages).toHaveLength(1)

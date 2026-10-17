@@ -44,9 +44,9 @@ test('workspace starts without a phone/RP chat and uses account-wide last-used p
   try {
     h.workspace.open(); await h.flush()
     expect(h.workspace.apiVersion).toBe(1); expect(h.workspace.isOpen).toBe(true)
-    expect(h.sent.map(p => p.type)).toEqual(['mochi:accounts', 'mochi:list'])
+    expect(h.sent.map(p => p.type)).toEqual(['mochi:accounts', 'mochi:list','mochi:ui_preferences'])
     expect(h.sent.every(p => p.phone === undefined && p.chatId === undefined && p.characterId === undefined)).toBe(true)
-    expect(h.sent.at(-1).accountId).toBe(a.id)
+    expect(h.sent.find(p=>p.type==='mochi:list').accountId).toBe(a.id)
     expect([...f.files]).toEqual(before)
     expect(h.root.textContent).toContain('New room')
   } finally { h.cleanup() }
@@ -61,7 +61,7 @@ test('workspace always-ask startup shows the existing picker and does not select
     expect(h.sent.map(p => p.type)).toEqual(['mochi:accounts'])
     expect(h.root.textContent).toContain('Mary')
     h.click('Use Mochi account Mary'); await h.flush()
-    expect(h.sent.at(-1).accountId).toBe(a.id)
+    expect(h.sent.find(p=>p.type==='mochi:list').accountId).toBe(a.id)
   } finally { h.cleanup() }
 })
 
@@ -76,7 +76,7 @@ test('close/return and unrelated RP/phone updates preserve selected room, settin
     expect(h.root.querySelector('[aria-label="Message"]')).toBe(composer)
     expect(composer.value).toBe('Unsent composer draft')
     h.root.querySelector<HTMLElement>('summary[aria-label="Room options"]')!.click()
-    h.click('Settings');await h.flush()
+    h.click('Settings');h.click('Advanced');await h.flush()
     const instructions = h.root.querySelector<HTMLTextAreaElement>('[aria-label="Room instructions"]')!
     instructions.value = 'Unsaved room settings'; instructions.dispatchEvent(new h.dom.window.Event('input'))
     const count = h.sent.length
@@ -87,7 +87,7 @@ test('close/return and unrelated RP/phone updates preserve selected room, settin
     expect(h.sent).toHaveLength(count)
     h.workspace.refresh(); await h.flush()
     expect(h.root.querySelector<HTMLTextAreaElement>('[aria-label="Room instructions"]')!.value).toBe('Unsaved room settings')
-    expect(h.sent.at(-1).accountId).toBe(a.id)
+    expect(h.sent.find(p=>p.type==='mochi:list').accountId).toBe(a.id)
     expect((await f.service.read('alice', room.id, a.id)).settings!.instructions).toBe('')
   } finally { h.cleanup() }
 })

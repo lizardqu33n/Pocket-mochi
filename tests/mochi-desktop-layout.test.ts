@@ -75,7 +75,7 @@ test('desktop: fictional account selection and drafts survive room switch and po
     h.portal.open();expect(h.desktop.isOpen).toBe(false);expect(document.querySelector('#portal .mochi-desktop')).toBeNull()
     h.desktop.open();expect(h.portal.isOpen).toBe(false)
     expect(h.session.view.state?.accountId).toBe(h.state.accountId)
-    expect(document.querySelector('.mochi-desktop-account')!.textContent).toBe('Synthetic account')
+    expect(document.querySelector<HTMLSelectElement>('[aria-label="Switch fictional profile"]')!.selectedOptions[0].textContent).toBe('Synthetic account · @synthetic')
     expect(document.querySelector<HTMLTextAreaElement>('#desktop [aria-label="Message"]')!.value).toBe('Retained draft')
     expect(h.listeners.size).toBe(1)
   }finally{h.cleanup()}
@@ -85,9 +85,9 @@ test('desktop: room switching and list navigation protect unsaved settings; empt
   const h=fixture()
   try{
     h.choose(h.room.id)
-    document.querySelector<HTMLButtonElement>('[aria-label="Settings"]')!.click()
+    document.querySelector<HTMLButtonElement>('[aria-label="Settings"]')!.click();Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(b=>b.textContent==='Advanced')!.click()
     const instructions=document.querySelector<HTMLTextAreaElement>('[aria-label="Room instructions"]')!;instructions.value='Do not discard';instructions.dispatchEvent(new h.dom.window.Event('input'))
-    document.querySelector<HTMLButtonElement>(`[aria-label="Open conversation: ${h.second.title}"]`)!.click()
+    Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(b=>b.textContent==='Return to conversation')!.click()
     expect(h.session.view.roomId).toBe(h.room.id);expect(h.session.view.hasUnsavedChanges()).toBe(true)
     document.querySelector<HTMLButtonElement>('[aria-label="Keep editing"]')!.click()
     expect(instructions.value).toBe('Do not discard')

@@ -22,12 +22,12 @@ function fixture(width:number){
 for(const width of [320,390,900])test(`${width}px DOM: staged AI settings retain drafts, scope text is accurate and Save is explicit`,()=>{
  const f=fixture(width)
  try{
-  f.click('Settings')
+  f.click('Settings');f.click('Texting Behavior')
   expect(document.body.textContent).toContain('This conversation · Requires Save')
-  expect(document.body.textContent).toContain('AI timing/status suggestions require Save')
   expect(document.body.textContent).toContain('Ordinary replies do not require idle/background autonomy')
-  const instructions=document.querySelector<HTMLTextAreaElement>('[aria-label="Room instructions"]')!
+  f.click('Advanced');const instructions=document.querySelector<HTMLTextAreaElement>('[aria-label="Room instructions"]')!
   instructions.value='Synthetic unsaved instructions';instructions.dispatchEvent(new f.dom.window.Event('input'))
+  f.click('Availability & Schedules');expect(document.body.textContent).toContain('AI timing/status suggestions require Save')
   const ai=document.querySelector<HTMLInputElement>('[aria-label="Allow AI delivery timing and status suggestions"]')!,count=f.sent.length
   ai.checked=true;ai.dispatchEvent(new f.dom.window.Event('change'))
   expect(f.sent.length).toBe(count);expect(f.room.settings!.aiBehavior).toBeUndefined();expect(instructions.value).toBe('Synthetic unsaved instructions')
@@ -39,9 +39,9 @@ for(const width of [320,390,900])test(`${width}px DOM: staged AI settings retain
 test('immediate login permission has explicit scope and does not submit staged room edits',()=>{
  const f=fixture(390)
  try{
-  f.click('Settings');const instructions=document.querySelector<HTMLTextAreaElement>('[aria-label="Room instructions"]')!
+  f.click('Settings');f.click('Advanced');const instructions=document.querySelector<HTMLTextAreaElement>('[aria-label="Room instructions"]')!
   instructions.value='Retained unsaved text';instructions.dispatchEvent(new f.dom.window.Event('input'))
-  const permission=document.querySelector<HTMLInputElement>('[aria-label="This Lumiverse login: allow background messaging (applies now)"]')!
+  f.click('Availability & Schedules');const permission=document.querySelector<HTMLInputElement>('[aria-label="This Lumiverse login: allow background messaging (applies now)"]')!
   permission.checked=false;permission.dispatchEvent(new f.dom.window.Event('change'))
   expect(f.sent.at(-1)).toMatchObject({type:'mochi:background_account',enabled:false});expect(f.sent.at(-1).settings).toBeUndefined()
   expect(f.view.hasUnsavedChanges()).toBe(true);expect(instructions.value).toBe('Retained unsaved text');expect(f.room.settings!.instructions).toBe('')

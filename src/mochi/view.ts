@@ -82,7 +82,9 @@ export class MochiView {
   setAccountNavigation(owner: {picker():void; settings(anchor:HTMLElement):void} | undefined):void {this.accountNavigation=owner}
   get isSidebarProfileOpen():boolean{return this.sidebarProfile}
   editSidebarProfile(anchor:HTMLElement, complete:()=>void, create=false):void {
-    if(this.busy)return
+    // A running reply must reach the existing consequential-navigation warning.
+    // Other pending writes still block opening a conflicting profile editor.
+    if(this.busy&&!this.ownGenerations.has(this.roomId))return
     const current=this.profiles.state?.accounts.find(a=>a.id===this.state?.accountId&&!a.archived)
     if(!this.profiles.state||(!create&&!current))return
     this.exitPortal(()=>{this.sidebarProfile=true;this.profileReturn=complete;this.profiles.start(create?undefined:current);this.refreshChoices();this.redraw()},anchor,true)
@@ -914,8 +916,9 @@ export class MochiView {
     return thread
   }
   private sheet(anchor: HTMLElement, title: string, content: HTMLElement): ReturnType<typeof showPocketSheet> {
-    const sheet = showPocketSheet(anchor, title, content)
-    if (sheet) { this.sheets.add(sheet.dismiss); content.closest('dialog')?.classList.add('mochi-sheet'); content.closest('dialog')?.addEventListener('close', () => this.sheets.delete(sheet.dismiss), { once: true }) }
+    // Keep confirmations alive when metadata refresh replaces the inner view.
+    const sheet = showPocketSheet(anchor, title, content, anchor.closest<HTMLElement>('.mochi-workspace') || this.presenceRoot?.closest<HTMLElement>('.mochi-workspace') || undefined)
+    if (sheet) { this.sheets.add(sheet.dismiss); content.closest('dialog')?.classList.add('mochi-sheet'); content.closest('dialog')?.addEventListener('close', () => {this.sheets.delete(sheet.dismiss);if(!anchor.isConnected)Array.from(this.presenceRoot?.querySelectorAll<HTMLButtonElement>('button')||[]).find(b=>anchor.getAttribute('aria-label')?b.getAttribute('aria-label')===anchor.getAttribute('aria-label'):b.textContent===anchor.textContent)?.focus({preventScroll:true})}, { once: true }) }
     return sheet
   }
   private openPins(anchor:HTMLElement,room:MochiRoom):void {

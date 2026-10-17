@@ -59,7 +59,7 @@ test('session: hide/restore preserves nodes and settings drafts; same-owner refr
   try{
     const workspace=h.workspace();workspace.open();h.load();workspace.refresh();h.emit({type:'mochi:state',requestId:h.sent.at(-1).requestId,state:h.state})
     const composer=document.querySelector('[aria-label="Message"]');workspace.close();workspace.open();expect(document.querySelector('[aria-label="Message"]')).toBe(composer)
-    document.querySelector<HTMLButtonElement>('[aria-label="Settings"]')!.click()
+    document.querySelector<HTMLButtonElement>('[aria-label="Settings"]')!.click();Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(b=>b.textContent==='Advanced')!.click()
     const instructions=document.querySelector<HTMLTextAreaElement>('[aria-label="Room instructions"]')!
     instructions.value='Unsaved room configuration';instructions.dispatchEvent(new h.dom.window.Event('input'))
     workspace.close();workspace.open();expect(document.querySelector('[aria-label="Room instructions"]')).toBe(instructions)

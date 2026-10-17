@@ -25,7 +25,7 @@ async function ui(width:number){
  const f=fixture(),dom=new JSDOM('<body><main></main></body>',{pretendToBeVisual:true}),prior={document:globalThis.document,window:globalThis.window};Object.assign(globalThis,{document:dom.window.document,window:dom.window});Object.defineProperty(window,'innerWidth',{value:width})
  dom.window.HTMLDialogElement.prototype.showModal=function(){this.open=true};dom.window.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new dom.window.Event('close'))}
  const account=await f.profile(),room=await f.room(account.id),sent:any[]=[];room.characterIds.push('alice_other');const state=await f.service.state('alice',account.id);state.rooms=[room];state.characters=[{id:'alice_character',name:'Same name'},{id:'alice_other',name:'Same name'}]
- let view:MochiView;const root=document.querySelector('main')!,render=()=>{root.replaceChildren(view.renderDesktop())};view=new MochiView(p=>sent.push(p),render,()=>{});view.state=state;view.select(room.id);view.loadNavigationAccounts();view.receive({type:'mochi:accounts',requestId:sent.at(-1).requestId,state:await f.service.accountsState('alice')});render()
+ let view:MochiView;const root=document.querySelector('main')!,render=()=>{const next=view.renderDesktop(),previous=root.querySelector(':scope>.mochi-view');if(previous)previous.replaceWith(next);else root.append(next)};root.classList.add('mochi-workspace');view=new MochiView(p=>sent.push(p),render,()=>{});view.state=state;view.select(room.id);view.loadNavigationAccounts();view.receive({type:'mochi:accounts',requestId:sent.at(-1).requestId,state:await f.service.accountsState('alice')});render()
  const click=(label:string)=>{const b=root.querySelector<HTMLButtonElement>(`[aria-label="${label}"]`)||Array.from(root.querySelectorAll<HTMLButtonElement>('button')).find(b=>b.textContent===label);expect(b,label+String(root.querySelector(".mochi-settings-workspace")?.textContent)).toBeDefined();b!.click()}
  const preferences=async()=>{const request=sent.filter(p=>p.type==='mochi:ui_preferences').at(-1);await f.service.handle(request,'alice');view.receive(f.events.findLast(e=>e.payload.requestId===request.requestId)!.payload)}
  return{f,dom,view,root,room,sent,click,preferences,close:()=>{view.destroy();f.scheduler.stop();Object.assign(globalThis,prior);dom.window.close()}}
@@ -93,4 +93,26 @@ test('presentation transport failures remain private and are sent only to the au
   const response=f.events.findLast(e=>e.payload.requestId==='ui_failure')!
   expect(response.user).toBe('alice');expect(response.payload.type).toBe('mochi:error');expect(response.payload.message).not.toContain('SYNTHETIC_PRIVATE_STORAGE_SENTINEL');expect(f.calls).toHaveLength(0)
  }finally{f.scheduler.stop()}
+})
+
+
+test('profile management during a busy running reply reaches confirmation instead of silently ignoring the click',async()=>{
+ const h=await ui(900)
+ try{
+  h.click('Personal Settings');const choices=h.sent.findLast(p=>p.type==='mochi:choices')
+  const view=h.view as any;view.busy=true;view.ownGenerations.set(h.room.id,'active_reply');h.view.state!.jobs={[h.room.id]:'active_reply'}
+  const anchor=Array.from(h.root.querySelectorAll<HTMLButtonElement>('button')).find(b=>b.textContent==='Manage fictional profile & persona add-ons')!
+  // Activating the real host drawer refreshes the view before opening the editor.
+  h.view.receive({type:'mochi:choices',requestId:choices.requestId,characters:h.view.state!.characters,personas:[],connections:[]});expect(anchor.isConnected).toBe(false)
+  h.view.editSidebarProfile(anchor,()=>{})
+  expect(h.root.textContent).toContain('A reply is still generating. Leaving will stop this reply.')
+  expect(h.view.isSidebarProfileOpen).toBe(false);expect(h.sent.some(p=>p.type==='mochi:cancel')).toBe(false)
+  h.view.loadNavigationAccounts();const navigation=h.sent.findLast(p=>p.type==='mochi:accounts')
+  h.view.receive({type:'mochi:accounts',requestId:navigation.requestId,state:await h.f.service.accountsState('alice')})
+  expect(h.root.querySelector('dialog[open]')?.textContent).toContain('A reply is still generating')
+  h.click('Stay here');expect(h.view.isSidebarProfileOpen).toBe(false);expect(view.ownGenerations.get(h.room.id)).toBe('active_reply')
+  expect(document.activeElement?.textContent).toBe('Manage fictional profile & persona add-ons')
+  const refreshed=Array.from(h.root.querySelectorAll<HTMLButtonElement>('button')).find(b=>b.textContent==='Manage fictional profile & persona add-ons')!
+  h.view.editSidebarProfile(refreshed,()=>{});h.click('Cancel generation & leave');expect(h.view.isSidebarProfileOpen).toBe(true)
+ }finally{h.close()}
 })
