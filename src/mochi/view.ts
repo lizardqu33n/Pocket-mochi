@@ -1,3 +1,6 @@
+import {PersonalSettings} from './personal-settings.js'
+import {ChatSettingsLayout,SETTINGS_WORKSPACE_STYLES} from './settings-workspace.js'
+import {TOOLBAR_LABELS,type ToolbarAction} from './ui-preferences.js'
 import {MochiMemoryPanel,MOCHI_MEMORY_STYLES} from './memory-panel.js'
 import { button, el, requestId } from '../frontend/shared.js'
 import { POCKET_ICONS } from '../frontend/components/icons.js'
@@ -82,7 +85,7 @@ export class MochiView {
     if(this.busy)return
     const current=this.profiles.state?.accounts.find(a=>a.id===this.state?.accountId&&!a.archived)
     if(!this.profiles.state||(!create&&!current))return
-    this.exitPortal(()=>{this.sidebarProfile=true;this.profileReturn=complete;this.profiles.start(create?undefined:current);this.refreshChoices();this.redraw()},anchor)
+    this.exitPortal(()=>{this.sidebarProfile=true;this.profileReturn=complete;this.profiles.start(create?undefined:current);this.refreshChoices();this.redraw()},anchor,true)
   }
   renderSidebarProfile():HTMLElement {
     const root=el('section','mochi-view');const style=el('style');style.textContent=MOCHI_STYLES;root.append(style)
@@ -136,6 +139,7 @@ export class MochiView {
     this.leave();this.resetScope();this.phone=phone;this.pickerOpen=true;this.startupOpen=true;this.profilesOpen=false;this.profiles.state=null;this.dispatch('mochi:accounts')
   }
   private resetScope():void{
+    this.settingsPage='';this.settingsLayout.reset();this.personalSettings.reset();this.personalScroll=0
     this.desktopDetails=false;this.conversationFilter='';this.conversationView='all'
     this.memoryPanel.reset()
     this.presetPanel.reset()
@@ -195,11 +199,11 @@ export class MochiView {
     if(!room)return
     Object.assign(room,incoming)
     const quote=this.quoteNode(room,id,true);(quote as HTMLButtonElement).click()
-  },()=>this.presenceRoot?.querySelector<HTMLElement>('[aria-label="Room options"]')?.focus())
+  },()=>this.restoreToolFocus())
   private selectionVersion = 0
-  private memoryPanel=new MochiMemoryPanel(payload=>this.send(payload),()=>this.state?.rooms.find(r=>r.id===this.roomId&&r.accountId===this.state?.accountId),()=>this.redraw(),p=>{const room=this.state?.rooms.find(r=>r.id===p.roomId&&r.accountId===p.accountId);if(room&&p.revision>=room.revision&&(room.associationRevision||0)===p.associationRevision){room.memory=p.memory;room.revision=p.revision;room.updatedAt=p.updatedAt;room.background=this.mergeScheduling(room,p.background,p.revision);this.preview.invalidate()}},()=>this.presenceRoot?.querySelector<HTMLElement>('[aria-label="Room options"]')?.focus(),(id,running)=>{if(running){this.ownGenerations.set(this.roomId,id);if(this.state){this.state.jobs||={};this.state.jobs[this.roomId]=id}}else{if(this.ownGenerations.get(this.roomId)===id)this.ownGenerations.delete(this.roomId);if(this.state?.jobs?.[this.roomId]===id)delete this.state.jobs[this.roomId]}},()=>this.busy||Boolean(this.state?.jobs?.[this.roomId]))
-  private presetPanel=new MochiPresetPanel(payload=>this.send(payload),()=>this.state?.rooms.find(r=>r.id===this.roomId&&r.accountId===this.state?.accountId),()=>this.redraw(),(presetId,presetRevision)=>{const room=this.state?.rooms.find(r=>r.id===this.roomId);if(!room||this.busy)return;this.presetPanel.reset();this.preview.reset();this.dispatch('mochi:preset_bind',{roomId:room.id,revision:room.revision,presetId,presetRevision,confirmed:true})},()=>this.presenceRoot?.querySelector<HTMLElement>('[aria-label="Room options"]')?.focus(),blocks=>{const room=this.state?.rooms.find(r=>r.id===this.roomId);if(room){this.presetPanel.open=false;this.preview.show(room,blocks)}})
-  private preview=new MochiPreview(payload=>this.send(payload),()=>this.state?.rooms.find(r=>r.id===this.roomId&&r.accountId===this.state?.accountId),()=>this.redraw(),()=>{if(this.preview.isDraft){this.presetPanel.open=true;this.redraw()}else this.presenceRoot?.querySelector<HTMLElement>('[aria-label="Room options"]')?.focus()},id=>this.state?.characters.find(c=>c.id===id)?.name||id)
+  private memoryPanel=new MochiMemoryPanel(payload=>this.send(payload),()=>this.state?.rooms.find(r=>r.id===this.roomId&&r.accountId===this.state?.accountId),()=>this.redraw(),p=>{const room=this.state?.rooms.find(r=>r.id===p.roomId&&r.accountId===p.accountId);if(room&&p.revision>=room.revision&&(room.associationRevision||0)===p.associationRevision){room.memory=p.memory;room.revision=p.revision;room.updatedAt=p.updatedAt;room.background=this.mergeScheduling(room,p.background,p.revision);this.preview.invalidate()}},()=>this.restoreToolFocus(),(id,running)=>{if(running){this.ownGenerations.set(this.roomId,id);if(this.state){this.state.jobs||={};this.state.jobs[this.roomId]=id}}else{if(this.ownGenerations.get(this.roomId)===id)this.ownGenerations.delete(this.roomId);if(this.state?.jobs?.[this.roomId]===id)delete this.state.jobs[this.roomId]}},()=>this.busy||Boolean(this.state?.jobs?.[this.roomId]))
+  private presetPanel=new MochiPresetPanel(payload=>this.send(payload),()=>this.state?.rooms.find(r=>r.id===this.roomId&&r.accountId===this.state?.accountId),()=>this.redraw(),(presetId,presetRevision)=>{const room=this.state?.rooms.find(r=>r.id===this.roomId);if(!room||this.busy)return;this.presetPanel.reset();this.preview.reset();this.dispatch('mochi:preset_bind',{roomId:room.id,revision:room.revision,presetId,presetRevision,confirmed:true})},()=>this.restoreToolFocus(),blocks=>{const room=this.state?.rooms.find(r=>r.id===this.roomId);if(room){this.presetPanel.open=false;this.preview.show(room,blocks)}})
+  private preview=new MochiPreview(payload=>this.send(payload),()=>this.state?.rooms.find(r=>r.id===this.roomId&&r.accountId===this.state?.accountId),()=>this.redraw(),()=>{if(this.preview.isDraft){this.presetPanel.open=true;this.redraw()}else this.restoreToolFocus()},id=>this.state?.characters.find(c=>c.id===id)?.name||id)
   private requestVersion = 0
   private modelControllers = new Set<AbortController>()
   private modelChoices = new Map<string,MochiModelChoices>()
@@ -213,6 +217,13 @@ export class MochiView {
     this.choicesTimeout=setTimeout(()=>{this.choicesRequest=''},30000)
     this.send({type:'mochi:choices',requestId:this.choicesRequest,accountId:this.state?.accountId||this.activeAccountId})
   }
+  private settingsPage:''|'chat'|'personal'=''
+  private settingsLayout=new ChatSettingsLayout()
+  private personalSettings=new PersonalSettings(p=>this.send(p),()=>this.state?.accountId,()=>this.profiles.state?.ownerId,()=>this.redraw())
+  private settingsReturnFocus=false
+  private personalScroll=0
+  private settingsInvoker='Room options'
+  private toolFocus=''
   private settingsSections = new Set<string>()
   private formBaseline = ''
   private settingsDraft: MochiSettings | null = null
@@ -227,11 +238,12 @@ export class MochiView {
     private notify: (n: MochiNotification) => void = () => {},
     private notificationsChanged: (notices: MochiNotification[], rooms: Set<string>) => void = () => {}) {}
   hasUnsavedChanges(): boolean {
+    if(this.personalSettings.dirty)return true
     if(this.sidebarProfile)return this.profiles.hasUnsavedChanges()
     if (this.profilesOpen) return this.profiles.hasUnsavedChanges()
     return !!(this.creating || this.editing) && !!this.draft && JSON.stringify([this.draft,this.settingsDraft]) !== this.formBaseline
   }
-  isConversationOpen(): boolean { return !this.destroyed && !!this.roomId && !this.pickerOpen && !this.profilesOpen && !this.editing && !this.creating && !this.notificationsOpen }
+  isConversationOpen(): boolean { return !this.destroyed && !!this.roomId && !this.pickerOpen && !this.profilesOpen && !this.editing && !this.creating && !this.notificationsOpen && !this.settingsPage }
   private generationExitNotice(summaryOnly=false):string {
     if(this.memoryPanel.generating)return 'A summary is still generating. Leaving will cancel it. Saved memories will not be deleted.'
     return !summaryOnly&&this.ownGenerations.has(this.roomId)?'A reply is still generating. Leaving will stop this reply. Saved messages will not be deleted.':''
@@ -258,12 +270,13 @@ export class MochiView {
     discard.onclick=()=>{sheet?.dismiss();next()}
   }
   exitPortal(next: () => void, anchor: HTMLElement,stopsGeneration=false): void {
-    this.confirmNavigation(()=>{this.creating=false;this.editing=false;this.draft=null;this.settingsDraft=null;this.profiles.draft=null;this.profilesOpen=false;this.sidebarProfile=false;this.profileReturn=undefined;next()},anchor,stopsGeneration)
+    this.confirmNavigation(()=>{this.creating=false;this.editing=false;this.draft=null;this.settingsDraft=null;this.profiles.draft=null;this.profilesOpen=false;this.sidebarProfile=false;this.profileReturn=undefined;this.personalSettings.discard();next()},anchor,stopsGeneration)
   }
   back(exit: () => void, anchor: HTMLElement): void {
     if (this.busy) return
     const next=()=>{
-      if(this.profilesOpen){if(this.profiles.draft)this.profiles.draft=null;else this.profilesOpen=false}
+      if(this.settingsPage){this.settingsPage='';this.editing=false;this.draft=null;this.settingsDraft=null;this.personalSettings.discard()}
+      else if(this.profilesOpen){if(this.profiles.draft)this.profiles.draft=null;else this.profilesOpen=false}
       else if(this.creating||this.editing){this.creating=false;this.editing=false;this.draft=null;this.settingsDraft=null}
       else if(this.notificationsOpen)this.notificationsOpen=false
       else if(this.pickerOpen){exit();return}
@@ -287,7 +300,7 @@ export class MochiView {
   }
   select(id: string): void {
     if(this.roomId!==id)this.desktopDetails=false
-    if (this.roomId !== id) { this.leave(); this.selectionVersion++; this.roomId = id; this.creating = false; this.editing = false; this.draft = null; this.settingsDraft = null }
+    if (this.roomId !== id) { this.settingsPage='';this.settingsLayout.reset();this.leave(); this.selectionVersion++; this.roomId = id; this.creating = false; this.editing = false; this.draft = null; this.settingsDraft = null }
     if(this.state){if(id)this.lastRooms.set(this.state.accountId||'',id);else this.lastRooms.delete(this.state.accountId||'')}
   }
   leave(): void {
@@ -341,6 +354,7 @@ export class MochiView {
         (payload.accountId !== this.state?.accountId || payload.roomId !== this.roomId ||
          this.ownGenerations.get(payload.roomId) !== payload.requestId ||
          this.state?.rooms.find(r => r.id === payload.roomId)?.revision !== payload.roomRevision)) return true
+    if(this.personalSettings.receive(payload))return true
     if(this.memoryPanel.receive(payload))return true
     if(this.presetPanel.receive(payload))return true
     if(this.preview.receive(payload))return true
@@ -464,7 +478,7 @@ export class MochiView {
         const previous = this.state?.rooms.find(r => r.id === room.id && r.accountId === room.accountId)
         if (previous && (previous.associationRevision || 0) === (room.associationRevision || 0)) room.background = this.mergeScheduling(previous, room.background, room.revision)
       }
-      this.state = { ...payload.state, notifications }
+      this.state = { ...payload.state, notifications };this.personalSettings.load()
       if(this.operation==='mochi:pinned_content'&&this.pendingNoteSave){this.noteDrafts.delete(this.pendingNoteSave);this.pendingNoteSave=undefined}
       if(this.restoreRoom&&this.state&&this.state.accountId===this.activeAccountId){
         this.restoreRoom=false
@@ -474,7 +488,7 @@ export class MochiView {
       }
       for (const [id, request] of this.ownGenerations) if (this.state && this.state.jobs?.[id] !== request) this.ownGenerations.delete(id)
       if (payload.selectedRoomId && this.requestVersion === this.selectionVersion) {
-        this.creating = false; this.editing = false; this.draft = null
+        this.creating = false; this.editing = this.settingsPage==='chat'; this.draft = null;this.settingsDraft=null
         this.roomId = payload.selectedRoomId
         this.navigate(this.roomId)
       }
@@ -511,7 +525,8 @@ export class MochiView {
     if(this.state){
       const controls=this.inboxControls(),[change,profiles,create,notices]=Array.from(controls.querySelectorAll<HTMLButtonElement>(':scope > button'))
       for(const control of [change,profiles]){control.classList.add('mochi-icon-button');control.lastElementChild?.remove()}
-      const accountRow=el('div','mochi-shell-account-row');accountRow.append(identity,change,profiles)
+      const dock=el('div','mochi-profile-dock');dock.dataset.compact=String(this.personalSettings.value.dock==='compact');dock.setAttribute('aria-label','Active fictional profile');const identityCopy=el('div'),switcher=el('select');switcher.setAttribute('aria-label','Switch fictional profile');for(const profile of this.profiles.state?.accounts.filter(a=>!a.archived)||[]){const option=el('option','',profile.displayName+(profile.username?' · @'+profile.username:''));option.value=profile.id;switcher.append(option)}if(!account){const option=el('option','','Unassigned legacy chats');option.value='';switcher.append(option)}switcher.value=this.state.accountId||'';switcher.onchange=()=>this.selectNavigationAccount(switcher.value||undefined,switcher,()=>this.redraw());identityCopy.append(switcher,el('small','mochi-dock-username',account?.username?'@'+account.username:'Fictional profile'));dock.append(portrait(account?.displayName||'?',account?.avatarUrl),identityCopy);identity.replaceChildren(dock)
+      const accountRow=el('div','mochi-shell-account-row');accountRow.append(identity,profiles)
       create.setAttribute('aria-label','New Chat');create.title='New Chat';create.textContent='+ New Chat';newChat=create;noticesButton=notices
       heading.append(accountRow)
     }else heading.append(identity)
@@ -546,11 +561,11 @@ export class MochiView {
     const back=el('div','mochi-desktop-back'),backButton=button('← Conversations');backButton.setAttribute('aria-label','Back to conversations')
     back.hidden=this.pickerOpen||!this.state
     backButton.onclick=()=>this.exitPortal(()=>{this.notificationsOpen=false;this.select('');this.redraw()},backButton,!!this.roomId);back.append(backButton)
-    main.append(back,this.render('desktop'));if(main.querySelector('[data-preset-workspace=true]'))page.dataset.presetWorkspace='true'
-    if(noticesButton&&!page.dataset.presetWorkspace){const actions=main.querySelector('.mochi-room-header>.mochi-actions');if(actions)actions.insertBefore(noticesButton,actions.lastChild);else{const toolbar=el('div','mochi-shell-notifications');toolbar.append(noticesButton);main.prepend(toolbar)}}
+    main.append(back,this.render('desktop'));if(main.querySelector('[data-preset-workspace=true]'))page.dataset.presetWorkspace='true';if(main.querySelector('[data-settings-workspace=true]'))page.dataset.settingsWorkspace='true'
+    if(noticesButton&&!page.dataset.presetWorkspace&&!page.dataset.settingsWorkspace){const actions=main.querySelector('.mochi-room-header>.mochi-actions');if(actions){}else{const toolbar=el('div','mochi-shell-notifications');toolbar.append(noticesButton);main.prepend(toolbar)}}
     const style=el('style');style.textContent=MOCHI_DESKTOP_STYLES;page.append(sidebar,main,style)
     const selected=this.state?.rooms.find(room=>room.id===this.roomId)
-    if(selected&&page.dataset.mode==='chat'&&!page.dataset.presetWorkspace){
+    if(selected&&page.dataset.mode==='chat'&&!page.dataset.presetWorkspace&&!page.dataset.settingsWorkspace){
       page.dataset.details=String(this.desktopDetails)
       const toggle=main.querySelector<HTMLButtonElement>('[aria-label="Conversation details"]')
       const setDetails=(open:boolean)=>{this.desktopDetails=open;page.dataset.details=String(open);toggle?.setAttribute('aria-expanded',String(open));if(open)page.querySelector<HTMLButtonElement>('[aria-label="Close conversation details"]')?.focus();else toggle?.focus()}
@@ -563,7 +578,7 @@ export class MochiView {
     const controls=el('div','mochi-inbox-actions')
     const change=action('Switch Mochi account','people');change.onclick=()=>{if(this.accountNavigation)this.accountNavigation.picker();else this.exitPortal(()=>this.showPicker(),change,true)};controls.append(change)
     const profiles=action(stateAccountLabel(this.state?.accountId),'people');profiles.disabled=this.busy
-    profiles.onclick=()=>{if(this.accountNavigation)this.accountNavigation.settings(profiles);else this.exitPortal(()=>{this.leave();this.profilesOpen=true;const current=this.profiles.state?.accounts.find(a=>a.id===this.state?.accountId);if(current)this.profiles.start(current);else this.profiles.draft=null;this.dispatch('mochi:accounts')},profiles,true)};controls.append(profiles)
+    profiles.setAttribute('aria-label','Personal Settings');profiles.title='Personal Settings';profiles.onclick=()=>this.openSettings('personal',profiles);controls.append(profiles)
     const create=action('New room','plus');create.disabled=this.busy;create.onclick=()=>this.exitPortal(()=>{this.creating=true;this.draft=null;this.refreshChoices();this.redraw()},create);controls.append(create)
     if(this.notificationPolicy().enabled){const notices=action('Mochi notifications','notifications',true),unread=this.state?.notifications?.filter(n=>!n.read).length||0;notices.title=`Mochi notifications · ${unread} unread`;notices.setAttribute('aria-description',`${unread} unread notifications`);notices.onclick=()=>this.exitPortal(()=>{this.leave();this.notificationsOpen=!this.notificationsOpen;this.redraw()},notices,true);controls.append(notices)}
     return controls
@@ -574,8 +589,9 @@ export class MochiView {
     const page = el('div', 'mochi-view')
     page.dataset.surface = surface
     if (surface !== 'choices') this.presenceRoot=page
+    if(this.settingsReturnFocus){this.settingsReturnFocus=false;queueMicrotask(()=>{const target=Array.from(page.querySelectorAll<HTMLElement>('[aria-label]')).find(n=>n.getAttribute('aria-label')===this.settingsInvoker&&!n.closest('[hidden]'));(target||page.querySelector<HTMLElement>('[aria-label="Room options"]'))?.focus({preventScroll:true})})}
     const style = el('style')
-    style.textContent = MOCHI_STYLES+MOCHI_REPLY_STYLES+MOCHI_REACTION_STYLES+MOCHI_PIN_STYLES+MOCHI_SEARCH_STYLES+MOCHI_TEXTING_STYLES+MOCHI_PREVIEW_STYLES+MOCHI_PRESET_STYLES+MOCHI_PRESET_WORKSPACE_STYLES+MOCHI_MEMORY_STYLES
+    style.textContent = MOCHI_STYLES+MOCHI_REPLY_STYLES+MOCHI_REACTION_STYLES+MOCHI_PIN_STYLES+MOCHI_SEARCH_STYLES+MOCHI_TEXTING_STYLES+MOCHI_PREVIEW_STYLES+MOCHI_PRESET_STYLES+MOCHI_PRESET_WORKSPACE_STYLES+MOCHI_MEMORY_STYLES+SETTINGS_WORKSPACE_STYLES
     page.append(style)
     const header = el('header'); const brand = el('div', 'mochi-brand')
     const wordmark = el('h2', 'mochi-wordmark'); wordmark.setAttribute('aria-label', 'Mochi')
@@ -596,7 +612,7 @@ export class MochiView {
       const error = el('p', 'mochi-error', this.error); error.setAttribute('role', 'alert'); page.append(error)
       if (this.error === GENERATION_ERROR_MESSAGES.connection && this.roomId && !this.editing) {
         const choose = action('Choose connection', 'settings')
-        choose.onclick = () => this.confirmGenerationExit(() => { this.leave(); this.editing = true; this.draft = null; this.settingsDraft = null; this.refreshChoices(); this.redraw() }, choose)
+        choose.onclick = () => {this.openSettings('chat',choose);this.settingsLayout.category='Advanced';this.redraw()}
         page.append(choose)
       }
     }
@@ -608,8 +624,9 @@ export class MochiView {
     for (const warning of this.state.warnings) page.append(el('p', 'mochi-error', warning))
     if (surface !== 'chat' && this.notificationsOpen && this.notificationPolicy().enabled) { page.append(this.notificationList()); return page }
     const room = this.state.rooms.find(room => room.id === this.roomId)
+    if(room&&surface!=='choices'&&(this.presetPanel.open||(this.preview.open&&(this.preview.isDraft||this.settingsPage))||(this.memoryPanel.open&&this.settingsPage))){this.preview.sync(room);page.replaceChildren(style,this.presetPanel.open?this.presetPanel.render(room):this.memoryPanel.open?this.memoryPanel.render(room):this.preview.render(room));page.dataset.presetWorkspace='true';page.dataset.conversation='true';return page}
+    if(this.settingsPage&&surface!=='choices'){page.replaceChildren(style,this.renderSettings(room));page.dataset.settingsWorkspace='true';page.dataset.conversation='true';return page}
     if (surface !== 'chat' && (this.creating || this.editing)) { page.append(this.form(this.editing ? room : undefined)); return page }
-    if(room&&surface!=='choices'&&(this.presetPanel.open||(this.preview.open&&this.preview.isDraft))){this.preview.sync(room);page.replaceChildren(style,this.presetPanel.open?this.presetPanel.render(room):this.preview.render(room));page.dataset.presetWorkspace='true';page.dataset.conversation='true';return page}
     if (room && surface !== 'choices') {
       const roomHeader = el('div', 'mochi-room-header')
       const info = el('div', 'mochi-room-info'), selector = el('select', 'mochi-room-selector'); selector.setAttribute('aria-label', 'Select room')
@@ -626,7 +643,7 @@ export class MochiView {
       if(surface==='desktop'){const title=el('h3','mochi-conversation-title',room.title);title.title=room.title;info.append(title,roomMeta)}else info.append(roomSelector, roomMeta)
       const controls = el('div', 'mochi-actions')
       const inbox = action('Room inbox', 'back', true); inbox.onclick = () => this.confirmNavigation(() => { this.select(''); this.navigate() },inbox,true)
-      const openSettings = () => this.confirmGenerationExit(() => { this.leave(); this.editing = true; this.draft = null; this.settingsDraft = null; if (surface === 'chat') configure(); this.refreshChoices(); this.redraw() },more)
+      const openSettings = () => this.openSettings('chat',more)
       const menu=el('details','lp-conversation-menu'), more=el('summary','lp-nav-action','⋯')
       more.setAttribute('aria-label','Room options')
       const menuSheet=el('div','lp-conversation-menu-sheet')
@@ -636,12 +653,17 @@ export class MochiView {
       menuSheet.append(menuAction('Conversation Memory',()=>{this.preview.reset();this.search.reset();this.presetPanel.reset();this.memoryPanel.show(room);this.presenceRoot?.querySelector<HTMLButtonElement>('[aria-label="Conversation Memory"] button')?.focus()}))
       menuSheet.append(menuAction('Presets',()=>this.confirmGenerationExit(()=>{this.memoryPanel.reset();this.preview.reset();this.search.reset();this.presetPanel.show(room);this.presenceRoot?.querySelector<HTMLButtonElement>('[aria-label="Mochi presets"] button')?.focus()},more,true)))
       const openSearch=()=>this.confirmGenerationExit(()=>{this.memoryPanel.reset();this.presetPanel.reset();this.preview.reset();this.search.show(room);this.presenceRoot?.querySelector<HTMLInputElement>('[aria-label="Search conversation text"]')?.focus()},more,true)
-      menuSheet.append(menuAction('Search conversation',openSearch))
+      menuSheet.append(menuAction('Search conversation',openSearch),menuAction('Personal Settings',()=>this.openSettings('personal',more)))
+      if(this.notificationPolicy().enabled)menuSheet.append(menuAction('Mochi notifications',()=>this.exitPortal(()=>{this.leave();this.notificationsOpen=true;this.redraw()},more,true)))
       menuSheet.append(menuAction('Preview AI prompt',()=>this.confirmGenerationExit(()=>{this.memoryPanel.reset();this.presetPanel.reset();this.search.reset();this.preview.show(room);this.presenceRoot?.querySelector<HTMLSelectElement>('[aria-label="Preview scenario"]')?.focus()},more,true)))
       menu.append(more,menuSheet)
       menu.addEventListener('keydown',event=>{if(event.key==='Escape'){menu.open=false;more.focus();event.stopPropagation()}})
       menu.addEventListener('focusout',event=>{if(event.relatedTarget&&!menu.contains(event.relatedTarget as Node))menu.open=false})
-      if(surface==='desktop'){const search=action('Search conversation','search',true);search.onclick=openSearch;const details=action('Conversation details','people',true);controls.append(search,details)}
+      controls.classList.add('mochi-custom-toolbar');controls.dataset.presentation=this.personalSettings.value.presentation
+      const preferences=this.personalSettings.value,route:Record<ToolbarAction,string>={search:'Search conversation',participants:'Participants',notifications:'Mochi notifications',settings:'Settings',presets:'Presets',memory:'Conversation Memory',preview:'Preview AI prompt',notes:'Pins & Notes'}
+      const icons:Record<ToolbarAction,string>={search:'search',participants:'people',notifications:'notifications',settings:'settings',presets:'edit',memory:'edit',preview:'search',notes:'edit'}
+      for(const key of preferences.order){if(preferences.hidden.includes(key))continue;const original=Array.from(menuSheet.querySelectorAll<HTMLButtonElement>('button')).find(b=>b.textContent===route[key]);if(!original)continue;const shortcut=action(TOOLBAR_LABELS[key],icons[key],true);shortcut.title=TOOLBAR_LABELS[key];if(preferences.presentation==='labels')shortcut.append(el('span','mochi-toolbar-label',key==='settings'?'Settings':TOOLBAR_LABELS[key]));shortcut.onclick=()=>key==='settings'?this.openSettings('chat',shortcut):original.click();controls.append(shortcut)}
+      if(surface==='desktop'){const details=action('Conversation details','people',true);controls.append(details)}
       controls.append(menu); roomHeader.append(info, controls); page.append(roomHeader)
       if (surface === 'chat') roomHeader.classList.add('mochi-chat-heading')
       else headerActions.prepend(inbox)
@@ -676,6 +698,39 @@ export class MochiView {
       row.onclick = () => this.openRoom(room.id); page.append(row)
     }
     return page
+  }
+  private openSettings(page:'chat'|'personal',anchor:HTMLElement):void {
+    if(!this.settingsPage)this.settingsInvoker=anchor.getAttribute('aria-label')||'Room options'
+    const open=()=>{if(!this.settingsPage){this.preview.reset();this.search.reset();this.presetPanel.reset();this.memoryPanel.reset();this.settingsLayout.reset();this.draft=null;this.settingsDraft=null}this.settingsPage=page;this.editing=Boolean(this.roomId);this.creating=false;this.personalSettings.load();this.refreshChoices();this.redraw()}
+    if(this.settingsPage)open();else this.confirmGenerationExit(open,anchor,true)
+  }
+  private renderSettings(room?:MochiRoom):HTMLElement {
+    const root=el('section','mochi-settings-workspace');root.setAttribute('aria-label','Mochi Settings')
+    const head=el('div','mochi-settings-heading'),close=button(room?'Return to conversation':'Return to conversations');head.append(el('h3','','Mochi Settings'),close)
+    close.onclick=()=>this.confirmNavigation(()=>{this.settingsPage='';this.editing=false;this.draft=null;this.settingsDraft=null;this.personalSettings.discard();this.settingsReturnFocus=true;this.redraw()},close)
+    const tabs=el('nav','mochi-settings-tabs');tabs.setAttribute('aria-label','Settings workspace')
+    for(const [key,label]of [['chat','Chat'],['personal','Personal']] as const){const tab=button(label);tab.setAttribute('aria-pressed',String(this.settingsPage===key));tab.disabled=key==='chat'&&!room;tab.onclick=()=>{this.settingsPage=key;this.personalSettings.load();this.redraw()};tabs.append(tab)}
+    root.append(head,tabs,el('p','mochi-muted',this.settingsPage==='chat'?'This conversation · Save settings applies staged edits and may stop pending replies. Actions marked “applies now” are immediate.':'This fictional profile · Profile edits and presentation each have their own explicit Save. Your Lumiverse login stays unchanged.'))
+    if(this.error){const error=el('p','mochi-error',this.error);error.setAttribute('role','alert');root.append(error)}
+    if(this.settingsPage==='chat'&&room)root.append(this.form(room))
+    else{
+      const body=el('div','mochi-personal-scroll'),account=this.profiles.state?.accounts.find(a=>a.id===this.state?.accountId)
+      const savedScroll=this.personalScroll;body.onscroll=()=>{this.personalScroll=body.scrollTop};queueMicrotask(()=>{if(body.isConnected)body.scrollTop=savedScroll})
+      body.append(el('h4','',account?.displayName||'Legacy conversation identity'),el('p','mochi-muted','Fictional profile · Persona, avatar, username and native add-on selections are managed in the existing profile editor. Native Lumiverse theme and real-login preferences stay in Lumiverse.'))
+      const manage=button('Manage fictional profile & persona add-ons');manage.onclick=()=>{if(this.accountNavigation)this.accountNavigation.settings(manage);else this.exitPortal(()=>{this.profilesOpen=true;this.profiles.start(account);this.dispatch('mochi:accounts')},manage)}
+      const choose=button('Switch fictional profile');choose.onclick=()=>{if(this.accountNavigation)this.accountNavigation.picker();else this.showPicker()};const presentation=this.personalSettings.render(),actions=presentation.querySelector('.mochi-presentation-actions');body.append(manage,choose,presentation);root.append(body);if(actions)root.append(actions)
+    }
+    root.addEventListener('keydown',event=>{if(event.key==='Escape'&&!root.querySelector('dialog[open]')){event.stopPropagation();close.click()}})
+    return root
+  }
+  private restoreToolFocus():void{if(!this.settingsPage){this.presenceRoot?.querySelector<HTMLElement>('[aria-label="Room options"]')?.focus();return}queueMicrotask(()=>{const root=this.presenceRoot;if(this.settingsPage&&this.toolFocus)Array.from(root?.querySelectorAll<HTMLButtonElement>('button')||[]).find(b=>b.textContent===this.toolFocus)?.focus({preventScroll:true});else root?.querySelector<HTMLElement>('[aria-label="Room options"]')?.focus()})}
+  private openSettingsTool(name:string,anchor:HTMLElement,room:MochiRoom):void {
+    this.toolFocus=name
+    if(name==='Presets')this.presetPanel.show(room)
+    else if(name==='Preview AI prompt')this.preview.show(room)
+    else if(name==='Conversation Memory')this.memoryPanel.show(room)
+    else this.openPins(anchor,room)
+    this.redraw()
   }
   private form(room?: MochiRoom): HTMLFormElement {
     const state = this.state!
@@ -730,6 +785,7 @@ export class MochiView {
       const mode=el('select');if(settings.responseMode===undefined){const legacy=el('option','','Existing behavior');legacy.value='';mode.append(legacy)}
       for(const [value,label] of [['natural','Natural group chat'],['instant','Instant replies'],['manual','Manual']] as const){const option=el('option','',label);option.value=value;mode.append(option)}
       mode.value=settings.responseMode||'';mode.onchange=()=>{if(mode.value)settings.responseMode=mode.value as MochiSettings['responseMode'];else delete settings.responseMode};field('Response mode',mode)
+      const nextResponder=el('select');for(const id of ['auto',...room.characterIds]){const option=el('option','',id==='auto'?'Automatic responder':state.characters.find(c=>c.id===id)?.name||id);option.value=id;nextResponder.append(option)}nextResponder.value=this.responders.get(room.id)||'auto';nextResponder.onchange=()=>this.responders.set(room.id,nextResponder.value);field('Next responder',nextResponder);group.append(el('p','mochi-muted','Next responder applies now for the next reply in this frontend session. It does not require Save or change the saved response mode.'));nextResponder.setAttribute('aria-description','This conversation · Next reply selection applies now in this frontend session; it does not change saved response mode.')
       auto.disabled=!!settings.responseMode
       group.append(el('p','mochi-muted','This conversation · Requires Save. Natural may choose silence or delayed replies; Instant requests an eligible reply; Manual disables automatic replies, while Continue still works. A selected mode controls automatic replies; Existing behavior uses the automatic-reply checkbox. Ordinary replies do not require idle/background autonomy.'))
       section('Background messaging',true)
@@ -756,9 +812,9 @@ export class MochiView {
       }
       const instructions = el('textarea'); instructions.maxLength = 6000; instructions.value = settings.instructions; instructions.oninput = () => { settings.instructions = instructions.value }; field('Room instructions', instructions)
       for (const id of room.characterIds) {
-        section((state.characters.find(c=>c.id===id)?.name||id)+' · presence & room name',true)
+        const characterSection=section((state.characters.find(c=>c.id===id)?.name||id)+' · presence & room name',true);characterSection.dataset.characterId=id
         group.append(el('p','mochi-muted','Presence and schedule changes apply immediately.'))
-        const presence = structuredClone(room.background?.presence?.[id] || defaultPresence()), name = state.characters.find(c=>c.id===id)?.name || id
+        const presence = structuredClone(room.background?.presence?.[id] || defaultPresence()), baseName=state.characters.find(c=>c.id===id)?.name||id,name=baseName+(room.characterIds.filter(cid=>state.characters.find(c=>c.id===cid)?.name===baseName).length>1?' · character '+(room.characterIds.indexOf(id)+1):'')
         const setPresence = () => this.dispatch('mochi:presence',{roomId:room.id,revision:room.revision,characterId:id,presence})
         const status = el('select'); for (const s of STATUSES) { const option=el('option','',s==='dnd'?'DND':s[0].toUpperCase()+s.slice(1));option.value=s;status.append(option) }
         status.value=statusFor(room,id);status.disabled=this.busy;status.onchange=()=>{presence.manual=status.value as typeof presence.manual;setPresence()};field(`Status for ${name}`,status)
@@ -768,20 +824,20 @@ export class MochiView {
         const when=el('input');when.type='datetime-local';field(`Status change time for ${name}`,when)
         const plan=action(`Schedule status change for ${name}`,'plus');plan.type='button';plan.disabled=this.busy;plan.onclick=()=>{presence.transitions.push({at:new Date(when.value).getTime(),status:next.value as typeof presence.automatic});setPresence()};group.append(plan)
         if(presence.transitions.length){const clear=action(`Clear status schedule for ${name}`,'trash');clear.type='button';clear.disabled=this.busy;clear.onclick=()=>{presence.transitions=[];setPresence()};group.append(clear)}
-        const input = el('input'); input.maxLength = 120; input.value = settings.characterNames[id] || ''; input.oninput = () => { settings.characterNames[id] = input.value }; field(`Room name for ${state.characters.find(c => c.id === id)?.name || id}`, input)
+        const input = el('input'); input.maxLength = 120; input.value = settings.characterNames[id] || ''; input.oninput = () => { settings.characterNames[id] = input.value }; field(`Room name for ${name}`, input)
         group.append(textingControls(settings,id,name))
       }
     }
     if(room){section('Chat ownership',true);group.append(this.assignmentControls(room))}
     const save = action(this.busy ? 'Saving…' : room ? 'Save settings' : 'Create room', room ? 'settings' : 'plus'); save.classList.add('mochi-primary'); save.type = 'submit'; save.disabled = this.busy
-    const cancel = action('Cancel', 'back'); cancel.disabled = this.busy; cancel.onclick = () => this.confirmNavigation(() => { this.creating = false; this.editing = false; this.draft = null; this.settingsDraft = null; this.redraw() },cancel)
+    const cancel = action('Cancel', 'back'); cancel.disabled = this.busy; cancel.onclick = () => this.confirmNavigation(() => { this.creating = false; this.editing = false; this.draft = null; this.settingsDraft = null;this.settingsPage='';this.personalSettings.discard();this.settingsReturnFocus=true; this.redraw() },cancel)
     const actions = el('div', 'mochi-actions'); actions.append(save, cancel); form.append(actions)
     form.onsubmit = event => {
       event.preventDefault()
       const selected = state.accountId ? undefined : draft.persona === 'keep' ? undefined : draft.persona === 'manual' ? { source: 'manual', name: draft.name, description: draft.description } : state.personas.find(p=>p.source+':'+p.sourceId===draft.persona)
       this.dispatch(room ? 'mochi:update' : 'mochi:create', { roomId: room?.id, revision: room ? this.draftRevision : undefined, title: draft.title, characterIds: draft.characterIds, persona: selected, ...(room ? { settings } : {}) })
     }
-    return form
+    return room&&this.settingsPage==='chat'?this.settingsLayout.adapt(form,room,state,()=>this.redraw(),(name,anchor)=>this.openSettingsTool(name,anchor,room)):form
   }
   private scheduleList(room: MochiRoom): HTMLElement {
     const list = el('section'); list.setAttribute('aria-label', 'Scheduled opportunities'); list.setAttribute('aria-live', 'polite')

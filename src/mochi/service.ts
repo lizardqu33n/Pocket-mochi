@@ -1,3 +1,4 @@
+import {MochiUIPreferences} from './ui-preferences.js'
 import {SummaryError,prepareSummary,requestSummary,summaryInput,summarySources,summaryConfiguration,hashSummaryInput,type SummarySuggestion} from './summarization.js'
 import {validateMemory,proveCoverage,inspectMemory,MAX_SUMMARY_TEXT,MAX_SUMMARY_VERSIONS,type SummaryVersion} from './memory.js'
 import { roomId, defaultMochiSettings, type MochiSettings, type MochiMessage, type MochiPersona, type MochiRoom, type MochiState } from './types.js'
@@ -987,6 +988,12 @@ export class MochiService {
         this.host.sendToFrontend({ type: 'mochi:accounts', requestId: payload.requestId, createdAccountId, uploadedAvatarId, state: await this.accountsState(userId,payload.phone) }, userId)
         return
       }
+      if(payload.type==='mochi:ui_preferences'){
+        const preferences=new MochiUIPreferences(this.host,this.fictionalAccounts)
+        if(!['get','save'].includes(payload.action))throw Error('Unsupported presentation action.')
+        const record=payload.action==='save'?await preferences.save(userId,payload):await preferences.read(userId,payload.accountId)
+        this.host.sendToFrontend({type:'mochi:ui_preferences',requestId:payload.requestId,record},userId);return
+      }
       if (payload.type === 'mochi:choices') {
         const state=await this.state(userId,payload.accountId)
         this.host.sendToFrontend({type:'mochi:choices',requestId:payload.requestId,personas:state.personas,characters:state.characters,connections:state.connections},userId)
@@ -1012,6 +1019,7 @@ export class MochiService {
       else if (payload.type !== 'mochi:list' && payload.type !== 'mochi:message_action' && payload.type !== 'mochi:notification_clear' && payload.type !== 'mochi:room_assign') throw new Error('Unsupported Mochi action.')
       this.host.sendToFrontend({ type: 'mochi:state', requestId: payload.requestId, selectedRoomId, state: await this.state(userId, payload.accountId) }, userId)
     } catch (error) {
+      if(payload.type==='mochi:ui_preferences'){this.host.sendToFrontend({type:'mochi:error',requestId:payload.requestId,message:'Messenger presentation could not be loaded or saved. Refresh and review before retrying.'},userId);return}
       if (payload.type === 'mochi:send' || payload.type === 'mochi:regenerate') {
         let scope: { roomId?: string; accountId?: string; roomRevision?: number } = {}
         try {

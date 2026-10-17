@@ -58,6 +58,7 @@ export function createMochiSidebar(ctx: Pick<SpindleFrontendContext,'ui'>, sessi
     close.hidden=!mobileSurface?.isOpen;open.hidden=!!mobileSurface?.isOpen&&!pickerRequested
     editor.hidden=!session.view.isSidebarProfileOpen||pickerRequested
     if(session.view.isSidebarProfileOpen&&!pickerRequested){
+      if(ownedWindow?.isOpen)ownedWindow.hide()
       picker.hidden=true;body.hidden=true
       const focused=editor.contains(document.activeElement)?document.activeElement as HTMLInputElement:undefined,label=focused?.getAttribute('aria-label'),start=focused?.selectionStart,end=focused?.selectionEnd
       editor.replaceChildren(session.view.renderSidebarProfile())
@@ -93,7 +94,7 @@ export function createMochiSidebar(ctx: Pick<SpindleFrontendContext,'ui'>, sessi
   const dispose=()=>{if(disposed)return;disposed=true;offWindow?.();visibility.clear();session.view.setAccountNavigation(undefined);workspace?.destroy();mobileSurface?.destroy();root.remove()}
   const detach=session.observeNavigation({redraw:render,disposed:dispose})
   render()
-  const openPicker=()=>{session.assertActive();if(!mobileSurface?.isOpen)activateSidebar();showPicker()}
+  const openPicker=()=>{session.assertActive();const anchor=document.activeElement as HTMLElement;session.view.exitPortal(()=>{if(ownedWindow?.isOpen)ownedWindow.hide();if(!mobileSurface?.isOpen)activateSidebar();showPicker()},anchor,true)}
   const settings=(anchor:HTMLElement)=>{if(!mobileSurface?.isOpen)activateSidebar();pickerRequested=false;if(session.view.isSidebarProfileOpen)render();else session.view.editSidebarProfile(anchor,()=>{if(session.view.state?.accountId)present();else showPicker()})}
   session.view.setAccountNavigation({picker:openPicker,settings})
   return {root,open:()=>{session.assertActive();showPicker()},settings,openMessenger:()=>{session.assertActive();const current=session.view.navigationState;if(current.selectedAccountId&&current.accounts?.accounts.some(a=>a.id===current.selectedAccountId&&!a.archived)&&session.view.state?.accountId===current.selectedAccountId)present();else openPicker()},onMessengerVisibility(handler){visibility.add(handler);handler(ownedWindow?.isOpen||workspace?.isOpen||false);return()=>{visibility.delete(handler)}},destroy:()=>{detach();dispose()}}

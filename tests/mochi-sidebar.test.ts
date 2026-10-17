@@ -115,9 +115,11 @@ test('messenger account controls use sidebar editor; save/cancel return to conve
   try{
     h.tabs[0].activate();h.accounts();h.select(h.a);h.session.view.select('room_'+h.a)
     const view=h.session.view as any;view.drafts.set(view.roomId,'Unsent draft')
-    document.querySelector<HTMLButtonElement>('.mochi-window [aria-label="Switch Mochi account"]')!.click();h.accounts()
+    document.querySelector<HTMLButtonElement>('.mochi-window [aria-label="Personal Settings"]')!.click()
+    Array.from(document.querySelectorAll<HTMLButtonElement>('.mochi-window button')).find(n=>n.textContent==='Switch fictional profile')!.click();h.accounts()
     expect(document.querySelector('.mochi-window .mochi-account-picker')).toBeNull();expect(view.roomId).toBe('room_'+h.a)
-    document.querySelector<HTMLButtonElement>('.mochi-window [aria-label="Account settings"]')!.click()
+    expect(document.querySelector('.mochi-window [aria-label="Mochi Settings"]')).not.toBeNull()
+    Array.from(document.querySelectorAll<HTMLButtonElement>('.mochi-window button')).find(n=>n.textContent==='Manage fictional profile & persona add-ons')!.click()
     expect(h.navigation.root.querySelector('.mochi-profile-screen')).not.toBeNull();expect(document.querySelector('.mochi-window .mochi-profile-screen')).toBeNull()
     Array.from(h.navigation.root.querySelectorAll<HTMLButtonElement>('button')).find(n=>n.textContent==='Cancel profile changes')!.click()
     expect(view.isSidebarProfileOpen).toBe(false);expect(view.roomId).toBe('room_'+h.a);expect(view.drafts.get(view.roomId)).toBe('Unsent draft')

@@ -35,6 +35,8 @@ export function createMochiWorkspace(options: MochiWorkspaceOptions): MochiWorks
   style.textContent = '.mochi-workspace{display:flex;flex-direction:column;width:100%;height:100%;min-width:0;min-height:0;overflow:hidden;box-sizing:border-box}.mochi-workspace[hidden]{display:none!important}.mochi-workspace>.mochi-view{min-height:0}'
   frame.append(style); options.root.append(frame)
   let opened = false, destroyed = false, dirty = true
+  let renderedAccount:string|undefined
+  let retainedScroll:{account?:string;room?:string;first?:string;top:number;height:number;bottom:boolean}|undefined
   let dismissNotice: (() => void) | undefined
   const visible = () => opened && session.owns(surface) && (options.isHostVisible?.()??true) && frame.isConnected && !document.hidden && !frame.closest('[hidden]') && (typeof frame.checkVisibility !== 'function' || frame.checkVisibility({ visibilityProperty: true }))
   const policy = (): MochiNotificationPolicy => ({ ...options.notificationPolicy(), visible: visible() && view.isConversationOpen() })
@@ -44,8 +46,10 @@ export function createMochiWorkspace(options: MochiWorkspaceOptions): MochiWorks
     const focused = frame.contains(document.activeElement) ? document.activeElement as HTMLInputElement | HTMLTextAreaElement : null
     const label = focused?.getAttribute('aria-label')
     const selection = focused && ['TEXTAREA', 'INPUT'].includes(focused.tagName) ? [focused.selectionStart, focused.selectionEnd] : null
-    const oldThread=frame.querySelector<HTMLElement>('.mochi-thread'),oldList=frame.querySelector<HTMLElement>('.mochi-desktop-rooms')
-    const scroll=oldThread?{room:oldThread.dataset.roomId,first:oldThread.dataset.firstMessageId,top:oldThread.scrollTop,height:oldThread.scrollHeight,bottom:oldThread.scrollHeight-oldThread.clientHeight-oldThread.scrollTop<72}:undefined
+    const oldThread=renderedAccount===view.state?.accountId?frame.querySelector<HTMLElement>('.mochi-thread'):null,oldList=frame.querySelector<HTMLElement>('.mochi-desktop-rooms')
+    if(retainedScroll?.account!==view.state?.accountId)retainedScroll=undefined
+    const scroll=oldThread?{account:view.state?.accountId,room:oldThread.dataset.roomId,first:oldThread.dataset.firstMessageId,top:oldThread.scrollTop,height:oldThread.scrollHeight,bottom:oldThread.scrollHeight-oldThread.clientHeight-oldThread.scrollTop<72}:retainedScroll
+    retainedScroll=scroll;renderedAccount=view.state?.accountId
     const listScroll=oldList?.scrollTop||0
     const node = options.presentation==='messenger'?view.renderDesktop():view.render(); node.classList.add('lumiphone-app-view')
     const old = frame.querySelector(':scope > .mochi-view')
