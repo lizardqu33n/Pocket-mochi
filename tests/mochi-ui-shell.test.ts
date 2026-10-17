@@ -126,3 +126,24 @@ test('compact search keeps clear/close accessible, submitting only the existing 
   f.click('Close search');expect(document.querySelector('.mochi-search-panel')).toBeNull();expect(f.sent.filter(p=>p.type==='mochi:search')).toHaveLength(1)
  }finally{f.cleanup()}
 })
+
+for(const [label,selector] of [
+ ['Search conversation','.mochi-search-panel'],['Participants','dialog[open]'],
+ ['Chat Settings','[aria-label="Room name"]'],['Presets','[aria-label="Mochi presets"]'],
+ ['Conversation Memory','.mochi-memory-panel'],['Preview AI prompt','.mochi-preview-panel'],
+ ['Pins & Notes','dialog[open]'],['Mochi notifications','[aria-label="Back to rooms"]'],
+] as const)test(`distinct toolbar shortcut opens ${label}`,()=>{
+ const f=fixture(390)
+ try{
+  const personal=(f.view as any).personalSettings
+  personal.saved={preferences:{...personal.value,hidden:[]}}
+  f.redraw()
+  const toolbar=document.querySelector('.mochi-toolbar-shortcuts')!
+  const shortcuts=Array.from(toolbar.querySelectorAll<HTMLButtonElement>('button'))
+  expect(new Set(shortcuts.map(n=>n.querySelector('svg')!.innerHTML)).size).toBe(shortcuts.length)
+  shortcuts.find(n=>n.getAttribute('aria-label')===label)!.click()
+  expect(document.querySelector(selector)).not.toBeNull()
+  expect(f.room.messages).toHaveLength(1)
+  expect(f.sent.some(p=>p.type==='mochi:generate')).toBe(false)
+ }finally{f.cleanup()}
+})

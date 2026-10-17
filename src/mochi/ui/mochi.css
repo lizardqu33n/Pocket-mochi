@@ -678,9 +678,9 @@
   padding-top:10px
 }
 .mochi-composer-row {
-  gap:6px;
+  gap:8px;
   align-items:center;
-  padding:4px;
+  padding:6px;
   border:1px solid var(--mochi-border);
   border-radius:26px;
   background:color-mix(in srgb,var(--lp-text,#fff) 4%,var(--mochi-surface))
@@ -689,7 +689,7 @@
   background:transparent;
   border:0;
   border-radius:20px;
-  padding:10px 9px
+  padding:10px 14px
 }
 .mochi-composer .mochi-icon-button {
   height:44px
@@ -837,22 +837,24 @@
   min-width:100px;
   min-height:44px;
   border-radius:99px;
-  padding:8px 28px 8px 8px;
+  padding:6px 36px 6px 8px;
   background:color-mix(in srgb,var(--mochi-accent) 6%,var(--mochi-surface));
   border:1px solid var(--mochi-border)
 }
 .mochi-responder::after {
   content:'⌄';
   position:absolute;
-  right:10px;
-  top:10px;
+  right:12px;
+  top:50%;
+  transform:translateY(-50%);
+  line-height:1;
   color:var(--lp-muted,#a9a3b5);
   pointer-events:none
 }
 .mochi-responder-identity {
   display:flex;
   align-items:center;
-  gap:7px;
+  gap:10px;
   min-width:0
 }
 .mochi-responder .mochi-avatar {
@@ -1441,6 +1443,105 @@
   max-width:100%;
   height:auto;
   object-fit:contain
+}
+
+/* Compact conversation toolbar. Long saved labels scroll without moving More. */
+.mochi-view[data-surface] .mochi-room-header {
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:8px
+}
+
+.mochi-view[data-surface] .mochi-room-header>.mochi-custom-toolbar {
+  display:flex;
+  flex-wrap:nowrap;
+  align-items:center;
+  gap:4px;
+  width:100%;
+  max-width:none;
+  min-width:0;
+  position:relative
+}
+
+.mochi-view .mochi-toolbar-shortcuts {
+  display:flex;
+  flex:1 1 auto;
+  min-width:0;
+  gap:2px;
+  overflow-x:auto;
+  scrollbar-width:thin;
+  align-items:center
+}
+
+.mochi-view .mochi-room-header .mochi-custom-toolbar .mochi-icon-button,.mochi-view .mochi-room-header .mochi-custom-toolbar .lp-nav-action {
+  display:inline-flex;
+  flex:0 0 auto;
+  align-items:center;
+  justify-content:center;
+  width:auto;
+  min-width:40px;
+  min-height:40px;
+  height:40px;
+  padding:8px;
+  margin:0;
+  border:1px solid transparent;
+  border-radius:8px;
+  background:transparent;
+  color:var(--lp-muted,var(--lumiverse-text-muted,inherit));
+  box-shadow:none;
+  cursor:pointer
+}
+
+.mochi-view .mochi-room-header .mochi-custom-toolbar svg {
+  width:18px;
+  height:18px;
+  display:block
+}
+
+.mochi-view .mochi-room-header .mochi-custom-toolbar .mochi-toolbar-label {
+  display:inline;
+  font-size:12px;
+  white-space:nowrap
+}
+
+.mochi-view .mochi-room-header .mochi-custom-toolbar button:hover,.mochi-view .mochi-room-header .mochi-custom-toolbar summary:hover,.mochi-view .mochi-room-header .mochi-custom-toolbar [aria-expanded=true] {
+  background:color-mix(in srgb,var(--lp-accent,#b7a0e8) 12%,transparent);
+  color:var(--lp-text,var(--lumiverse-text,inherit))
+}
+
+.mochi-view .mochi-room-header .mochi-custom-toolbar :is(button,summary):focus-visible {
+  outline:2px solid var(--lp-accent,#b7a0e8);
+  outline-offset:-2px
+}
+
+.mochi-view .mochi-room-header .mochi-custom-toolbar .lp-conversation-menu {
+  position:static;
+  flex:0 0 auto
+}
+
+.mochi-view .mochi-room-header .mochi-custom-toolbar summary {
+  list-style:none
+}
+
+.mochi-view .mochi-room-header .mochi-custom-toolbar summary::-webkit-details-marker {
+  display:none
+}
+
+.mochi-view .mochi-room-header .mochi-custom-toolbar .lp-conversation-menu-sheet {
+  position:absolute;
+  inset:calc(100% + 4px) 0 auto auto;
+  width:min(224px,100%);
+  max-width:100%;
+  max-height:min(300px,45dvh);
+  overflow:auto;
+  z-index:50
+}
+
+
+
+.mochi-view .mochi-room-header .mochi-custom-toolbar .lp-conversation-menu[data-direction=up] .lp-conversation-menu-sheet {
+  inset: auto 0 calc(100% + 4px) auto;
 }
 
 /* @mochi-section mochi-reply-styles */
@@ -2490,7 +2591,7 @@
   align-items:center;
   justify-content:space-between;
   gap:var(--mochi-space-md);
-  padding:14px 20px;
+  padding:16px 20px;
   border-bottom:1px solid var(--mochi-border)
 }
 .mochi-settings-heading h3 {
@@ -2500,16 +2601,20 @@
 .mochi-settings-tabs,.mochi-settings-categories {
   display:flex;
   flex-wrap:wrap;
-  gap:6px;
-  padding:8px 20px;
+  gap:8px;
+  padding:12px 20px;
   border-bottom:1px solid var(--mochi-border);
   flex:none
+}
+.mochi-settings-categories {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(130px,1fr))
 }
 .mochi-settings-workspace button {
   min-height:44px;
   font:inherit;
   color:inherit;
-  font-size:12px
+  font-size:13px
 }
 .mochi-settings-workspace button[aria-pressed=true] {
   border-color:var(--mochi-accent);
@@ -2517,8 +2622,9 @@
 }
 .mochi-settings-workspace>.mochi-muted {
   margin:0;
-  padding:6px 20px;
-  font-size:11px
+  padding:10px 20px;
+  font-size:12px;
+  line-height:1.5
 }
 .mochi-view .mochi-organized-settings {
   display:flex;
@@ -2533,12 +2639,13 @@
   flex:1;
   min-height:0;
   overflow:auto;
-  padding:16px 20px;
+  padding:20px;
   overscroll-behavior:contain
 }
 .mochi-organized-settings>.mochi-actions {
   flex:none;
-  padding:8px 20px;
+  gap:10px;
+  padding:12px 20px;
   border-top:1px solid var(--mochi-border);
   background:var(--mochi-surface)
 }
@@ -2918,10 +3025,10 @@
   background:var(--mochi-surface)
 }
 .mochi-desktop-list-head {
-  padding:10px;
+  padding:16px 14px 8px;
   flex:none;
   display:grid;
-  gap:8px
+  gap:12px
 }
 .mochi-desktop-list-head h3 {
   margin:0;
@@ -2936,12 +3043,14 @@
 .mochi-shell-account-row {
   display:flex;
   align-items:center;
-  gap:2px;
+  gap:10px;
   min-width:0
 }
 .mochi-shell-account-row .mochi-desktop-account {
   flex:1;
   min-width:0;
+  box-sizing:border-box;
+  padding-right:34px;
   font-weight:600
 }
 .mochi-shell-account-row button {
@@ -2977,17 +3086,20 @@
 }
 .mochi-conversation-filters {
   display:grid;
-  grid-template-columns:repeat(4,minmax(0,1fr));
-  gap:2px
+  grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) minmax(0,1.2fr) auto;
+  align-items:center;
+  gap:6px
 }
 .mochi-conversation-filters>.lp-button {
   min-width:0;
-  min-height:44px;
-  padding:4px 2px;
-  font-size:11px;
+  min-height:40px;
+  padding:6px 10px;
+  font-size:12px;
+  line-height:1.2;
   border:0;
+  border-radius:var(--mochi-radius-field);
   background:transparent;
-  white-space:normal;
+  white-space:nowrap;
   justify-content:center
 }
 .mochi-conversation-filters button[aria-pressed=true] {
@@ -3013,10 +3125,10 @@
   flex:1;
   min-height:0;
   overflow:auto;
-  padding:6px;
+  padding:8px 10px;
   display:flex;
   flex-direction:column;
-  gap:4px
+  gap:6px
 }
 .mochi-desktop .mochi-desktop-room {
   display:flex;
@@ -3024,8 +3136,8 @@
   gap:var(--mochi-space-sm);
   width:100%;
   text-align:left;
-  padding:10px;
-  border-radius:10px;
+  padding:12px;
+  border-radius:var(--mochi-radius-field);
   border:1px solid transparent;
   background:transparent;
   color:inherit;
@@ -3042,7 +3154,7 @@
   flex:1;
   min-width:0;
   display:grid;
-  gap:4px
+  gap:3px
 }
 .mochi-desktop-room-copy strong,.mochi-desktop-room-copy small {
   overflow:hidden;
@@ -3050,18 +3162,20 @@
   white-space:nowrap
 }
 .mochi-desktop-room-copy strong {
-  font-size:13px
+  font-size:14px
 }
 .mochi-desktop-room-copy small {
-  font-size:11px;
+  font-size:12px;
   opacity:.75
 }
 .mochi-desktop-room .mochi-room-avatars {
-  flex:none
+  flex:none;
+  display:flex;
+  align-items:center
 }
 .mochi-desktop-room .mochi-avatar {
-  width:28px;
-  height:28px
+  width:34px;
+  height:34px
 }
 .mochi-desktop-unread {
   flex:none;
@@ -3130,7 +3244,7 @@
   display:flex;
   align-items:center;
   justify-content:space-between;
-  padding:8px 2px
+  padding:4px 2px 8px
 }
 .mochi-shell-brand h2 {
   display:flex;
@@ -3183,11 +3297,12 @@
 .mochi-desktop-main .mochi-room-header {
   grid-template-columns:minmax(0,1fr) auto;
   align-items:center;
-  padding:4px 0 12px;
+  padding:12px 0 16px;
   border-bottom:1px solid var(--lp-border,#ffffff26)
 }
 .mochi-desktop-main .mochi-room-header>.mochi-actions {
-  gap:2px;
+  gap:8px;
+  align-items:center;
   padding:0
 }
 .mochi-profile-panel {
