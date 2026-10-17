@@ -86,6 +86,379 @@ function requestId(prefix = "req") {
   return `${prefix}_${globalThis.crypto?.randomUUID?.() || `${Date.now()}_${Math.random().toString(36).slice(2)}`}`;
 }
 
+// src/mochi/types.ts
+var defaultMochiSettings = () => ({ autoReply: true, connectionId: "", contextTokens: 8192, outputTokens: 1200, instructions: "", characterNames: {} });
+var MOCHI_ROOM_ID = /^room_[a-f0-9]{32}$/;
+
+// src/mochi/presence.ts
+var STATUSES = ["online", "away", "dnd", "offline"];
+function defaultPresence() {
+  return { automatic: "online", manual: null, awayMs: 300000, dndMs: 900000, transitions: [] };
+}
+function statusFor(room, id, now = Date.now()) {
+  const p = room.runtime?.presence?.[id] || room.background?.presence?.[id] || defaultPresence();
+  if (p.manual)
+    return p.manual;
+  return p.transitions.filter((t) => t.at <= now).sort((a, b) => a.at - b.at).at(-1)?.status || p.automatic;
+}
+
+// src/mochi/scheduling.ts
+var SCHEDULE_LABELS = { queued: "Scheduled", generating: "Generating", generated: "Waiting to deliver", delivered: "Delivered", cancelled: "Canceled", paused: "Needs attention", failed: "Failed", missed: "Expired" };
+var TERMINAL = new Set(["delivered", "cancelled", "failed", "missed"]);
+
+// src/mochi/ui-preferences.ts
+var TOOLBAR_ACTIONS = ["search", "participants", "notifications", "settings", "presets", "memory", "preview", "notes"];
+var TOOLBAR_LABELS = { search: "Search conversation", participants: "Participants", notifications: "Mochi notifications", settings: "Chat Settings", presets: "Presets", memory: "Conversation Memory", preview: "Preview AI prompt", notes: "Pins & Notes" };
+var defaultUIPreferences = () => ({ order: [...TOOLBAR_ACTIONS], hidden: ["presets", "memory", "preview", "notes"], presentation: "icons", dock: "comfortable" });
+function validateUIPreferences(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).some((k) => !["order", "hidden", "presentation", "dock"].includes(k)))
+    throw Error("Invalid messenger presentation preferences.");
+  const valid = (items) => Array.isArray(items) && items.length <= TOOLBAR_ACTIONS.length && new Set(items).size === items.length && items.every((k) => TOOLBAR_ACTIONS.includes(k));
+  if (!valid(value.order) || value.order.length !== TOOLBAR_ACTIONS.length || !valid(value.hidden) || !["icons", "labels"].includes(value.presentation) || !["compact", "comfortable"].includes(value.dock))
+    throw Error("Invalid messenger presentation preferences.");
+  return structuredClone(value);
+}
+
+// src/mochi/personal-settings.ts
+class PersonalSettings {
+  send;
+  current;
+  owner;
+  redraw;
+  saved;
+  draft;
+  status = "";
+  ticket = "";
+  scope = "";
+  timer;
+  constructor(send, current, owner, redraw) {
+    this.send = send;
+    this.current = current;
+    this.owner = owner;
+    this.redraw = redraw;
+  }
+  get value() {
+    return this.saved?.preferences || defaultUIPreferences();
+  }
+  get dirty() {
+    return !!this.draft && JSON.stringify(this.draft) !== JSON.stringify(this.value);
+  }
+  reset() {
+    clearTimeout(this.timer);
+    this.ticket = "";
+    this.scope = "";
+    this.saved = undefined;
+    this.draft = undefined;
+    this.status = "";
+  }
+  discard() {
+    this.draft = this.saved ? structuredClone(this.saved.preferences) : undefined;
+  }
+  load(force = false) {
+    const scope = this.current() || "legacy";
+    if (!force && (this.scope === scope && (this.ticket || this.saved)))
+      return;
+    this.scope = scope;
+    this.request("get");
+  }
+  request(action) {
+    const accountId = this.current();
+    this.ticket = requestId("mochi_ui");
+    const ticket = this.ticket;
+    this.status = action === "save" ? "Saving presentation…" : "Loading presentation…";
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => {
+      if (this.ticket === ticket) {
+        this.ticket = "";
+        this.status = "Presentation unavailable. Refresh to retry.";
+        this.redraw();
+      }
+    }, 20000);
+    this.send({ type: "mochi:ui_preferences", requestId: ticket, action, accountId, ...action === "save" ? { revision: this.saved?.revision, preferences: this.draft } : {} });
+  }
+  receive(p) {
+    if (!this.ticket || p?.requestId !== this.ticket || !["mochi:ui_preferences", "mochi:error"].includes(p.type))
+      return p?.type === "mochi:ui_preferences";
+    this.ticket = "";
+    clearTimeout(this.timer);
+    if ((this.current() || "legacy") !== this.scope)
+      return true;
+    if (p.type === "mochi:error") {
+      this.status = "Unable to save or load presentation. Refresh and review before retrying.";
+      this.redraw();
+      return true;
+    }
+    const record = p.record;
+    if (!record || record.version !== 1 || !Number.isSafeInteger(record.revision) || record.revision < 0 || record.accountId !== this.current() || this.owner() && record.ownerId !== this.owner())
+      return true;
+    try {
+      record.preferences = validateUIPreferences(record.preferences);
+    } catch {
+      return true;
+    }
+    const dirty = this.dirty;
+    this.saved = record;
+    if (!dirty)
+      this.draft = structuredClone(record.preferences);
+    this.status = "Presentation saved for this fictional profile; legacy preferences belong to this Lumiverse login.";
+    this.redraw();
+    return true;
+  }
+  render() {
+    const root = el("section", "mochi-personal-presentation");
+    root.setAttribute("aria-label", "Messenger presentation");
+    root.append(el("h4", "", "Messenger presentation"), el("p", "mochi-muted", (this.current() ? "This fictional profile" : "This Lumiverse login · Legacy view") + " · Save presentation applies toolbar and dock changes only. It never switches profiles or changes conversation behavior. Lumiverse theme and login settings remain native."));
+    const status = el("p", "mochi-muted", this.status);
+    status.setAttribute("role", "status");
+    root.append(status);
+    const refresh = button("Refresh presentation");
+    refresh.onclick = () => {
+      this.load(true);
+      this.redraw();
+    };
+    root.append(refresh);
+    if (!this.saved)
+      return root;
+    this.draft ||= structuredClone(this.value);
+    const draft = this.draft;
+    const choice = (label, key, values) => {
+      const wrap = el("label", "", label), select = el("select");
+      select.setAttribute("aria-label", label);
+      for (const [value, name] of values) {
+        const o = el("option", "", name);
+        o.value = value;
+        select.append(o);
+      }
+      select.value = draft[key];
+      select.onchange = () => {
+        draft[key] = select.value;
+      };
+      wrap.append(select);
+      root.append(wrap);
+    };
+    choice("Toolbar presentation", "presentation", [["icons", "Compact icons"], ["labels", "Icons and labels"]]);
+    choice("Profile dock appearance", "dock", [["comfortable", "Avatar, name and username"], ["compact", "Compact avatar and profile selector"]]);
+    root.append(el("h4", "", "Toolbar actions"), el("p", "mochi-muted", "Hidden actions stay in Room options. Chat Settings, Personal Settings and profile switching always remain reachable."));
+    for (const [index, key] of draft.order.entries()) {
+      const row = el("div", "mochi-toolbar-preference"), label = el("label", "", TOOLBAR_LABELS[key]), shown = el("input");
+      shown.type = "checkbox";
+      shown.checked = !draft.hidden.includes(key);
+      shown.setAttribute("aria-label", "Show " + TOOLBAR_LABELS[key]);
+      shown.onchange = () => {
+        draft.hidden = draft.hidden.filter((k) => k !== key);
+        if (!shown.checked)
+          draft.hidden.push(key);
+      };
+      label.append(shown);
+      const move = (delta) => {
+        [draft.order[index], draft.order[index + delta]] = [draft.order[index + delta], key];
+        this.redraw();
+      };
+      const up = button("↑"), down = button("↓");
+      up.setAttribute("aria-label", "Move " + TOOLBAR_LABELS[key] + " up");
+      down.setAttribute("aria-label", "Move " + TOOLBAR_LABELS[key] + " down");
+      up.disabled = index === 0;
+      down.disabled = index === draft.order.length - 1;
+      up.onclick = () => move(-1);
+      down.onclick = () => move(1);
+      row.append(label, up, down);
+      root.append(row);
+    }
+    const save = button("Save presentation"), cancel = button("Cancel changes"), reset = button("Reset to defaults");
+    cancel.setAttribute("aria-label", "Cancel presentation changes");
+    reset.setAttribute("aria-label", "Restore default presentation");
+    const actions = el("div", "mochi-presentation-actions");
+    save.disabled = !!this.ticket;
+    save.onclick = () => {
+      this.request("save");
+      this.redraw();
+    };
+    cancel.onclick = () => {
+      this.discard();
+      this.redraw();
+    };
+    reset.onclick = () => {
+      this.draft = defaultUIPreferences();
+      this.redraw();
+    };
+    actions.append(save, cancel, reset);
+    root.append(actions);
+    return root;
+  }
+}
+
+// src/mochi/settings-workspace.ts
+var SETTINGS_CATEGORIES = ["General", "Texting Behavior", "Availability & Schedules", "Advanced"];
+
+class ChatSettingsLayout {
+  category = "General";
+  character = "";
+  characterTab = "texting";
+  scroll = 0;
+  overviewScroll = 0;
+  focus = "";
+  reset() {
+    this.category = "General";
+    this.character = "";
+    this.scroll = 0;
+    this.overviewScroll = 0;
+    this.focus = "";
+  }
+  adapt(form, room, state, redraw, tools) {
+    form.classList.add("mochi-organized-settings");
+    form.setAttribute("aria-label", "Chat Settings");
+    form.querySelector("h3")?.remove();
+    const sections = Array.from(form.querySelectorAll(":scope>.mochi-settings-section"));
+    const title = (node) => node.querySelector("legend,summary")?.textContent || "";
+    const categories = new Map;
+    for (const name of SETTINGS_CATEGORIES) {
+      const body = el("section", "mochi-settings-category");
+      body.setAttribute("aria-label", name + " settings");
+      categories.set(name, body);
+    }
+    for (const node of sections) {
+      if (node.dataset.characterId)
+        continue;
+      const name = title(node);
+      let target = name === "Conversation" || name === "Chat ownership" ? "General" : name === "Background messaging" ? "Availability & Schedules" : "Advanced";
+      if (name === "Connection & replies") {
+        const texting = categories.get("Texting Behavior");
+        for (const label of ["Reply automatically after sending", "Response mode", "Next responder"]) {
+          const field = node.querySelector(`[aria-label="${label}"]`)?.closest("label");
+          if (field)
+            texting.append(field);
+        }
+        const help = Array.from(node.querySelectorAll("p")).find((p) => p.textContent?.includes("Natural may choose"));
+        if (help)
+          texting.append(help);
+        const responderHelp = Array.from(node.querySelectorAll("p")).find((p) => p.textContent?.startsWith("Next responder applies now"));
+        if (responderHelp)
+          texting.append(responderHelp);
+      }
+      if (name === "Connection & replies")
+        node.querySelector("legend,summary").textContent = "Connection & model";
+      if (node.tagName === "DETAILS" && name !== "Chat ownership")
+        node.open = true;
+      categories.get(target).append(node);
+    }
+    const characters = sections.filter((s) => s.dataset.characterId), overview = () => {
+      const list = el("div", "mochi-character-settings-list");
+      for (const [index, id] of room.characterIds.entries()) {
+        const c = state.characters.find((c) => c.id === id), name = c?.name || "Unavailable character", row = el("div", "mochi-character-settings-row"), avatar = el("span", "mochi-avatar", name.slice(0, 1));
+        if (c?.avatarUrl) {
+          const img = el("img");
+          img.src = c.avatarUrl;
+          img.alt = "";
+          avatar.replaceChildren(img);
+        }
+        const copy = el("div");
+        copy.append(el("strong", "", name), el("small", "mochi-muted", `${statusFor(room, id)} · ${room.settings?.textingStyles?.[id]?.length || "Character default"} · character ${index + 1}`));
+        const edit = button("Edit");
+        edit.setAttribute("aria-label", `Edit character ${index + 1}: ${name}`);
+        edit.dataset.characterId = id;
+        edit.onclick = () => {
+          this.overviewScroll = this.scroll;
+          this.scroll = 0;
+          this.character = id;
+          this.characterTab = this.category === "Availability & Schedules" ? "availability" : "texting";
+          this.focus = "back";
+          redraw();
+        };
+        row.append(avatar, copy, edit);
+        list.append(row);
+      }
+      return list;
+    };
+    for (const name of ["General", "Texting Behavior", "Availability & Schedules"])
+      categories.get(name).append(el("h4", "", "Characters in this conversation"), overview());
+    const advanced = categories.get("Advanced");
+    advanced.append(el("p", "mochi-muted", "Advanced conversation tools · Presets publish reusable revisions; applying is separate. Preview is read-only. System Notes intentionally guide AI context."));
+    for (const name of ["Presets", "Preview AI prompt", "Conversation Memory", "Pins & Notes"]) {
+      const b = button(name);
+      b.onclick = () => tools(name, b);
+      advanced.append(b);
+    }
+    const nav = el("nav", "mochi-settings-categories");
+    nav.setAttribute("aria-label", "Chat settings categories");
+    const scroller = el("div", "mochi-settings-scroll");
+    scroller.onscroll = () => {
+      this.scroll = scroller.scrollTop;
+    };
+    const footer = form.querySelector(":scope>.mochi-actions");
+    form.replaceChildren(nav, scroller, footer);
+    for (const name of SETTINGS_CATEGORIES) {
+      const tab = button(name);
+      tab.setAttribute("aria-pressed", String(this.category === name));
+      tab.onclick = () => {
+        this.category = name;
+        this.character = "";
+        this.scroll = 0;
+        redraw();
+      };
+      nav.append(tab);
+    }
+    if (this.character) {
+      const detail = characters.find((s) => s.dataset.characterId === this.character);
+      if (detail) {
+        if (detail.tagName === "DETAILS")
+          detail.open = true;
+        const heading = detail.querySelector("summary,legend");
+        heading.textContent = heading.textContent.replace("presence & room name", "character settings");
+        const texting = el("div", "mochi-character-fields"), availability = el("div", "mochi-character-fields"), nickname = detail.querySelector('[aria-label^="Room name for "]')?.closest("label"), style = detail.querySelector(".mochi-texting-controls");
+        if (nickname)
+          texting.append(nickname);
+        if (style)
+          texting.append(style);
+        for (const node of Array.from(detail.children))
+          if (node !== heading)
+            availability.append(node);
+        const detailNav = el("nav", "mochi-character-detail-nav");
+        for (const [key, label] of [["texting", "Texting & nickname"], ["availability", "Availability"]]) {
+          const tab = button(label);
+          tab.setAttribute("aria-label", "Character " + key + " settings");
+          tab.setAttribute("aria-pressed", String(this.characterTab === key));
+          tab.onclick = () => {
+            this.characterTab = key;
+            this.scroll = 0;
+            redraw();
+          };
+          detailNav.append(tab);
+        }
+        detail.replaceChildren(heading, detailNav, this.characterTab === "texting" ? texting : availability);
+        const back = button("Back to characters");
+        back.onclick = () => {
+          const id = this.character;
+          this.character = "";
+          this.scroll = this.overviewScroll;
+          this.focus = id;
+          redraw();
+        };
+        scroller.append(back, el("p", "mochi-muted", "This character within this conversation · Name and texting edits require Save. Presence, delays and schedule buttons apply immediately."), detail);
+      } else
+        this.character = "";
+    }
+    if (!this.character)
+      scroller.append(categories.get(this.category));
+    const saved = this.scroll, focus = this.focus;
+    this.focus = "";
+    queueMicrotask(() => {
+      if (!scroller.isConnected)
+        return;
+      scroller.scrollTop = saved;
+      if (focus === "back")
+        scroller.querySelector("button")?.focus({ preventScroll: true });
+      else if (focus)
+        Array.from(scroller.querySelectorAll("[data-character-id]")).find((b) => b.dataset.characterId === focus)?.focus({ preventScroll: true });
+    });
+    return form;
+  }
+}
+var SETTINGS_WORKSPACE_STYLES = `
+.mochi-view[data-settings-workspace=true]{display:flex;flex-direction:column;height:100%;min-height:0;padding:0;overflow:hidden}.mochi-desktop[data-settings-workspace=true]{grid-template-columns:minmax(0,1fr)!important}.mochi-desktop[data-settings-workspace=true]>.mochi-desktop-list,.mochi-desktop[data-settings-workspace=true]>.mochi-profile-panel,.mochi-desktop[data-settings-workspace=true] .mochi-desktop-back{display:none!important}.mochi-settings-workspace{display:flex;flex-direction:column;min-height:0;height:100%;overflow:hidden;background:var(--mochi-surface);color:inherit;container-type:inline-size}.mochi-settings-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px;border-bottom:1px solid var(--mochi-border)}.mochi-settings-heading h3{margin:0;font-size:17px}.mochi-settings-tabs,.mochi-settings-categories{display:flex;flex-wrap:wrap;gap:6px;padding:8px 20px;border-bottom:1px solid var(--mochi-border);flex:none}.mochi-settings-workspace button{min-height:44px;font:inherit;color:inherit;font-size:12px}.mochi-settings-workspace button[aria-pressed=true]{border-color:var(--mochi-accent);box-shadow:inset 0 -2px var(--mochi-accent)}.mochi-settings-workspace>.mochi-muted{margin:0;padding:6px 20px;font-size:11px}.mochi-view .mochi-organized-settings{display:flex;flex:1;flex-direction:column;min-height:0;overflow:hidden;gap:0;padding:0}.mochi-settings-scroll,.mochi-personal-scroll{flex:1;min-height:0;overflow:auto;padding:16px 20px;overscroll-behavior:contain}.mochi-organized-settings>.mochi-actions{flex:none;padding:8px 20px;border-top:1px solid var(--mochi-border);background:var(--mochi-surface)}.mochi-view .mochi-settings-category{display:grid;align-content:start;gap:12px;min-width:0}.mochi-view .mochi-settings-category>.mochi-settings-section,.mochi-view .mochi-settings-scroll>.mochi-settings-section{border:0;border-radius:0;padding:0;background:transparent}.mochi-view .mochi-settings-scroll .mochi-settings-section>summary{padding:8px 0;border:0}.mochi-view .mochi-settings-scroll .mochi-settings-section[open]>:not(summary){margin:0 0 12px}.mochi-view .mochi-settings-category label,.mochi-view .mochi-personal-scroll label{min-width:0}.mochi-character-settings-list{display:grid;gap:0}.mochi-character-settings-row{display:flex;align-items:center;gap:10px;min-height:64px;padding:8px 0;border-bottom:1px solid var(--mochi-border)}.mochi-character-settings-row>div{display:grid;gap:3px;flex:1;min-width:0}.mochi-character-settings-row strong{overflow-wrap:anywhere;font-size:13px}.mochi-character-settings-row small{font-size:11px}.mochi-character-settings-row>.mochi-avatar{width:36px;height:36px;flex:none}.mochi-toolbar-preference{display:flex;gap:6px;align-items:center;border-bottom:1px solid var(--mochi-border);padding:6px 0}.mochi-toolbar-preference>label{flex:1;display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:8px}.mochi-toolbar-preference input[type=checkbox]{width:20px;height:20px;min-height:20px;accent-color:var(--mochi-accent)}.mochi-personal-presentation{display:grid;gap:12px;max-width:780px}.mochi-personal-presentation>button{justify-self:start}.mochi-profile-dock{display:flex;align-items:center;gap:8px;min-width:0}.mochi-profile-dock>.mochi-avatar{width:36px;height:36px;flex:none}.mochi-profile-dock>div{min-width:0;flex:1;display:grid}.mochi-profile-dock select{max-width:100%;min-width:0;font-size:12px}.mochi-profile-dock small{font-size:10px;overflow:hidden;text-overflow:ellipsis}.mochi-profile-dock[data-compact=true] .mochi-dock-username{display:none}.mochi-toolbar-label{font-size:11px}.mochi-view .mochi-custom-toolbar{flex-wrap:wrap;justify-content:flex-end;gap:2px}.mochi-view .mochi-custom-toolbar button{min-height:44px;min-width:40px;padding:6px}.mochi-custom-toolbar .mochi-toolbar-label{margin-left:4px}.mochi-settings-workspace :focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}.mochi-settings-workspace select,.mochi-settings-workspace input,.mochi-settings-workspace textarea{max-width:100%;box-sizing:border-box}.mochi-view .mochi-settings-workspace .mochi-settings-category>button{justify-self:start}
+.mochi-view[data-conversation=true] .mochi-room-header{grid-template-columns:minmax(140px,1fr) minmax(0,auto)}.mochi-view .mochi-room-header .mochi-custom-toolbar{max-width:650px}.mochi-view .mochi-room-header .mochi-custom-toolbar button{display:inline-flex;align-items:center;justify-content:center;flex:none}.mochi-view .mochi-room-header .mochi-custom-toolbar[data-presentation=labels] button:has(.mochi-toolbar-label){width:auto;height:auto;border-radius:12px;padding:8px;gap:4px;white-space:nowrap}.mochi-view .mochi-custom-toolbar button>span:first-child{display:inline-flex;flex:none}.mochi-view .mochi-custom-toolbar svg{width:18px;height:18px;flex:none}.mochi-view .mochi-custom-toolbar .mochi-toolbar-label{margin:0}.mochi-presentation-actions{display:flex;flex-wrap:wrap;gap:8px;flex:none;padding:8px 20px;border-top:1px solid var(--mochi-border);background:var(--mochi-surface)}.mochi-character-detail-nav{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}.mochi-character-fields{display:grid;gap:12px}.mochi-view .mochi-presentation-actions button{min-height:44px}.mochi-view .mochi-settings-workspace .mochi-personal-scroll{overflow-wrap:anywhere}
+@container(max-width:550px){.mochi-settings-heading{padding:10px 12px}.mochi-settings-heading h3{font-size:15px}.mochi-settings-tabs,.mochi-settings-categories{padding:6px 12px;gap:4px}.mochi-settings-scroll,.mochi-personal-scroll{padding:12px}.mochi-settings-categories>button{flex:1 1 40%;white-space:normal}.mochi-organized-settings>.mochi-actions{padding:8px 12px}.mochi-view .mochi-custom-toolbar{max-width:100%}.mochi-view .mochi-custom-toolbar .mochi-toolbar-label{display:none}}
+`;
+
 // src/mochi/replies.ts
 function replyIdentifier(value) {
   return typeof value === "string" && /^[A-Za-z0-9_.:-]{1,180}$/.test(value);
@@ -683,7 +1056,7 @@ var MOCHI_STYLES = `
 .mochi-standalone{font-size:10px;font-weight:600;border:1px solid color-mix(in srgb,var(--mochi-accent) 45%,transparent);border-radius:99px;padding:4px 8px;color:var(--mochi-accent);letter-spacing:0}.mochi-view .mochi-room-selector{font-weight:650;border-radius:99px;color:inherit;background:color-mix(in srgb,var(--mochi-accent) 7%,var(--mochi-surface));padding:9px 10px;font-size:14px}.mochi-brand{gap:6px!important}.mochi-view .mochi-message-actions{width:44px;height:44px;min-height:44px;margin-top:-3px;background:transparent;border-color:transparent}.mochi-action-panel,.mochi-participants,.mochi-notification-list{display:grid;gap:12px}.mochi-action-panel :is(button,textarea){width:100%}.mochi-action-panel textarea{min-height:110px;border:1px solid var(--lp-border);border-radius:12px;padding:12px;background:var(--lp-bg);color:var(--lp-text);font:inherit;resize:vertical}.mochi-action-panel .lp-button{display:flex;align-items:center;gap:10px;justify-content:center;min-height:44px}.mochi-action-panel svg{width:20px;height:20px}.mochi-view [data-unread=true]{box-shadow:inset 0 0 0 2px var(--mochi-accent)}.mochi-notification-toast .mochi-notification-avatar{width:32px;height:32px;border-radius:50%;overflow:hidden;flex:none;display:grid;place-items:center;background:var(--lp-surface-2)}.mochi-notification-avatar img{width:100%;height:100%;object-fit:cover}.mochi-notification-toast strong,.mochi-notification-toast span{overflow-wrap:anywhere}.mochi-notification-toast{max-width:calc(100% - 24px)}.mochi-message[data-grouped=true] .mochi-message-avatar{visibility:hidden}
 .mochi-view [hidden]{display:none!important}
 .mochi-view{width:100%;flex:1}
-.mochi-view{--mochi-accent:color-mix(in srgb,var(--lp-accent,#a99bff) 35%,#b7a0e8);--mochi-surface:var(--lp-bg,var(--lumiverse-bg,#17151d));--mochi-border:var(--lp-border,#ffffff18);color:var(--lp-text,var(--lumiverse-text,#f7f5ff));background:var(--mochi-surface);font:inherit;line-height:1.45;padding:16px;display:flex;flex-direction:column;gap:14px;overflow:auto;height:100%;min-width:0;box-sizing:border-box;container-type:inline-size}
+.mochi-view{--mochi-accent:color-mix(in srgb,var(--lp-accent,#a99bff) 35%,#b7a0e8);--mochi-surface:var(--lp-bg,var(--lumiverse-bg,#17151d));--mochi-border:var(--lp-border,var(--lumiverse-border,#ffffff18));color:var(--lp-text,var(--lumiverse-text,#f7f5ff));background:var(--mochi-surface);font:inherit;line-height:1.45;padding:16px;display:flex;flex-direction:column;gap:14px;overflow:auto;height:100%;min-width:0;box-sizing:border-box;container-type:inline-size}
 .mochi-view *{box-sizing:border-box}.mochi-view h2,.mochi-view h3,.mochi-view p{margin:0}.mochi-view h2{font-size:23px;letter-spacing:-.04em}.mochi-view h3{font-size:17px;overflow-wrap:anywhere}.mochi-view header,.mochi-actions{display:flex;align-items:center;justify-content:space-between;gap:8px}.mochi-brand{display:flex;align-items:center;gap:8px}.mochi-brand>span{color:var(--mochi-accent)}.mochi-view svg{width:20px;height:20px;display:block;flex:none}
 .mochi-view button{font:inherit;color:inherit;cursor:pointer}.mochi-view .lp-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 14px;border:1px solid var(--mochi-border);border-radius:12px;background:color-mix(in srgb,var(--lp-text,#fff) 4%,var(--mochi-surface));font-size:13px;font-weight:600}.mochi-view .mochi-icon-button{width:44px;padding:10px;flex:none;border-radius:50%}.mochi-view .mochi-primary{background:var(--mochi-accent);color:#21182e;border-color:transparent}.mochi-view button:disabled{opacity:.45;cursor:default}.mochi-view button:not(:disabled):hover{border-color:var(--mochi-accent)}.mochi-view :is(button,input,textarea,select):focus-visible{outline:2px solid var(--mochi-accent);outline-offset:3px}
 .mochi-muted{color:var(--lp-muted,var(--lumiverse-text-muted,#a9a3b5));font-size:12px}.mochi-error{color:var(--lp-destructive,#ed7c8c);font-size:13px;overflow-wrap:anywhere}.mochi-room-header{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--mochi-border)}.mochi-room-header .mochi-actions{justify-content:end}.mochi-room-info{display:grid;gap:3px;min-width:0}.mochi-member-strip{display:flex;gap:8px;flex-wrap:wrap}.mochi-member{display:flex;align-items:center;gap:6px;min-width:0;font-size:11px;max-width:100%}.mochi-member>span:last-child{overflow-wrap:anywhere}.mochi-member .mochi-avatar{width:26px;height:26px;font-size:11px;flex:none}
@@ -714,6 +1087,7 @@ var MOCHI_STYLES = `
 .mochi-view[data-surface=chat] .mochi-room-info{gap:0}.mochi-view[data-surface=chat] .mochi-room-selector{min-height:28px;padding-block:2px;font-size:14px}.mochi-view[data-surface=chat] .mochi-room-meta{margin:1px 0;font-size:10px;line-height:16px;min-height:16px}.mochi-room-meta::before{width:6px;height:6px}.mochi-connection-status{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--lp-muted);font-size:10px;line-height:16px}.mochi-view[data-surface=chat] .mochi-room-header{align-items:start;padding-bottom:10px;gap:8px}.mochi-view[data-surface=chat] .mochi-room-header>.mochi-actions{padding:0}.mochi-view[data-surface=chat] .mochi-room-header .mochi-icon-button{width:40px;min-width:40px;height:40px;min-height:40px;background:transparent;border:0}.mochi-settings-section{display:grid;gap:12px;min-width:0;margin:0;padding:14px;border:1px solid var(--mochi-border);border-radius:12px}.mochi-settings-section>legend{font-size:11px;font-weight:650;color:var(--lp-muted);padding:0 5px}.mochi-settings-section>p{margin:0;font-weight:400;line-height:1.5}.mochi-view details.mochi-settings-section{display:block;padding:0;overflow:hidden}.mochi-settings-section>summary{padding:14px;cursor:pointer;font-size:12px;font-weight:600;min-height:44px;box-sizing:border-box}.mochi-settings-section>summary:focus-visible{outline:2px solid var(--mochi-accent);outline-offset:-3px}.mochi-settings-section[open]>summary{border-bottom:1px solid var(--mochi-border);margin-bottom:14px}.mochi-settings-section[open]>:not(summary){margin-left:14px;margin-right:14px;margin-bottom:14px}.mochi-view .mochi-settings-section .mochi-toggle{background:transparent;border:0;border-radius:0;padding:4px 0;min-height:36px;font-size:11px;font-weight:500}.mochi-settings-section .mochi-picker{grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px}.mochi-settings-section .mochi-choice{font-size:11px;padding:8px 4px}.mochi-settings-section .mochi-assignment{gap:12px}.mochi-settings-section .mochi-assignment h4{display:none}
 .mochi-room-header .lp-conversation-menu>summary{display:grid;place-items:center;width:36px;min-width:36px;min-height:36px;padding:0;background:transparent;border:0;border-radius:50%;font-size:22px}.mochi-room-header .lp-conversation-menu-action{min-height:40px;font-size:12px}.mochi-room-header .lp-conversation-menu>summary:focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}
 .mochi-model-picker{min-width:0}.mochi-model-picker-row{display:flex;align-items:end;flex-wrap:wrap;gap:8px}.mochi-model-picker-row>label{flex:1 1 180px}.mochi-model-picker-row>button{min-height:44px;font-size:11px;padding:8px 10px}.mochi-model-picker>p{margin:6px 0 0;font-size:11px;font-weight:400}
+@container(max-width:600px){.mochi-desktop-main .mochi-view .mochi-room-header,.mochi-sidebar[data-mobile-messenger] .mochi-view .mochi-room-header{grid-template-columns:minmax(0,1fr);gap:6px}.mochi-desktop-main .mochi-view .mochi-room-header>.mochi-actions,.mochi-sidebar[data-mobile-messenger] .mochi-view .mochi-room-header>.mochi-actions{justify-content:flex-start;flex-wrap:wrap;max-width:100%}}
 `;
 
 // src/mochi/models.ts
@@ -791,6 +1165,20 @@ function mochiModelPicker(connectionId, defaultModel, value, change, cache, cont
   return root;
 }
 
+// src/mochi/generation-errors.ts
+var GENERATION_ERROR_MESSAGES = {
+  provider: "The AI connection reported an error. Check the connection or provider settings.",
+  connection: "The AI connection is missing, unavailable or not authorized for your account. Choose a connection in Room settings.",
+  empty_output: "The AI returned an empty response.",
+  malformed_json: "The AI returned a response that Mochi couldn't read as valid message JSON.",
+  suspected_plain_text: "The AI appears to have returned ordinary text instead of Mochi's expected structured message format.",
+  output_limit: "The AI response reached its output limit before a complete message could be received.",
+  invalid_schema: "The AI returned JSON that doesn't match Mochi's message format or limits.",
+  ineligible_speaker: "The AI returned a message from a character who isn't eligible to respond in this conversation.",
+  ambiguous_response: "The AI returned plain text without a single eligible responder. Select a character or request structured message JSON.",
+  unsupported_action: "The AI requested a structured action that this Mochi version does not support. No response actions were applied."
+};
+
 // src/frontend/components/ui.ts
 function classes(...values) {
   return values.filter(Boolean).join(" ");
@@ -846,8 +1234,8 @@ function disclosure(label, ...children) {
   root.append(el("summary", "", label), ...children);
   return root;
 }
-function showPocketSheet(anchor, title, content) {
-  const parent = anchor.closest(".lumiphone-shell") || anchor.closest('[role="dialog"]') || anchor.parentElement;
+function showPocketSheet(anchor, title, content, surfaceRoot) {
+  const parent = surfaceRoot || anchor.closest(".lumiphone-shell") || anchor.closest('[role="dialog"]') || anchor.parentElement;
   if (!parent)
     return;
   const dialog = el("dialog", "lp-sheet");
@@ -952,18 +1340,6 @@ function showMochiNotification(shell, n, previews, open) {
   return dismiss;
 }
 
-// src/mochi/presence.ts
-var STATUSES = ["online", "away", "dnd", "offline"];
-function defaultPresence() {
-  return { automatic: "online", manual: null, awayMs: 300000, dndMs: 900000, transitions: [] };
-}
-function statusFor(room, id, now = Date.now()) {
-  const p = room.runtime?.presence?.[id] || room.background?.presence?.[id] || defaultPresence();
-  if (p.manual)
-    return p.manual;
-  return p.transitions.filter((t) => t.at <= now).sort((a, b) => a.at - b.at).at(-1)?.status || p.automatic;
-}
-
 // src/mochi/profile-screen.ts
 class MochiProfiles {
   baseline = "";
@@ -975,7 +1351,7 @@ class MochiProfiles {
   draft = null;
   start(account) {
     this.confirmation = undefined;
-    this.draft = { id: account?.id || "", revision: account?.revision || 0, displayName: account?.displayName || "", username: account?.username || "", persona: account ? "keep" : "manual", description: account?.persona.description || "", avatarId: account ? account.avatarUrl.split("/api/v1/images/")[1] || "" : "persona" };
+    this.draft = { id: account?.id || "", revision: account?.revision || 0, displayName: account?.displayName || "", username: account?.username || "", persona: account ? "keep" : "manual", description: account?.persona.description || "", avatarId: account ? account.avatarUrl.split("/api/v1/images/")[1] || "" : "persona", addonIds: [...account?.personaAddons?.enabledIds || []] };
     this.baseline = JSON.stringify(this.draft);
   }
   render(busy, send, redraw, exit, confirmDiscard = (next) => next(), refreshSources = () => send("mochi:choices")) {
@@ -1114,6 +1490,7 @@ class MochiProfiles {
     persona.onchange = () => {
       draft.persona = persona.value;
       const p = this.state.personas.find((p) => p.source + ":" + p.sourceId === persona.value);
+      draft.addonIds = persona.value === "keep" ? [...saved?.personaAddons?.enabledIds || []] : p?.addons?.filter((a) => a.available && a.enabled).map((a) => a.id) || [];
       if (p && !draft.displayName)
         draft.displayName = p.name;
       redraw();
@@ -1131,6 +1508,33 @@ class MochiProfiles {
         draft.description = description.value;
       };
       field("Profile identity description", description);
+    }
+    const source = draft.persona === "keep" ? saved?.persona : chosen;
+    if (source?.source === "lumiverse") {
+      const native = this.state.personas.find((p) => p.source === "lumiverse" && p.sourceId === source.sourceId);
+      const addons = el("fieldset", "mochi-profile-fields");
+      addons.append(el("legend", "", "Persona add-ons"), el("p", "mochi-muted", "Selections belong to this Mochi profile and affect future replies in its matching-persona chats. Saved messages and native Lumiverse settings stay unchanged."));
+      if (!native)
+        addons.append(el("p", "mochi-muted", "The source persona is unavailable. Add-ons will not be included."));
+      else if (!native.addons?.length)
+        addons.append(el("p", "mochi-muted", "No native add-ons are attached to this persona."));
+      for (const addon of native?.addons || []) {
+        const label = el("label", "", addon.label), check = el("input");
+        check.type = "checkbox";
+        check.checked = draft.addonIds.includes(addon.id) && addon.available;
+        check.disabled = busy || !addon.available;
+        check.setAttribute("aria-label", "Enable add-on " + addon.label);
+        check.onchange = () => {
+          draft.addonIds = check.checked ? [...new Set([...draft.addonIds, addon.id])] : draft.addonIds.filter((id) => id !== addon.id);
+        };
+        label.prepend(check);
+        addons.append(label, el("p", "mochi-muted", addon.available ? addon.content : "Unavailable; omitted from replies."));
+        if (addon.outletName)
+          addons.append(el("small", "mochi-muted", `Placed only at {{persona_outlet::${addon.outletName}}} in chat or preset instructions.`));
+      }
+      if (draft.addonIds.some((id) => !native?.addons?.some((a) => a.id === id && a.available)))
+        addons.append(el("p", "mochi-muted", "Some saved add-ons are missing or inaccessible. They are omitted from replies and removed from selections on Save."));
+      form.append(addons);
     }
     const appearance = el("fieldset", "mochi-profile-fields");
     appearance.append(el("legend", "", "Appearance"));
@@ -1176,7 +1580,7 @@ class MochiProfiles {
       };
       field("Upload profile portrait", upload);
     }
-    form.append(el("p", "mochi-muted", "Profile changes apply to new chats. Existing chats keep their saved identity and authorship."));
+    form.append(el("p", "mochi-muted", "Name, identity and portrait changes apply to new chats. Add-on selections apply to future replies in matching-persona chats. Existing messages and authorship are preserved."));
     if (saved) {
       const archive = button("Archive profile", "lp-button mochi-secondary-action");
       archive.disabled = busy;
@@ -1202,7 +1606,7 @@ class MochiProfiles {
       e.preventDefault();
       const p = draft.persona === "keep" ? undefined : draft.persona === "manual" ? { source: "manual", name: draft.displayName, description: draft.description } : this.state.personas.find((p) => p.source + ":" + p.sourceId === draft.persona);
       const unchangedPortrait = !p && saved && draft.avatarId === (saved.avatarUrl.split("/api/v1/images/")[1] || "");
-      send(draft.id ? "mochi:account_update" : "mochi:account_create", { accountId: draft.id || undefined, revision: draft.revision, displayName: draft.displayName, username: draft.username, persona: p, ...unchangedPortrait ? {} : draft.avatarId === "persona" ? p ? {} : { avatarId: saved?.persona.avatarUrl.split("/api/v1/images/")[1] || "" } : { avatarId: draft.avatarId } });
+      send(draft.id ? "mochi:account_update" : "mochi:account_create", { accountId: draft.id || undefined, revision: draft.revision, displayName: draft.displayName, username: draft.username, persona: p, ...(p || saved?.persona)?.source === "lumiverse" && this.state.personas.some((native) => native.source === "lumiverse" && native.sourceId === (p || saved.persona).sourceId) ? { personaAddons: { personaId: (p || saved.persona).sourceId, enabledIds: draft.addonIds } } : {}, ...unchangedPortrait ? {} : draft.avatarId === "persona" ? p ? {} : { avatarId: saved?.persona.avatarUrl.split("/api/v1/images/")[1] || "" } : { avatarId: draft.avatarId } });
     };
     return form;
   }
@@ -1270,14 +1674,6 @@ function accountPicker(state, busy, choose, create, legacy, startup, manage, ref
     page.append(el("p", "mochi-error", warning));
   return page;
 }
-
-// src/mochi/types.ts
-var defaultMochiSettings = () => ({ autoReply: true, connectionId: "", contextTokens: 8192, outputTokens: 1200, instructions: "", characterNames: {} });
-var MOCHI_ROOM_ID = /^room_[a-f0-9]{32}$/;
-
-// src/mochi/scheduling.ts
-var SCHEDULE_LABELS = { queued: "Scheduled", generating: "Generating", generated: "Waiting to deliver", delivered: "Delivered", cancelled: "Canceled", paused: "Needs attention", failed: "Failed", missed: "Expired" };
-var TERMINAL = new Set(["delivered", "cancelled", "failed", "missed"]);
 
 // src/mochi/desktop-styles.ts
 var MOCHI_DESKTOP_STYLES = `
@@ -1898,6 +2294,10 @@ class MochiPreview {
   status = "";
   scenario = "continue";
   responder = "auto";
+  get isDraft() {
+    return !!this.draftBlocks;
+  }
+  draftBlocks;
   scope = "";
   snapshot = "";
   ticket = "";
@@ -1912,6 +2312,7 @@ class MochiPreview {
   reset() {
     this.cancel();
     this.open = false;
+    this.draftBlocks = undefined;
     this.data = undefined;
     this.scope = "";
     this.snapshot = "";
@@ -1938,8 +2339,9 @@ class MochiPreview {
     this.scope = scope2(room);
     this.snapshot = fingerprint(room);
   }
-  show(room) {
+  show(room, draftBlocks) {
     this.sync(room);
+    this.draftBlocks = draftBlocks ? structuredClone(draftBlocks) : undefined;
     this.open = true;
     this.refresh();
   }
@@ -1959,7 +2361,7 @@ class MochiPreview {
     }, 20000);
     this.redraw();
     try {
-      this.send({ type: "mochi:preview", requestId: ticket, roomId: room.id, accountId: room.accountId, scenario: this.scenario, responder: this.responder });
+      this.send({ type: "mochi:preview", requestId: ticket, roomId: room.id, accountId: room.accountId, scenario: this.scenario, responder: this.responder, ...this.draftBlocks ? { draftBlocks: this.draftBlocks } : {} });
     } catch {
       this.invalidate("Preview is unavailable. Try refreshing.");
       this.redraw();
@@ -1988,7 +2390,7 @@ class MochiPreview {
     this.sync(room);
     const root = el("section", "mochi-preview-panel");
     root.setAttribute("aria-label", "AI prompt preview");
-    root.append(el("h3", "", "AI prompt preview"));
+    root.append(el("h3", "", this.draftBlocks ? "Draft prompt preview — not applied" : "AI prompt preview"));
     const controls = el("div", "mochi-preview-controls"), scenario = el("select");
     scenario.setAttribute("aria-label", "Preview scenario");
     for (const [value, label] of [["continue", "Continue from saved history"], ["automatic", "Automatic reply to saved history"]]) {
@@ -2018,7 +2420,7 @@ class MochiPreview {
     };
     const refresh = button("Refresh preview", "lp-button");
     refresh.onclick = () => this.refresh();
-    const close = button("Close preview", "lp-button");
+    const close = button(this.draftBlocks ? "Back to preset draft" : "Close preview", "lp-button");
     close.onclick = () => {
       this.cancel();
       this.open = false;
@@ -2042,7 +2444,14 @@ class MochiPreview {
         root.append(el("p", "mochi-preview-warning", `${data.history.omitted} saved messages omitted by the manual plan; they are still stored.`));
       root.append(el("p", "mochi-muted", `Snapshot time: ${data.resolvedAt ? new Date(data.resolvedAt).toLocaleString() : "not reported"}. Responder: ${data.responder || "not reported"}.`));
       if (data.preset)
-        root.append(el("p", "mochi-preview-identity", `${data.preset.builtIn ? "Built-in" : "Custom"} preset: ${data.preset.name} · revision ${data.preset.revision} · ${data.preset.variant} · ${data.preset.layout === "manual-v1" ? "Manual placement" : "Automatic placement"}`), el("pre", "mochi-preview-text", data.preset.appliedInstructions || "No additional preset instructions."));
+        root.append(el("p", "mochi-preview-identity", `${data.draft ? "Unpublished block draft" : `${data.preset.builtIn ? "Built-in" : "Custom"} preset: ${data.preset.name} · revision ${data.preset.revision}`} · ${data.preset.variant} · ${data.preset.layout === "blocks-v1" ? "Ordered prompt blocks" : data.preset.layout === "manual-v1" ? "Manual placement" : "Automatic placement"}`), el("pre", "mochi-preview-text", data.preset.appliedInstructions || "No additional preset instructions."));
+      if (data.resolvedMacros?.length) {
+        const resolved = el("details");
+        resolved.append(el("summary", "", "Resolved macro references"));
+        for (const macro of data.resolvedMacros)
+          resolved.append(el("p", "", macro));
+        root.append(resolved);
+      }
       for (const warning of data.warnings || [])
         root.append(el("p", "mochi-preview-warning", warning));
       for (const text of data.assumptions)
@@ -2064,169 +2473,524 @@ class MochiPreview {
 }
 var MOCHI_PREVIEW_STYLES = `.mochi-view .mochi-preview-panel{min-width:0;min-height:0;max-height:40%;overflow:auto;flex:0 1 auto;padding:10px;border-bottom:1px solid var(--mochi-border);overflow-wrap:anywhere}.mochi-view .mochi-preview-controls{display:flex;flex-wrap:wrap;gap:6px;min-width:0}.mochi-view .mochi-preview-controls select{max-width:100%;min-width:0;background:var(--lp-surface-2,#ffffff0c);color:inherit;border:1px solid var(--mochi-border);padding:8px;border-radius:8px}.mochi-view .mochi-preview-panel button{min-height:40px}.mochi-view .mochi-preview-text{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;max-width:100%}.mochi-view .mochi-preview-panel :focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}`;
 
-// src/mochi/macros.ts
-var CONTEXT_MACROS = ["mochi_characters", "mochi_persona", "mochi_room_instructions", "mochi_texting_styles", "mochi_system_notes", "mochi_history", "mochi_summary"];
+// src/mochi/prompt-blocks.ts
+var blockId = (kind = "block") => kind + "_" + crypto.randomUUID().replaceAll("-", "");
 var expression = /\{\{\s*([^{}]*?)\s*\}\}/g;
-function validatePlacement(value) {
-  const p = value;
-  if (!p || p.version !== 1 || !Array.isArray(p.rows) || p.rows.length > 12 || Object.keys(p).some((k) => !["version", "rows"].includes(k)))
-    throw Error("Invalid manual context plan.");
-  const ids = new Set;
-  let size = 0;
-  for (const row of p.rows) {
-    if (!row || !/^section_[a-f0-9]{32}$/.test(row.id) || ids.has(row.id) || typeof row.title !== "string" || !row.title.trim() || row.title.length > 80 || typeof row.template !== "string" || row.template.length > 2000 || Object.keys(row).some((k) => !["id", "title", "template"].includes(k)))
-      throw Error("Invalid manual context row.");
-    ids.add(row.id);
-    size += row.template.length;
-    if (/[{}]{2}/.test(row.template.replace(expression, "")))
-      throw Error("Unbalanced macro expression.");
-    for (const match of row.template.matchAll(expression))
-      if (["mochi_history", "mochi_system_notes"].includes(match[1].trim()) && row.template.trim() !== match[0])
-        throw Error("History and system notes must each occupy a standalone row.");
+function validateBlocks(value) {
+  const doc = value, ids = new Set;
+  let count = 0, size = 0;
+  const text = (v, max, required = false) => typeof v === "string" && v.length <= max && (!required || !!v.trim());
+  if (!doc || doc.version !== 1 || !Array.isArray(doc.categories) || doc.categories.length > 12 || Object.keys(doc).some((k) => !["version", "categories"].includes(k)))
+    throw Error("Invalid block document; saved revisions were preserved.");
+  for (const c of doc.categories) {
+    if (!c || !/^category_[a-f0-9]{32}$/.test(c.id) || ids.has(c.id) || !text(c.name, 80, true) || typeof c.collapsed !== "boolean" || !Array.isArray(c.blocks) || Object.keys(c).some((k) => !["id", "name", "collapsed", "blocks"].includes(k)))
+      throw Error("Invalid prompt category.");
+    ids.add(c.id);
+    for (const b of c.blocks) {
+      if (!b || !/^block_[a-f0-9]{32}$/.test(b.id) || ids.has(b.id) || !text(b.name, 80, true) || !text(b.content, 8000) || !["system", "user", "assistant"].includes(b.role) || !["before-history", "history", "after-history"].includes(b.position) || !["all", "dm", "group"].includes(b.audience) || typeof b.enabled !== "boolean" || typeof b.locked !== "boolean" || Object.keys(b).some((k) => !["id", "name", "content", "role", "position", "audience", "enabled", "locked"].includes(k)))
+        throw Error("Invalid prompt block.");
+      ids.add(b.id);
+      count++;
+      size += b.content.length;
+      if (/[{}]{2}/.test(b.content.replace(expression, "")))
+        throw Error("Unbalanced macro expression in " + b.name + ".");
+      for (const m of b.content.matchAll(expression))
+        if (["mochi_history", "mochi_system_notes"].includes(m[1].trim()) && b.content.trim() !== m[0])
+          throw Error("History and system notes each require their own block.");
+      if (/\{\{\s*mochi_history\s*\}\}/.test(b.content) && b.position !== "history")
+        throw Error("Chat History must use the At chat history position.");
+    }
   }
-  if (size > 8000)
-    throw Error("Manual context plan is too large.");
-  return p;
+  if (count > 60 || size > 48000)
+    throw Error("Preset exceeds 60 blocks or 48,000 content characters.");
+  return structuredClone(doc);
 }
-function expandPlacement(p, values, history, notes) {
-  validatePlacement(p);
-  const seen = new Set, warnings = [], messages = [], sections = [];
-  for (const row of p.rows) {
-    const tokens = [...row.template.matchAll(expression)], standalone = tokens.length === 1 && row.template.trim() === tokens[0][0], name = standalone ? tokens[0][1].trim() : "";
-    const start = messages.length, already = seen.has(name);
-    const content = row.template.replace(expression, (literal, key) => {
-      key = key.trim();
-      if (!CONTEXT_MACROS.includes(key)) {
-        warnings.push(`Unknown expression ${literal}; kept literal.`);
-        return literal;
-      }
-      if (seen.has(key)) {
-        warnings.push(`Duplicate ${key}; expanded only once.`);
-        return "";
-      }
-      seen.add(key);
-      if (key === "mochi_summary") {
-        if (!standalone) {
-          warnings.push("Summary requires a standalone row; inline placeholders remain inactive.");
-          seen.delete(key);
-          return "";
-        }
-        if (!values[key])
-          warnings.push("Summary is inactive: absent, disabled or coverage requires review.");
-        return values[key] || "";
-      }
-      return values[key] || "";
-    });
-    if (name === "mochi_history" && !already)
-      messages.push(...history);
-    else if (name === "mochi_system_notes" && !already)
-      messages.push(...notes);
-    else if (content.trim())
-      messages.push({ role: name === "mochi_summary" ? "user" : "system", content });
-    sections.push({ id: row.title, active: messages.length > start, providerMessages: Array.from({ length: messages.length - start }, (_, i) => start + i + 1) });
+var MACRO_REFERENCE = [
+  { name: "Character information", syntax: "{{mochi_characters}}", description: "Eligible character IDs, names and descriptions. Not just a character name.", source: "Mochi", context: "Authorized room characters" },
+  { name: "Persona information", syntax: "{{mochi_persona}}", description: "Saved identity plus enabled account add-on context, once.", source: "Mochi", context: "Saved room identity; matching account selections" },
+  { name: "Room information", syntax: "{{mochi_room}}", description: "The saved room title.", source: "Mochi blocks", context: "Current room" },
+  { name: "Room instructions", syntax: "{{mochi_room_instructions}}", description: "Saved room instructions, including supported persona outlets.", source: "Mochi", context: "Current room settings" },
+  { name: "Character texting preferences", syntax: "{{mochi_texting_styles}}", description: "Resolved character texting preferences; does not alter saved preferences.", source: "Mochi", context: "Room character preferences" },
+  { name: "Chat history", syntax: "{{mochi_history}}", description: "Structured dialogue with original roles. Use alone in a block at the history position.", source: "Mochi", context: "Current room history" },
+  { name: "System notes", syntax: "{{mochi_system_notes}}", description: "Enabled saved notes with their system role. Use alone in a block.", source: "Mochi", context: "Current room notes" },
+  { name: "Chat memory", syntax: "{{mochi_summary}}", description: "Verified enabled memory as untrusted user-role reference. Use alone in a block.", source: "Mochi", context: "Valid enabled room memory" },
+  { name: "Persona add-on outlet", syntax: "{{persona_outlet::name}}", description: "Enabled named native persona outlet. Replace name with its outlet name. Alias: {{personaOutlet::name}}.", source: "Lumiverse-compatible bounded reference", context: "Enabled matching account add-on with a named outlet" },
+  { name: "Native character name (unsupported)", syntax: "{{char}}", description: "Requires the native active-scene macro environment; unavailable in independent Mochi generation. Kept literal with a diagnostic.", source: "Unsupported native host context", context: "Not available here" }
+];
+var BLOCK_TEMPLATES = [
+  { name: "Blank block", category: "Custom", description: "Write your own instructions.", content: "" },
+  { name: "Base Messaging", category: "Core Instructions", description: "A private, conversation-first messenger.", content: "Write as the eligible character in a private messenger. Use only the supplied context. Do not invent an external shared scene or speak for the user." },
+  { name: "Direct Message Behavior", category: "Core Instructions", description: "Focused one-to-one replies.", content: "Respond to the other person directly. Follow the thread naturally and leave room for their next message.", audience: "dm" },
+  { name: "Group Chat Behavior", category: "Core Instructions", description: "Selective participation in a group.", content: "Let relevant speakers contribute naturally. Avoid round-robin replies, repeated points, and making every participant speak.", audience: "group" },
+  { name: "Character Information", category: "Character & Persona", description: "Include authorized character information once.", content: "CHARACTERS: {{mochi_characters}}" },
+  { name: "Persona Information", category: "Character & Persona", description: "Include the saved identity and enabled non-outlet add-ons once.", content: "USER IDENTITY: {{mochi_persona}}" },
+  { name: "Persona Add-on References", category: "Character & Persona", description: "Place a named enabled add-on; replace name with your outlet name.", content: "{{persona_outlet::name}}" },
+  { name: "Character Texting Preferences", category: "Character & Persona", description: "Reuse saved character preferences.", content: "{{mochi_texting_styles}}" },
+  { name: "Casual Dialogue", category: "Writing & Texting", description: "Conversational phrasing without forcing slang.", content: "Use relaxed, natural dialogue appropriate to the character. Avoid unnecessary exposition and formulaic closing questions." },
+  { name: "Short Replies", category: "Writing & Texting", description: "Prefer concise messages when the moment allows.", content: "Prefer a short reply that adds something meaningful. Expand only when the conversation needs detail." },
+  { name: "Texting Style", category: "Writing & Texting", description: "Adapt to the character and conversational pace.", content: "Use messaging rhythm and punctuation that suit the character. Do not force abbreviations, emojis, or narration into every reply." },
+  { name: "Expressive Dialogue", category: "Writing & Texting", description: "Convey personality through the reply.", content: "Show emotion and personality through word choice and rhythm. Keep expressive flourishes relevant and avoid repeating the same mannerisms." },
+  ...["1990s", "2000s", "2010s", "2020s"].map((era) => ({ name: era, category: "Time & Setting", description: "Optional era guidance; edit for your setting.", content: `When consistent with the supplied setting, use everyday references and communication habits plausible for the ${era}. Do not override established facts or assume every character shares the same culture or technology.` })),
+  { name: "Chat Memory", category: "Conversation Context", description: "Include verified conversation memory once.", content: "{{mochi_summary}}" },
+  { name: "Room Information", category: "Conversation Context", description: "Include room title and separate room instructions.", content: `ROOM: {{mochi_room}}
+ROOM INSTRUCTIONS: {{mochi_room_instructions}}` },
+  { name: "System Notes", category: "Conversation Context", description: "Include enabled saved room notes.", content: "{{mochi_system_notes}}", position: "after-history" },
+  { name: "Supported Context References", category: "Conversation Context", description: "Keep structured saved dialogue in the history slot.", content: "{{mochi_history}}", position: "history" }
+];
+function fromTemplate(t) {
+  return { id: blockId(), name: t.name, content: t.content, role: "system", position: t.position || "before-history", audience: t.audience || "all", enabled: true, locked: false };
+}
+function starterBlocks() {
+  const names = ["Base Messaging", "Direct Message Behavior", "Group Chat Behavior", "Character Information", "Persona Information", "Character Texting Preferences", "Room Information", "Chat Memory", "Supported Context References", "System Notes"], categories = [];
+  for (const name of names) {
+    const t = BLOCK_TEMPLATES.find((t) => t.name === name);
+    let c = categories.find((c) => c.name === t.category);
+    if (!c) {
+      c = { id: blockId("category"), name: t.category, collapsed: false, blocks: [] };
+      categories.push(c);
+    }
+    c.blocks.push(fromTemplate(t));
   }
-  for (const key of ["mochi_characters", "mochi_persona", "mochi_history"])
-    if (!seen.has(key))
-      warnings.push(`Missing ${key}; this context is omitted.`);
-  if (values.mochi_summary && !seen.has("mochi_summary"))
-    warnings.push("Missing mochi_summary; saved memory is omitted and summarized history cannot be excluded.");
-  return { messages, sections, warnings, historyIncluded: seen.has("mochi_history"), summaryIncluded: seen.has("mochi_summary") && Boolean(values.mochi_summary) };
+  return { version: 1, categories };
+}
+function convertLegacy(r) {
+  const doc = starterBlocks();
+  if (r.layout === "manual-v1")
+    doc.categories = doc.categories.filter((c) => c.name === "Core Instructions").concat([{ id: blockId("category"), name: "Previous context rows", collapsed: false, blocks: r.placement.rows.map((row) => ({ ...fromTemplate({ name: row.title, category: "", description: "", content: row.template, position: "history" }), role: row.template.trim() === "{{mochi_summary}}" ? "user" : "system" })) }]);
+  const core = doc.categories[0];
+  core.blocks = core.blocks.filter((b) => b.name === "Base Messaging");
+  for (const [name, content, audience] of [["DM instructions", r.dmInstructions, "dm"], ["Group instructions", r.groupInstructions, "group"]])
+    if (content)
+      core.blocks.push({ ...fromTemplate({ name, content, category: "", description: "" }), audience });
+  return doc;
 }
 
 // src/mochi/presets.ts
 var DEFAULT_PRESET_ID = "mochi_default";
 
-// src/mochi/placement-controls.ts
-function placementControls(draft, redraw) {
-  const root = el("section", "mochi-placement-editor");
-  root.append(el("h4", "", "Context placement"));
-  const mode = el("select");
-  mode.setAttribute("aria-label", "Context placement mode");
-  for (const [value, label] of [["legacy-v1", "Automatic — existing prompt"], ["manual-v1", "Manual — ordered context rows"]]) {
-    const option = el("option", "", label);
-    option.value = value;
-    mode.append(option);
+// src/mochi/block-editor.ts
+class PromptBlockEditor {
+  selected = "";
+  dragging = "";
+  macroOpen = false;
+  cursor = { start: 0, end: 0 };
+  notice = "";
+  focusSelected = false;
+  detailScroll = 0;
+  revealCategory = "";
+  get editing() {
+    return Boolean(this.selected);
   }
-  mode.value = draft.layout;
-  mode.onchange = () => {
-    draft.layout = mode.value;
-    if (draft.layout === "manual-v1" && !draft.placement)
-      draft.placement = { version: 1, rows: CONTEXT_MACROS.filter((k) => k !== "mochi_summary").map((key) => ({ id: "section_" + crypto.randomUUID().replaceAll("-", ""), title: key.replace("mochi_", ""), template: "{{" + key + "}}" })) };
-    redraw();
-  };
-  root.append(mode);
-  if (draft.layout === "manual-v1") {
-    draft.placement ||= { version: 1, rows: [] };
-    root.append(el("p", "mochi-muted", "Core response rules remain first; Continue remains last. History and notes need their own rows. Only these row templates expand macros; DM/Group instructions stay literal."));
-    for (const [i, row] of draft.placement.rows.entries()) {
-      const card = el("section", "mochi-placement-row"), heading = el("div", "mochi-placement-row-head");
-      heading.append(el("strong", "", `${i + 1}. ${row.title}`));
-      const up = button("Move up", "lp-button"), down = button("Move down", "lp-button"), remove = button("Remove row", "lp-button");
-      up.disabled = i === 0;
-      down.disabled = i === draft.placement.rows.length - 1;
-      up.setAttribute("aria-label", `Move ${row.title} up`);
-      down.setAttribute("aria-label", `Move ${row.title} down`);
-      remove.setAttribute("aria-label", `Remove ${row.title}`);
-      const move = (offset) => {
-        const rows = draft.placement.rows;
-        [rows[i], rows[i + offset]] = [rows[i + offset], rows[i]];
-        redraw();
-      };
-      up.onclick = () => move(-1);
-      down.onclick = () => move(1);
-      remove.onclick = () => {
-        draft.placement.rows.splice(i, 1);
-        redraw();
-      };
-      heading.append(up, down, remove);
-      const title = el("input");
-      title.maxLength = 80;
-      title.value = row.title;
-      title.setAttribute("aria-label", `Section title ${i + 1}`);
-      title.oninput = () => {
-        row.title = title.value;
-      };
-      const template = el("textarea");
-      template.rows = 2;
-      template.maxLength = 2000;
-      template.value = row.template;
-      template.setAttribute("aria-label", `Section template ${i + 1}`);
-      template.oninput = () => {
-        row.template = template.value;
-      };
-      card.append(heading, title, template);
-      root.append(card);
-    }
-    const choice = el("select");
-    choice.setAttribute("aria-label", "Context macro to add");
-    for (const key of CONTEXT_MACROS) {
-      const option = el("option", "", key);
-      option.value = key;
-      choice.append(option);
-    }
-    const add = button("Add context row", "lp-button");
-    add.disabled = draft.placement.rows.length >= 12;
+  render(doc, redraw) {
+    const root = el("section", "mochi-block-editor");
+    root.setAttribute("aria-label", "Prompt block workspace");
+    const category = doc.categories.find((c) => c.blocks.some((b) => b.id === this.selected)), selected = category?.blocks.find((b) => b.id === this.selected);
+    const toolbar = el("div", "mochi-block-toolbar"), add = button("+ Add category", "lp-button");
+    add.disabled = doc.categories.length >= 12;
     add.onclick = () => {
-      const key = choice.value;
-      draft.placement.rows.push({ id: "section_" + crypto.randomUUID().replaceAll("-", ""), title: key.replace("mochi_", ""), template: "{{" + key + "}}" });
+      this.revealCategory = blockId("category");
+      doc.categories.push({ id: this.revealCategory, name: "New category", collapsed: false, blocks: [] });
       redraw();
     };
-    root.append(choice, add);
-    const warnings = el("div", "mochi-preview-warning");
-    warnings.setAttribute("role", "status");
-    const updateWarnings = () => {
+    const count = doc.categories.reduce((n, c) => n + c.blocks.length, 0);
+    toolbar.append(el("span", "mochi-muted", `${doc.categories.length} categories · ${count} blocks`), add);
+    if (!selected)
+      root.append(toolbar);
+    if (this.notice) {
+      const status = el("p", "mochi-preview-warning", this.notice);
+      status.setAttribute("role", "status");
+      root.append(status);
+    }
+    const workspace = el("div", "mochi-block-columns"), list = el("div", "mochi-category-list");
+    workspace.append(list);
+    root.append(workspace);
+    const action = (label, run, disabled = false) => {
+      const b = button(label, "mochi-block-action");
+      b.disabled = disabled;
+      b.onclick = run;
+      return b;
+    };
+    const moveBlock = (category, index, delta) => {
+      const b = category.blocks[index];
+      if (b.locked)
+        return;
+      [category.blocks[index], category.blocks[index + delta]] = [category.blocks[index + delta], b];
+      redraw();
+    };
+    const drop = (category, target) => {
+      const source = doc.categories.find((c) => c.blocks.some((b) => b.id === this.dragging)), b = source?.blocks.find((b) => b.id === this.dragging);
+      if (!source || !b || b.locked || b === target)
+        return;
+      source.blocks.splice(source.blocks.indexOf(b), 1);
+      category.blocks.splice(target ? category.blocks.indexOf(target) : category.blocks.length, 0, b);
+      category.collapsed = false;
+      this.dragging = "";
+      redraw();
+    };
+    if (!selected)
+      for (const [ci, c] of doc.categories.entries()) {
+        const category = el("details", "mochi-block-category");
+        category.open = !c.collapsed;
+        const summary = el("summary");
+        summary.append(el("strong", "", c.name), el("span", "mochi-block-count", String(c.blocks.length)));
+        category.append(summary);
+        category.ontoggle = () => {
+          c.collapsed = !category.open;
+        };
+        if (this.revealCategory === c.id)
+          queueMicrotask(() => {
+            if (category.isConnected) {
+              category.scrollIntoView?.({ block: "nearest" });
+              this.revealCategory = "";
+            }
+          });
+        summary.ondragover = (e) => e.preventDefault();
+        summary.ondrop = (e) => {
+          e.preventDefault();
+          drop(c);
+        };
+        const tools = el("div", "mochi-category-tools"), menu = action("⋯", () => {
+          tools.hidden = !tools.hidden;
+        });
+        menu.setAttribute("aria-label", "Manage category " + c.name);
+        menu.onclick = (e) => {
+          e.preventDefault();
+          tools.hidden = !tools.hidden;
+        };
+        summary.append(menu);
+        tools.hidden = true;
+        const name = el("input");
+        name.value = c.name;
+        name.maxLength = 80;
+        name.setAttribute("aria-label", "Category name " + (ci + 1));
+        name.oninput = () => {
+          c.name = name.value;
+          summary.querySelector("strong").textContent = name.value;
+        };
+        const moveCategory = (delta) => {
+          [doc.categories[ci], doc.categories[ci + delta]] = [doc.categories[ci + delta], c];
+          redraw();
+        };
+        tools.append(name, action("Move category up", () => moveCategory(-1), ci === 0), action("Move category down", () => moveCategory(1), ci === doc.categories.length - 1));
+        const remove = action("Remove category", () => {
+          if (c.blocks.some((b) => b.locked)) {
+            this.notice = "Unlock this category’s blocks before removing it.";
+            redraw();
+            return;
+          }
+          const confirm = action("Confirm remove category and blocks", () => {
+            doc.categories.splice(ci, 1);
+            redraw();
+          });
+          remove.replaceWith(confirm);
+          confirm.focus();
+        });
+        tools.append(remove);
+        category.append(tools);
+        for (const [i, b] of c.blocks.entries()) {
+          const row = el("article", "mochi-prompt-block");
+          row.dataset.enabled = String(b.enabled);
+          row.dataset.selected = String(this.selected === b.id);
+          row.draggable = !b.locked;
+          row.ondragstart = (e) => {
+            if (b.locked) {
+              e.preventDefault();
+              return;
+            }
+            this.dragging = b.id;
+            e.dataTransfer?.setData("text/plain", b.id);
+          };
+          row.ondragend = () => {
+            this.dragging = "";
+          };
+          row.ondragover = (e) => e.preventDefault();
+          row.ondrop = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            drop(c, b);
+          };
+          const head = el("div", "mochi-block-row"), toggle = el("input");
+          toggle.type = "checkbox";
+          toggle.checked = b.enabled;
+          toggle.disabled = b.locked;
+          toggle.setAttribute("aria-label", "Enable block " + b.name);
+          toggle.onchange = () => {
+            b.enabled = toggle.checked;
+            redraw();
+          };
+          const edit = action("Edit", () => {
+            this.selected = b.id;
+            this.focusSelected = true;
+            this.detailScroll = 0;
+            this.macroOpen = false;
+            this.cursor = { start: b.content.length, end: b.content.length };
+            redraw();
+          });
+          edit.classList.add("mochi-block-name");
+          edit.setAttribute("aria-label", "Edit block " + b.name);
+          head.append(el("span", "mochi-block-drag", "⠿"), toggle, el("strong", "mochi-block-title", b.name), el("small", "mochi-muted", b.role + " · " + b.position + (b.audience === "all" ? "" : " · " + b.audience) + (b.locked ? " · locked" : "")));
+          head.append(edit);
+          const overflow = el("details", "mochi-block-overflow"), overflowTitle = el("summary", "", "⋯");
+          overflowTitle.setAttribute("aria-label", "More actions for " + b.name);
+          const actions = el("div", "mochi-block-row-actions");
+          overflow.append(overflowTitle, actions);
+          head.append(overflow);
+          const duplicate = () => {
+            c.blocks.splice(i + 1, 0, { ...b, id: blockId(), name: (b.name + " copy").slice(0, 80), locked: false });
+            redraw();
+          };
+          actions.append(action("↑", () => moveBlock(c, i, -1), i === 0 || b.locked), action("↓", () => moveBlock(c, i, 1), i === c.blocks.length - 1 || b.locked), action("Duplicate", duplicate, count >= 60), action("Delete", () => {
+            const confirm = action("Confirm delete " + b.name, () => {
+              c.blocks.splice(i, 1);
+              if (this.selected === b.id)
+                this.selected = "";
+              redraw();
+            });
+            actions.lastElementChild.replaceWith(confirm);
+            confirm.focus();
+          }, b.locked));
+          actions.children[0].setAttribute("aria-label", "Move " + b.name + " up");
+          actions.children[1].setAttribute("aria-label", "Move " + b.name + " down");
+          row.append(head);
+          category.append(row);
+        }
+        if (!c.blocks.length)
+          category.append(el("p", "mochi-muted", "No blocks. Add a template or write your own."));
+        const picker = el("details", "mochi-block-picker");
+        picker.append(el("summary", "", "+ Add Block"));
+        const search = el("input");
+        search.type = "search";
+        search.placeholder = "Search templates";
+        search.setAttribute("aria-label", "Search block templates in " + c.name);
+        const select = el("select");
+        select.setAttribute("aria-label", "Block template in " + c.name);
+        const description = el("p", "mochi-muted");
+        const options = () => {
+          select.replaceChildren();
+          const groups = new Map;
+          for (const [index, t] of BLOCK_TEMPLATES.entries()) {
+            if (!`${t.name} ${t.category} ${t.description}`.toLowerCase().includes(search.value.toLowerCase()))
+              continue;
+            let group = groups.get(t.category);
+            if (!group) {
+              group = el("optgroup");
+              group.label = t.category;
+              groups.set(t.category, group);
+              select.append(group);
+            }
+            const option = el("option", "", t.name);
+            option.value = String(index);
+            group.append(option);
+          }
+          description.textContent = BLOCK_TEMPLATES[Number(select.value)]?.description || "No matching templates.";
+        };
+        search.oninput = options;
+        select.onchange = () => {
+          description.textContent = BLOCK_TEMPLATES[Number(select.value)]?.description || "";
+        };
+        options();
+        const insert = action("Insert selected block", () => {
+          if (select.value === "")
+            return;
+          const b = fromTemplate(BLOCK_TEMPLATES[Number(select.value)]);
+          c.blocks.push(b);
+          this.selected = b.id;
+          this.focusSelected = true;
+          this.detailScroll = 0;
+          redraw();
+        }, count >= 60);
+        picker.append(search, select, description, insert);
+        category.append(picker);
+        list.append(category);
+      }
+    if (!doc.categories.length)
+      list.append(el("p", "mochi-muted", "An empty optional preset is valid. Mochi still enforces its response contract. Add a category to start writing."));
+    if (selected && category) {
+      const b = selected, pane = el("section", "mochi-block-detail");
+      pane.setAttribute("aria-label", "Block editor");
+      const savedDetailScroll = this.detailScroll;
+      pane.onscroll = () => {
+        this.detailScroll = pane.scrollTop;
+      };
+      queueMicrotask(() => {
+        if (!pane.isConnected)
+          return;
+        pane.scrollTop = savedDetailScroll;
+        if (this.focusSelected) {
+          pane.scrollIntoView?.({ block: "nearest" });
+          pane.querySelector('[aria-label="Block name"]')?.focus({ preventScroll: true });
+          this.focusSelected = false;
+        }
+      });
+      const back = action("← Back to Blocks", () => {
+        this.selected = "";
+        redraw();
+      });
+      back.setAttribute("aria-label", "Back to Blocks");
+      pane.append(back, el("h4", "", b.name), el("p", "mochi-muted", "Draft block · changes are not published or applied."));
+      const field = (label, node) => {
+        const wrap = el("label", "", label);
+        node.setAttribute("aria-label", label);
+        wrap.append(node);
+        pane.append(wrap);
+      };
+      const enabled = el("input");
+      enabled.type = "checkbox";
+      enabled.checked = b.enabled;
+      enabled.disabled = b.locked;
+      enabled.onchange = () => {
+        b.enabled = enabled.checked;
+        redraw();
+      };
+      field("Enable block " + b.name, enabled);
+      const lock = el("input");
+      lock.type = "checkbox";
+      lock.checked = b.locked;
+      lock.onchange = () => {
+        b.locked = lock.checked;
+        redraw();
+      };
+      field("Lock block against accidental edits", lock);
+      const switches = el("div", "mochi-block-switches");
+      switches.append(enabled.parentElement, lock.parentElement);
+      pane.append(switches);
+      const name = el("input");
+      name.value = b.name;
+      name.maxLength = 80;
+      name.disabled = b.locked;
+      name.oninput = () => {
+        b.name = name.value;
+        pane.querySelector("h4").textContent = b.name;
+      };
+      field("Block name", name);
+      let textPreview;
+      const content = el("textarea");
+      content.value = b.content;
+      content.rows = 16;
+      content.maxLength = 8000;
+      content.disabled = b.locked;
+      content.oninput = () => {
+        b.content = content.value;
+        if (textPreview)
+          textPreview.textContent = b.content;
+      };
+      const remember = () => {
+        this.cursor = { start: content.selectionStart, end: content.selectionEnd };
+      };
+      content.onselect = remember;
+      content.onkeyup = remember;
+      content.onblur = remember;
+      field("Block content", content);
+      const macro = action("Insert Macro", () => {
+        remember();
+        this.macroOpen = !this.macroOpen;
+        redraw();
+      }, b.locked);
+      pane.append(macro);
+      if (this.macroOpen) {
+        const browser = el("section", "mochi-macro-browser");
+        browser.setAttribute("aria-label", "Macro reference");
+        const search = el("input");
+        search.type = "search";
+        search.placeholder = "Search macros";
+        search.setAttribute("aria-label", "Search macro reference");
+        const results = el("div"), outlet = el("input");
+        outlet.value = "name";
+        outlet.setAttribute("aria-label", "Persona outlet name");
+        browser.append(search, outlet, results);
+        const show = () => {
+          results.replaceChildren();
+          for (const m of MACRO_REFERENCE.filter((m) => `${m.name} ${m.syntax} ${m.description} ${m.source}`.toLowerCase().includes(search.value.toLowerCase()))) {
+            const card = el("article", "mochi-macro-item");
+            card.append(el("strong", "", m.name), el("code", "", m.syntax), el("p", "mochi-muted", m.description), el("small", "mochi-muted", `${m.source} · Requires: ${m.context}`));
+            const insert = action("Insert " + m.name, () => {
+              const syntax = m.syntax === "{{persona_outlet::name}}" ? "{{persona_outlet::" + (outlet.value.trim() || "name") + "}}" : m.syntax;
+              const start = Math.min(this.cursor.start, b.content.length), end = Math.min(this.cursor.end, b.content.length);
+              if (b.content.length - end + start + syntax.length > 8000) {
+                this.notice = "Block content limit reached.";
+                redraw();
+                return;
+              }
+              b.content = b.content.slice(0, start) + syntax + b.content.slice(end);
+              this.cursor = { start: start + syntax.length, end: start + syntax.length };
+              this.macroOpen = false;
+              redraw();
+            }, m.source.startsWith("Unsupported"));
+            card.append(insert);
+            results.append(card);
+          }
+          if (!results.children.length)
+            results.append(el("p", "mochi-muted", "No matching macros."));
+        };
+        search.oninput = show;
+        show();
+        pane.append(browser);
+      }
+      const advanced = el("details", "mochi-block-settings");
+      advanced.open = true;
+      advanced.append(el("summary", "", "Role, placement & conversation type"));
+      const choice = (label, value, options, change) => {
+        const wrap = el("label", "", label), select = el("select");
+        select.setAttribute("aria-label", label);
+        select.disabled = b.locked;
+        for (const [key, name] of options) {
+          const o = el("option", "", name);
+          o.value = key;
+          select.append(o);
+        }
+        select.value = value;
+        select.onchange = () => {
+          change(select.value);
+          redraw();
+        };
+        wrap.append(select);
+        advanced.append(wrap);
+      };
+      choice("Block role", b.role, [["system", "System"], ["user", "User"], ["assistant", "Assistant"]], (value) => {
+        b.role = value;
+      });
+      choice("Block placement", b.position, [["before-history", "Before chat history"], ["history", "At chat history"], ["after-history", "After chat history"]], (value) => {
+        b.position = value;
+      });
+      choice("Conversation type", b.audience, [["all", "DM and group"], ["dm", "Direct messages only"], ["group", "Group chats only"]], (value) => {
+        b.audience = value;
+      });
+      choice("Move block to category", category.id, doc.categories.map((c) => [c.id, c.name]), (value) => {
+        const target = doc.categories.find((c) => c.id === value);
+        category.blocks.splice(category.blocks.indexOf(b), 1);
+        target.blocks.push(b);
+        target.collapsed = false;
+      });
+      advanced.append(el("p", "mochi-muted", "History retains its original roles. System Notes stay system messages; Chat Memory stays untrusted user context. Those structured references must occupy their own block."));
+      pane.append(advanced);
+      const preview = el("details");
+      preview.append(el("summary", "", "Preview block text"), el("p", "mochi-muted", "Unresolved draft text only. Use Preview draft prompt for authorized context and token estimates; no provider request."), textPreview = el("pre", "mochi-preview-text", b.content));
+      pane.append(preview, action("Done editing block", () => {
+        this.selected = "";
+        redraw();
+      }));
+      workspace.replaceChildren(pane);
+    }
+    const validation = el("p", "mochi-muted");
+    validation.setAttribute("role", "status");
+    const validate = () => {
       try {
-        warnings.replaceChildren(...expandPlacement(draft.placement, {}, [], []).warnings.map((text) => el("p", "", text)));
+        validateBlocks(doc);
+        validation.textContent = "Draft structure is valid. Full prompt preview checks context and references.";
       } catch (error) {
-        warnings.textContent = error.message;
+        validation.textContent = error.message;
       }
     };
-    updateWarnings();
-    root.addEventListener("input", updateWarnings);
-    root.append(warnings);
+    root.addEventListener("input", validate);
+    validate();
+    root.append(validation);
+    return root;
   }
-  return root;
 }
+var PROMPT_BLOCK_STYLES = `
+.mochi-view .mochi-block-columns{min-width:0}.mochi-view .mochi-block-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:12px 0}.mochi-view .mochi-block-category{border:1px solid var(--mochi-border);border-radius:9px;margin:8px 0;background:var(--mochi-surface)}.mochi-view .mochi-block-category>summary{cursor:pointer;min-height:44px;padding:0 12px;line-height:44px;font-size:13px}.mochi-view .mochi-block-category>summary>button{float:right;margin:0;border:0;min-width:44px}.mochi-view .mochi-block-count{margin-left:10px;font-size:11px;opacity:.65}.mochi-view .mochi-category-tools{padding:8px 12px;display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid var(--mochi-border)}.mochi-view .mochi-category-tools[hidden]{display:none}.mochi-view .mochi-category-tools>input{flex:1 1 160px}.mochi-view .mochi-prompt-block{padding:2px 10px;border-top:1px solid var(--mochi-border)}.mochi-view .mochi-prompt-block[data-enabled=false] .mochi-block-title{opacity:.55}.mochi-view .mochi-block-row{display:flex;align-items:center;gap:10px;min-height:48px;min-width:0}.mochi-view .mochi-block-title{flex:1;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mochi-view .mochi-block-row small{font-size:11px;opacity:.65}.mochi-view .mochi-block-drag{cursor:grab;opacity:.5}.mochi-view .mochi-block-action{font:inherit;min-height:40px;padding:7px 10px;border:1px solid var(--mochi-border);border-radius:7px;color:inherit;background:transparent;cursor:pointer;font-size:12px}.mochi-view .mochi-block-action:disabled{opacity:.45;cursor:default}.mochi-view .mochi-block-action:hover:not(:disabled){background:color-mix(in srgb,currentColor 5%,var(--mochi-surface))}.mochi-view .mochi-block-name{border-color:transparent}.mochi-view .mochi-block-overflow{position:relative;flex:none}.mochi-view .mochi-block-overflow>summary{list-style:none;cursor:pointer;min-width:36px;min-height:44px;display:grid;place-items:center}.mochi-view .mochi-block-row-actions{position:absolute;right:0;top:100%;z-index:4;background:var(--mochi-surface);border:1px solid var(--mochi-border);border-radius:8px;padding:5px;display:grid;min-width:150px;box-shadow:0 5px 15px color-mix(in srgb,currentColor 12%,transparent)}.mochi-view .mochi-block-overflow:not([open])>.mochi-block-row-actions{display:none}.mochi-view .mochi-block-detail{min-width:0;display:grid;gap:12px}.mochi-view .mochi-block-detail>button:first-child{justify-self:start}.mochi-view .mochi-block-detail label{border:0;padding:0}.mochi-view .mochi-block-detail label:has(input[type=checkbox]){display:flex;align-items:center;gap:10px;font-size:12px}.mochi-view .mochi-block-detail textarea{min-height:clamp(280px,45vh,650px);resize:vertical;line-height:1.65;font-family:ui-monospace,monospace}.mochi-view .mochi-block-settings{border-top:1px solid var(--mochi-border);padding-top:6px}.mochi-view .mochi-block-settings[open]{display:flex;flex-wrap:wrap;gap:12px}.mochi-view .mochi-block-settings>summary{width:100%}.mochi-view .mochi-block-settings>label{flex:1 1 180px}.mochi-view .mochi-block-settings select{width:100%}.mochi-view .mochi-block-picker{padding:0 12px}.mochi-view .mochi-block-picker>summary,.mochi-view .mochi-block-detail summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:12px}.mochi-view .mochi-block-picker[open]{display:grid;gap:8px;padding-bottom:12px}.mochi-view .mochi-macro-browser{border:1px solid var(--mochi-border);padding:12px;border-radius:8px;display:grid;gap:8px}.mochi-view .mochi-macro-item{padding:12px 0;border-bottom:1px solid var(--mochi-border);display:grid;gap:5px}.mochi-view .mochi-macro-item code{overflow-wrap:anywhere;white-space:pre-wrap}.mochi-view .mochi-block-editor :focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}.mochi-view .mochi-block-editor input[type=checkbox]{width:20px;height:20px;min-height:20px;flex:none;accent-color:var(--mochi-accent)}
+@container(max-width:550px){.mochi-view .mochi-block-row{gap:5px;flex-wrap:wrap;padding:4px 0}.mochi-view .mochi-block-row small{order:2;flex-basis:100%;padding-left:38px}.mochi-view .mochi-block-drag{display:none}.mochi-view .mochi-block-category>summary{padding:0 8px}.mochi-view .mochi-prompt-block{padding:2px 8px}.mochi-view .mochi-block-action{min-height:44px}}
+`;
 
 // src/mochi/preset-panel.ts
 var scope3 = (r) => JSON.stringify([r.accountId || "", r.id, r.associationRevision || 0]);
@@ -2237,6 +3001,7 @@ class MochiPresetPanel {
   redraw;
   bind;
   returned;
+  previewDraft;
   open = false;
   bank;
   effective;
@@ -2248,12 +3013,18 @@ class MochiPresetPanel {
   submitted = false;
   drafts = new Map;
   selectedId;
-  constructor(send, current, redraw, bind, returned) {
+  selectedRevision;
+  blockEditor = new PromptBlockEditor;
+  scrollTop = 0;
+  overviewScroll = 0;
+  wasEditingBlock = false;
+  constructor(send, current, redraw, bind, returned, previewDraft) {
     this.send = send;
     this.current = current;
     this.redraw = redraw;
     this.bind = bind;
     this.returned = returned;
+    this.previewDraft = previewDraft;
   }
   reset(privateState = false) {
     clearTimeout(this.timer);
@@ -2264,6 +3035,11 @@ class MochiPresetPanel {
     this.draft = undefined;
     this.key = "";
     this.selectedId = undefined;
+    this.selectedRevision = undefined;
+    this.scrollTop = 0;
+    this.overviewScroll = 0;
+    this.wasEditingBlock = false;
+    this.blockEditor = new PromptBlockEditor;
     if (privateState)
       this.drafts.clear();
   }
@@ -2331,10 +3107,11 @@ class MochiPresetPanel {
     this.redraw();
     return true;
   }
-  edit(action, preset) {
+  edit(action, preset, sourceRevision) {
     if (!this.bank)
       return;
-    const r = preset?.revisions.at(-1), value = { action, id: preset?.id, name: preset?.name || "", dmInstructions: r?.dmInstructions || "", groupInstructions: r?.groupInstructions || "", revision: this.bank.revision, layout: r?.layout || "legacy-v1", placement: r?.placement ? structuredClone(r.placement) : undefined };
+    const r = preset?.revisions.find((r) => r.revision === (sourceRevision || preset.revisions.length)), value = { action, id: preset?.id, name: preset?.name || "", dmInstructions: r?.dmInstructions || "", groupInstructions: r?.groupInstructions || "", revision: this.bank.revision, layout: r?.layout || "blocks-v1", placement: r?.placement ? structuredClone(r.placement) : undefined, blocks: r?.blocks ? structuredClone(r.blocks) : !r ? starterBlocks() : undefined };
+    this.blockEditor = new PromptBlockEditor;
     this.draft = { ...value, baseline: JSON.stringify(value) };
     this.drafts.set(this.key, this.draft);
     this.redraw();
@@ -2344,15 +3121,35 @@ class MochiPresetPanel {
       this.reset();
       return el("div");
     }
+    const editingBlock = Boolean(this.draft && this.blockEditor.editing);
+    if (editingBlock !== this.wasEditingBlock) {
+      if (editingBlock)
+        this.overviewScroll = this.scrollTop;
+      this.scrollTop = editingBlock ? 0 : this.overviewScroll;
+      this.wasEditingBlock = editingBlock;
+    }
     const root = el("section", "mochi-preset-panel");
+    root.dataset.blockEditing = String(editingBlock);
     root.setAttribute("aria-label", "Mochi presets");
-    root.append(el("h3", "", "Mochi Presets"), el("p", "mochi-muted", "Publish saves a reusable template version in this library. Apply uses a selected version in this conversation. Other conversations stay on their saved versions. Room instructions remain a separate override."));
-    const status = el("p", "mochi-muted", this.status);
+    root.onscroll = () => {
+      this.scrollTop = root.scrollTop;
+    };
+    const savedScroll = this.scrollTop;
+    queueMicrotask(() => {
+      if (root.isConnected)
+        root.scrollTop = savedScroll;
+    });
+    root.append(el("h3", "", "Mochi Presets"), el("p", "mochi-muted", "Edit draft → Publish revision → Apply to conversation. Each step is separate."));
+    const controls = el("details", "mochi-preset-binding");
+    controls.open = false;
+    controls.append(el("summary", "", "Library & apply to conversation"), el("p", "mochi-muted", "Published revisions are immutable. Conversations keep their selected revision until you explicitly apply another. Block presets include saved room instructions only where referenced."));
+    root.append(controls);
+    const status = el("div", "mochi-muted", this.status);
     status.setAttribute("role", "status");
     root.append(status);
     const refresh = button("Refresh preset library", "lp-button");
     refresh.onclick = () => this.load();
-    const close = button("Close presets", "lp-button");
+    const close = button("Return to conversation", "lp-button");
     close.onclick = () => {
       clearTimeout(this.timer);
       this.ticket = "";
@@ -2360,7 +3157,10 @@ class MochiPresetPanel {
       this.redraw();
       this.returned();
     };
-    root.append(refresh, close);
+    const heading = el("div", "mochi-preset-heading");
+    heading.append(root.querySelector("h3"), close);
+    root.prepend(heading);
+    controls.append(refresh);
     const restore = button("Restore Mochi Default", "lp-button");
     restore.onclick = () => {
       const confirm = button("Confirm restore default", "lp-button");
@@ -2368,9 +3168,9 @@ class MochiPresetPanel {
       restore.replaceWith(confirm);
       confirm.focus();
     };
-    root.append(restore, el("small", "mochi-muted", "Applying a preset or restoring Default may cancel this chat’s pending replies. Publishing alone does not."));
+    controls.append(restore, el("small", "mochi-muted", "Applying a preset or restoring Default may cancel this chat’s pending replies. Publishing alone does not."));
     if (this.effective)
-      root.append(el("p", "", `Effective: ${this.effective.builtIn ? "Built-in" : "Custom"} · ${this.effective.name} · revision ${this.effective.revision}${this.effective.builtIn ? " · built-in" : ""}`));
+      controls.append(el("p", "", `Applied Revision: ${this.effective.builtIn ? "Built-in" : "Custom"} · ${this.effective.name} · revision ${this.effective.revision}${this.effective.builtIn ? " · built-in" : ""}`));
     if (this.bank) {
       const select = el("select");
       select.setAttribute("aria-label", "Preset to apply");
@@ -2383,16 +3183,30 @@ class MochiPresetPanel {
         select.append(option);
       }
       select.value = room.preset?.id || DEFAULT_PRESET_ID;
+      const revisionSelect = el("select");
+      revisionSelect.setAttribute("aria-label", "Preset revision to apply");
+      const revisionOptions = () => {
+        revisionSelect.replaceChildren();
+        const p = this.bank.presets.find((p) => p.id === select.value);
+        for (const r of p?.revisions || [{ revision: 1 }]) {
+          const o = el("option", "", "Revision " + r.revision);
+          o.value = String(r.revision);
+          revisionSelect.append(o);
+        }
+        revisionSelect.value = String(select.value === room.preset?.id ? room.preset.revision : p?.revisions.length || 1);
+      };
+      revisionOptions();
+      select.onchange = revisionOptions;
       const apply = button("Apply selected preset", "lp-button");
       apply.disabled = Boolean(this.ticket);
       apply.onclick = () => {
         const id = select.value, p = this.bank.presets.find((p) => p.id === id);
         const confirm = button("Confirm apply preset", "lp-button");
-        confirm.onclick = () => this.bind(id, p?.revisions.length || 1);
+        confirm.onclick = () => this.bind(id, Number(revisionSelect.value));
         apply.replaceWith(confirm);
         confirm.focus();
       };
-      root.append(select, apply);
+      controls.append(select, revisionSelect, apply);
       const bound = this.bank.presets.find((p) => p.id === room.preset?.id);
       if (bound && bound.revisions.length > room.preset.revision) {
         const update = button("Update to latest", "lp-button");
@@ -2402,7 +3216,7 @@ class MochiPresetPanel {
           update.replaceWith(confirm);
           confirm.focus();
         };
-        root.append(update);
+        controls.append(update);
       }
       const create = button("Create preset", "lp-button");
       create.disabled = Boolean(this.ticket) || Boolean(this.draft);
@@ -2410,13 +3224,15 @@ class MochiPresetPanel {
       const duplicate = button("Duplicate Mochi Default", "lp-button");
       duplicate.disabled = Boolean(this.ticket) || Boolean(this.draft);
       duplicate.onclick = () => this.request({ action: "duplicate", id: DEFAULT_PRESET_ID, name: "Mochi Default copy", revision: this.bank.revision });
-      root.append(create, duplicate);
+      if (!this.draft)
+        heading.append(create);
+      controls.append(duplicate);
       if (!this.bank.presets.length)
-        root.append(el("p", "mochi-muted", "No custom presets in this account yet."));
-      const workspace = el("div", "mochi-preset-workspace"), library = el("nav", "mochi-preset-library"), editor = el("div", "mochi-preset-edit-pane");
+        controls.append(el("p", "mochi-muted", "No custom presets in this account yet."));
+      const workspace = el("div", "mochi-preset-workspace"), library = el("details", "mochi-preset-library"), editor = el("div", "mochi-preset-edit-pane");
       library.setAttribute("aria-label", "Preset library");
-      library.append(el("h4", "", "Library"));
-      editor.append(el("h4", "", this.draft ? "Edit draft — not applied" : "Published preset"));
+      library.append(el("summary", "", "Browse saved presets · " + this.bank.presets.length));
+      editor.append(el("h4", "", this.draft ? "Draft · " + (this.draft.name || "Untitled preset") : "Published preset"));
       workspace.append(library, editor);
       root.append(workspace);
       const selected = this.selectedId || room.preset?.id || this.bank.presets[0]?.id;
@@ -2428,6 +3244,7 @@ class MochiPresetPanel {
             this.draft = undefined;
             this.drafts.delete(this.key);
             this.selectedId = p.id;
+            this.selectedRevision = undefined;
             this.redraw();
           };
           if (this.draft) {
@@ -2450,33 +3267,46 @@ class MochiPresetPanel {
         name.oninput = () => {
           d.name = name.value;
         };
-        const dm = el("textarea"), group = el("textarea");
-        dm.rows = 3;
-        group.rows = 3;
-        dm.maxLength = 4000;
-        group.maxLength = 4000;
-        dm.value = d.dmInstructions;
-        group.value = d.groupInstructions;
-        dm.setAttribute("aria-label", "DM preset instructions");
-        group.setAttribute("aria-label", "Group preset instructions");
-        dm.oninput = () => {
-          d.dmInstructions = dm.value;
-        };
-        group.oninput = () => {
-          d.groupInstructions = group.value;
-        };
-        const label = el("label", "", "Name");
+        const label = el("label", "", "Preset name");
         label.append(name);
-        form.append(label);
+        if (!editingBlock && d.action !== "publish")
+          form.append(label);
+        name.addEventListener("input", () => {
+          editor.querySelector("h4").textContent = "Draft · " + (d.name || "Untitled preset");
+        });
         if (d.action !== "rename") {
-          const dl = el("label", "", "DM instructions"), gl = el("label", "", "Group instructions");
-          dl.append(dm);
-          gl.append(group);
-          form.append(dl, gl, placementControls(d, () => this.redraw()));
+          if (d.layout !== "blocks-v1") {
+            const compatibility = el("details");
+            compatibility.append(el("summary", "", "Original published content · unchanged"), el("pre", "", JSON.stringify({ layout: d.layout, dmInstructions: d.dmInstructions, groupInstructions: d.groupInstructions, placement: d.placement }, null, 2)));
+            const convert = button("Create block draft from this revision", "lp-button");
+            convert.onclick = () => {
+              d.blocks = convertLegacy(d);
+              d.layout = "blocks-v1";
+              delete d.placement;
+              d.dmInstructions = "";
+              d.groupInstructions = "";
+              this.redraw();
+            };
+            form.append(el("p", "mochi-preview-warning", "This legacy revision keeps its original assembly. Conversion creates explicit optional blocks in a new draft, with a different prompt structure. Preview before publishing and applying; saved revisions and chat bindings stay unchanged."), compatibility, convert);
+          } else {
+            d.blocks ||= starterBlocks();
+            form.append(this.blockEditor.render(d.blocks, () => this.redraw()));
+            const preview = button("Preview draft prompt", "lp-button");
+            preview.disabled = !this.previewDraft;
+            preview.onclick = () => {
+              try {
+                this.previewDraft?.(validateBlocks(d.blocks));
+              } catch (error) {
+                this.status = error.message;
+                this.redraw();
+              }
+            };
+            form.append(preview);
+          }
         }
         const publish = button(d.action === "rename" ? "Save preset name" : "Publish preset revision", "lp-button");
         publish.type = "submit";
-        publish.disabled = Boolean(this.ticket);
+        publish.disabled = Boolean(this.ticket) || d.action !== "rename" && d.layout !== "blocks-v1";
         const cancel = button("Cancel preset editing", "lp-button");
         cancel.onclick = () => {
           const confirm = button("Discard preset draft", "lp-button");
@@ -2505,35 +3335,92 @@ class MochiPresetPanel {
         }
         form.onsubmit = (e) => {
           e.preventDefault();
-          this.request({ action: d.action, id: d.id, name: d.name, dmInstructions: d.dmInstructions, groupInstructions: d.groupInstructions, revision: d.revision, layout: d.layout, ...d.layout === "manual-v1" ? { placement: d.placement } : {} });
+          if (d.action !== "rename" && d.layout === "blocks-v1") {
+            try {
+              validateBlocks(d.blocks);
+            } catch (error) {
+              this.status = error.message;
+              this.redraw();
+              return;
+            }
+          }
+          this.request({ action: d.action, id: d.id, name: d.name, dmInstructions: d.dmInstructions, groupInstructions: d.groupInstructions, revision: d.revision, layout: d.layout, ...d.layout === "manual-v1" ? { placement: d.placement } : d.layout === "blocks-v1" ? { blocks: d.blocks } : {} });
         };
-        form.append(dirty, publish, cancel);
+        if (!editingBlock)
+          form.append(dirty, publish, cancel);
         editor.append(form);
       } else
         for (const p of this.bank.presets.filter((p) => p.id === selected)) {
+          const published = p.revisions.find((r) => r.revision === this.selectedRevision) || p.revisions.at(-1);
           const row = el("section", "mochi-preset-entry");
-          row.append(el("strong", "", `${p.name} · revision ${p.revisions.length}${p.archived ? " · archived" : ""}`));
+          row.append(el("strong", "", `${p.name} · revision ${published.revision}${p.archived ? " · archived" : ""}`));
+          const revisions = el("select");
+          revisions.setAttribute("aria-label", "Published revision to inspect");
+          for (const r of p.revisions) {
+            const o = el("option", "", "Revision " + r.revision + " · " + r.layout);
+            o.value = String(r.revision);
+            revisions.append(o);
+          }
+          revisions.value = String(published.revision);
+          revisions.onchange = () => {
+            this.selectedRevision = Number(revisions.value);
+            this.redraw();
+          };
+          row.append(revisions);
           const edit = button("Edit / publish", "lp-button");
           edit.disabled = p.archived || Boolean(this.ticket);
-          edit.onclick = () => this.edit("publish", p);
+          edit.onclick = () => this.edit("publish", p, published.revision);
           const rename = button("Rename", "lp-button");
           rename.disabled = Boolean(this.ticket);
           rename.onclick = () => this.edit("rename", p);
           const copy = button("Duplicate", "lp-button");
           copy.disabled = Boolean(this.ticket);
-          copy.onclick = () => this.request({ action: "duplicate", id: p.id, sourceRevision: p.revisions.length, name: (p.name + " copy").slice(0, 80), revision: this.bank.revision });
+          copy.onclick = () => this.request({ action: "duplicate", id: p.id, sourceRevision: published.revision, name: (p.name + " copy").slice(0, 80), revision: this.bank.revision });
           const archive = button(p.archived ? "Restore archived preset" : "Archive", "lp-button");
           archive.disabled = Boolean(this.ticket);
           archive.onclick = () => this.request({ action: p.archived ? "restore" : "archive", id: p.id, revision: this.bank.revision });
-          row.append(el("p", "mochi-muted", p.revisions.at(-1).layout === "manual-v1" ? "Manual context placement" : "Automatic context placement"), el("pre", "", p.revisions.at(-1).dmInstructions || "No additional DM instructions."), el("pre", "", p.revisions.at(-1).groupInstructions || "No additional Group instructions."), edit, rename, copy, archive);
+          if (published.layout === "blocks-v1") {
+            for (const c of published.blocks.categories) {
+              const section = el("details");
+              section.append(el("summary", "", c.name + " · " + c.blocks.length + " blocks"));
+              for (const b of c.blocks)
+                section.append(el("p", "", `${b.enabled ? "Enabled" : "Disabled"} · ${b.name} · ${b.role} · ${b.position} · ${b.audience}`), el("pre", "", b.content));
+              row.append(section);
+            }
+          } else
+            row.append(el("p", "mochi-muted", published.layout === "manual-v1" ? "Legacy manual context placement" : "Legacy automatic context placement"), el("pre", "", published.dmInstructions || "No additional DM instructions."), el("pre", "", published.groupInstructions || "No additional Group instructions."));
+          row.append(edit, rename, copy, archive);
           editor.append(row);
         }
     }
+    if (editingBlock) {
+      controls.remove();
+      libraryRemove(root);
+      refresh.remove();
+      root.querySelector(".mochi-preset-edit-pane>h4")?.remove();
+    } else {
+      const navigation = el("div", "mochi-preset-navigation");
+      navigation.append(controls);
+      const library = root.querySelector(".mochi-preset-library");
+      if (library)
+        navigation.append(library);
+      root.insertBefore(navigation, status);
+    }
+    status.hidden = this.status === "Library loaded.";
     return root;
   }
 }
-var MOCHI_PRESET_STYLES = `.mochi-view .mochi-preset-panel{min-width:0;min-height:0;max-height:45%;overflow:auto;flex:0 1 auto;padding:10px;border-bottom:1px solid var(--mochi-border);overflow-wrap:anywhere}.mochi-view .mochi-preset-panel button{min-height:40px;margin:3px}.mochi-view .mochi-preset-panel select{max-width:100%;min-width:0}.mochi-view .mochi-preset-editor{display:grid;gap:8px;min-width:0}.mochi-view .mochi-preset-editor label{display:grid;gap:4px;min-width:0}.mochi-view .mochi-preset-editor input,.mochi-view .mochi-preset-editor textarea{box-sizing:border-box;width:100%;min-width:0;font:inherit;background:var(--lp-surface-2,#ffffff0c);color:inherit;border:1px solid var(--mochi-border);border-radius:8px;padding:8px}.mochi-view .mochi-preset-entry{border:1px solid var(--mochi-border);border-radius:10px;padding:8px;margin-top:8px}.mochi-view .mochi-preset-panel :focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}`;
-var MOCHI_PRESET_WORKSPACE_STYLES = `.mochi-view .mochi-preset-panel{max-height:70%;container-type:inline-size;background:var(--lp-surface-1,transparent);border:1px solid var(--mochi-border);border-radius:12px;margin:6px}.mochi-view .mochi-preset-workspace{display:grid;gap:12px;margin-top:12px;min-width:0}.mochi-view .mochi-preset-library,.mochi-view .mochi-preset-edit-pane{min-width:0;border:1px solid var(--mochi-border);border-radius:10px;padding:10px;background:var(--lp-surface-2,#ffffff08)}.mochi-view .mochi-preset-library{display:grid;align-content:start;gap:6px;max-height:220px;overflow:auto}.mochi-view .mochi-preset-library-item{font:inherit;min-width:0;text-align:left;white-space:normal;overflow-wrap:anywhere;border:1px solid var(--mochi-border);border-radius:8px;background:transparent;color:inherit;padding:8px}.mochi-view .mochi-preset-library-item[aria-pressed=true]{border-color:var(--mochi-accent);background:var(--lp-surface-2,#ffffff18)}.mochi-view .mochi-preset-panel h3,.mochi-view .mochi-preset-panel h4{margin:0 0 10px;font-weight:600}.mochi-view .mochi-preset-editor label{padding:8px;border:1px solid var(--mochi-border);border-radius:8px}.mochi-view .mochi-placement-row{border:1px solid var(--mochi-border);border-radius:8px;padding:10px;margin:8px 0;min-width:0}.mochi-view .mochi-placement-row-head{display:flex;flex-wrap:wrap;align-items:center;gap:5px}.mochi-view .mochi-preset-panel pre{white-space:pre-wrap;overflow-wrap:anywhere}.mochi-view .mochi-placement-editor select{max-width:100%;background:var(--lp-surface-2,#ffffff08);color:inherit;border:1px solid var(--mochi-border);padding:8px}.mochi-view .mochi-preview-panel{border:1px solid var(--mochi-border);border-radius:12px;margin:6px;background:var(--lp-surface-1,transparent)}.mochi-view .mochi-preview-panel>details{border:1px solid var(--mochi-border);border-radius:8px;padding:10px;margin-top:8px;background:var(--lp-surface-2,#ffffff08)}.mochi-view .mochi-preview-panel summary{cursor:pointer;font-weight:600;min-height:32px}.mochi-view .mochi-preview-text{max-height:320px;overflow:auto;padding:8px;border-left:2px solid var(--mochi-border)}.mochi-view .mochi-preview-warning{border-left:3px solid var(--mochi-accent);padding:6px 10px}.mochi-view .mochi-preview-identity{font-weight:600}@container(min-width:600px){.mochi-view .mochi-preset-workspace{grid-template-columns:minmax(140px,190px) minmax(0,1fr)}.mochi-view .mochi-preset-library{max-height:none}}`;
+function libraryRemove(root) {
+  root.querySelector(".mochi-preset-library")?.remove();
+}
+var MOCHI_PRESET_STYLES = `.mochi-view .mochi-preset-panel{min-width:0;min-height:0;max-height:45%;overflow:auto;flex:0 1 auto;padding:10px;border-bottom:1px solid var(--mochi-border);overflow-wrap:anywhere}.mochi-view .mochi-preset-panel button{min-height:40px;margin:3px}.mochi-view .mochi-preset-panel select{max-width:100%;min-width:0}.mochi-view .mochi-preset-editor{display:grid;gap:8px;min-width:0}.mochi-view .mochi-preset-editor label{display:grid;gap:4px;min-width:0}.mochi-view .mochi-preset-editor input,.mochi-view .mochi-preset-editor textarea{box-sizing:border-box;width:100%;min-width:0;font:inherit;background:color-mix(in srgb,currentColor 3%,var(--mochi-surface));color:inherit;border:1px solid var(--mochi-border);border-radius:8px;padding:8px}.mochi-view .mochi-preset-entry{border:1px solid var(--mochi-border);border-radius:10px;padding:8px;margin-top:8px}.mochi-view .mochi-preset-panel :focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}`;
+var MOCHI_PRESET_WORKSPACE_BASE = PROMPT_BLOCK_STYLES + `.mochi-view .mochi-preset-panel{max-height:70%;container-type:inline-size;background:var(--mochi-surface);border:1px solid var(--mochi-border);border-radius:12px;margin:6px}.mochi-view .mochi-preset-workspace{display:grid;gap:12px;margin-top:12px;min-width:0}.mochi-view .mochi-preset-library,.mochi-view .mochi-preset-edit-pane{min-width:0;border:1px solid var(--mochi-border);border-radius:10px;padding:10px;background:color-mix(in srgb,currentColor 3%,var(--mochi-surface))}.mochi-view .mochi-preset-library{display:grid;align-content:start;gap:6px;max-height:220px;overflow:auto}.mochi-view .mochi-preset-library-item{font:inherit;min-width:0;text-align:left;white-space:normal;overflow-wrap:anywhere;border:1px solid var(--mochi-border);border-radius:8px;background:transparent;color:inherit;padding:8px}.mochi-view .mochi-preset-library-item[aria-pressed=true]{border-color:var(--mochi-accent);background:color-mix(in srgb,var(--mochi-accent) 8%,var(--mochi-surface))}.mochi-view .mochi-preset-binding{border:1px solid var(--mochi-border);padding:8px;border-radius:10px}.mochi-view .mochi-preset-binding>summary{min-height:44px;padding:10px 0;cursor:pointer}.mochi-view .mochi-preset-panel h3,.mochi-view .mochi-preset-panel h4{margin:0 0 10px;font-weight:600}.mochi-view .mochi-preset-editor label{padding:8px;border:1px solid var(--mochi-border);border-radius:8px}.mochi-view .mochi-placement-row{border:1px solid var(--mochi-border);border-radius:8px;padding:10px;margin:8px 0;min-width:0}.mochi-view .mochi-placement-row-head{display:flex;flex-wrap:wrap;align-items:center;gap:5px}.mochi-view .mochi-preset-panel pre{white-space:pre-wrap;overflow-wrap:anywhere}.mochi-view .mochi-placement-editor select{max-width:100%;background:color-mix(in srgb,currentColor 3%,var(--mochi-surface));color:inherit;border:1px solid var(--mochi-border);padding:8px}.mochi-view .mochi-preview-panel{border:1px solid var(--mochi-border);border-radius:12px;margin:6px;background:var(--mochi-surface)}.mochi-view .mochi-preview-panel>details{border:1px solid var(--mochi-border);border-radius:8px;padding:10px;margin-top:8px;background:color-mix(in srgb,currentColor 3%,var(--mochi-surface))}.mochi-view .mochi-preview-panel summary{cursor:pointer;font-weight:600;min-height:32px}.mochi-view .mochi-preview-text{max-height:320px;overflow:auto;padding:8px;border-left:2px solid var(--mochi-border)}.mochi-view .mochi-preview-warning{border-left:3px solid var(--mochi-accent);padding:6px 10px}.mochi-view .mochi-preview-identity{font-weight:600}@container(min-width:600px){.mochi-view .mochi-preset-workspace{grid-template-columns:minmax(115px,155px) minmax(0,1fr)}.mochi-view .mochi-preset-library{max-height:none}}`;
+var MOCHI_PRESET_DEDICATED_STYLES = `
+.mochi-view[data-preset-workspace=true]{display:flex!important;flex-direction:column;min-height:0;height:100%;overflow:hidden;padding:0}.mochi-desktop[data-preset-workspace=true]{grid-template-columns:minmax(0,1fr)!important}.mochi-desktop[data-preset-workspace=true]>.mochi-desktop-list,.mochi-desktop[data-preset-workspace=true]>.mochi-profile-panel,.mochi-desktop[data-preset-workspace=true] .mochi-desktop-back,.mochi-desktop[data-preset-workspace=true] .mochi-shell-notifications{display:none!important}.mochi-view .mochi-preset-panel{flex:1 1 auto;max-height:none;height:100%;box-sizing:border-box;margin:0;border:0;border-radius:0;padding:24px clamp(14px,4vw,64px);overflow:auto;background:var(--mochi-surface);container-type:inline-size}.mochi-view .mochi-preset-panel>h3{font-size:19px;margin:0 0 6px}.mochi-view .mochi-preset-panel>.mochi-muted{font-size:12px;margin:6px 0}.mochi-view .mochi-preset-workspace{display:block;margin-top:16px}.mochi-view .mochi-preset-library{display:block;max-height:none;border:0;border-bottom:1px solid var(--mochi-border);border-radius:0;padding:0 0 8px;margin-bottom:16px;background:transparent}.mochi-view .mochi-preset-library>summary{cursor:pointer;min-height:44px;font-size:13px;line-height:44px}.mochi-view .mochi-preset-library-item{margin:4px;font-size:12px}.mochi-view .mochi-preset-edit-pane{border:0;padding:0;background:transparent}.mochi-view .mochi-preset-editor{gap:12px}.mochi-view .mochi-preset-editor>label{border:0;padding:0}.mochi-view .mochi-preset-editor>button{justify-self:start}.mochi-view .mochi-preset-editor>button[type=submit]{border-color:var(--mochi-accent);font-weight:600}.mochi-view .mochi-preset-binding{border-width:0 0 1px;border-radius:0;padding:0;background:transparent}.mochi-view .mochi-preset-binding>summary{font-size:12px}.mochi-view .mochi-preset-binding[open]{padding-bottom:12px}.mochi-view .mochi-preset-panel[data-block-editing=true]>h3,.mochi-view .mochi-preset-panel[data-block-editing=true]>p{display:none}.mochi-view .mochi-preset-panel[data-block-editing=true]>.mochi-preset-workspace{margin-top:14px}.mochi-view[data-preset-workspace=true]>.mochi-preview-panel{flex:1;max-height:none;overflow:auto;margin:0;border:0;border-radius:0;padding:24px}.mochi-view .mochi-preset-panel pre{white-space:pre-wrap;overflow-wrap:anywhere}
+@container(max-width:550px){.mochi-view .mochi-preset-panel{padding:14px}.mochi-view .mochi-preset-panel button{max-width:100%;white-space:normal}.mochi-view .mochi-preset-panel>h3{font-size:17px}}
+`;
+var MOCHI_PRESET_CHROME_STYLES = `.mochi-view .mochi-preset-heading{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px}.mochi-view .mochi-preset-heading h3{flex:1;margin:0;font-size:18px}.mochi-view .mochi-preset-heading button{font-size:12px}.mochi-view .mochi-preset-panel>.mochi-preset-heading+p{margin:0 0 8px}.mochi-view .mochi-preset-panel>.mochi-preset-workspace{margin-top:4px}.mochi-view .mochi-preset-panel>.mochi-preset-workspace>.mochi-preset-library{margin-bottom:10px;padding-bottom:0}.mochi-view .mochi-preset-panel[data-block-editing=true]>.mochi-preset-heading{justify-content:flex-end}.mochi-view .mochi-preset-panel[data-block-editing=true]>.mochi-preset-heading>h3{display:none}.mochi-view .mochi-preset-panel[data-block-editing=true]>.mochi-preset-heading+p{display:none}.mochi-view .mochi-preset-panel[data-block-editing=true] .mochi-block-detail>h4{font-size:20px}.mochi-view .mochi-preset-panel[data-block-editing=true] .mochi-block-detail>p{margin:0}.mochi-view .mochi-preset-panel[data-block-editing=true] .mochi-block-detail>label:has(input[type=checkbox]){display:inline-flex}`;
+var MOCHI_PRESET_WORKSPACE_STYLES = MOCHI_PRESET_WORKSPACE_BASE + MOCHI_PRESET_DEDICATED_STYLES + MOCHI_PRESET_CHROME_STYLES + `.mochi-view .mochi-preset-editor .mochi-block-detail label{border:0;padding:0}.mochi-view .mochi-block-switches{display:flex;gap:24px;flex-wrap:wrap}.mochi-view .mochi-preset-editor .mochi-block-switches label{flex-direction:row;min-height:32px;justify-content:flex-start;gap:10px}.mochi-view .mochi-preset-editor .mochi-block-switches input{margin:0}.mochi-view .mochi-block-detail>h4{margin:0}.mochi-view .mochi-block-detail{gap:10px}.mochi-view .mochi-preset-navigation{display:flex;flex-wrap:wrap;gap:8px 24px;border-bottom:1px solid var(--mochi-border);margin-bottom:12px}.mochi-view .mochi-preset-navigation>details{flex:1 1 220px;border:0;margin:0;padding:0}.mochi-view .mochi-preset-navigation>details[open]{flex-basis:100%}.mochi-view .mochi-preset-navigation>details>summary{min-height:40px;padding:0;line-height:40px}.mochi-view .mochi-preset-panel{padding-top:16px}.mochi-view .mochi-preset-editor label:has(input[readonly]){display:none}`;
 
 // src/mochi/view.ts
 function action(label, icon, compact = false) {
@@ -2599,7 +3486,7 @@ class MochiView {
     return this.sidebarProfile;
   }
   editSidebarProfile(anchor, complete, create = false) {
-    if (this.busy)
+    if (this.busy && !this.ownGenerations.has(this.roomId))
       return;
     const current = this.profiles.state?.accounts.find((a) => a.id === this.state?.accountId && !a.archived);
     if (!this.profiles.state || !create && !current)
@@ -2610,7 +3497,7 @@ class MochiView {
       this.profiles.start(create ? undefined : current);
       this.refreshChoices();
       this.redraw();
-    }, anchor);
+    }, anchor, true);
   }
   renderSidebarProfile() {
     const root = el("section", "mochi-view");
@@ -2723,6 +3610,10 @@ class MochiView {
     this.dispatch("mochi:accounts");
   }
   resetScope() {
+    this.settingsPage = "";
+    this.settingsLayout.reset();
+    this.personalSettings.reset();
+    this.personalScroll = 0;
     this.desktopDetails = false;
     this.conversationFilter = "";
     this.conversationView = "all";
@@ -2838,7 +3729,7 @@ class MochiView {
     Object.assign(room, incoming);
     const quote = this.quoteNode(room, id, true);
     quote.click();
-  }, () => this.presenceRoot?.querySelector('[aria-label="Room options"]')?.focus());
+  }, () => this.restoreToolFocus());
   selectionVersion = 0;
   memoryPanel = new MochiMemoryPanel((payload) => this.send(payload), () => this.state?.rooms.find((r) => r.id === this.roomId && r.accountId === this.state?.accountId), () => this.redraw(), (p) => {
     const room = this.state?.rooms.find((r) => r.id === p.roomId && r.accountId === p.accountId);
@@ -2849,7 +3740,7 @@ class MochiView {
       room.background = this.mergeScheduling(room, p.background, p.revision);
       this.preview.invalidate();
     }
-  }, () => this.presenceRoot?.querySelector('[aria-label="Room options"]')?.focus(), (id, running) => {
+  }, () => this.restoreToolFocus(), (id, running) => {
     if (running) {
       this.ownGenerations.set(this.roomId, id);
       if (this.state) {
@@ -2870,8 +3761,20 @@ class MochiView {
     this.presetPanel.reset();
     this.preview.reset();
     this.dispatch("mochi:preset_bind", { roomId: room.id, revision: room.revision, presetId, presetRevision, confirmed: true });
-  }, () => this.presenceRoot?.querySelector('[aria-label="Room options"]')?.focus());
-  preview = new MochiPreview((payload) => this.send(payload), () => this.state?.rooms.find((r) => r.id === this.roomId && r.accountId === this.state?.accountId), () => this.redraw(), () => this.presenceRoot?.querySelector('[aria-label="Room options"]')?.focus(), (id) => this.state?.characters.find((c) => c.id === id)?.name || id);
+  }, () => this.restoreToolFocus(), (blocks) => {
+    const room = this.state?.rooms.find((r) => r.id === this.roomId);
+    if (room) {
+      this.presetPanel.open = false;
+      this.preview.show(room, blocks);
+    }
+  });
+  preview = new MochiPreview((payload) => this.send(payload), () => this.state?.rooms.find((r) => r.id === this.roomId && r.accountId === this.state?.accountId), () => this.redraw(), () => {
+    if (this.preview.isDraft) {
+      this.presetPanel.open = true;
+      this.redraw();
+    } else
+      this.restoreToolFocus();
+  }, (id) => this.state?.characters.find((c) => c.id === id)?.name || id);
   requestVersion = 0;
   modelControllers = new Set;
   modelChoices = new Map;
@@ -2889,11 +3792,19 @@ class MochiView {
     }, 30000);
     this.send({ type: "mochi:choices", requestId: this.choicesRequest, accountId: this.state?.accountId || this.activeAccountId });
   }
+  settingsPage = "";
+  settingsLayout = new ChatSettingsLayout;
+  personalSettings = new PersonalSettings((p) => this.send(p), () => this.state?.accountId, () => this.profiles.state?.ownerId, () => this.redraw());
+  settingsReturnFocus = false;
+  personalScroll = 0;
+  settingsInvoker = "Room options";
+  toolFocus = "";
   settingsSections = new Set;
   formBaseline = "";
   settingsDraft = null;
   draftRevision = 0;
   timeout;
+  generationErrorRoom = "";
   presenceTimer;
   presenceRoot;
   draft = null;
@@ -2906,6 +3817,8 @@ class MochiView {
     this.notificationsChanged = notificationsChanged;
   }
   hasUnsavedChanges() {
+    if (this.personalSettings.dirty)
+      return true;
     if (this.sidebarProfile)
       return this.profiles.hasUnsavedChanges();
     if (this.profilesOpen)
@@ -2913,7 +3826,7 @@ class MochiView {
     return !!(this.creating || this.editing) && !!this.draft && JSON.stringify([this.draft, this.settingsDraft]) !== this.formBaseline;
   }
   isConversationOpen() {
-    return !this.destroyed && !!this.roomId && !this.pickerOpen && !this.profilesOpen && !this.editing && !this.creating && !this.notificationsOpen;
+    return !this.destroyed && !!this.roomId && !this.pickerOpen && !this.profilesOpen && !this.editing && !this.creating && !this.notificationsOpen && !this.settingsPage;
   }
   generationExitNotice(summaryOnly = false) {
     if (this.memoryPanel.generating)
@@ -2968,6 +3881,7 @@ class MochiView {
       this.profilesOpen = false;
       this.sidebarProfile = false;
       this.profileReturn = undefined;
+      this.personalSettings.discard();
       next();
     }, anchor, stopsGeneration);
   }
@@ -2975,7 +3889,13 @@ class MochiView {
     if (this.busy)
       return;
     const next = () => {
-      if (this.profilesOpen) {
+      if (this.settingsPage) {
+        this.settingsPage = "";
+        this.editing = false;
+        this.draft = null;
+        this.settingsDraft = null;
+        this.personalSettings.discard();
+      } else if (this.profilesOpen) {
         if (this.profiles.draft)
           this.profiles.draft = null;
         else
@@ -3030,6 +3950,8 @@ class MochiView {
     if (this.roomId !== id)
       this.desktopDetails = false;
     if (this.roomId !== id) {
+      this.settingsPage = "";
+      this.settingsLayout.reset();
       this.leave();
       this.selectionVersion++;
       this.roomId = id;
@@ -3046,6 +3968,10 @@ class MochiView {
     }
   }
   leave() {
+    if (this.generationErrorRoom) {
+      this.error = "";
+      this.generationErrorRoom = "";
+    }
     this.memoryPanel.reset();
     this.presetPanel.reset();
     this.preview.reset();
@@ -3130,6 +4056,7 @@ class MochiView {
     this.operation = type;
     this.busy = true;
     this.error = "";
+    this.generationErrorRoom = "";
     this.feedback = "";
     clearTimeout(this.timeout);
     this.timeout = setTimeout(() => {
@@ -3143,6 +4070,10 @@ class MochiView {
   receive(payload) {
     if (this.destroyed)
       return false;
+    if (payload?.type === "mochi:error" && payload.roomId && (payload.accountId !== this.state?.accountId || payload.roomId !== this.roomId || this.ownGenerations.get(payload.roomId) !== payload.requestId || this.state?.rooms.find((r) => r.id === payload.roomId)?.revision !== payload.roomRevision))
+      return true;
+    if (this.personalSettings.receive(payload))
+      return true;
     if (this.memoryPanel.receive(payload))
       return true;
     if (this.presetPanel.receive(payload))
@@ -3284,6 +4215,10 @@ class MochiView {
     if (payload?.type === "mochi:room_updated") {
       const room = this.state?.rooms.find((r) => r.id === payload.room?.id);
       if (room && payload.room.revision > room.revision && !this.editing && !this.creating) {
+        if (this.generationErrorRoom === room.id) {
+          this.error = "";
+          this.generationErrorRoom = "";
+        }
         payload.room.background = this.mergeScheduling(room, payload.room.background, payload.room.revision);
         Object.assign(room, payload.room);
         this.redraw();
@@ -3353,8 +4288,10 @@ class MochiView {
     this.busy = false;
     if (payload.type === "mochi:error") {
       this.pendingNoteSave = undefined;
-      if (this.requestVersion === this.selectionVersion)
+      if (this.requestVersion === this.selectionVersion) {
         this.error = String(payload.message);
+        this.generationErrorRoom = payload.roomId || "";
+      }
     } else {
       payload.state.rooms = payload.state.rooms.filter((r) => {
         const known = this.associations.get(r.id);
@@ -3371,6 +4308,7 @@ class MochiView {
           room.background = this.mergeScheduling(previous, room.background, room.revision);
       }
       this.state = { ...payload.state, notifications };
+      this.personalSettings.load();
       if (this.operation === "mochi:pinned_content" && this.pendingNoteSave) {
         this.noteDrafts.delete(this.pendingNoteSave);
         this.pendingNoteSave = undefined;
@@ -3387,8 +4325,9 @@ class MochiView {
           this.ownGenerations.delete(id);
       if (payload.selectedRoomId && this.requestVersion === this.selectionVersion) {
         this.creating = false;
-        this.editing = false;
+        this.editing = this.settingsPage === "chat";
         this.draft = null;
+        this.settingsDraft = null;
         this.roomId = payload.selectedRoomId;
         this.navigate(this.roomId);
       }
@@ -3443,8 +4382,28 @@ class MochiView {
         control.classList.add("mochi-icon-button");
         control.lastElementChild?.remove();
       }
+      const dock = el("div", "mochi-profile-dock");
+      dock.dataset.compact = String(this.personalSettings.value.dock === "compact");
+      dock.setAttribute("aria-label", "Active fictional profile");
+      const identityCopy = el("div"), switcher = el("select");
+      switcher.setAttribute("aria-label", "Switch fictional profile");
+      for (const profile of this.profiles.state?.accounts.filter((a) => !a.archived) || []) {
+        const option = el("option", "", profile.displayName + (profile.username ? " · @" + profile.username : ""));
+        option.value = profile.id;
+        switcher.append(option);
+      }
+      if (!account) {
+        const option = el("option", "", "Unassigned legacy chats");
+        option.value = "";
+        switcher.append(option);
+      }
+      switcher.value = this.state.accountId || "";
+      switcher.onchange = () => this.selectNavigationAccount(switcher.value || undefined, switcher, () => this.redraw());
+      identityCopy.append(switcher, el("small", "mochi-dock-username", account?.username ? "@" + account.username : "Fictional profile"));
+      dock.append(portrait(account?.displayName || "?", account?.avatarUrl), identityCopy);
+      identity.replaceChildren(dock);
       const accountRow = el("div", "mochi-shell-account-row");
-      accountRow.append(identity, change, profiles);
+      accountRow.append(identity, profiles);
       create.setAttribute("aria-label", "New Chat");
       create.title = "New Chat";
       create.textContent = "+ New Chat";
@@ -3542,11 +4501,13 @@ class MochiView {
     }, backButton, !!this.roomId);
     back.append(backButton);
     main.append(back, this.render("desktop"));
-    if (noticesButton) {
+    if (main.querySelector("[data-preset-workspace=true]"))
+      page.dataset.presetWorkspace = "true";
+    if (main.querySelector("[data-settings-workspace=true]"))
+      page.dataset.settingsWorkspace = "true";
+    if (noticesButton && !page.dataset.presetWorkspace && !page.dataset.settingsWorkspace) {
       const actions = main.querySelector(".mochi-room-header>.mochi-actions");
-      if (actions)
-        actions.insertBefore(noticesButton, actions.lastChild);
-      else {
+      if (actions) {} else {
         const toolbar = el("div", "mochi-shell-notifications");
         toolbar.append(noticesButton);
         main.prepend(toolbar);
@@ -3556,7 +4517,7 @@ class MochiView {
     style.textContent = MOCHI_DESKTOP_STYLES;
     page.append(sidebar, main, style);
     const selected = this.state?.rooms.find((room) => room.id === this.roomId);
-    if (selected && page.dataset.mode === "chat") {
+    if (selected && page.dataset.mode === "chat" && !page.dataset.presetWorkspace && !page.dataset.settingsWorkspace) {
       page.dataset.details = String(this.desktopDetails);
       const toggle = main.querySelector('[aria-label="Conversation details"]');
       const setDetails = (open) => {
@@ -3592,21 +4553,9 @@ class MochiView {
     controls.append(change);
     const profiles = action(stateAccountLabel(this.state?.accountId), "people");
     profiles.disabled = this.busy;
-    profiles.onclick = () => {
-      if (this.accountNavigation)
-        this.accountNavigation.settings(profiles);
-      else
-        this.exitPortal(() => {
-          this.leave();
-          this.profilesOpen = true;
-          const current = this.profiles.state?.accounts.find((a) => a.id === this.state?.accountId);
-          if (current)
-            this.profiles.start(current);
-          else
-            this.profiles.draft = null;
-          this.dispatch("mochi:accounts");
-        }, profiles, true);
-    };
+    profiles.setAttribute("aria-label", "Personal Settings");
+    profiles.title = "Personal Settings";
+    profiles.onclick = () => this.openSettings("personal", profiles);
     controls.append(profiles);
     const create = action("New room", "plus");
     create.disabled = this.busy;
@@ -3637,8 +4586,15 @@ class MochiView {
     page.dataset.surface = surface;
     if (surface !== "choices")
       this.presenceRoot = page;
+    if (this.settingsReturnFocus) {
+      this.settingsReturnFocus = false;
+      queueMicrotask(() => {
+        const target = Array.from(page.querySelectorAll("[aria-label]")).find((n) => n.getAttribute("aria-label") === this.settingsInvoker && !n.closest("[hidden]"));
+        (target || page.querySelector('[aria-label="Room options"]'))?.focus({ preventScroll: true });
+      });
+    }
     const style = el("style");
-    style.textContent = MOCHI_STYLES + MOCHI_REPLY_STYLES + MOCHI_REACTION_STYLES + MOCHI_PIN_STYLES + MOCHI_SEARCH_STYLES + MOCHI_TEXTING_STYLES + MOCHI_PREVIEW_STYLES + MOCHI_PRESET_STYLES + MOCHI_PRESET_WORKSPACE_STYLES + MOCHI_MEMORY_STYLES;
+    style.textContent = MOCHI_STYLES + MOCHI_REPLY_STYLES + MOCHI_REACTION_STYLES + MOCHI_PIN_STYLES + MOCHI_SEARCH_STYLES + MOCHI_TEXTING_STYLES + MOCHI_PREVIEW_STYLES + MOCHI_PRESET_STYLES + MOCHI_PRESET_WORKSPACE_STYLES + MOCHI_MEMORY_STYLES + SETTINGS_WORKSPACE_STYLES;
     page.append(style);
     const header = el("header");
     const brand = el("div", "mochi-brand");
@@ -3679,6 +4635,15 @@ class MochiView {
       const error = el("p", "mochi-error", this.error);
       error.setAttribute("role", "alert");
       page.append(error);
+      if (this.error === GENERATION_ERROR_MESSAGES.connection && this.roomId && !this.editing) {
+        const choose = action("Choose connection", "settings");
+        choose.onclick = () => {
+          this.openSettings("chat", choose);
+          this.settingsLayout.category = "Advanced";
+          this.redraw();
+        };
+        page.append(choose);
+      }
     }
     if (this.profilesOpen) {
       page.append(this.profiles.render(this.busy, (type, input) => this.dispatch(type, input), () => this.redraw(), () => {
@@ -3723,6 +4688,19 @@ class MochiView {
       return page;
     }
     const room = this.state.rooms.find((room) => room.id === this.roomId);
+    if (room && surface !== "choices" && (this.presetPanel.open || this.preview.open && (this.preview.isDraft || this.settingsPage) || this.memoryPanel.open && this.settingsPage)) {
+      this.preview.sync(room);
+      page.replaceChildren(style, this.presetPanel.open ? this.presetPanel.render(room) : this.memoryPanel.open ? this.memoryPanel.render(room) : this.preview.render(room));
+      page.dataset.presetWorkspace = "true";
+      page.dataset.conversation = "true";
+      return page;
+    }
+    if (this.settingsPage && surface !== "choices") {
+      page.replaceChildren(style, this.renderSettings(room));
+      page.dataset.settingsWorkspace = "true";
+      page.dataset.conversation = "true";
+      return page;
+    }
     if (surface !== "chat" && (this.creating || this.editing)) {
       page.append(this.form(this.editing ? room : undefined));
       return page;
@@ -3765,16 +4743,7 @@ class MochiView {
         this.select("");
         this.navigate();
       }, inbox, true);
-      const openSettings = () => this.confirmGenerationExit(() => {
-        this.leave();
-        this.editing = true;
-        this.draft = null;
-        this.settingsDraft = null;
-        if (surface === "chat")
-          configure();
-        this.refreshChoices();
-        this.redraw();
-      }, more);
+      const openSettings = () => this.openSettings("chat", more);
       const menu = el("details", "lp-conversation-menu"), more = el("summary", "lp-nav-action", "⋯");
       more.setAttribute("aria-label", "Room options");
       const menuSheet = el("div", "lp-conversation-menu-sheet");
@@ -3823,7 +4792,13 @@ class MochiView {
         this.search.show(room);
         this.presenceRoot?.querySelector('[aria-label="Search conversation text"]')?.focus();
       }, more, true);
-      menuSheet.append(menuAction("Search conversation", openSearch));
+      menuSheet.append(menuAction("Search conversation", openSearch), menuAction("Personal Settings", () => this.openSettings("personal", more)));
+      if (this.notificationPolicy().enabled)
+        menuSheet.append(menuAction("Mochi notifications", () => this.exitPortal(() => {
+          this.leave();
+          this.notificationsOpen = true;
+          this.redraw();
+        }, more, true)));
       menuSheet.append(menuAction("Preview AI prompt", () => this.confirmGenerationExit(() => {
         this.memoryPanel.reset();
         this.presetPanel.reset();
@@ -3843,11 +4818,26 @@ class MochiView {
         if (event.relatedTarget && !menu.contains(event.relatedTarget))
           menu.open = false;
       });
+      controls.classList.add("mochi-custom-toolbar");
+      controls.dataset.presentation = this.personalSettings.value.presentation;
+      const preferences = this.personalSettings.value, route = { search: "Search conversation", participants: "Participants", notifications: "Mochi notifications", settings: "Settings", presets: "Presets", memory: "Conversation Memory", preview: "Preview AI prompt", notes: "Pins & Notes" };
+      const icons = { search: "search", participants: "people", notifications: "notifications", settings: "settings", presets: "edit", memory: "edit", preview: "search", notes: "edit" };
+      for (const key of preferences.order) {
+        if (preferences.hidden.includes(key))
+          continue;
+        const original = Array.from(menuSheet.querySelectorAll("button")).find((b) => b.textContent === route[key]);
+        if (!original)
+          continue;
+        const shortcut = action(TOOLBAR_LABELS[key], icons[key], true);
+        shortcut.title = TOOLBAR_LABELS[key];
+        if (preferences.presentation === "labels")
+          shortcut.append(el("span", "mochi-toolbar-label", key === "settings" ? "Settings" : TOOLBAR_LABELS[key]));
+        shortcut.onclick = () => key === "settings" ? this.openSettings("chat", shortcut) : original.click();
+        controls.append(shortcut);
+      }
       if (surface === "desktop") {
-        const search = action("Search conversation", "search", true);
-        search.onclick = openSearch;
         const details = action("Conversation details", "people", true);
-        controls.append(search, details);
+        controls.append(details);
       }
       controls.append(menu);
       roomHeader.append(info, controls);
@@ -3927,6 +4917,134 @@ class MochiView {
       page.append(row);
     }
     return page;
+  }
+  openSettings(page, anchor) {
+    if (!this.settingsPage)
+      this.settingsInvoker = anchor.getAttribute("aria-label") || "Room options";
+    const open = () => {
+      if (!this.settingsPage) {
+        this.preview.reset();
+        this.search.reset();
+        this.presetPanel.reset();
+        this.memoryPanel.reset();
+        this.settingsLayout.reset();
+        this.draft = null;
+        this.settingsDraft = null;
+      }
+      this.settingsPage = page;
+      this.editing = Boolean(this.roomId);
+      this.creating = false;
+      this.personalSettings.load();
+      this.refreshChoices();
+      this.redraw();
+    };
+    if (this.settingsPage)
+      open();
+    else
+      this.confirmGenerationExit(open, anchor, true);
+  }
+  renderSettings(room) {
+    const root = el("section", "mochi-settings-workspace");
+    root.setAttribute("aria-label", "Mochi Settings");
+    const head = el("div", "mochi-settings-heading"), close = button(room ? "Return to conversation" : "Return to conversations");
+    head.append(el("h3", "", "Mochi Settings"), close);
+    close.onclick = () => this.confirmNavigation(() => {
+      this.settingsPage = "";
+      this.editing = false;
+      this.draft = null;
+      this.settingsDraft = null;
+      this.personalSettings.discard();
+      this.settingsReturnFocus = true;
+      this.redraw();
+    }, close);
+    const tabs = el("nav", "mochi-settings-tabs");
+    tabs.setAttribute("aria-label", "Settings workspace");
+    for (const [key, label] of [["chat", "Chat"], ["personal", "Personal"]]) {
+      const tab = button(label);
+      tab.setAttribute("aria-pressed", String(this.settingsPage === key));
+      tab.disabled = key === "chat" && !room;
+      tab.onclick = () => {
+        this.settingsPage = key;
+        this.personalSettings.load();
+        this.redraw();
+      };
+      tabs.append(tab);
+    }
+    root.append(head, tabs, el("p", "mochi-muted", this.settingsPage === "chat" ? "This conversation · Save settings applies staged edits and may stop pending replies. Actions marked “applies now” are immediate." : "This fictional profile · Profile edits and presentation each have their own explicit Save. Your Lumiverse login stays unchanged."));
+    if (this.error) {
+      const error = el("p", "mochi-error", this.error);
+      error.setAttribute("role", "alert");
+      root.append(error);
+    }
+    if (this.settingsPage === "chat" && room)
+      root.append(this.form(room));
+    else {
+      const body = el("div", "mochi-personal-scroll"), account = this.profiles.state?.accounts.find((a) => a.id === this.state?.accountId);
+      const savedScroll = this.personalScroll;
+      body.onscroll = () => {
+        this.personalScroll = body.scrollTop;
+      };
+      queueMicrotask(() => {
+        if (body.isConnected)
+          body.scrollTop = savedScroll;
+      });
+      body.append(el("h4", "", account?.displayName || "Legacy conversation identity"), el("p", "mochi-muted", "Fictional profile · Persona, avatar, username and native add-on selections are managed in the existing profile editor. Native Lumiverse theme and real-login preferences stay in Lumiverse."));
+      const manage = button("Manage fictional profile & persona add-ons");
+      manage.onclick = () => {
+        if (this.accountNavigation)
+          this.accountNavigation.settings(manage);
+        else
+          this.exitPortal(() => {
+            this.profilesOpen = true;
+            this.profiles.start(account);
+            this.dispatch("mochi:accounts");
+          }, manage);
+      };
+      const choose = button("Switch fictional profile");
+      choose.onclick = () => {
+        if (this.accountNavigation)
+          this.accountNavigation.picker();
+        else
+          this.showPicker();
+      };
+      const presentation = this.personalSettings.render(), actions = presentation.querySelector(".mochi-presentation-actions");
+      body.append(manage, choose, presentation);
+      root.append(body);
+      if (actions)
+        root.append(actions);
+    }
+    root.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !root.querySelector("dialog[open]")) {
+        event.stopPropagation();
+        close.click();
+      }
+    });
+    return root;
+  }
+  restoreToolFocus() {
+    if (!this.settingsPage) {
+      this.presenceRoot?.querySelector('[aria-label="Room options"]')?.focus();
+      return;
+    }
+    queueMicrotask(() => {
+      const root = this.presenceRoot;
+      if (this.settingsPage && this.toolFocus)
+        Array.from(root?.querySelectorAll("button") || []).find((b) => b.textContent === this.toolFocus)?.focus({ preventScroll: true });
+      else
+        root?.querySelector('[aria-label="Room options"]')?.focus();
+    });
+  }
+  openSettingsTool(name, anchor, room) {
+    this.toolFocus = name;
+    if (name === "Presets")
+      this.presetPanel.show(room);
+    else if (name === "Preview AI prompt")
+      this.preview.show(room);
+    else if (name === "Conversation Memory")
+      this.memoryPanel.show(room);
+    else
+      this.openPins(anchor, room);
+    this.redraw();
   }
   form(room) {
     const state = this.state;
@@ -4029,7 +5147,9 @@ class MochiView {
     if (room) {
       section("Connection & replies");
       const connection = el("select");
-      const empty = el("option", "", "Choose connection");
+      const defaults = (state.connections || []).filter((c) => c.isDefault);
+      const fallback = defaults.length === 1 ? defaults[0] : undefined;
+      const empty = el("option", "", fallback ? `Use Lumiverse default · ${fallback.name}` : "Use Lumiverse default (none available)");
       empty.value = "";
       connection.append(empty);
       for (const c of state.connections || []) {
@@ -4052,7 +5172,8 @@ class MochiView {
       const refresh = button("Refresh connections & personas", "lp-button mochi-secondary-action");
       refresh.onclick = () => this.refreshChoices();
       group.append(refresh);
-      group.append(mochiModelPicker(settings.connectionId, state.connections?.find((c) => c.id === settings.connectionId)?.model || "", settings.model || "", (value) => {
+      const effectiveConnection = settings.connectionId ? state.connections?.find((c) => c.id === settings.connectionId) : fallback;
+      group.append(mochiModelPicker(effectiveConnection?.id || "", effectiveConnection?.model || "", settings.model || "", (value) => {
         if (value)
           settings.model = value;
         else
@@ -4084,6 +5205,17 @@ class MochiView {
           delete settings.responseMode;
       };
       field("Response mode", mode);
+      const nextResponder = el("select");
+      for (const id of ["auto", ...room.characterIds]) {
+        const option = el("option", "", id === "auto" ? "Automatic responder" : state.characters.find((c) => c.id === id)?.name || id);
+        option.value = id;
+        nextResponder.append(option);
+      }
+      nextResponder.value = this.responders.get(room.id) || "auto";
+      nextResponder.onchange = () => this.responders.set(room.id, nextResponder.value);
+      field("Next responder", nextResponder);
+      group.append(el("p", "mochi-muted", "Next responder applies now for the next reply in this frontend session. It does not require Save or change the saved response mode."));
+      nextResponder.setAttribute("aria-description", "This conversation · Next reply selection applies now in this frontend session; it does not change saved response mode.");
       auto.disabled = !!settings.responseMode;
       group.append(el("p", "mochi-muted", "This conversation · Requires Save. Natural may choose silence or delayed replies; Instant requests an eligible reply; Manual disables automatic replies, while Continue still works. A selected mode controls automatic replies; Existing behavior uses the automatic-reply checkbox. Ordinary replies do not require idle/background autonomy."));
       section("Background messaging", true);
@@ -4149,9 +5281,10 @@ class MochiView {
       };
       field("Room instructions", instructions);
       for (const id of room.characterIds) {
-        section((state.characters.find((c) => c.id === id)?.name || id) + " · presence & room name", true);
+        const characterSection = section((state.characters.find((c) => c.id === id)?.name || id) + " · presence & room name", true);
+        characterSection.dataset.characterId = id;
         group.append(el("p", "mochi-muted", "Presence and schedule changes apply immediately."));
-        const presence = structuredClone(room.background?.presence?.[id] || defaultPresence()), name = state.characters.find((c) => c.id === id)?.name || id;
+        const presence = structuredClone(room.background?.presence?.[id] || defaultPresence()), baseName = state.characters.find((c) => c.id === id)?.name || id, name = baseName + (room.characterIds.filter((cid) => state.characters.find((c) => c.id === cid)?.name === baseName).length > 1 ? " · character " + (room.characterIds.indexOf(id) + 1) : "");
         const setPresence = () => this.dispatch("mochi:presence", { roomId: room.id, revision: room.revision, characterId: id, presence });
         const status = el("select");
         for (const s of STATUSES) {
@@ -4222,7 +5355,7 @@ class MochiView {
         input.oninput = () => {
           settings.characterNames[id] = input.value;
         };
-        field(`Room name for ${state.characters.find((c) => c.id === id)?.name || id}`, input);
+        field(`Room name for ${name}`, input);
         group.append(textingControls(settings, id, name));
       }
     }
@@ -4241,6 +5374,9 @@ class MochiView {
       this.editing = false;
       this.draft = null;
       this.settingsDraft = null;
+      this.settingsPage = "";
+      this.personalSettings.discard();
+      this.settingsReturnFocus = true;
       this.redraw();
     }, cancel);
     const actions = el("div", "mochi-actions");
@@ -4251,7 +5387,7 @@ class MochiView {
       const selected = state.accountId ? undefined : draft.persona === "keep" ? undefined : draft.persona === "manual" ? { source: "manual", name: draft.name, description: draft.description } : state.personas.find((p) => p.source + ":" + p.sourceId === draft.persona);
       this.dispatch(room ? "mochi:update" : "mochi:create", { roomId: room?.id, revision: room ? this.draftRevision : undefined, title: draft.title, characterIds: draft.characterIds, persona: selected, ...room ? { settings } : {} });
     };
-    return form;
+    return room && this.settingsPage === "chat" ? this.settingsLayout.adapt(form, room, state, () => this.redraw(), (name, anchor) => this.openSettingsTool(name, anchor, room)) : form;
   }
   scheduleList(room) {
     const list = el("section");
@@ -4429,11 +5565,15 @@ class MochiView {
     return thread;
   }
   sheet(anchor, title, content) {
-    const sheet = showPocketSheet(anchor, title, content);
+    const sheet = showPocketSheet(anchor, title, content, anchor.closest(".mochi-workspace") || this.presenceRoot?.closest(".mochi-workspace") || undefined);
     if (sheet) {
       this.sheets.add(sheet.dismiss);
       content.closest("dialog")?.classList.add("mochi-sheet");
-      content.closest("dialog")?.addEventListener("close", () => this.sheets.delete(sheet.dismiss), { once: true });
+      content.closest("dialog")?.addEventListener("close", () => {
+        this.sheets.delete(sheet.dismiss);
+        if (!anchor.isConnected)
+          Array.from(this.presenceRoot?.querySelectorAll("button") || []).find((b) => anchor.getAttribute("aria-label") ? b.getAttribute("aria-label") === anchor.getAttribute("aria-label") : b.textContent === anchor.textContent)?.focus({ preventScroll: true });
+      }, { once: true });
     }
     return sheet;
   }
@@ -4713,7 +5853,13 @@ class MochiView {
     const stop = action("Stop reply", "stop", true);
     stop.disabled = !job;
     stop.hidden = !job;
-    stop.onclick = () => this.send({ type: "mochi:cancel", accountId: this.state?.accountId, roomId: room.id, generationRequestId: job });
+    stop.onclick = () => {
+      if (this.ownGenerations.get(room.id) === job)
+        this.ownGenerations.delete(room.id);
+      this.error = "";
+      this.generationErrorRoom = "";
+      this.send({ type: "mochi:cancel", accountId: this.state?.accountId, roomId: room.id, generationRequestId: job });
+    };
     form.onsubmit = (event) => {
       event.preventDefault();
       if (!this.busy && !job && !this.memoryPanel.generating)
@@ -4955,6 +6101,8 @@ function createMochiWorkspace(options) {
   frame.append(style);
   options.root.append(frame);
   let opened = false, destroyed = false, dirty = true;
+  let renderedAccount;
+  let retainedScroll;
   let dismissNotice;
   const visible = () => opened && session.owns(surface) && (options.isHostVisible?.() ?? true) && frame.isConnected && !document.hidden && !frame.closest("[hidden]") && (typeof frame.checkVisibility !== "function" || frame.checkVisibility({ visibilityProperty: true }));
   const policy = () => ({ ...options.notificationPolicy(), visible: visible() && view.isConversationOpen() });
@@ -4968,8 +6116,12 @@ function createMochiWorkspace(options) {
     const focused = frame.contains(document.activeElement) ? document.activeElement : null;
     const label = focused?.getAttribute("aria-label");
     const selection = focused && ["TEXTAREA", "INPUT"].includes(focused.tagName) ? [focused.selectionStart, focused.selectionEnd] : null;
-    const oldThread = frame.querySelector(".mochi-thread"), oldList = frame.querySelector(".mochi-desktop-rooms");
-    const scroll = oldThread ? { room: oldThread.dataset.roomId, first: oldThread.dataset.firstMessageId, top: oldThread.scrollTop, height: oldThread.scrollHeight, bottom: oldThread.scrollHeight - oldThread.clientHeight - oldThread.scrollTop < 72 } : undefined;
+    const oldThread = renderedAccount === view.state?.accountId ? frame.querySelector(".mochi-thread") : null, oldList = frame.querySelector(".mochi-desktop-rooms");
+    if (retainedScroll?.account !== view.state?.accountId)
+      retainedScroll = undefined;
+    const scroll = oldThread ? { account: view.state?.accountId, room: oldThread.dataset.roomId, first: oldThread.dataset.firstMessageId, top: oldThread.scrollTop, height: oldThread.scrollHeight, bottom: oldThread.scrollHeight - oldThread.clientHeight - oldThread.scrollTop < 72 } : retainedScroll;
+    retainedScroll = scroll;
+    renderedAccount = view.state?.accountId;
     const listScroll = oldList?.scrollTop || 0;
     const node = options.presentation === "messenger" ? view.renderDesktop() : view.render();
     node.classList.add("lumiphone-app-view");
@@ -5093,7 +6245,7 @@ function createMochiWorkspace(options) {
 
 // src/mochi/window.ts
 var windows = new WeakMap;
-function createMochiWindow(ui, session, notificationPolicy) {
+function createMochiWindow(ui, session, notificationPolicy, onOpen) {
   session.assertActive();
   const existing = windows.get(session);
   if (existing)
@@ -5117,7 +6269,7 @@ function createMochiWindow(ui, session, notificationPolicy) {
   let rect = clamp({ x: 64, y: 64, width: 840, height: 720 });
   const options = { width: rect.width, height: rect.height, initialPosition: { x: rect.x, y: rect.y }, chromeless: true, snapToEdge: false, resizable: false, persistGeometry: false, touchScrollMode: "native", tooltip: "Mochi" };
   const widget = ui.createFloatWidget(options);
-  let disposed = false, resizeCleanup, dragCleanup;
+  let disposed = false, visibleBefore = false, resizeCleanup, dragCleanup;
   const visibility = new Set;
   let savedRect, opener, lastFocus;
   const maximized = () => typeof widget.isFullscreen === "function" && widget.isFullscreen();
@@ -5263,7 +6415,13 @@ function createMochiWindow(ui, session, notificationPolicy) {
       isHostVisible: () => widget.isVisible(),
       onVisibilityChange: (visible) => {
         if (!disposed) {
+          const opening = visible && !visibleBefore;
+          visibleBefore = visible;
           widget.setVisible(visible);
+          if (opening)
+            try {
+              onOpen?.();
+            } catch {}
           for (const handler of visibility)
             handler(visible);
         }
@@ -5584,7 +6742,7 @@ function createMochiSidebar(ctx, session, policy, activateSidebar = () => {}, di
     if (!mobile) {
       mobileSurface?.hide();
       try {
-        const next = createMochiWindow(ctx.ui, session, policy);
+        const next = createMochiWindow(ctx.ui, session, policy, dismissDrawer);
         if (ownedWindow !== next) {
           offWindow?.();
           ownedWindow = next;
@@ -5656,6 +6814,8 @@ function createMochiSidebar(ctx, session, policy, activateSidebar = () => {}, di
     open.hidden = !!mobileSurface?.isOpen && !pickerRequested;
     editor.hidden = !session.view.isSidebarProfileOpen || pickerRequested;
     if (session.view.isSidebarProfileOpen && !pickerRequested) {
+      if (ownedWindow?.isOpen)
+        ownedWindow.hide();
       picker.hidden = true;
       body.hidden = true;
       const focused = editor.contains(document.activeElement) ? document.activeElement : undefined, label = focused?.getAttribute("aria-label"), start = focused?.selectionStart, end = focused?.selectionEnd;
@@ -5759,9 +6919,14 @@ function createMochiSidebar(ctx, session, policy, activateSidebar = () => {}, di
   render();
   const openPicker = () => {
     session.assertActive();
-    if (!mobileSurface?.isOpen)
-      activateSidebar();
-    showPicker();
+    const anchor = document.activeElement;
+    session.view.exitPortal(() => {
+      if (ownedWindow?.isOpen)
+        ownedWindow.hide();
+      if (!mobileSurface?.isOpen)
+        activateSidebar();
+      showPicker();
+    }, anchor, true);
   };
   const settings = (anchor) => {
     if (!mobileSurface?.isOpen)
@@ -13266,7 +14431,7 @@ class PocketController {
   }
   openMochiWindow() {
     try {
-      this.mochiWindow ||= createMochiWindow(this.ctx.ui, this.mochiSession, () => ({ enabled: this.preferences.notifyMessages, previews: this.preferences.notificationPreviews }));
+      this.mochiWindow ||= createMochiWindow(this.ctx.ui, this.mochiSession, () => ({ enabled: this.preferences.notifyMessages, previews: this.preferences.notificationPreviews }), () => this.ctx.sendToBackend({ type: "mochi:open_shell" }));
       this.mochiWindow.open();
     } catch {
       this.showError("Mochi window is unavailable on this host. Use the Pocket portal.");
