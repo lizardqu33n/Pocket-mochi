@@ -61,7 +61,7 @@ test('desktop: list, active room, real unread badges and bounded history use one
     expect(h.session.view.state!.rooms[0].messages).toHaveLength(1000)
     expect(h.listeners.size).toBe(1)
     expect(MOCHI_DESKTOP_STYLES).toContain('@container (max-width:639px)')
-    expect(MOCHI_DESKTOP_STYLES).toContain('overflow:auto;overscroll-behavior:contain')
+    expect(MOCHI_DESKTOP_STYLES.replace(/;\s*/g,';')).toContain('overflow:auto;overscroll-behavior:contain')
   }finally{h.cleanup()}
 })
 

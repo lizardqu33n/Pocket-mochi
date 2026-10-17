@@ -1,3 +1,4 @@
+import {mochiStyle} from './ui/styles.js'
 import {el} from '../frontend/shared.js'
 import type {MochiSettings} from './types.js'
 import {TEXTING_OPTIONS,type TextingStyle} from './texting.js'
@@ -20,4 +21,4 @@ export function textingControls(settings:MochiSettings,id:string,name:string):HT
  const label=el('label','','Texting habits'),tone=el('textarea');tone.rows=2;tone.maxLength=400;tone.value=settings.textingStyles?.[id]?.tone||'';tone.placeholder='Optional: casual abbreviations, complete sentences, dry humor…';tone.setAttribute('aria-label',`Texting habits for ${name}`);tone.oninput=()=>change('tone',tone.value);label.append(tone);group.append(label)
  return group
 }
-export const MOCHI_TEXTING_STYLES=`.mochi-view .mochi-texting-controls{min-width:0;display:grid;gap:8px;border:1px solid var(--mochi-border);border-radius:10px;padding:10px}.mochi-view .mochi-texting-controls label{min-width:0;display:grid;gap:4px;overflow-wrap:anywhere}.mochi-view .mochi-texting-controls select,.mochi-view .mochi-texting-controls textarea{box-sizing:border-box;min-width:0;width:100%;max-width:100%}.mochi-view .mochi-texting-controls :focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}`
+export const MOCHI_TEXTING_STYLES=mochiStyle('mochi-texting-styles')

@@ -1,3 +1,4 @@
+import {mochiStyle} from './ui/styles.js'
 import type {BlockDocument} from './prompt-blocks.js'
 import {el,button,requestId} from '../frontend/shared.js'
 import type {MochiRoom} from './types.js'
@@ -78,4 +79,4 @@ export class MochiPreview {
   return root
  }
 }
-export const MOCHI_PREVIEW_STYLES=`.mochi-view .mochi-preview-panel{min-width:0;min-height:0;max-height:40%;overflow:auto;flex:0 1 auto;padding:10px;border-bottom:1px solid var(--mochi-border);overflow-wrap:anywhere}.mochi-view .mochi-preview-controls{display:flex;flex-wrap:wrap;gap:6px;min-width:0}.mochi-view .mochi-preview-controls select{max-width:100%;min-width:0;background:var(--lp-surface-2,#ffffff0c);color:inherit;border:1px solid var(--mochi-border);padding:8px;border-radius:8px}.mochi-view .mochi-preview-panel button{min-height:40px}.mochi-view .mochi-preview-text{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;max-width:100%}.mochi-view .mochi-preview-panel :focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}`
+export const MOCHI_PREVIEW_STYLES=mochiStyle('mochi-preview-styles')

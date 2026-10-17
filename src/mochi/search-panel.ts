@@ -1,3 +1,4 @@
+import {mochiStyle} from './ui/styles.js'
 import {button,el,requestId} from '../frontend/shared.js'
 import type {MochiRoom} from './types.js'
 import {messageSender,SEARCH_QUERY_MAX,searchQuery,type SearchPage} from './search.js'
@@ -68,10 +69,4 @@ export class MochiSearch {
   root.append(results);return root
  }
 }
-export const MOCHI_SEARCH_STYLES=`
-.mochi-view .mochi-search-panel{flex:0 1 auto;min-height:0;max-height:40%;overflow:auto;border-bottom:1px solid var(--mochi-border);padding:10px;min-width:0}
-.mochi-view .mochi-search-controls{display:flex;flex-wrap:wrap;gap:6px;min-width:0}.mochi-view .mochi-search-controls input{flex:1 1 160px;min-width:0}.mochi-view .mochi-search-controls select{max-width:100%;min-width:0}
-.mochi-view .mochi-search-controls input,.mochi-view .mochi-search-controls select{box-sizing:border-box;background:var(--lp-surface-2,#ffffff0c);color:inherit;border:1px solid var(--mochi-border);border-radius:8px;padding:8px;font:inherit}
-.mochi-view .mochi-search-results{display:grid;gap:6px;min-width:0}.mochi-view .mochi-search-result{display:grid;gap:4px;min-width:0;max-width:100%;text-align:left;overflow-wrap:anywhere;white-space:normal;background:var(--lp-surface-2,#ffffff0c);color:inherit;border:1px solid var(--mochi-border);border-radius:10px;padding:10px;cursor:pointer}.mochi-view .mochi-search-result strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mochi-view .mochi-search-result small{font-size:11px}
-.mochi-view .mochi-search-paging{display:flex;gap:6px;flex-wrap:wrap}.mochi-view .mochi-search-panel button{min-height:40px}.mochi-view .mochi-search-panel :focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}
-`
+export const MOCHI_SEARCH_STYLES=mochiStyle('mochi-search-styles')

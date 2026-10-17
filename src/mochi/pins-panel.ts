@@ -1,3 +1,4 @@
+import {mochiStyle} from './ui/styles.js'
 import { el, button } from '../frontend/shared.js'
 import type {MochiRoom,MochiSystemNote} from './types.js'
 import {referencedMessage,quoteExcerpt} from './replies.js'
@@ -60,12 +61,4 @@ export function pinsPanel(room:MochiRoom,owner:PinsPanelOwner):HTMLElement {
  }
  render();return root
 }
-export const MOCHI_PIN_STYLES=`
-.mochi-sheet .mochi-pins-panel{display:grid;gap:10px;min-width:0;overflow-wrap:anywhere}
-.mochi-sheet .mochi-pin-row{display:flex;align-items:center;gap:8px;min-width:0}
-.mochi-sheet .mochi-pin-jump{flex:1;min-width:0;text-align:left;white-space:normal;overflow-wrap:anywhere;background:var(--lp-surface-2,#ffffff0c);color:inherit;border:1px solid var(--mochi-border);border-radius:10px;padding:10px;cursor:pointer}
-.mochi-sheet .mochi-note-editor{display:grid;gap:10px;min-width:0}.mochi-sheet .mochi-note-editor label{display:grid;gap:5px}
-.mochi-sheet .mochi-note-editor input:not([type=checkbox]),.mochi-sheet .mochi-note-editor textarea{box-sizing:border-box;width:100%;min-width:0;background:var(--lp-surface-2,#ffffff0c);color:inherit;border:1px solid var(--mochi-border);border-radius:8px;padding:8px;font:inherit}
-.mochi-sheet .mochi-note-row{display:flex;flex-wrap:wrap;gap:8px;border:1px solid var(--mochi-border);border-radius:10px;padding:10px;min-width:0}.mochi-sheet .mochi-note-row p{width:100%;margin:0;overflow-wrap:anywhere}
-.mochi-sheet .mochi-pins-panel button{min-height:40px}.mochi-sheet .mochi-pins-panel :focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}.mochi-view .mochi-pin-indicator{font-size:11px;color:var(--lp-text-secondary);margin-left:6px}
-`
+export const MOCHI_PIN_STYLES=mochiStyle('mochi-pin-styles')

@@ -1,3 +1,4 @@
+import {mochiStyle} from './ui/styles.js'
 import type { SpindleFrontendContext, SpindleFloatWidgetHandle } from 'lumiverse-spindle-types'
 import type { MochiSession } from './session.js'
 import { createMochiWorkspace } from './workspace.js'
@@ -46,7 +47,7 @@ export function createMochiWindow(ui: MochiWindowUI, session: MochiSession,
   const maximized=()=>typeof widget.isFullscreen==='function'&&widget.isFullscreen()
   const panel = document.createElement('section'); panel.className='mochi-window';panel.setAttribute('aria-label','Mochi window')
   const style = document.createElement('style')
-  style.textContent='.mochi-window{display:flex;flex-direction:column;width:100%;height:100%;min-width:0;min-height:0;position:relative;background:var(--lumiverse-bg-elevated,#201e25);color:var(--lumiverse-text,#eee);border:1px solid var(--lumiverse-border,#ffffff26);border-radius:14px;overflow:hidden;box-sizing:border-box;box-shadow:0 12px 32px #0005}.mochi-window-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;min-height:36px;flex-shrink:0;cursor:move;touch-action:none;user-select:none}.mochi-window-body{flex:1;min-height:0;min-width:0;overflow:hidden}.mochi-window-close,.mochi-window-resize{color:inherit;background:transparent;border:0;min-width:32px;min-height:32px;cursor:pointer}.mochi-window-resize{position:absolute;right:0;bottom:0;cursor:nwse-resize;touch-action:none}.mochi-window button:focus-visible{outline:2px solid var(--lumiverse-primary,#9399ab);outline-offset:-3px}'
+  style.textContent=mochiStyle('window')
   const bar=document.createElement('header');bar.className='mochi-window-bar';bar.append('Mochi')
   const close=document.createElement('button');close.className='mochi-window-close';close.type='button';close.textContent='×';close.setAttribute('aria-label','Hide Mochi window');close.title='Hide Mochi window'
   bar.tabIndex=0;bar.setAttribute('aria-label','Mochi title bar');bar.setAttribute('aria-description','Use arrow keys to move the window. Escape hides it.')
@@ -57,7 +58,7 @@ export function createMochiWindow(ui: MochiWindowUI, session: MochiSession,
   const grip=document.createElement('button');grip.className='mochi-window-resize';grip.type='button';grip.textContent='◢';grip.dataset.resizeHandle='se';grip.setAttribute('data-spindle-float-resize-handle','');grip.setAttribute('aria-label','Resize Mochi window');grip.title='Drag to resize, or use arrow keys'
   if(canMaximize)bar.append(maximize)
   bar.append(close);panel.append(style,bar,body,grip);widget.root.style.height='100%';widget.root.append(panel)
-  const focusStyle=document.createElement('style');focusStyle.textContent='.mochi-window-bar:focus-visible{outline:2px solid var(--lumiverse-primary,#9399ab);outline-offset:-2px}.mochi-window [hidden]{display:none!important}';panel.append(focusStyle)
+  const focusStyle=document.createElement('style');focusStyle.textContent=mochiStyle('window-focus');panel.append(focusStyle)
   panel.addEventListener('focusin',event=>{if(event.target!==close)lastFocus=event.target as HTMLElement})
   // Host drag bubbles from its entire container. Only bare title-bar gestures may reach it.
   panel.addEventListener('pointerdown',event=>{if(event.target!==bar||maximized())event.stopPropagation()})

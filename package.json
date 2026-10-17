@@ -6,7 +6,7 @@
   "scripts": {
     "build": "bun run build:backend && bun run build:frontend",
     "build:backend": "bun build src/backend.ts --target=bun --format=esm --outfile=dist/backend.js",
-    "build:frontend": "bun build src/frontend.ts --target=browser --format=esm --outfile=dist/frontend.js",
+    "build:frontend": "bun run scripts/check-mochi-css.ts && bun build src/frontend.ts --target=browser --format=esm --outfile=dist/frontend.js",
     "typecheck": "bunx tsc --noEmit",
     "verify": "bun run typecheck && bun run build && bun test tests/portal.test.ts tests/domain.test.ts tests/jev.test.ts tests/generation-lifecycle.test.ts tests/tracker-display.test.ts tests/weather-display.test.ts tests/event-invite.test.ts tests/image-jobs.test.ts tests/settings-camera.test.ts tests/touch-scroll.test.ts tests/app-reviews.test.ts tests/activity-connectors.test.ts tests/activity-clock.test.ts tests/voice.test.ts tests/mochi.test.ts tests/mochi-scheduler.test.ts tests/mochi-accounts.test.ts tests/mochi-profiles.test.ts tests/mochi-phone-selection.test.ts tests/mochi-assignment.test.ts tests/mochi-auto-replies.test.ts tests/mochi-scheduling-lifecycle.test.ts tests/mochi-workspace.test.ts tests/mochi-session.test.ts && node tests/contracts.mjs",
     "test:mochi": "bun test tests/mochi.test.ts tests/mochi-scheduler.test.ts tests/mochi-accounts.test.ts tests/mochi-profiles.test.ts tests/mochi-phone-selection.test.ts tests/mochi-assignment.test.ts tests/mochi-auto-replies.test.ts tests/mochi-scheduling-lifecycle.test.ts tests/mochi-workspace.test.ts tests/mochi-session.test.ts",
@@ -16,7 +16,8 @@
     "test:visual": "node scripts/check-visual.mjs",
     "test:visual:update": "node scripts/check-visual.mjs --update",
     "test:real-host-relay": "node scripts/check-real-host-relay.mjs",
-    "mount:local": "node scripts/mount-local.mjs --enable"
+    "mount:local": "node scripts/mount-local.mjs --enable",
+    "test:mochi-css-ui": "node scripts/check-mochi-css-ui.mjs"
   },
   "devDependencies": {
     "jsdom": "^30.0.1",

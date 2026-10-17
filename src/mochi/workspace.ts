@@ -1,3 +1,4 @@
+import {mochiStyle} from './ui/styles.js'
 import { getMochiSession, type MochiSession, type MochiSurface, type MochiTransport } from './session.js'
 import { reconcileMochiNotifications, showMochiNotification, type MochiNotificationPolicy } from './notifications.js'
 
@@ -32,7 +33,7 @@ export function createMochiWorkspace(options: MochiWorkspaceOptions): MochiWorks
   frame.className = 'mochi-workspace'; frame.setAttribute('aria-label', 'Mochi workspace'); frame.hidden = true
   if(options.presentation)frame.dataset.presentation=options.presentation
   const style = document.createElement('style')
-  style.textContent = '.mochi-workspace{display:flex;flex-direction:column;width:100%;height:100%;min-width:0;min-height:0;overflow:hidden;box-sizing:border-box}.mochi-workspace[hidden]{display:none!important}.mochi-workspace>.mochi-view{min-height:0}'
+  style.textContent = mochiStyle('workspace')
   frame.append(style); options.root.append(frame)
   let opened = false, destroyed = false, dirty = true
   let renderedAccount:string|undefined

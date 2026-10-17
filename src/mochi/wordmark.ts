@@ -9,6 +9,5 @@ export function mochiWordmark(): HTMLImageElement {
   mark.width = 2172
   mark.height = 724
   mark.draggable = false
-  mark.style.cssText = 'display:block;width:108px;max-width:100%;height:auto;object-fit:contain'
   return mark
 }

@@ -28,10 +28,11 @@ for(const width of [320,360,390,430])test(`mobile surface ${width}: fullscreen h
 })
 
 test('mobile styles bound history/composer, keep one column and do not apply navigation button styles to chat',()=>{
- expect(MOCHI_SIDEBAR_STYLES).not.toContain('.mochi-sidebar button{')
- expect(MOCHI_SIDEBAR_STYLES).toContain('grid-template-rows:minmax(0,1fr)')
- expect(MOCHI_SIDEBAR_STYLES).toContain('.mochi-thread{flex:1 1 0;min-height:0;max-height:none;overflow:auto')
- expect(MOCHI_SIDEBAR_STYLES).toContain('.mochi-composer{position:static;flex:none')
- expect(MOCHI_SIDEBAR_STYLES).toContain('.mochi-room-header>.mochi-actions{gap:0;flex-wrap:nowrap}')
- expect(MOCHI_SIDEBAR_STYLES).toContain('max-height:min(112px,25dvh)')
+ const css=MOCHI_SIDEBAR_STYLES.replace(/\s*([{};])\s*/g,'$1')
+ expect(css).not.toContain('.mochi-sidebar button{')
+ expect(css).toContain('grid-template-rows:minmax(0,1fr)')
+ expect(css).toContain('.mochi-thread{flex:1 1 0;min-height:0;max-height:none;overflow:auto')
+ expect(css).toContain('.mochi-composer{position:static;flex:none')
+ expect(css).toContain('.mochi-room-header>.mochi-actions{gap:0;flex-wrap:nowrap}')
+ expect(css).toContain('max-height:min(112px,25dvh)')
 })

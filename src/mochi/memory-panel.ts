@@ -1,3 +1,4 @@
+import {mochiStyle} from './ui/styles.js'
 import type {SummarySuggestion} from './summarization.js'
 import {el,button,requestId} from '../frontend/shared.js'
 import type {MochiRoom} from './types.js'
@@ -119,4 +120,4 @@ export class MochiMemoryPanel {
   return root
  }
 }
-export const MOCHI_MEMORY_STYLES=`.mochi-view .mochi-memory-panel{min-width:0;min-height:0;max-height:70%;overflow:auto;flex:0 1 auto;border:1px solid var(--mochi-border);border-radius:12px;margin:6px;padding:10px;background:var(--lp-surface-1,transparent);overflow-wrap:anywhere}.mochi-view .mochi-memory-editor{display:grid;gap:10px;min-width:0}.mochi-view .mochi-memory-editor label{display:grid;gap:5px;min-width:0}.mochi-view .mochi-memory-panel textarea,.mochi-view .mochi-memory-panel input[type=number]{box-sizing:border-box;width:100%;min-width:0;max-width:100%;font:inherit;color:inherit;background:var(--lp-surface-2,#ffffff0c);border:1px solid var(--mochi-border);border-radius:8px;padding:8px}.mochi-view .mochi-memory-panel button{min-height:40px;max-width:100%;white-space:normal;margin:3px}.mochi-view .mochi-memory-text{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;max-height:240px;overflow:auto}.mochi-view .mochi-memory-version{border:1px solid var(--mochi-border);border-radius:8px;padding:8px;margin:8px 0}.mochi-view .mochi-memory-panel :focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}`
+export const MOCHI_MEMORY_STYLES=mochiStyle('mochi-memory-styles')

@@ -1,3 +1,4 @@
+import {mochiStyle} from './ui/styles.js'
 import type {SpindleFrontendContext} from 'lumiverse-spindle-types'
 import {applyVisualViewportSurface,clearVisualViewportSurface,currentViewport} from '../frontend/surface.js'
 
@@ -9,7 +10,7 @@ export function createMochiMobileSurface(ui:SpindleFrontendContext['ui'],content
   if(typeof widget.setFullscreen!=='function'){widget.destroy();throw Error('Full-screen Mochi is unavailable in this host.')}
   widget.setVisible(false)
   const panel=document.createElement('section');panel.className='mochi-mobile-surface';panel.setAttribute('aria-label','Mochi mobile messenger')
-  const style=document.createElement('style');style.textContent='.mochi-mobile-surface{display:flex;flex-direction:column;overflow:hidden;box-sizing:border-box;background:var(--lumiverse-bg-elevated,#201e25);color:var(--lumiverse-text,#eee);padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);font:400 13px/1.5 Inter,ui-sans-serif,system-ui,sans-serif}.mochi-mobile-surface>.mochi-sidebar{flex:1;min-width:0;min-height:0;width:100%;overflow:hidden}.mochi-mobile-surface [hidden]{display:none!important}'
+  const style=document.createElement('style');style.textContent=mochiStyle('mobile-surface')
   panel.append(style);widget.root.style.height='100%';widget.root.append(panel)
   let opened=false,disposed=false,placeholder:Comment|undefined,opener:HTMLElement|undefined
   const sync=()=>{

@@ -1,0 +1,35 @@
+/* Mochi-only defaults. Inherit host colors; never move these to :root. */
+.mochi-view,
+.mochi-sheet,
+.mochi-sidebar,
+.mochi-workspace {
+  /* Common dimensions: change these values, then rebuild the frontend. */
+  --mochi-sidebar-min-width: 190px;
+  --mochi-sidebar-width: 240px;
+  --mochi-sidebar-details-min-width: 180px;
+  --mochi-sidebar-details-width: 210px;
+  --mochi-profile-panel-width: 224px;
+  --mochi-chat-font-size: 14px;
+  --mochi-bubble-radius: 18px;
+  --mochi-bubble-corner-radius: 8px;
+  --mochi-bubble-padding-y: 12px;
+  --mochi-bubble-padding-x: 14px;
+  --mochi-bubble-max-width: 86%;
+  --mochi-avatar-size: 40px;
+  --mochi-wordmark-width: 108px;
+  --mochi-control-font-size: 13px;
+  --mochi-heading-font-size: 17px;
+  --mochi-radius-field: 8px;
+  --mochi-radius-card: 12px;
+  --mochi-space-xs: 4px;
+  --mochi-space-sm: 8px;
+  --mochi-space-md: 12px;
+  --mochi-space-lg: 16px;
+  --mochi-space-xl: 24px;
+  --mochi-user-bubble-text: #21182e;
+  /* These defaults retain Lumiverse/Pocket Light, Dark and custom colors. */
+  --mochi-text: var(--lp-text,var(--lumiverse-text,#f7f5ff));
+  --mochi-accent:color-mix(in srgb,var(--lp-accent,#a99bff) 35%,#b7a0e8);
+  --mochi-surface:var(--lp-bg,var(--lumiverse-bg,#17151d));
+  --mochi-border:var(--lp-border,var(--lumiverse-border,#ffffff18));
+}

@@ -287,6 +287,3881 @@ class PersonalSettings {
   }
 }
 
+// src/mochi/ui/mochi-tokens.css
+var mochi_tokens_default = `/* Mochi-only defaults. Inherit host colors; never move these to :root. */
+.mochi-view,
+.mochi-sheet,
+.mochi-sidebar,
+.mochi-workspace {
+  /* Common dimensions: change these values, then rebuild the frontend. */
+  --mochi-sidebar-min-width: 190px;
+  --mochi-sidebar-width: 240px;
+  --mochi-sidebar-details-min-width: 180px;
+  --mochi-sidebar-details-width: 210px;
+  --mochi-profile-panel-width: 224px;
+  --mochi-chat-font-size: 14px;
+  --mochi-bubble-radius: 18px;
+  --mochi-bubble-corner-radius: 8px;
+  --mochi-bubble-padding-y: 12px;
+  --mochi-bubble-padding-x: 14px;
+  --mochi-bubble-max-width: 86%;
+  --mochi-avatar-size: 40px;
+  --mochi-wordmark-width: 108px;
+  --mochi-control-font-size: 13px;
+  --mochi-heading-font-size: 17px;
+  --mochi-radius-field: 8px;
+  --mochi-radius-card: 12px;
+  --mochi-space-xs: 4px;
+  --mochi-space-sm: 8px;
+  --mochi-space-md: 12px;
+  --mochi-space-lg: 16px;
+  --mochi-space-xl: 24px;
+  --mochi-user-bubble-text: #21182e;
+  /* These defaults retain Lumiverse/Pocket Light, Dark and custom colors. */
+  --mochi-text: var(--lp-text,var(--lumiverse-text,#f7f5ff));
+  --mochi-accent:color-mix(in srgb,var(--lp-accent,#a99bff) 35%,#b7a0e8);
+  --mochi-surface:var(--lp-bg,var(--lumiverse-bg,#17151d));
+  --mochi-border:var(--lp-border,var(--lumiverse-border,#ffffff18));
+}
+`;
+
+// src/mochi/ui/mochi.css
+var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve existing cascade boundaries. */
+
+/* @mochi-section base */
+.mochi-presence-dot[data-status=away],.mochi-room-meta[data-status=away]::before {
+  background:#e7b95e
+}
+.mochi-presence-dot[data-status=dnd],.mochi-room-meta[data-status=dnd]::before {
+  background:#d77991
+}
+.mochi-presence-dot[data-status=offline],.mochi-room-meta[data-status=offline]::before {
+  background:#85818d
+}
+.mochi-message-meta {
+  display:flex;
+  gap:var(--mochi-space-sm);
+  align-items:center;
+  max-width:100%;
+  min-height:44px
+}
+.mochi-message[data-grouped=true] {
+  margin-top:-8px
+}
+.mochi-view .mochi-room-header {
+  grid-template-columns:minmax(0,1fr) 96px
+}
+.mochi-standalone {
+  font-size:10px;
+  font-weight:600;
+  border:1px solid color-mix(in srgb,var(--mochi-accent) 45%,transparent);
+  border-radius:99px;
+  padding:4px 8px;
+  color:var(--mochi-accent);
+  letter-spacing:0
+}
+.mochi-view .mochi-room-selector {
+  font-weight:650;
+  border-radius:99px;
+  color:inherit;
+  background:color-mix(in srgb,var(--mochi-accent) 7%,var(--mochi-surface));
+  padding:9px 10px;
+  font-size:14px
+}
+.mochi-brand {
+  gap:6px!important
+}
+.mochi-view .mochi-message-actions {
+  width:44px;
+  height:44px;
+  min-height:44px;
+  margin-top:-3px;
+  background:transparent;
+  border-color:transparent
+}
+.mochi-action-panel,.mochi-participants,.mochi-notification-list {
+  display:grid;
+  gap:12px
+}
+.mochi-action-panel :is(button,textarea) {
+  width:100%
+}
+.mochi-action-panel textarea {
+  min-height:110px;
+  border:1px solid var(--lp-border);
+  border-radius:var(--mochi-radius-card);
+  padding:12px;
+  background:var(--lp-bg);
+  color:var(--lp-text);
+  font:inherit;
+  resize:vertical
+}
+.mochi-action-panel .lp-button {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  justify-content:center;
+  min-height:44px
+}
+.mochi-action-panel svg {
+  width:20px;
+  height:20px
+}
+.mochi-view [data-unread=true] {
+  box-shadow:inset 0 0 0 2px var(--mochi-accent)
+}
+.mochi-notification-toast .mochi-notification-avatar {
+  width:32px;
+  height:32px;
+  border-radius:50%;
+  overflow:hidden;
+  flex:none;
+  display:grid;
+  place-items:center;
+  background:var(--lp-surface-2)
+}
+.mochi-notification-avatar img {
+  width:100%;
+  height:100%;
+  object-fit:cover
+}
+.mochi-notification-toast strong,.mochi-notification-toast span {
+  overflow-wrap:anywhere
+}
+.mochi-notification-toast {
+  max-width:calc(100% - 24px)
+}
+.mochi-message[data-grouped=true] .mochi-message-avatar {
+  visibility:hidden
+}
+.mochi-view [hidden] {
+  display:none!important
+}
+.mochi-view {
+  width:100%;
+  flex:1
+}
+.mochi-view {
+  color:var(--mochi-text);
+  background:var(--mochi-surface);
+  font:inherit;
+  line-height:1.45;
+  padding:16px;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  overflow:auto;
+  height:100%;
+  min-width:0;
+  box-sizing:border-box;
+  container-type:inline-size
+}
+.mochi-view * {
+  box-sizing:border-box
+}
+.mochi-view h2,.mochi-view h3,.mochi-view p {
+  margin:0
+}
+.mochi-view h2 {
+  font-size:23px;
+  letter-spacing:-.04em
+}
+.mochi-view h3 {
+  font-size:var(--mochi-heading-font-size);
+  overflow-wrap:anywhere
+}
+.mochi-view header,.mochi-actions {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px
+}
+.mochi-brand {
+  display:flex;
+  align-items:center;
+  gap:8px
+}
+.mochi-brand>span {
+  color:var(--mochi-accent)
+}
+.mochi-view svg {
+  width:20px;
+  height:20px;
+  display:block;
+  flex:none
+}
+.mochi-view button {
+  font:inherit;
+  color:inherit;
+  cursor:pointer
+}
+.mochi-view .lp-button {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:var(--mochi-space-sm);
+  min-height:44px;
+  padding:10px 14px;
+  border:1px solid var(--mochi-border);
+  border-radius:var(--mochi-radius-card);
+  background:color-mix(in srgb,var(--lp-text,#fff) 4%,var(--mochi-surface));
+  font-size:var(--mochi-control-font-size);
+  font-weight:600
+}
+.mochi-view .mochi-icon-button {
+  width:44px;
+  padding:10px;
+  flex:none;
+  border-radius:50%
+}
+.mochi-view .mochi-primary {
+  background:var(--mochi-accent);
+  color:#21182e;
+  border-color:transparent
+}
+.mochi-view button:disabled {
+  opacity:.45;
+  cursor:default
+}
+.mochi-view button:not(:disabled):hover {
+  border-color:var(--mochi-accent)
+}
+.mochi-view :is(button,input,textarea,select):focus-visible {
+  outline:2px solid var(--mochi-accent);
+  outline-offset:3px
+}
+.mochi-muted {
+  color:var(--lp-muted,var(--lumiverse-text-muted,#a9a3b5));
+  font-size:12px
+}
+.mochi-error {
+  color:var(--lp-destructive,#ed7c8c);
+  font-size:13px;
+  overflow-wrap:anywhere
+}
+.mochi-room-header {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:10px;
+  align-items:center;
+  padding-bottom:12px;
+  border-bottom:1px solid var(--mochi-border)
+}
+.mochi-room-header .mochi-actions {
+  justify-content:end
+}
+.mochi-room-info {
+  display:grid;
+  gap:3px;
+  min-width:0
+}
+.mochi-member-strip {
+  display:flex;
+  gap:var(--mochi-space-sm);
+  flex-wrap:wrap
+}
+.mochi-member {
+  display:flex;
+  align-items:center;
+  gap:6px;
+  min-width:0;
+  font-size:11px;
+  max-width:100%
+}
+.mochi-member>span:last-child {
+  overflow-wrap:anywhere
+}
+.mochi-member .mochi-avatar {
+  width:26px;
+  height:26px;
+  font-size:11px;
+  flex:none
+}
+.mochi-card {
+  width:100%;
+  padding:14px;
+  border:1px solid var(--mochi-border);
+  border-radius:16px;
+  background:color-mix(in srgb,var(--mochi-accent) 4%,var(--mochi-surface));
+  display:flex;
+  gap:var(--mochi-space-md);
+  text-align:left;
+  align-items:center
+}
+.mochi-card-copy {
+  min-width:0;
+  display:grid;
+  gap:var(--mochi-space-xs);
+  flex:1
+}
+.mochi-card-copy strong {
+  overflow-wrap:anywhere;
+  font-size:14px
+}
+.mochi-preview {
+  font-size:12px;
+  color:var(--lp-muted,#a9a3b5);
+  overflow:hidden;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow-wrap:anywhere
+}
+.mochi-room-avatars {
+  width:48px;
+  flex:none;
+  display:flex;
+  flex-wrap:wrap;
+  gap:2px
+}
+.mochi-room-avatars .mochi-avatar {
+  width:23px;
+  height:23px;
+  font-size:10px
+}
+.mochi-room-avatars[data-single=true] .mochi-avatar {
+  width:44px;
+  height:44px;
+  font-size:18px
+}
+.mochi-form {
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+  min-width:0
+}
+.mochi-view label {
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+  font-size:12px;
+  font-weight:600;
+  min-width:0
+}
+.mochi-view :is(input,textarea,select) {
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  min-height:44px;
+  padding:11px 12px;
+  border-radius:var(--mochi-radius-card);
+  border:1px solid var(--mochi-border);
+  background:color-mix(in srgb,var(--lp-text,#fff) 3%,var(--mochi-surface));
+  color:inherit;
+  font:inherit;
+  font-size:14px;
+  line-height:1.4
+}
+.mochi-view textarea {
+  resize:vertical
+}
+.mochi-view option {
+  background:var(--mochi-surface);
+  color:var(--lp-text,#f7f5ff)
+}
+.mochi-view .mochi-toggle {
+  flex-direction:row;
+  align-items:center;
+  justify-content:space-between;
+  gap:var(--mochi-space-md);
+  padding:12px;
+  background:color-mix(in srgb,var(--mochi-accent) 5%,var(--mochi-surface));
+  border:1px solid var(--mochi-border);
+  border-radius:12px
+}
+.mochi-view input[type=checkbox] {
+  appearance:auto;
+  min-height:24px;
+  width:24px;
+  height:24px;
+  flex:none;
+  accent-color:var(--mochi-accent);
+  margin:0
+}
+.mochi-picker {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px
+}
+.mochi-choice {
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+  gap:var(--mochi-space-sm);
+  min-width:0;
+  padding:12px 6px;
+  border:1px solid transparent;
+  border-radius:14px;
+  background:transparent;
+  font-size:12px!important;
+  line-height:1.35;
+  overflow-wrap:anywhere;
+  text-align:center
+}
+.mochi-choice>span:last-child {
+  width:100%;
+  min-width:0
+}
+.mochi-choice[aria-pressed=true] {
+  border-color:var(--mochi-accent);
+  background:color-mix(in srgb,var(--mochi-accent) 12%,var(--mochi-surface))
+}
+.mochi-choice[aria-pressed=true]::after {
+  content:'✓';
+  position:absolute;
+  right:5px;
+  top:5px;
+  border-radius:50%;
+  width:18px;
+  height:18px;
+  background:var(--mochi-accent);
+  color:#21182e;
+  font-size:12px
+}
+.mochi-avatar,.mochi-message-avatar {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:48px;
+  height:48px;
+  flex:none;
+  border-radius:50%;
+  background:color-mix(in srgb,var(--mochi-accent) 18%,var(--mochi-surface));
+  border:1px solid color-mix(in srgb,var(--mochi-accent) 35%,var(--mochi-border));
+  overflow:hidden;
+  color:var(--mochi-accent);
+  font-weight:650
+}
+.mochi-avatar img,.mochi-message-avatar img {
+  width:100%;
+  height:100%;
+  object-fit:cover
+}
+.mochi-thread {
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+  flex:1;
+  min-height:160px;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  padding:4px 0 10px
+}
+.mochi-message {
+  display:flex;
+  gap:var(--mochi-space-sm);
+  align-items:flex-start;
+  min-width:0
+}
+.mochi-message[data-role=user] {
+  flex-direction:row-reverse
+}
+.mochi-message-avatar {
+  width:32px;
+  height:32px;
+  font-size:12px;
+  margin-top:2px
+}
+.mochi-message-body {
+  max-width:min(86%,calc(100% - 40px));
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:5px
+}
+.mochi-message[data-role=user] .mochi-message-body {
+  align-items:flex-end
+}
+.mochi-message-name {
+  font-size:12px;
+  font-weight:650;
+  overflow-wrap:anywhere
+}
+.mochi-bubble {
+  width:fit-content;
+  max-width:100%;
+  background:color-mix(in srgb,var(--lp-text,#fff) 7%,var(--mochi-surface));
+  border:1px solid var(--mochi-border);
+  border-radius:var(--mochi-radius-card);
+  padding:10px 12px;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  font-size:var(--mochi-chat-font-size);
+  line-height:1.5
+}
+.mochi-message[data-role=user] .mochi-bubble {
+  background:color-mix(in srgb,var(--mochi-accent) 24%,var(--mochi-surface));
+  border-color:color-mix(in srgb,var(--mochi-accent) 28%,var(--mochi-border))
+}
+.mochi-message time {
+  font-size:10px;
+  color:var(--lp-muted,#a9a3b5)
+}
+.mochi-composer {
+  position:sticky;
+  bottom:0;
+  flex-shrink:0;
+  background:var(--mochi-surface);
+  padding:10px 0 max(4px,env(safe-area-inset-bottom,0px));
+  display:flex;
+  flex-direction:column;
+  gap:var(--mochi-space-sm);
+  border-top:1px solid var(--mochi-border)
+}
+.mochi-composer-row {
+  display:flex;
+  gap:var(--mochi-space-sm);
+  align-items:flex-end
+}
+.mochi-composer textarea {
+  flex:1;
+  min-height:44px;
+  max-height:112px;
+  resize:none;
+  border-radius:18px;
+  padding:11px 13px
+}
+.mochi-composer select {
+  font-size:12px;
+  min-height:36px;
+  padding:7px 10px
+}
+.mochi-composer-hint {
+  font-size:10px;
+  color:var(--lp-muted,#a9a3b5)
+}
+.mochi-view>header,.mochi-room-header,.mochi-member-strip {
+  flex-shrink:0
+}
+@container (max-width:320px) {
+  .mochi-picker {
+    grid-template-columns:repeat(2,minmax(0,1fr))
+  }
+  .mochi-room-header {
+    gap:6px
+  }
+  .mochi-member-strip {
+    gap:6px
+  }
+  .mochi-standalone {
+    display:none
+  }
+  .mochi-view header .mochi-actions {
+    gap:4px
+  }
+}
+/* Mochi 03.5: keep all refinements inside the independent app surface. */
+.mochi-view {
+  padding:14px;
+  gap:12px
+}
+.mochi-view>header {
+  padding:2px 0 10px;
+  border-bottom:1px solid var(--mochi-border)
+}
+.mochi-view h2 {
+  font-size:28px;
+  font-weight:800;
+  letter-spacing:-.045em
+}
+.mochi-brand {
+  min-width:0;
+  gap:7px!important
+}
+.mochi-view .mochi-mascot svg {
+  width:38px;
+  height:32px
+}
+.mochi-view header .mochi-icon-button {
+  position:relative;
+  background:transparent;
+  border-color:transparent
+}
+.mochi-unread-count {
+  position:absolute;
+  right:1px;
+  top:0;
+  min-width:17px;
+  padding:1px 4px;
+  border-radius:99px;
+  background:var(--mochi-accent);
+  color:#21182e;
+  font-size:10px;
+  line-height:15px
+}
+.mochi-view .mochi-room-selector {
+  min-height:46px;
+  padding:10px 14px;
+  border-color:color-mix(in srgb,var(--mochi-accent) 30%,var(--mochi-border));
+  background:color-mix(in srgb,var(--mochi-accent) 9%,var(--mochi-surface));
+  font-size:15px
+}
+.mochi-room-header {
+  border:0;
+  padding-bottom:0;
+  gap:8px
+}
+.mochi-room-info {
+  gap:5px
+}
+.mochi-member-strip {
+  gap:6px;
+  padding-bottom:10px;
+  border-bottom:1px solid var(--mochi-border)
+}
+.mochi-member-strip .mochi-member {
+  padding:3px 7px 3px 3px;
+  border-radius:99px;
+  background:color-mix(in srgb,var(--mochi-accent) 5%,var(--mochi-surface));
+  max-width:100%
+}
+.mochi-member-strip .mochi-avatar {
+  width:30px;
+  height:30px
+}
+.mochi-member-strip .mochi-member>span:last-child {
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+  line-height:1.3
+}
+.mochi-thread {
+  gap:14px;
+  padding-top:0
+}
+.mochi-message {
+  gap:9px
+}
+.mochi-message-avatar {
+  width:36px;
+  height:36px;
+  margin-top:4px
+}
+.mochi-message-body {
+  max-width:min(86%,calc(100% - 45px));
+  gap:2px
+}
+.mochi-message-meta {
+  width:100%;
+  min-height:36px;
+  gap:6px;
+  position:relative;
+  padding-right:34px
+}
+.mochi-message-name {
+  font-size:13px
+}
+.mochi-message time {
+  white-space:nowrap;
+  font-size:10px;
+  flex:none
+}
+.mochi-message[data-role=user] .mochi-message-meta {
+  justify-content:flex-end
+}
+.mochi-view .mochi-message-actions {
+  position:absolute;
+  right:-7px;
+  top:-4px;
+  width:44px;
+  height:44px;
+  margin:0;
+  border:0!important;
+  background:transparent!important;
+  opacity:0
+}
+.mochi-view .mochi-message-actions svg {
+  width:15px;
+  height:15px
+}
+.mochi-message:hover .mochi-message-actions,.mochi-message:focus-within .mochi-message-actions {
+  opacity:1
+}
+.mochi-bubble {
+  padding:12px 14px;
+  border-radius:17px;
+  line-height:1.55
+}
+.mochi-message[data-role=assistant] .mochi-bubble {
+  border-top-left-radius:6px
+}
+.mochi-message[data-role=user] .mochi-bubble {
+  background:var(--mochi-accent);
+  color:var(--mochi-user-bubble-text);
+  border-color:transparent;
+  border-top-right-radius:6px
+}
+.mochi-message[data-grouped=true] {
+  margin-top:-6px
+}
+.mochi-message[data-grouped=true] .mochi-message-meta {
+  min-height:28px
+}
+.mochi-composer {
+  gap:7px;
+  padding-top:10px
+}
+.mochi-composer-row {
+  gap:6px;
+  align-items:center;
+  padding:4px;
+  border:1px solid var(--mochi-border);
+  border-radius:26px;
+  background:color-mix(in srgb,var(--lp-text,#fff) 4%,var(--mochi-surface))
+}
+.mochi-composer textarea {
+  background:transparent;
+  border:0;
+  border-radius:20px;
+  padding:10px 9px
+}
+.mochi-composer .mochi-icon-button {
+  height:44px
+}
+.mochi-composer select {
+  max-width:100%;
+  border-radius:99px;
+  background:transparent;
+  border-color:transparent
+}
+.mochi-composer-hint {
+  text-align:center
+}
+.mochi-notification-entry {
+  display:flex;
+  align-items:center;
+  gap:var(--mochi-space-xs);
+  min-width:0
+}
+.mochi-notification-entry .mochi-card {
+  flex:1;
+  min-width:0
+}
+.mochi-notification-entry>.mochi-icon-button {
+  background:transparent;
+  border-color:transparent
+}
+.mochi-notification-list>.mochi-actions {
+  justify-content:flex-start;
+  flex-wrap:wrap
+}
+@media (hover:none) {
+  .mochi-view .mochi-message-actions {
+    opacity:.7
+  }
+}
+@container (max-width:360px) {
+  .mochi-standalone {
+    display:none
+  }
+}
+/* Layout correction: compact identities, separate author/time hierarchy. */
+.mochi-view .mochi-room-header {
+  grid-template-columns:minmax(0,1fr) 44px
+}
+.mochi-view .mochi-member-strip {
+  align-self:flex-start;
+  width:auto;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:nowrap;
+  padding:0;
+  min-height:44px;
+  border:0;
+  background:transparent;
+  text-align:left
+}
+.mochi-portrait-stack {
+  display:flex;
+  align-items:center;
+  padding-left:0;
+  flex:none
+}
+.mochi-portrait-stack .mochi-avatar {
+  width:32px;
+  height:32px;
+  border:2px solid var(--mochi-surface)
+}
+.mochi-portrait-stack .mochi-avatar+.mochi-avatar {
+  margin-left:-10px
+}
+.mochi-participant-count {
+  font-size:12px;
+  color:var(--lp-muted,#a9a3b5)
+}
+.mochi-thread {
+  border-top:1px solid var(--mochi-border);
+  padding-top:16px;
+  gap:20px
+}
+.mochi-message-avatar {
+  width:38px;
+  height:38px;
+  margin-top:0
+}
+.mochi-message-body {
+  max-width:min(86%,calc(100% - 47px));
+  gap:6px
+}
+.mochi-message-name {
+  display:block;
+  width:100%;
+  min-width:0;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  font-size:13px;
+  line-height:20px;
+  overflow-wrap:normal
+}
+.mochi-message[data-role=user] .mochi-message-name {
+  text-align:right
+}
+.mochi-message-meta {
+  width:auto;
+  max-width:100%;
+  min-height:24px;
+  padding-right:38px;
+  gap:8px
+}
+.mochi-message[data-role=user] .mochi-message-meta {
+  justify-content:flex-end
+}
+.mochi-message-meta small {
+  white-space:nowrap;
+  font-size:10px
+}
+.mochi-view .mochi-message-actions {
+  top:-10px;
+  right:-6px
+}
+.mochi-message[data-grouped=true] {
+  margin-top:-16px
+}
+.mochi-message[data-grouped=true] .mochi-message-name {
+  display:none
+}
+.mochi-message[data-grouped=true] .mochi-message-meta {
+  min-height:24px
+}
+.mochi-bubble {
+  padding:11px 14px
+}
+.mochi-composer {
+  margin:0 -14px -14px;
+  padding:10px 14px max(14px,env(safe-area-inset-bottom,0px));
+  gap:6px;
+  background:color-mix(in srgb,var(--mochi-accent) 3%,var(--mochi-surface))
+}
+.mochi-responder {
+  position:relative;
+  max-width:70%;
+  width:fit-content;
+  min-width:100px;
+  min-height:44px;
+  border-radius:99px;
+  padding:8px 28px 8px 8px;
+  background:color-mix(in srgb,var(--mochi-accent) 6%,var(--mochi-surface));
+  border:1px solid var(--mochi-border)
+}
+.mochi-responder::after {
+  content:'⌄';
+  position:absolute;
+  right:10px;
+  top:10px;
+  color:var(--lp-muted,#a9a3b5);
+  pointer-events:none
+}
+.mochi-responder-identity {
+  display:flex;
+  align-items:center;
+  gap:7px;
+  min-width:0
+}
+.mochi-responder .mochi-avatar {
+  width:26px;
+  height:26px;
+  border:0;
+  flex:none
+}
+.mochi-responder .mochi-avatar svg {
+  width:16px;
+  height:16px
+}
+.mochi-responder-name {
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:12px
+}
+.mochi-composer .mochi-responder select {
+  position:absolute;
+  inset:0;
+  height:100%;
+  width:100%;
+  opacity:0;
+  cursor:pointer;
+  min-height:44px
+}
+.mochi-responder:focus-within {
+  outline:2px solid var(--mochi-accent);
+  outline-offset:2px
+}
+/* Review correction: corner mascot, heart wordmark, attached metadata. */
+.mochi-view>header {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto 52px;
+  gap:var(--mochi-space-sm);
+  align-items:center;
+  min-height:60px
+}
+.mochi-view .mochi-mascot svg {
+  width:52px;
+  height:42px
+}
+.mochi-mascot {
+  justify-self:end;
+  pointer-events:none
+}
+.mochi-wordmark-i {
+  position:relative;
+  display:inline-block
+}
+.mochi-wordmark-i::before {
+  content:'♥';
+  position:absolute;
+  top:-2px;
+  left:50%;
+  transform:translateX(-50%) rotate(-12deg);
+  font-size:10px;
+  line-height:1;
+  color:#e89dbd;
+  letter-spacing:0
+}
+.mochi-message-heading {
+  display:flex;
+  align-items:baseline;
+  width:100%;
+  min-width:0;
+  gap:var(--mochi-space-sm);
+  padding-top:5px
+}
+.mochi-message-name {
+  flex:1;
+  width:auto;
+  font-size:12px;
+  line-height:18px
+}
+.mochi-message-heading time {
+  flex:none;
+  font-size:10px;
+  line-height:18px
+}
+.mochi-message-avatar {
+  margin-top:8px
+}
+.mochi-message-body {
+  gap:4px
+}
+.mochi-thread {
+  gap:var(--mochi-space-lg);
+  padding-top:12px
+}
+.mochi-message-meta,.mochi-message[data-grouped=true] .mochi-message-meta {
+  width:100%;
+  min-height:16px;
+  gap:var(--mochi-space-xs);
+  padding-right:38px;
+  justify-content:flex-start
+}
+.mochi-message[data-role=user] .mochi-message-meta {
+  justify-content:flex-start
+}
+.mochi-message-meta small {
+  font-size:10px;
+  line-height:16px
+}
+.mochi-view .mochi-message-actions {
+  top:-14px;
+  right:-6px
+}
+.mochi-message[data-grouped=true] {
+  margin-top:-12px
+}
+.mochi-message[data-grouped=true] .mochi-message-heading {
+  padding-top:0;
+  justify-content:flex-end
+}
+.mochi-message[data-grouped=true] .mochi-message-avatar {
+  visibility:hidden
+}
+/* Final messenger composition; temporary presence visuals carry no state. */
+.mochi-wordmark-i::before {
+  font-size:14px;
+  top:-5px
+}
+.mochi-view .mochi-room-header {
+  grid-template-columns:minmax(0,1fr) 96px;
+  align-items:start
+}
+.mochi-room-header>.mochi-actions {
+  padding-top:2px
+}
+.mochi-room-select {
+  position:relative;
+  min-width:0
+}
+.mochi-room-select-icon {
+  position:absolute;
+  left:12px;
+  top:13px;
+  pointer-events:none;
+  color:var(--mochi-accent)
+}
+.mochi-room-select-icon svg {
+  width:20px;
+  height:20px
+}
+.mochi-view .mochi-room-selector {
+  font-size:14px;
+  font-weight:500;
+  padding-left:40px;
+  padding-right:24px;
+  border-radius:24px
+}
+.mochi-room-info {
+  gap:8px
+}
+.mochi-room-meta {
+  display:flex;
+  align-items:center;
+  gap:7px;
+  font-size:11px;
+  color:var(--lp-muted,#a9a3b5);
+  min-height:18px;
+  white-space:nowrap
+}
+.mochi-room-meta::before {
+  content:'';
+  width:8px;
+  height:8px;
+  flex:none;
+  border-radius:50%;
+  background:#58d998
+}
+.mochi-avatar-frame {
+  position:relative;
+  flex:none;
+  width:var(--mochi-avatar-size);
+  height:var(--mochi-avatar-size);
+  margin-top:5px
+}
+.mochi-avatar-frame .mochi-message-avatar {
+  width:var(--mochi-avatar-size);
+  height:var(--mochi-avatar-size);
+  margin-top:0
+}
+.mochi-presence-dot {
+  position:absolute;
+  right:-1px;
+  bottom:-1px;
+  width:12px;
+  height:12px;
+  border:2px solid var(--mochi-surface);
+  border-radius:50%;
+  background:#58d998
+}
+.mochi-message-body {
+  max-width:min(var(--mochi-bubble-max-width),calc(100% - var(--mochi-avatar-size) - 9px));
+  gap:4px
+}
+.mochi-message-name {
+  font-size:11px;
+  font-weight:600
+}
+.mochi-message-heading {
+  gap:7px;
+  padding-top:6px
+}
+.mochi-thread {
+  gap:20px;
+  padding-top:14px;
+  border-top:0
+}
+.mochi-message-meta,.mochi-message[data-grouped=true] .mochi-message-meta {
+  height:0;
+  min-height:0;
+  padding:0
+}
+.mochi-view .mochi-message-actions {
+  top:-21px;
+  right:-5px
+}
+.mochi-message[data-grouped=true] {
+  margin-top:-17px
+}
+.mochi-message[data-grouped=true] .mochi-avatar-frame {
+  visibility:hidden
+}
+.mochi-message[data-grouped=true] .mochi-message-heading {
+  display:none
+}
+.mochi-bubble {
+  border-radius:var(--mochi-bubble-radius);
+  padding:var(--mochi-bubble-padding-y) var(--mochi-bubble-padding-x)
+}
+.mochi-message[data-role=assistant] .mochi-bubble {
+  border-top-left-radius:var(--mochi-bubble-corner-radius)
+}
+.mochi-message[data-role=user] .mochi-bubble {
+  border-top-right-radius:var(--mochi-bubble-corner-radius)
+}
+.mochi-sheet .lp-sheet-panel {
+  border-radius:22px;
+  border:1px solid var(--lp-border);
+  background:var(--lp-bg);
+  box-shadow:0 14px 42px #0003;
+  padding:18px
+}
+.mochi-sheet .mochi-action-panel {
+  gap:5px
+}
+.mochi-action-context {
+  font-size:11px;
+  line-height:1.5;
+  color:var(--lp-muted);
+  overflow-wrap:anywhere;
+  margin:0 0 8px
+}
+.mochi-sheet .mochi-action-panel>.lp-button {
+  justify-content:flex-start;
+  min-height:48px;
+  padding:12px 14px;
+  border:0;
+  border-radius:var(--mochi-radius-card);
+  background:color-mix(in srgb,var(--lp-text) 4%,var(--lp-bg));
+  font-size:13px
+}
+.mochi-sheet .mochi-action-panel>.lp-button:hover {
+  background:color-mix(in srgb,var(--lp-accent) 12%,var(--lp-bg))
+}
+.mochi-sheet .mochi-action-panel>[aria-label="Delete message"],.mochi-sheet .mochi-action-panel>[aria-label="Confirm delete"] {
+  color:var(--lp-destructive,#d9677d)
+}
+.mochi-sheet .lp-sheet-close {
+  border-radius:99px;
+  min-height:44px
+}
+.mochi-sheet :is(button,textarea):focus-visible {
+  outline:2px solid var(--lp-accent);
+  outline-offset:2px
+}
+.mochi-action-context {
+  display:grid;
+  gap:3px;
+  min-width:0
+}
+.mochi-action-author {
+  color:var(--lp-text);
+  font-size:12px;
+  font-weight:600;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis
+}
+.mochi-action-context small {
+  font-size:11px;
+  font-weight:400
+}
+.mochi-account-list {
+  display:grid;
+  gap:10px;
+  min-width:0
+}
+.mochi-account-list .mochi-card {
+  width:100%;
+  text-align:left
+}
+.mochi-account-actions,.mochi-inbox-actions,.mochi-profile-actions {
+  display:flex;
+  flex-wrap:wrap;
+  gap:var(--mochi-space-sm);
+  align-items:center
+}
+.mochi-account-actions>.lp-button,.mochi-profile-actions>.lp-button {
+  flex:1 1 140px
+}
+.mochi-view .mochi-secondary-action {
+  align-self:flex-start;
+  width:auto;
+  min-height:44px;
+  padding:8px 0;
+  border:0;
+  background:transparent;
+  color:var(--lp-muted);
+  font-size:11px;
+  font-weight:500
+}
+.mochi-view .mochi-legacy-action {
+  margin-top:0;
+  padding-top:12px;
+  border-top:1px solid var(--mochi-border);
+  border-radius:0
+}
+.mochi-inbox-actions>.lp-button {
+  font-size:11px;
+  padding:8px 10px
+}
+.mochi-profile-preview {
+  overflow:hidden;
+  border:1px solid var(--mochi-border);
+  border-radius:14px;
+  background:color-mix(in srgb,var(--mochi-accent) 8%,var(--mochi-surface))
+}
+.mochi-profile-banner {
+  height:72px;
+  background:linear-gradient(120deg,color-mix(in srgb,var(--mochi-accent) 35%,var(--mochi-surface)),color-mix(in srgb,var(--mochi-accent) 10%,var(--mochi-surface)))
+}
+.mochi-profile-preview-body {
+  position:relative;
+  display:grid;
+  gap:5px;
+  padding:42px 16px 18px;
+  min-width:0
+}
+.mochi-profile-preview .mochi-profile-portrait {
+  position:absolute;
+  top:-32px;
+  left:12px;
+  width:64px;
+  height:64px;
+  border:4px solid var(--mochi-surface);
+  font-size:24px
+}
+.mochi-profile-preview-name {
+  font-size:20px;
+  line-height:1.3;
+  overflow-wrap:anywhere
+}
+.mochi-profile-fields {
+  margin:0;
+  padding:16px;
+  min-width:0;
+  border:1px solid var(--mochi-border);
+  border-radius:var(--mochi-radius-card);
+  display:grid;
+  gap:14px
+}
+.mochi-profile-fields legend {
+  padding:0 6px;
+  font-size:11px;
+  font-weight:650;
+  color:var(--lp-muted);
+  letter-spacing:.04em
+}
+.mochi-profile-fields input[type=file] {
+  font-size:11px
+}
+.mochi-room-connection {
+  color:var(--lp-muted);
+  font-size:10px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap
+}
+.mochi-view .mochi-connection-indicator {
+  display:block;
+  min-height:32px;
+  padding:4px 0;
+  max-width:100%;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  border:0;
+  background:transparent;
+  color:var(--mochi-accent);
+  font-size:10px;
+  text-align:left
+}
+.mochi-connection-indicator:hover {
+  text-decoration:underline
+}
+.mochi-sheet .mochi-action-panel>[aria-label="Discard changes"] {
+  color:var(--lp-destructive,#d9677d)
+}
+/* Compact room chrome and grouped settings. */
+.mochi-view[data-surface=chat] .mochi-room-info {
+  gap:0
+}
+.mochi-view[data-surface=chat] .mochi-room-selector {
+  min-height:28px;
+  padding-block:2px;
+  font-size:14px
+}
+.mochi-view[data-surface=chat] .mochi-room-meta {
+  margin:1px 0;
+  font-size:10px;
+  line-height:16px;
+  min-height:16px
+}
+.mochi-room-meta::before {
+  width:6px;
+  height:6px
+}
+.mochi-connection-status {
+  display:block;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:var(--lp-muted);
+  font-size:10px;
+  line-height:16px
+}
+.mochi-view[data-surface=chat] .mochi-room-header {
+  align-items:start;
+  padding-bottom:10px;
+  gap:8px
+}
+.mochi-view[data-surface=chat] .mochi-room-header>.mochi-actions {
+  padding:0
+}
+.mochi-view[data-surface=chat] .mochi-room-header .mochi-icon-button {
+  width:40px;
+  min-width:40px;
+  height:40px;
+  min-height:40px;
+  background:transparent;
+  border:0
+}
+.mochi-settings-section {
+  display:grid;
+  gap:var(--mochi-space-md);
+  min-width:0;
+  margin:0;
+  padding:14px;
+  border:1px solid var(--mochi-border);
+  border-radius:12px
+}
+.mochi-settings-section>legend {
+  font-size:11px;
+  font-weight:650;
+  color:var(--lp-muted);
+  padding:0 5px
+}
+.mochi-settings-section>p {
+  margin:0;
+  font-weight:400;
+  line-height:1.5
+}
+.mochi-view details.mochi-settings-section {
+  display:block;
+  padding:0;
+  overflow:hidden
+}
+.mochi-settings-section>summary {
+  padding:14px;
+  cursor:pointer;
+  font-size:12px;
+  font-weight:600;
+  min-height:44px;
+  box-sizing:border-box
+}
+.mochi-settings-section>summary:focus-visible {
+  outline:2px solid var(--mochi-accent);
+  outline-offset:-3px
+}
+.mochi-settings-section[open]>summary {
+  border-bottom:1px solid var(--mochi-border);
+  margin-bottom:14px
+}
+.mochi-settings-section[open]>:not(summary) {
+  margin-left:14px;
+  margin-right:14px;
+  margin-bottom:14px
+}
+.mochi-view .mochi-settings-section .mochi-toggle {
+  background:transparent;
+  border:0;
+  border-radius:0;
+  padding:4px 0;
+  min-height:36px;
+  font-size:11px;
+  font-weight:500
+}
+.mochi-settings-section .mochi-picker {
+  grid-template-columns:repeat(auto-fill,minmax(72px,1fr));
+  gap:8px
+}
+.mochi-settings-section .mochi-choice {
+  font-size:11px;
+  padding:8px 4px
+}
+.mochi-settings-section .mochi-assignment {
+  gap:12px
+}
+.mochi-settings-section .mochi-assignment h4 {
+  display:none
+}
+.mochi-room-header .lp-conversation-menu>summary {
+  display:grid;
+  place-items:center;
+  width:36px;
+  min-width:36px;
+  min-height:36px;
+  padding:0;
+  background:transparent;
+  border:0;
+  border-radius:50%;
+  font-size:22px
+}
+.mochi-room-header .lp-conversation-menu-action {
+  min-height:40px;
+  font-size:12px
+}
+.mochi-room-header .lp-conversation-menu>summary:focus-visible {
+  outline:2px solid var(--mochi-accent);
+  outline-offset:2px
+}
+.mochi-model-picker {
+  min-width:0
+}
+.mochi-model-picker-row {
+  display:flex;
+  align-items:end;
+  flex-wrap:wrap;
+  gap:8px
+}
+.mochi-model-picker-row>label {
+  flex:1 1 180px
+}
+.mochi-model-picker-row>button {
+  min-height:44px;
+  font-size:11px;
+  padding:8px 10px
+}
+.mochi-model-picker>p {
+  margin:6px 0 0;
+  font-size:11px;
+  font-weight:400
+}
+@container(max-width:600px) {
+  .mochi-desktop-main .mochi-view .mochi-room-header,.mochi-sidebar[data-mobile-messenger] .mochi-view .mochi-room-header {
+    grid-template-columns:minmax(0,1fr);
+    gap:6px
+  }
+  .mochi-desktop-main .mochi-view .mochi-room-header>.mochi-actions,.mochi-sidebar[data-mobile-messenger] .mochi-view .mochi-room-header>.mochi-actions {
+    justify-content:flex-start;
+    flex-wrap:wrap;
+    max-width:100%
+  }
+}
+.mochi-wordmark-image {
+  display:block;
+  width:var(--mochi-wordmark-width);
+  max-width:100%;
+  height:auto;
+  object-fit:contain
+}
+
+/* @mochi-section mochi-reply-styles */
+.mochi-view .mochi-quote {
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  min-width:0;
+  max-width:100%;
+  text-align:left;
+  font:inherit;
+  color:inherit;
+  padding:7px 10px;
+  border:0;
+  border-left:3px solid var(--mochi-accent);
+  border-radius:6px;
+  background:var(--lp-surface-2,#ffffff0c);
+  overflow:hidden
+}
+.mochi-quote strong {
+  font-size:11px;
+  overflow-wrap:anywhere
+}
+.mochi-quote span {
+  font-size:12px;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden
+}
+.mochi-view button.mochi-quote {
+  cursor:pointer;
+  min-height:44px
+}
+.mochi-view button.mochi-quote:focus-visible,.mochi-message:focus-visible {
+  outline:2px solid var(--mochi-accent);
+  outline-offset:2px
+}
+.mochi-view .mochi-reply-preview {
+  display:flex;
+  align-items:center;
+  gap:6px;
+  min-width:0
+}
+.mochi-reply-preview>.mochi-quote {
+  flex:1
+}
+.mochi-reply-preview>button {
+  flex:none
+}
+
+/* @mochi-section mochi-reaction-styles */
+.mochi-view .mochi-reactions,.mochi-view .mochi-reaction-palette,.mochi-sheet .mochi-reaction-palette {
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+  min-width:0;
+  max-width:100%;
+  margin-top:5px
+}
+.mochi-view .mochi-reactions:empty {
+  display:none
+}
+.mochi-view .mochi-reaction {
+  font:inherit;
+  font-size:12px;
+  color:inherit;
+  min-height:32px;
+  padding:4px 8px;
+  border:1px solid var(--mochi-border);
+  border-radius:var(--mochi-radius-card);
+  background:var(--lp-surface-2,#ffffff0c);
+  cursor:pointer;
+  max-width:100%
+}
+.mochi-view .mochi-reaction-palette .mochi-reaction {
+  min-width:44px;
+  min-height:44px;
+  font-size:20px
+}
+.mochi-view .mochi-reaction[aria-pressed=true] {
+  border-color:var(--mochi-accent);
+  background:var(--lp-surface-2,#ffffff18)
+}
+.mochi-view .mochi-reaction:focus-visible {
+  outline:2px solid var(--mochi-accent);
+  outline-offset:2px
+}
+.mochi-sheet .mochi-reaction {
+  min-width:44px;
+  min-height:44px;
+  font-size:20px;
+  border-radius:var(--mochi-radius-card);
+  border:1px solid var(--mochi-border);
+  background:var(--lp-surface-2,#ffffff0c);
+  color:inherit;
+  cursor:pointer
+}
+.mochi-sheet .mochi-reaction:focus-visible {
+  outline:2px solid var(--mochi-accent);
+  outline-offset:2px
+}
+.mochi-sheet .mochi-reaction[aria-pressed=true] {
+  border-color:var(--mochi-accent)
+}
+
+/* @mochi-section mochi-pin-styles */
+.mochi-sheet .mochi-pins-panel {
+  display:grid;
+  gap:10px;
+  min-width:0;
+  overflow-wrap:anywhere
+}
+.mochi-sheet .mochi-pin-row {
+  display:flex;
+  align-items:center;
+  gap:var(--mochi-space-sm);
+  min-width:0
+}
+.mochi-sheet .mochi-pin-jump {
+  flex:1;
+  min-width:0;
+  text-align:left;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  background:var(--lp-surface-2,#ffffff0c);
+  color:inherit;
+  border:1px solid var(--mochi-border);
+  border-radius:10px;
+  padding:10px;
+  cursor:pointer
+}
+.mochi-sheet .mochi-note-editor {
+  display:grid;
+  gap:10px;
+  min-width:0
+}
+.mochi-sheet .mochi-note-editor label {
+  display:grid;
+  gap:5px
+}
+.mochi-sheet .mochi-note-editor input:not([type=checkbox]),.mochi-sheet .mochi-note-editor textarea {
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  background:var(--lp-surface-2,#ffffff0c);
+  color:inherit;
+  border:1px solid var(--mochi-border);
+  border-radius:var(--mochi-radius-field);
+  padding:8px;
+  font:inherit
+}
+.mochi-sheet .mochi-note-row {
+  display:flex;
+  flex-wrap:wrap;
+  gap:var(--mochi-space-sm);
+  border:1px solid var(--mochi-border);
+  border-radius:10px;
+  padding:10px;
+  min-width:0
+}
+.mochi-sheet .mochi-note-row p {
+  width:100%;
+  margin:0;
+  overflow-wrap:anywhere
+}
+.mochi-sheet .mochi-pins-panel button {
+  min-height:40px
+}
+.mochi-sheet .mochi-pins-panel :focus-visible {
+  outline:2px solid var(--mochi-accent);
+  outline-offset:2px
+}
+.mochi-view .mochi-pin-indicator {
+  font-size:11px;
+  color:var(--lp-text-secondary);
+  margin-left:6px
+}
+
+/* @mochi-section mochi-search-styles */
+.mochi-view .mochi-search-panel {
+  flex:0 1 auto;
+  min-height:0;
+  max-height:40%;
+  overflow:auto;
+  border-bottom:1px solid var(--mochi-border);
+  padding:10px;
+  min-width:0
+}
+.mochi-view .mochi-search-controls {
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  min-width:0
+}
+.mochi-view .mochi-search-controls input {
+  flex:1 1 160px;
+  min-width:0
+}
+.mochi-view .mochi-search-controls select {
+  max-width:100%;
+  min-width:0
+}
+.mochi-view .mochi-search-controls input,.mochi-view .mochi-search-controls select {
+  box-sizing:border-box;
+  background:var(--lp-surface-2,#ffffff0c);
+  color:inherit;
+  border:1px solid var(--mochi-border);
+  border-radius:var(--mochi-radius-field);
+  padding:8px;
+  font:inherit
+}
+.mochi-view .mochi-search-results {
+  display:grid;
+  gap:6px;
+  min-width:0
+}
+.mochi-view .mochi-search-result {
+  display:grid;
+  gap:var(--mochi-space-xs);
+  min-width:0;
+  max-width:100%;
+  text-align:left;
+  overflow-wrap:anywhere;
+  white-space:normal;
+  background:var(--lp-surface-2,#ffffff0c);
+  color:inherit;
+  border:1px solid var(--mochi-border);
+  border-radius:10px;
+  padding:10px;
+  cursor:pointer
+}
+.mochi-view .mochi-search-result strong {
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap
+}
+.mochi-view .mochi-search-result small {
+  font-size:11px
+}
+.mochi-view .mochi-search-paging {
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap
+}
+.mochi-view .mochi-search-panel button {
+  min-height:40px
+}
+.mochi-view .mochi-search-panel :focus-visible {
+  outline:2px solid var(--mochi-accent);
+  outline-offset:2px
+}
+
+/* @mochi-section mochi-texting-styles */
+.mochi-view .mochi-texting-controls {
+  min-width:0;
+  display:grid;
+  gap:var(--mochi-space-sm);
+  border:1px solid var(--mochi-border);
+  border-radius:10px;
+  padding:10px
+}
+.mochi-view .mochi-texting-controls label {
+  min-width:0;
+  display:grid;
+  gap:var(--mochi-space-xs);
+  overflow-wrap:anywhere
+}
+.mochi-view .mochi-texting-controls select,.mochi-view .mochi-texting-controls textarea {
+  box-sizing:border-box;
+  min-width:0;
+  width:100%;
+  max-width:100%
+}
+.mochi-view .mochi-texting-controls :focus-visible {
+  outline:2px solid var(--mochi-accent);
+  outline-offset:2px
+}
+
+/* @mochi-section mochi-preview-styles */
+.mochi-view .mochi-preview-panel {
+  min-width:0;
+  min-height:0;
+  max-height:40%;
+  overflow:auto;
+  flex:0 1 auto;
+  padding:10px;
+  border-bottom:1px solid var(--mochi-border);
+  overflow-wrap:anywhere
+}
+.mochi-view .mochi-preview-controls {
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  min-width:0
+}
+.mochi-view .mochi-preview-controls select {
+  max-width:100%;
+  min-width:0;
+  background:var(--lp-surface-2,#ffffff0c);
+  color:inherit;
+  border:1px solid var(--mochi-border);
+  padding:8px;
+  border-radius:8px
+}
+.mochi-view .mochi-preview-panel button {
+  min-height:40px
+}
+.mochi-view .mochi-preview-text {
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  font:inherit;
+  max-width:100%
+}
+.mochi-view .mochi-preview-panel :focus-visible {
+  outline:2px solid var(--mochi-accent);
+  outline-offset:2px
+}
+
+/* @mochi-section mochi-preset-styles */
+.mochi-view .mochi-preset-panel {
+  min-width:0;
+  min-height:0;
+  max-height:45%;
+  overflow:auto;
+  flex:0 1 auto;
+  padding:10px;
+  border-bottom:1px solid var(--mochi-border);
+  overflow-wrap:anywhere
+}
+.mochi-view .mochi-preset-panel button {
+  min-height:40px;
+  margin:3px
+}
+.mochi-view .mochi-preset-panel select {
+  max-width:100%;
+  min-width:0
+}
+.mochi-view .mochi-preset-editor {
+  display:grid;
+  gap:var(--mochi-space-sm);
+  min-width:0
+}
+.mochi-view .mochi-preset-editor label {
+  display:grid;
+  gap:var(--mochi-space-xs);
+  min-width:0
+}
+.mochi-view .mochi-preset-editor input,.mochi-view .mochi-preset-editor textarea {
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  font:inherit;
+  background:color-mix(in srgb,currentColor 3%,var(--mochi-surface));
+  color:inherit;
+  border:1px solid var(--mochi-border);
+  border-radius:var(--mochi-radius-field);
+  padding:8px
+}
+.mochi-view .mochi-preset-entry {
+  border:1px solid var(--mochi-border);
+  border-radius:10px;
+  padding:8px;
+  margin-top:8px
+}
+.mochi-view .mochi-preset-panel :focus-visible {
+  outline:2px solid var(--mochi-accent);
+  outline-offset:2px
+}
+
+/* @mochi-section block-editor */
+.mochi-view .mochi-block-columns {
+  min-width:0
+}
+.mochi-view .mochi-block-toolbar {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:var(--mochi-space-sm);
+  margin:12px 0
+}
+.mochi-view .mochi-block-category {
+  border:1px solid var(--mochi-border);
+  border-radius:9px;
+  margin:8px 0;
+  background:var(--mochi-surface)
+}
+.mochi-view .mochi-block-category>summary {
+  cursor:pointer;
+  min-height:44px;
+  padding:0 12px;
+  line-height:44px;
+  font-size:13px
+}
+.mochi-view .mochi-block-category>summary>button {
+  float:right;
+  margin:0;
+  border:0;
+  min-width:44px
+}
+.mochi-view .mochi-block-count {
+  margin-left:10px;
+  font-size:11px;
+  opacity:.65
+}
+.mochi-view .mochi-category-tools {
+  padding:8px 12px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  border-bottom:1px solid var(--mochi-border)
+}
+.mochi-view .mochi-category-tools[hidden] {
+  display:none
+}
+.mochi-view .mochi-category-tools>input {
+  flex:1 1 160px
+}
+.mochi-view .mochi-prompt-block {
+  padding:2px 10px;
+  border-top:1px solid var(--mochi-border)
+}
+.mochi-view .mochi-prompt-block[data-enabled=false] .mochi-block-title {
+  opacity:.55
+}
+.mochi-view .mochi-block-row {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-height:48px;
+  min-width:0
+}
+.mochi-view .mochi-block-title {
+  flex:1;
+  min-width:0;
+  font-size:13px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap
+}
+.mochi-view .mochi-block-row small {
+  font-size:11px;
+  opacity:.65
+}
+.mochi-view .mochi-block-drag {
+  cursor:grab;
+  opacity:.5
+}
+.mochi-view .mochi-block-action {
+  font:inherit;
+  min-height:40px;
+  padding:7px 10px;
+  border:1px solid var(--mochi-border);
+  border-radius:7px;
+  color:inherit;
+  background:transparent;
+  cursor:pointer;
+  font-size:12px
+}
+.mochi-view .mochi-block-action:disabled {
+  opacity:.45;
+  cursor:default
+}
+.mochi-view .mochi-block-action:hover:not(:disabled) {
+  background:color-mix(in srgb,currentColor 5%,var(--mochi-surface))
+}
+.mochi-view .mochi-block-name {
+  border-color:transparent
+}
+.mochi-view .mochi-block-overflow {
+  position:relative;
+  flex:none
+}
+.mochi-view .mochi-block-overflow>summary {
+  list-style:none;
+  cursor:pointer;
+  min-width:36px;
+  min-height:44px;
+  display:grid;
+  place-items:center
+}
+.mochi-view .mochi-block-row-actions {
+  position:absolute;
+  right:0;
+  top:100%;
+  z-index:4;
+  background:var(--mochi-surface);
+  border:1px solid var(--mochi-border);
+  border-radius:var(--mochi-radius-field);
+  padding:5px;
+  display:grid;
+  min-width:150px;
+  box-shadow:0 5px 15px color-mix(in srgb,currentColor 12%,transparent)
+}
+.mochi-view .mochi-block-overflow:not([open])>.mochi-block-row-actions {
+  display:none
+}
+.mochi-view .mochi-block-detail {
+  min-width:0;
+  display:grid;
+  gap:12px
+}
+.mochi-view .mochi-block-detail>button:first-child {
+  justify-self:start
+}
+.mochi-view .mochi-block-detail label {
+  border:0;
+  padding:0
+}
+.mochi-view .mochi-block-detail label:has(input[type=checkbox]) {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:12px
+}
+.mochi-view .mochi-block-detail textarea {
+  min-height:clamp(280px,45vh,650px);
+  resize:vertical;
+  line-height:1.65;
+  font-family:ui-monospace,monospace
+}
+.mochi-view .mochi-block-settings {
+  border-top:1px solid var(--mochi-border);
+  padding-top:6px
+}
+.mochi-view .mochi-block-settings[open] {
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px
+}
+.mochi-view .mochi-block-settings>summary {
+  width:100%
+}
+.mochi-view .mochi-block-settings>label {
+  flex:1 1 180px
+}
+.mochi-view .mochi-block-settings select {
+  width:100%
+}
+.mochi-view .mochi-block-picker {
+  padding:0 12px
+}
+.mochi-view .mochi-block-picker>summary,.mochi-view .mochi-block-detail summary {
+  min-height:44px;
+  display:flex;
+  align-items:center;
+  cursor:pointer;
+  font-size:12px
+}
+.mochi-view .mochi-block-picker[open] {
+  display:grid;
+  gap:var(--mochi-space-sm);
+  padding-bottom:12px
+}
+.mochi-view .mochi-macro-browser {
+  border:1px solid var(--mochi-border);
+  padding:12px;
+  border-radius:var(--mochi-radius-field);
+  display:grid;
+  gap:8px
+}
+.mochi-view .mochi-macro-item {
+  padding:12px 0;
+  border-bottom:1px solid var(--mochi-border);
+  display:grid;
+  gap:5px
+}
+.mochi-view .mochi-macro-item code {
+  overflow-wrap:anywhere;
+  white-space:pre-wrap
+}
+.mochi-view .mochi-block-editor :focus-visible {
+  outline:2px solid var(--mochi-accent);
+  outline-offset:2px
+}
+.mochi-view .mochi-block-editor input[type=checkbox] {
+  width:20px;
+  height:20px;
+  min-height:20px;
+  flex:none;
+  accent-color:var(--mochi-accent)
+}
+@container(max-width:550px) {
+  .mochi-view .mochi-block-row {
+    gap:5px;
+    flex-wrap:wrap;
+    padding:4px 0
+  }
+  .mochi-view .mochi-block-row small {
+    order:2;
+    flex-basis:100%;
+    padding-left:38px
+  }
+  .mochi-view .mochi-block-drag {
+    display:none
+  }
+  .mochi-view .mochi-block-category>summary {
+    padding:0 8px
+  }
+  .mochi-view .mochi-prompt-block {
+    padding:2px 8px
+  }
+  .mochi-view .mochi-block-action {
+    min-height:44px
+  }
+}
+
+/* @mochi-section preset-workspace-base */
+.mochi-view .mochi-preset-panel {
+  max-height:70%;
+  container-type:inline-size;
+  background:var(--mochi-surface);
+  border:1px solid var(--mochi-border);
+  border-radius:var(--mochi-radius-card);
+  margin:6px
+}
+.mochi-view .mochi-preset-workspace {
+  display:grid;
+  gap:var(--mochi-space-md);
+  margin-top:12px;
+  min-width:0
+}
+.mochi-view .mochi-preset-library,.mochi-view .mochi-preset-edit-pane {
+  min-width:0;
+  border:1px solid var(--mochi-border);
+  border-radius:10px;
+  padding:10px;
+  background:color-mix(in srgb,currentColor 3%,var(--mochi-surface))
+}
+.mochi-view .mochi-preset-library {
+  display:grid;
+  align-content:start;
+  gap:6px;
+  max-height:220px;
+  overflow:auto
+}
+.mochi-view .mochi-preset-library-item {
+  font:inherit;
+  min-width:0;
+  text-align:left;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  border:1px solid var(--mochi-border);
+  border-radius:var(--mochi-radius-field);
+  background:transparent;
+  color:inherit;
+  padding:8px
+}
+.mochi-view .mochi-preset-library-item[aria-pressed=true] {
+  border-color:var(--mochi-accent);
+  background:color-mix(in srgb,var(--mochi-accent) 8%,var(--mochi-surface))
+}
+.mochi-view .mochi-preset-binding {
+  border:1px solid var(--mochi-border);
+  padding:8px;
+  border-radius:10px
+}
+.mochi-view .mochi-preset-binding>summary {
+  min-height:44px;
+  padding:10px 0;
+  cursor:pointer
+}
+.mochi-view .mochi-preset-panel h3,.mochi-view .mochi-preset-panel h4 {
+  margin:0 0 10px;
+  font-weight:600
+}
+.mochi-view .mochi-preset-editor label {
+  padding:8px;
+  border:1px solid var(--mochi-border);
+  border-radius:8px
+}
+.mochi-view .mochi-placement-row {
+  border:1px solid var(--mochi-border);
+  border-radius:var(--mochi-radius-field);
+  padding:10px;
+  margin:8px 0;
+  min-width:0
+}
+.mochi-view .mochi-placement-row-head {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:5px
+}
+.mochi-view .mochi-preset-panel pre {
+  white-space:pre-wrap;
+  overflow-wrap:anywhere
+}
+.mochi-view .mochi-placement-editor select {
+  max-width:100%;
+  background:color-mix(in srgb,currentColor 3%,var(--mochi-surface));
+  color:inherit;
+  border:1px solid var(--mochi-border);
+  padding:8px
+}
+.mochi-view .mochi-preview-panel {
+  border:1px solid var(--mochi-border);
+  border-radius:var(--mochi-radius-card);
+  margin:6px;
+  background:var(--mochi-surface)
+}
+.mochi-view .mochi-preview-panel>details {
+  border:1px solid var(--mochi-border);
+  border-radius:var(--mochi-radius-field);
+  padding:10px;
+  margin-top:8px;
+  background:color-mix(in srgb,currentColor 3%,var(--mochi-surface))
+}
+.mochi-view .mochi-preview-panel summary {
+  cursor:pointer;
+  font-weight:600;
+  min-height:32px
+}
+.mochi-view .mochi-preview-text {
+  max-height:320px;
+  overflow:auto;
+  padding:8px;
+  border-left:2px solid var(--mochi-border)
+}
+.mochi-view .mochi-preview-warning {
+  border-left:3px solid var(--mochi-accent);
+  padding:6px 10px
+}
+.mochi-view .mochi-preview-identity {
+  font-weight:600
+}
+@container(min-width:600px) {
+  .mochi-view .mochi-preset-workspace {
+    grid-template-columns:minmax(115px,155px) minmax(0,1fr)
+  }
+  .mochi-view .mochi-preset-library {
+    max-height:none
+  }
+}
+
+/* @mochi-section mochi-preset-dedicated-styles */
+.mochi-view[data-preset-workspace=true] {
+  display:flex!important;
+  flex-direction:column;
+  min-height:0;
+  height:100%;
+  overflow:hidden;
+  padding:0
+}
+.mochi-desktop[data-preset-workspace=true] {
+  grid-template-columns:minmax(0,1fr)!important
+}
+.mochi-desktop[data-preset-workspace=true]>.mochi-desktop-list,.mochi-desktop[data-preset-workspace=true]>.mochi-profile-panel,.mochi-desktop[data-preset-workspace=true] .mochi-desktop-back,.mochi-desktop[data-preset-workspace=true] .mochi-shell-notifications {
+  display:none!important
+}
+.mochi-view .mochi-preset-panel {
+  flex:1 1 auto;
+  max-height:none;
+  height:100%;
+  box-sizing:border-box;
+  margin:0;
+  border:0;
+  border-radius:0;
+  padding:24px clamp(14px,4vw,64px);
+  overflow:auto;
+  background:var(--mochi-surface);
+  container-type:inline-size
+}
+.mochi-view .mochi-preset-panel>h3 {
+  font-size:19px;
+  margin:0 0 6px
+}
+.mochi-view .mochi-preset-panel>.mochi-muted {
+  font-size:12px;
+  margin:6px 0
+}
+.mochi-view .mochi-preset-workspace {
+  display:block;
+  margin-top:16px
+}
+.mochi-view .mochi-preset-library {
+  display:block;
+  max-height:none;
+  border:0;
+  border-bottom:1px solid var(--mochi-border);
+  border-radius:0;
+  padding:0 0 8px;
+  margin-bottom:16px;
+  background:transparent
+}
+.mochi-view .mochi-preset-library>summary {
+  cursor:pointer;
+  min-height:44px;
+  font-size:13px;
+  line-height:44px
+}
+.mochi-view .mochi-preset-library-item {
+  margin:4px;
+  font-size:12px
+}
+.mochi-view .mochi-preset-edit-pane {
+  border:0;
+  padding:0;
+  background:transparent
+}
+.mochi-view .mochi-preset-editor {
+  gap:12px
+}
+.mochi-view .mochi-preset-editor>label {
+  border:0;
+  padding:0
+}
+.mochi-view .mochi-preset-editor>button {
+  justify-self:start
+}
+.mochi-view .mochi-preset-editor>button[type=submit] {
+  border-color:var(--mochi-accent);
+  font-weight:600
+}
+.mochi-view .mochi-preset-binding {
+  border-width:0 0 1px;
+  border-radius:0;
+  padding:0;
+  background:transparent
+}
+.mochi-view .mochi-preset-binding>summary {
+  font-size:12px
+}
+.mochi-view .mochi-preset-binding[open] {
+  padding-bottom:12px
+}
+.mochi-view .mochi-preset-panel[data-block-editing=true]>h3,.mochi-view .mochi-preset-panel[data-block-editing=true]>p {
+  display:none
+}
+.mochi-view .mochi-preset-panel[data-block-editing=true]>.mochi-preset-workspace {
+  margin-top:14px
+}
+.mochi-view[data-preset-workspace=true]>.mochi-preview-panel {
+  flex:1;
+  max-height:none;
+  overflow:auto;
+  margin:0;
+  border:0;
+  border-radius:0;
+  padding:24px
+}
+.mochi-view .mochi-preset-panel pre {
+  white-space:pre-wrap;
+  overflow-wrap:anywhere
+}
+@container(max-width:550px) {
+  .mochi-view .mochi-preset-panel {
+    padding:14px
+  }
+  .mochi-view .mochi-preset-panel button {
+    max-width:100%;
+    white-space:normal
+  }
+  .mochi-view .mochi-preset-panel>h3 {
+    font-size:17px
+  }
+}
+
+/* @mochi-section mochi-preset-chrome-styles */
+.mochi-view .mochi-preset-heading {
+  display:flex;
+  align-items:center;
+  gap:var(--mochi-space-md);
+  flex-wrap:wrap;
+  margin-bottom:8px
+}
+.mochi-view .mochi-preset-heading h3 {
+  flex:1;
+  margin:0;
+  font-size:18px
+}
+.mochi-view .mochi-preset-heading button {
+  font-size:12px
+}
+.mochi-view .mochi-preset-panel>.mochi-preset-heading+p {
+  margin:0 0 8px
+}
+.mochi-view .mochi-preset-panel>.mochi-preset-workspace {
+  margin-top:4px
+}
+.mochi-view .mochi-preset-panel>.mochi-preset-workspace>.mochi-preset-library {
+  margin-bottom:10px;
+  padding-bottom:0
+}
+.mochi-view .mochi-preset-panel[data-block-editing=true]>.mochi-preset-heading {
+  justify-content:flex-end
+}
+.mochi-view .mochi-preset-panel[data-block-editing=true]>.mochi-preset-heading>h3 {
+  display:none
+}
+.mochi-view .mochi-preset-panel[data-block-editing=true]>.mochi-preset-heading+p {
+  display:none
+}
+.mochi-view .mochi-preset-panel[data-block-editing=true] .mochi-block-detail>h4 {
+  font-size:20px
+}
+.mochi-view .mochi-preset-panel[data-block-editing=true] .mochi-block-detail>p {
+  margin:0
+}
+.mochi-view .mochi-preset-panel[data-block-editing=true] .mochi-block-detail>label:has(input[type=checkbox]) {
+  display:inline-flex
+}
+
+/* @mochi-section preset-workspace-final */
+.mochi-view .mochi-preset-editor .mochi-block-detail label {
+  border:0;
+  padding:0
+}
+.mochi-view .mochi-block-switches {
+  display:flex;
+  gap:var(--mochi-space-xl);
+  flex-wrap:wrap
+}
+.mochi-view .mochi-preset-editor .mochi-block-switches label {
+  flex-direction:row;
+  min-height:32px;
+  justify-content:flex-start;
+  gap:10px
+}
+.mochi-view .mochi-preset-editor .mochi-block-switches input {
+  margin:0
+}
+.mochi-view .mochi-block-detail>h4 {
+  margin:0
+}
+.mochi-view .mochi-block-detail {
+  gap:10px
+}
+.mochi-view .mochi-preset-navigation {
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px 24px;
+  border-bottom:1px solid var(--mochi-border);
+  margin-bottom:12px
+}
+.mochi-view .mochi-preset-navigation>details {
+  flex:1 1 220px;
+  border:0;
+  margin:0;
+  padding:0
+}
+.mochi-view .mochi-preset-navigation>details[open] {
+  flex-basis:100%
+}
+.mochi-view .mochi-preset-navigation>details>summary {
+  min-height:40px;
+  padding:0;
+  line-height:40px
+}
+.mochi-view .mochi-preset-panel {
+  padding-top:16px
+}
+.mochi-view .mochi-preset-editor label:has(input[readonly]) {
+  display:none
+}
+
+/* @mochi-section mochi-memory-styles */
+.mochi-view .mochi-memory-panel {
+  min-width:0;
+  min-height:0;
+  max-height:70%;
+  overflow:auto;
+  flex:0 1 auto;
+  border:1px solid var(--mochi-border);
+  border-radius:var(--mochi-radius-card);
+  margin:6px;
+  padding:10px;
+  background:var(--lp-surface-1,transparent);
+  overflow-wrap:anywhere
+}
+.mochi-view .mochi-memory-editor {
+  display:grid;
+  gap:10px;
+  min-width:0
+}
+.mochi-view .mochi-memory-editor label {
+  display:grid;
+  gap:5px;
+  min-width:0
+}
+.mochi-view .mochi-memory-panel textarea,.mochi-view .mochi-memory-panel input[type=number] {
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  max-width:100%;
+  font:inherit;
+  color:inherit;
+  background:var(--lp-surface-2,#ffffff0c);
+  border:1px solid var(--mochi-border);
+  border-radius:var(--mochi-radius-field);
+  padding:8px
+}
+.mochi-view .mochi-memory-panel button {
+  min-height:40px;
+  max-width:100%;
+  white-space:normal;
+  margin:3px
+}
+.mochi-view .mochi-memory-text {
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  font:inherit;
+  max-height:240px;
+  overflow:auto
+}
+.mochi-view .mochi-memory-version {
+  border:1px solid var(--mochi-border);
+  border-radius:var(--mochi-radius-field);
+  padding:8px;
+  margin:8px 0
+}
+.mochi-view .mochi-memory-panel :focus-visible {
+  outline:2px solid var(--mochi-accent);
+  outline-offset:2px
+}
+
+/* @mochi-section settings-workspace-styles */
+.mochi-view[data-settings-workspace=true] {
+  display:flex;
+  flex-direction:column;
+  height:100%;
+  min-height:0;
+  padding:0;
+  overflow:hidden
+}
+.mochi-desktop[data-settings-workspace=true] {
+  grid-template-columns:minmax(0,1fr)!important
+}
+.mochi-desktop[data-settings-workspace=true]>.mochi-desktop-list,.mochi-desktop[data-settings-workspace=true]>.mochi-profile-panel,.mochi-desktop[data-settings-workspace=true] .mochi-desktop-back {
+  display:none!important
+}
+.mochi-settings-workspace {
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+  height:100%;
+  overflow:hidden;
+  background:var(--mochi-surface);
+  color:inherit;
+  container-type:inline-size
+}
+.mochi-settings-heading {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:var(--mochi-space-md);
+  padding:14px 20px;
+  border-bottom:1px solid var(--mochi-border)
+}
+.mochi-settings-heading h3 {
+  margin:0;
+  font-size:17px
+}
+.mochi-settings-tabs,.mochi-settings-categories {
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  padding:8px 20px;
+  border-bottom:1px solid var(--mochi-border);
+  flex:none
+}
+.mochi-settings-workspace button {
+  min-height:44px;
+  font:inherit;
+  color:inherit;
+  font-size:12px
+}
+.mochi-settings-workspace button[aria-pressed=true] {
+  border-color:var(--mochi-accent);
+  box-shadow:inset 0 -2px var(--mochi-accent)
+}
+.mochi-settings-workspace>.mochi-muted {
+  margin:0;
+  padding:6px 20px;
+  font-size:11px
+}
+.mochi-view .mochi-organized-settings {
+  display:flex;
+  flex:1;
+  flex-direction:column;
+  min-height:0;
+  overflow:hidden;
+  gap:0;
+  padding:0
+}
+.mochi-settings-scroll,.mochi-personal-scroll {
+  flex:1;
+  min-height:0;
+  overflow:auto;
+  padding:16px 20px;
+  overscroll-behavior:contain
+}
+.mochi-organized-settings>.mochi-actions {
+  flex:none;
+  padding:8px 20px;
+  border-top:1px solid var(--mochi-border);
+  background:var(--mochi-surface)
+}
+.mochi-view .mochi-settings-category {
+  display:grid;
+  align-content:start;
+  gap:var(--mochi-space-md);
+  min-width:0
+}
+.mochi-view .mochi-settings-category>.mochi-settings-section,.mochi-view .mochi-settings-scroll>.mochi-settings-section {
+  border:0;
+  border-radius:0;
+  padding:0;
+  background:transparent
+}
+.mochi-view .mochi-settings-scroll .mochi-settings-section>summary {
+  padding:8px 0;
+  border:0
+}
+.mochi-view .mochi-settings-scroll .mochi-settings-section[open]>:not(summary) {
+  margin:0 0 12px
+}
+.mochi-view .mochi-settings-category label,.mochi-view .mochi-personal-scroll label {
+  min-width:0
+}
+.mochi-character-settings-list {
+  display:grid;
+  gap:0
+}
+.mochi-character-settings-row {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-height:64px;
+  padding:8px 0;
+  border-bottom:1px solid var(--mochi-border)
+}
+.mochi-character-settings-row>div {
+  display:grid;
+  gap:3px;
+  flex:1;
+  min-width:0
+}
+.mochi-character-settings-row strong {
+  overflow-wrap:anywhere;
+  font-size:13px
+}
+.mochi-character-settings-row small {
+  font-size:11px
+}
+.mochi-character-settings-row>.mochi-avatar {
+  width:36px;
+  height:36px;
+  flex:none
+}
+.mochi-toolbar-preference {
+  display:flex;
+  gap:6px;
+  align-items:center;
+  border-bottom:1px solid var(--mochi-border);
+  padding:6px 0
+}
+.mochi-toolbar-preference>label {
+  flex:1;
+  display:flex;
+  flex-direction:row;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px
+}
+.mochi-toolbar-preference input[type=checkbox] {
+  width:20px;
+  height:20px;
+  min-height:20px;
+  accent-color:var(--mochi-accent)
+}
+.mochi-personal-presentation {
+  display:grid;
+  gap:var(--mochi-space-md);
+  max-width:780px
+}
+.mochi-personal-presentation>button {
+  justify-self:start
+}
+.mochi-profile-dock {
+  display:flex;
+  align-items:center;
+  gap:var(--mochi-space-sm);
+  min-width:0
+}
+.mochi-profile-dock>.mochi-avatar {
+  width:36px;
+  height:36px;
+  flex:none
+}
+.mochi-profile-dock>div {
+  min-width:0;
+  flex:1;
+  display:grid
+}
+.mochi-profile-dock select {
+  max-width:100%;
+  min-width:0;
+  font-size:12px
+}
+.mochi-profile-dock small {
+  font-size:10px;
+  overflow:hidden;
+  text-overflow:ellipsis
+}
+.mochi-profile-dock[data-compact=true] .mochi-dock-username {
+  display:none
+}
+.mochi-toolbar-label {
+  font-size:11px
+}
+.mochi-view .mochi-custom-toolbar {
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  gap:2px
+}
+.mochi-view .mochi-custom-toolbar button {
+  min-height:44px;
+  min-width:40px;
+  padding:6px
+}
+.mochi-custom-toolbar .mochi-toolbar-label {
+  margin-left:4px
+}
+.mochi-settings-workspace :focus-visible {
+  outline:2px solid var(--mochi-accent);
+  outline-offset:2px
+}
+.mochi-settings-workspace select,.mochi-settings-workspace input,.mochi-settings-workspace textarea {
+  max-width:100%;
+  box-sizing:border-box
+}
+.mochi-view .mochi-settings-workspace .mochi-settings-category>button {
+  justify-self:start
+}
+.mochi-view[data-conversation=true] .mochi-room-header {
+  grid-template-columns:minmax(140px,1fr) minmax(0,auto)
+}
+.mochi-view .mochi-room-header .mochi-custom-toolbar {
+  max-width:650px
+}
+.mochi-view .mochi-room-header .mochi-custom-toolbar button {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  flex:none
+}
+.mochi-view .mochi-room-header .mochi-custom-toolbar[data-presentation=labels] button:has(.mochi-toolbar-label) {
+  width:auto;
+  height:auto;
+  border-radius:var(--mochi-radius-card);
+  padding:8px;
+  gap:var(--mochi-space-xs);
+  white-space:nowrap
+}
+.mochi-view .mochi-custom-toolbar button>span:first-child {
+  display:inline-flex;
+  flex:none
+}
+.mochi-view .mochi-custom-toolbar svg {
+  width:18px;
+  height:18px;
+  flex:none
+}
+.mochi-view .mochi-custom-toolbar .mochi-toolbar-label {
+  margin:0
+}
+.mochi-presentation-actions {
+  display:flex;
+  flex-wrap:wrap;
+  gap:var(--mochi-space-sm);
+  flex:none;
+  padding:8px 20px;
+  border-top:1px solid var(--mochi-border);
+  background:var(--mochi-surface)
+}
+.mochi-character-detail-nav {
+  display:flex;
+  flex-wrap:wrap;
+  gap:var(--mochi-space-sm);
+  margin-bottom:12px
+}
+.mochi-character-fields {
+  display:grid;
+  gap:12px
+}
+.mochi-view .mochi-presentation-actions button {
+  min-height:44px
+}
+.mochi-view .mochi-settings-workspace .mochi-personal-scroll {
+  overflow-wrap:anywhere
+}
+@container(max-width:550px) {
+  .mochi-settings-heading {
+    padding:10px 12px
+  }
+  .mochi-settings-heading h3 {
+    font-size:15px
+  }
+  .mochi-settings-tabs,.mochi-settings-categories {
+    padding:6px 12px;
+    gap:4px
+  }
+  .mochi-settings-scroll,.mochi-personal-scroll {
+    padding:12px
+  }
+  .mochi-settings-categories>button {
+    flex:1 1 40%;
+    white-space:normal
+  }
+  .mochi-organized-settings>.mochi-actions {
+    padding:8px 12px
+  }
+  .mochi-view .mochi-custom-toolbar {
+    max-width:100%
+  }
+  .mochi-view .mochi-custom-toolbar .mochi-toolbar-label {
+    display:none
+  }
+}
+
+/* @mochi-section mochi-disclosure-styles */
+.mochi-view details.mochi-disclosure,.mochi-view .mochi-preset-navigation>details.mochi-disclosure,.mochi-view .mochi-settings-scroll details.mochi-disclosure {
+  min-width:0;
+  max-width:100%;
+  box-sizing:border-box;
+  border:1px solid var(--mochi-border);
+  border-radius:var(--mochi-radius-card);
+  padding:0;
+  margin:6px 0;
+  background:var(--lp-surface-2,#ffffff06);
+  overflow:hidden
+}
+.mochi-view details.mochi-disclosure>summary,.mochi-view .mochi-preset-navigation>details.mochi-disclosure>summary,.mochi-view .mochi-settings-scroll details.mochi-disclosure>summary {
+  display:block;
+  position:relative;
+  box-sizing:border-box;
+  min-height:44px;
+  max-width:100%;
+  padding:12px 36px 12px 12px;
+  margin:0;
+  line-height:20px;
+  font-size:13px;
+  font-weight:600;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  list-style:none;
+  cursor:pointer;
+  border:0;
+  border-radius:11px;
+  color:inherit
+}
+.mochi-view details.mochi-disclosure>summary::-webkit-details-marker {
+  display:none
+}
+.mochi-view details.mochi-disclosure>summary::after {
+  content:'';
+  position:absolute;
+  right:16px;
+  top:17px;
+  width:7px;
+  height:7px;
+  border-right:2px solid var(--lp-muted,currentColor);
+  border-bottom:2px solid var(--lp-muted,currentColor);
+  transform:rotate(-45deg)
+}
+.mochi-view details.mochi-disclosure[open]>summary::after {
+  transform:rotate(45deg);
+  top:15px
+}
+.mochi-view details.mochi-disclosure[open]>summary {
+  border-bottom:1px solid var(--mochi-border);
+  border-radius:11px 11px 0 0
+}
+.mochi-view details.mochi-disclosure>summary:hover {
+  background:color-mix(in srgb,var(--mochi-accent) 8%,transparent)
+}
+.mochi-view details.mochi-disclosure>summary:focus-visible {
+  outline:2px solid var(--mochi-accent);
+  outline-offset:-3px
+}
+.mochi-view details.mochi-disclosure>:not(summary) {
+  margin:10px 12px;
+  max-width:calc(100% - 24px);
+  box-sizing:border-box;
+  min-width:0;
+  overflow-wrap:anywhere
+}
+.mochi-view .mochi-settings-scroll details.mochi-disclosure[open]>:not(summary) {
+  margin:12px;
+  max-width:calc(100% - 24px)
+}
+.mochi-view .mochi-preset-navigation {
+  border:0;
+  gap:8px
+}
+.mochi-view .mochi-preset-navigation>details.mochi-disclosure {
+  flex:1 1 240px;
+  align-self:start
+}
+.mochi-view .mochi-preview-overview {
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px 16px;
+  padding:10px 0
+}
+.mochi-view .mochi-preview-overview>span {
+  font-size:12px
+}
+.mochi-view .mochi-preview-group {
+  min-width:0
+}
+.mochi-view .mochi-preview-warning {
+  border-left:3px solid var(--mochi-accent);
+  padding:8px 12px;
+  background:color-mix(in srgb,var(--mochi-accent) 7%,transparent)
+}
+.mochi-view .mochi-preview-panel pre {
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  max-width:100%;
+  font:inherit
+}
+.mochi-view .mochi-preview-identity {
+  font-size:13px;
+  margin:6px 0
+}
+.mochi-view .mochi-preset-entry {
+  min-width:0
+}
+.mochi-view .mochi-preview-controls select {
+  width:auto;
+  flex:1 1 200px
+}
+.mochi-view .mochi-preview-controls button {
+  flex:0 0 auto
+}
+@container(max-width:550px) {
+  .mochi-view .mochi-preset-heading h3 {
+    flex:1 0 100%;
+    min-width:0;
+    overflow-wrap:normal
+  }
+  .mochi-view .mochi-preset-heading {
+    gap:8px
+  }
+  .mochi-view .mochi-preset-heading button {
+    flex:0 1 auto
+  }
+}
+
+/* @mochi-section desktop */
+.mochi-workspace[data-presentation=messenger] {
+  container-type:inline-size
+}
+.mochi-desktop.mochi-view {
+  display:grid;
+  grid-template-columns:minmax(var(--mochi-sidebar-min-width),var(--mochi-sidebar-width)) minmax(0,1fr);
+  gap:0;
+  padding:0;
+  overflow:hidden;
+  height:100%;
+  min-height:0
+}
+.mochi-desktop-list {
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+  min-width:0;
+  border-right:1px solid var(--lp-border,#ffffff26);
+  background:var(--mochi-surface)
+}
+.mochi-desktop-list-head {
+  padding:10px;
+  flex:none;
+  display:grid;
+  gap:8px
+}
+.mochi-desktop-list-head h3 {
+  margin:0;
+  font-size:14px
+}
+.mochi-desktop-account {
+  font-size:12px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap
+}
+.mochi-shell-account-row {
+  display:flex;
+  align-items:center;
+  gap:2px;
+  min-width:0
+}
+.mochi-shell-account-row .mochi-desktop-account {
+  flex:1;
+  min-width:0;
+  font-weight:600
+}
+.mochi-shell-account-row button {
+  flex:none;
+  width:40px;
+  height:44px;
+  min-height:44px;
+  padding:8px;
+  background:transparent;
+  border-color:transparent
+}
+.mochi-shell-tools {
+  display:flex;
+  gap:6px;
+  min-width:0
+}
+.mochi-shell-tools>button:first-child {
+  flex:1;
+  justify-content:center;
+  font-size:12px;
+  min-width:0;
+  padding:8px;
+  min-height:40px;
+  background:transparent
+}
+.mochi-shell-tools>button:last-child:not(:first-child) {
+  flex:none;
+  width:44px
+}
+.mochi-shell-tools svg {
+  width:18px;
+  height:18px
+}
+.mochi-conversation-filters {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:2px
+}
+.mochi-conversation-filters>.lp-button {
+  min-width:0;
+  min-height:44px;
+  padding:4px 2px;
+  font-size:11px;
+  border:0;
+  background:transparent;
+  white-space:normal;
+  justify-content:center
+}
+.mochi-conversation-filters button[aria-pressed=true] {
+  background:var(--lp-surface-2,#ffffff12);
+  box-shadow:inset 0 -2px var(--mochi-accent)
+}
+.mochi-shell-notifications {
+  display:flex;
+  justify-content:flex-end;
+  padding:6px 12px;
+  border-bottom:1px solid var(--mochi-border)
+}
+.mochi-activity-snapshot {
+  padding:12px 0;
+  border-top:1px solid var(--mochi-border)
+}
+.mochi-activity-snapshot h4 {
+  font-size:12px;
+  font-weight:600;
+  margin:0 0 6px
+}
+.mochi-desktop-rooms {
+  flex:1;
+  min-height:0;
+  overflow:auto;
+  padding:6px;
+  display:flex;
+  flex-direction:column;
+  gap:4px
+}
+.mochi-desktop .mochi-desktop-room {
+  display:flex;
+  align-items:center;
+  gap:var(--mochi-space-sm);
+  width:100%;
+  text-align:left;
+  padding:10px;
+  border-radius:10px;
+  border:1px solid transparent;
+  background:transparent;
+  color:inherit;
+  min-width:0
+}
+.mochi-desktop-room[aria-current=true] {
+  background:var(--lp-surface-2,#ffffff12);
+  border-color:var(--mochi-accent)!important
+}
+.mochi-desktop-room:hover {
+  background:var(--lp-surface-2,#ffffff12)
+}
+.mochi-desktop-room-copy {
+  flex:1;
+  min-width:0;
+  display:grid;
+  gap:4px
+}
+.mochi-desktop-room-copy strong,.mochi-desktop-room-copy small {
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap
+}
+.mochi-desktop-room-copy strong {
+  font-size:13px
+}
+.mochi-desktop-room-copy small {
+  font-size:11px;
+  opacity:.75
+}
+.mochi-desktop-room .mochi-room-avatars {
+  flex:none
+}
+.mochi-desktop-room .mochi-avatar {
+  width:28px;
+  height:28px
+}
+.mochi-desktop-unread {
+  flex:none;
+  font-size:11px;
+  border-radius:99px;
+  padding:2px 6px;
+  background:var(--mochi-accent);
+  color:var(--mochi-surface)
+}
+.mochi-desktop-main {
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+  min-height:0;
+  overflow:hidden
+}
+.mochi-desktop-main>.mochi-view {
+  flex:1;
+  min-height:0;
+  overflow:auto;
+  border:0;
+  border-radius:0;
+  padding:12px
+}
+.mochi-desktop-main>.mochi-view[data-conversation=true] {
+  display:flex;
+  flex-direction:column;
+  overflow:hidden
+}
+.mochi-desktop-main .mochi-room-header,.mochi-desktop-main .mochi-composer,.mochi-desktop-main .mochi-view>header {
+  flex:none
+}
+.mochi-desktop-main .mochi-thread {
+  flex:1;
+  min-height:0;
+  overflow:auto;
+  overscroll-behavior:contain
+}
+.mochi-desktop-main .mochi-composer {
+  margin-top:auto
+}
+.mochi-desktop-main .mochi-thread:focus-visible {
+  outline:2px solid var(--mochi-accent);
+  outline-offset:-2px
+}
+.mochi-desktop-back {
+  flex:none;
+  padding:6px 12px;
+  border-bottom:1px solid var(--lp-border,#ffffff26)
+}
+.mochi-desktop-back button {
+  font:inherit;
+  color:inherit;
+  background:transparent;
+  border:0;
+  min-height:32px;
+  cursor:pointer
+}
+.mochi-desktop[data-mode=account] {
+  grid-template-columns:minmax(0,1fr)
+}
+.mochi-desktop[data-mode=account]>.mochi-desktop-list {
+  display:none
+}
+.mochi-shell-brand {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:8px 2px
+}
+.mochi-shell-brand h2 {
+  display:flex;
+  align-items:center;
+  margin:0;
+  line-height:0;
+  font-size:27px;
+  font-weight:800;
+  letter-spacing:-1px
+}
+.mochi-shell-mascot {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 40px;
+  width:40px;
+  height:36px;
+  line-height:0;
+  color:var(--mochi-accent);
+  pointer-events:none
+}
+.mochi-shell-mascot svg {
+  display:block;
+  width:40px;
+  height:36px
+}
+.mochi-conversation-filter {
+  font:inherit;
+  font-size:12px;
+  padding:10px 12px;
+  min-width:0;
+  width:100%;
+  border:1px solid var(--lp-border,#ffffff26);
+  border-radius:10px;
+  background:var(--lp-bg,transparent);
+  color:inherit;
+  min-height:42px
+}
+.mochi-desktop-room[hidden],.mochi-desktop-rooms p[hidden] {
+  display:none!important
+}
+.mochi-desktop .mochi-conversation-title {
+  font-size:16px;
+  font-weight:600;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  min-width:0
+}
+.mochi-desktop-main .mochi-room-header {
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  padding:4px 0 12px;
+  border-bottom:1px solid var(--lp-border,#ffffff26)
+}
+.mochi-desktop-main .mochi-room-header>.mochi-actions {
+  gap:2px;
+  padding:0
+}
+.mochi-profile-panel {
+  display:none;
+  min-width:0;
+  min-height:0;
+  overflow:auto;
+  overscroll-behavior:contain;
+  padding:16px;
+  border-left:1px solid var(--lp-border,#ffffff26);
+  background:var(--mochi-surface)
+}
+.mochi-profile-heading {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:var(--mochi-space-sm);
+  margin-bottom:24px
+}
+.mochi-profile-heading h3 {
+  font-size:12px;
+  font-weight:500;
+  color:var(--lp-muted,inherit)
+}
+.mochi-profile-heading button {
+  width:auto!important;
+  padding:6px 10px;
+  background:transparent;
+  border-color:transparent;
+  font-size:12px
+}
+.mochi-profile-person {
+  display:grid;
+  justify-items:start;
+  gap:var(--mochi-space-sm);
+  margin-bottom:20px
+}
+.mochi-profile-person h4 {
+  font-size:18px;
+  margin:0;
+  overflow-wrap:anywhere
+}
+.mochi-profile-person>.mochi-avatar {
+  height:72px;
+  width:72px
+}
+.mochi-profile-panel[data-kind=direct] .mochi-profile-person {
+  justify-items:center;
+  text-align:center;
+  padding:12px 0 24px
+}
+.mochi-profile-panel[data-kind=group] .mochi-profile-person {
+  grid-template-columns:36px minmax(0,1fr);
+  column-gap:10px;
+  row-gap:2px;
+  align-items:center;
+  margin-bottom:16px
+}
+.mochi-profile-panel[data-kind=group] .mochi-avatar {
+  width:36px;
+  height:36px;
+  grid-row:span 2
+}
+.mochi-profile-panel[data-kind=group] h4 {
+  font-size:13px
+}
+.mochi-profile-panel p {
+  font-size:12px;
+  line-height:1.5;
+  margin:0;
+  overflow-wrap:anywhere;
+  color:var(--lp-muted,inherit)
+}
+.mochi-profile-panel button {
+  white-space:normal;
+  min-height:44px;
+  width:100%
+}
+.mochi-profile-panel .mochi-profile-settings {
+  margin-top:12px;
+  border-width:1px 0 0;
+  border-radius:0;
+  background:transparent;
+  font-size:12px;
+  color:var(--lp-muted,inherit)
+}
+.mochi-desktop-main .mochi-search-panel {
+  padding:8px 0;
+  max-height:35%;
+  border-top:0
+}
+.mochi-desktop-main .mochi-search-controls {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(72px,110px) auto auto 40px;
+  align-items:center;
+  gap:5px
+}
+.mochi-desktop-main .mochi-search-controls :is(input,select) {
+  width:100%;
+  min-height:40px;
+  padding:7px;
+  font-size:12px
+}
+.mochi-desktop-main .mochi-search-controls button {
+  width:auto;
+  padding:7px 9px;
+  min-height:40px;
+  font-size:12px
+}
+.mochi-desktop-main .mochi-search-secondary {
+  background:transparent;
+  border-color:transparent;
+  color:var(--lp-muted,inherit)
+}
+.mochi-desktop-main .mochi-search-panel>[role=status] {
+  font-size:11px;
+  margin-top:4px
+}
+.mochi-desktop-main .mochi-search-results {
+  margin-top:6px
+}
+.mochi-desktop-main .mochi-search-results:empty {
+  display:none
+}
+.mochi-desktop :is(button,input,summary):focus-visible {
+  outline:2px solid var(--mochi-accent);
+  outline-offset:2px
+}
+.mochi-desktop-main .lp-conversation-menu-action {
+  min-height:44px;
+  white-space:normal
+}
+.mochi-desktop-main .lp-conversation-menu-sheet {
+  max-height:min(70vh,440px);
+  overflow:auto;
+  max-width:min(280px,85cqw)
+}
+.mochi-desktop-main .lp-conversation-menu-action:nth-of-type(3),.mochi-desktop-main .lp-conversation-menu-action:nth-of-type(4),.mochi-desktop-main .lp-conversation-menu-action:last-child {
+  border-top:1px solid var(--lp-border,#ffffff26)
+}
+.mochi-desktop .lp-conversation-menu {
+  position:relative;
+  z-index:30
+}
+.mochi-desktop .lp-conversation-menu>summary {
+  list-style:none;
+  cursor:pointer
+}
+.mochi-desktop .lp-conversation-menu>summary::-webkit-details-marker {
+  display:none
+}
+.mochi-desktop .lp-conversation-menu-sheet {
+  position:absolute;
+  right:0;
+  top:calc(100% + 6px);
+  z-index:50;
+  width:224px;
+  max-width:85cqw;
+  max-height:300px;
+  padding:8px;
+  display:grid;
+  gap:3px;
+  overflow:auto;
+  overscroll-behavior:contain;
+  background:var(--mochi-surface,#17151d);
+  color:var(--mochi-text);
+  border:1px solid var(--mochi-border,#777);
+  border-radius:var(--mochi-radius-card);
+  box-shadow:0 12px 32px #0006
+}
+.mochi-desktop .lp-conversation-menu-action {
+  appearance:none;
+  display:block;
+  width:100%;
+  text-align:left;
+  padding:9px 10px;
+  border:0;
+  border-radius:7px;
+  color:inherit;
+  background:transparent;
+  font:inherit;
+  font-size:12px;
+  min-height:44px;
+  cursor:pointer
+}
+.mochi-desktop .lp-conversation-menu-action:is(:hover,:focus-visible) {
+  background:var(--lp-surface-2,#ffffff18);
+  outline:2px solid var(--mochi-accent);
+  outline-offset:-2px
+}
+.mochi-desktop .lp-conversation-menu-action:active {
+  box-shadow:inset 0 0 0 1px var(--mochi-accent)
+}
+.mochi-desktop .mochi-room-header {
+  position:relative;
+  z-index:5
+}
+@container (min-width:1000px) {
+  .mochi-desktop[data-details=true] {
+    grid-template-columns:minmax(var(--mochi-sidebar-details-min-width),var(--mochi-sidebar-details-width)) minmax(0,1fr) var(--mochi-profile-panel-width)
+  }
+  .mochi-desktop[data-details=true]>.mochi-profile-panel {
+    display:block
+  }
+}
+.mochi-desktop .lp-conversation-menu:not([open])>.lp-conversation-menu-sheet {
+  display:none
+}
+/* Keep hidden chat geometry for existing refresh/scroll anchoring; visibility also removes keyboard access. */
+@container (max-width:999px) {
+  .mochi-desktop[data-details=true]>.mochi-desktop-main {
+    visibility:hidden;
+    pointer-events:none;
+    grid-column:2;
+    grid-row:1
+  }
+  .mochi-desktop[data-details=true]>.mochi-profile-panel {
+    display:block;
+    grid-column:2;
+    grid-row:1;
+    z-index:1
+  }
+  .mochi-profile-panel {
+    border-left:0
+  }
+}
+@container (min-width:640px) {
+  .mochi-desktop-back {
+    display:none
+  }
+}
+@container (max-width:639px) {
+  .mochi-desktop.mochi-view {
+    grid-template-columns:minmax(0,1fr)
+  }
+  .mochi-desktop[data-mode=list]>.mochi-desktop-main {
+    display:none
+  }
+  .mochi-desktop[data-mode=chat]>.mochi-desktop-list,.mochi-desktop[data-mode=detail]>.mochi-desktop-list {
+    display:none
+  }
+  .mochi-desktop-list {
+    border-right:0
+  }
+}
+@container (max-width:639px) {
+  .mochi-desktop[data-details=true]>.mochi-desktop-main,.mochi-desktop[data-details=true]>.mochi-profile-panel {
+    grid-column:1;
+    grid-row:1
+  }
+}
+@container (max-width:639px) {
+  .mochi-desktop-main .mochi-search-controls {
+    grid-template-columns:minmax(0,1fr) auto 40px
+  }
+  .mochi-desktop-main .mochi-search-controls input {
+    grid-column:1 / 3
+  }
+  .mochi-desktop-main .mochi-search-controls select {
+    grid-column:1;
+    grid-row:2
+  }
+  .mochi-desktop-main .mochi-search-controls button[type=submit] {
+    grid-column:2;
+    grid-row:2
+  }
+  .mochi-desktop-main .mochi-search-controls button:last-child {
+    grid-column:3;
+    grid-row:1
+  }
+  .mochi-desktop-main .mochi-search-controls .mochi-search-secondary:not(:last-child) {
+    grid-column:3;
+    grid-row:2;
+    padding:4px;
+    font-size:11px
+  }
+}
+
+/* @mochi-section mochi-sidebar-styles */
+.mochi-sidebar {
+  height:100%;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  color:var(--lumiverse-text,#eee);
+  font:inherit
+}
+.mochi-sidebar-nav {
+  display:flex;
+  gap:8px;
+  padding:12px;
+  flex-shrink:0
+}
+.mochi-sidebar-picker {
+  overflow:auto;
+  padding:0 12px 16px;
+  min-height:0
+}
+.mochi-sidebar-nav>button,.mochi-sidebar-picker button {
+  font:inherit;
+  color:inherit;
+  background:var(--lumiverse-bg-elevated,#29262f);
+  border:1px solid var(--lumiverse-border,#ffffff26);
+  border-radius:10px;
+  min-height:44px;
+  padding:8px 12px;
+  cursor:pointer
+}
+.mochi-sidebar button:focus-visible {
+  outline:2px solid var(--lumiverse-primary,#9399ab);
+  outline-offset:2px
+}
+.mochi-sidebar button:disabled {
+  opacity:.6;
+  cursor:default
+}
+.mochi-sidebar-account {
+  display:flex;
+  align-items:center;
+  text-align:left;
+  gap:12px;
+  width:100%;
+  margin:8px 0
+}
+.mochi-sidebar-account[aria-pressed=true] {
+  border-color:var(--lumiverse-primary,#9399ab)
+}
+.mochi-sidebar-avatar {
+  display:grid;
+  place-items:center;
+  flex:0 0 40px;
+  width:40px;
+  height:40px;
+  border-radius:50%;
+  overflow:hidden;
+  background:var(--lumiverse-bg,#18161d)
+}
+.mochi-sidebar-avatar img {
+  width:100%;
+  height:100%;
+  object-fit:cover
+}
+.mochi-sidebar-label {
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  overflow-wrap:anywhere
+}
+.mochi-sidebar-label small {
+  opacity:.7
+}
+.mochi-sidebar-message {
+  margin:12px 0;
+  font-size:.9em;
+  opacity:.8
+}
+.mochi-sidebar-body {
+  flex:1;
+  min-height:0;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column
+}
+.mochi-sidebar [hidden] {
+  display:none!important
+}
+.mochi-mobile-surface .mochi-sidebar-nav {
+  padding:4px 8px;
+  justify-content:space-between
+}
+.mochi-sidebar[data-mobile-messenger] .mochi-workspace {
+  flex:1;
+  min-height:0;
+  overflow:hidden
+}
+.mochi-sidebar[data-mobile-messenger] .mochi-desktop.mochi-view {
+  grid-template-columns:minmax(0,1fr);
+  grid-template-rows:minmax(0,1fr);
+  height:100%;
+  overflow:hidden
+}
+.mochi-sidebar[data-mobile-messenger] .mochi-desktop[data-mode=list]>.mochi-desktop-main {
+  display:none
+}
+.mochi-sidebar[data-mobile-messenger] .mochi-desktop[data-mode=chat]>.mochi-desktop-list,.mochi-sidebar[data-mobile-messenger] .mochi-desktop[data-mode=detail]>.mochi-desktop-list {
+  display:none
+}
+.mochi-sidebar[data-mobile-messenger] .mochi-desktop-main,.mochi-sidebar[data-mobile-messenger] .mochi-profile-panel {
+  grid-column:1;
+  grid-row:1
+}
+.mochi-sidebar[data-mobile-messenger] .mochi-desktop[data-details=true]>.mochi-desktop-main {
+  visibility:hidden;
+  pointer-events:none
+}
+.mochi-sidebar[data-mobile-messenger] .mochi-desktop[data-details=true]>.mochi-profile-panel {
+  display:block;
+  grid-column:1;
+  grid-row:1;
+  border:0
+}
+.mochi-sidebar[data-mobile-messenger] .mochi-desktop-back {
+  display:block;
+  padding:2px 8px;
+  flex:none
+}
+.mochi-sidebar[data-mobile-messenger] .mochi-desktop-back button {
+  min-height:40px
+}
+.mochi-sidebar[data-mobile-messenger] .mochi-desktop-main>.mochi-view {
+  flex:1;
+  min-height:0;
+  min-width:0;
+  padding:8px;
+  overflow:auto
+}
+.mochi-sidebar[data-mobile-messenger] .mochi-desktop-main>.mochi-view[data-conversation=true] {
+  overflow:hidden
+}
+.mochi-sidebar[data-mobile-messenger] .mochi-thread {
+  flex:1 1 0;
+  min-height:0;
+  max-height:none;
+  overflow:auto;
+  overscroll-behavior:contain
+}
+.mochi-sidebar[data-mobile-messenger] .mochi-room-header {
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:4px;
+  padding-bottom:6px;
+  flex:none
+}
+.mochi-sidebar[data-mobile-messenger] .mochi-room-header>.mochi-actions {
+  gap:0;
+  flex-wrap:nowrap
+}
+.mochi-sidebar[data-mobile-messenger] .mochi-room-header .mochi-icon-button {
+  width:36px;
+  min-width:36px;
+  height:40px;
+  min-height:40px;
+  padding:8px
+}
+.mochi-sidebar[data-mobile-messenger] .mochi-composer {
+  position:static;
+  flex:none;
+  margin-top:0;
+  padding:6px 0 0;
+  gap:4px
+}
+.mochi-sidebar[data-mobile-messenger] .mochi-composer-row {
+  min-width:0;
+  gap:4px
+}
+.mochi-sidebar[data-mobile-messenger] .mochi-composer textarea {
+  min-width:0;
+  max-height:min(112px,25dvh);
+  font-size:16px
+}
+.mochi-sidebar[data-mobile-messenger] .mochi-composer .mochi-icon-button {
+  flex:none;
+  width:44px;
+  min-width:44px;
+  padding:10px
+}
+.mochi-sidebar[data-mobile-messenger] .mochi-bubble {
+  overflow-wrap:anywhere;
+  min-width:0
+}
+.mochi-sidebar[data-mobile-messenger] .lp-conversation-menu-sheet {
+  max-width:min(260px,85cqw);
+  max-height:min(300px,55dvh)
+}
+
+/* @mochi-section launcher */
+.mochi-launcher-root {
+  width:58px;
+  height:58px;
+  display:grid;
+  place-items:center
+}
+.mochi-launcher {
+  width:52px;
+  height:52px;
+  padding:6px;
+  background:var(--lumiverse-bg-elevated,#201e25);
+  color:var(--lumiverse-primary,#a6a0d9);
+  border:1px solid var(--lumiverse-border,#ffffff26);
+  border-radius:14px;
+  cursor:pointer
+}
+.mochi-launcher svg {
+  width:100%;
+  height:100%;
+  display:block
+}
+.mochi-launcher:focus-visible {
+  outline:2px solid currentColor;
+  outline-offset:2px
+}
+
+/* @mochi-section mobile-surface */
+.mochi-mobile-surface {
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  box-sizing:border-box;
+  background:var(--lumiverse-bg-elevated,#201e25);
+  color:var(--lumiverse-text,#eee);
+  padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);
+  font:400 13px/1.5 Inter,ui-sans-serif,system-ui,sans-serif
+}
+.mochi-mobile-surface>.mochi-sidebar {
+  flex:1;
+  min-width:0;
+  min-height:0;
+  width:100%;
+  overflow:hidden
+}
+.mochi-mobile-surface [hidden] {
+  display:none!important
+}
+
+/* @mochi-section window */
+.mochi-window {
+  display:flex;
+  flex-direction:column;
+  width:100%;
+  height:100%;
+  min-width:0;
+  min-height:0;
+  position:relative;
+  background:var(--lumiverse-bg-elevated,#201e25);
+  color:var(--lumiverse-text,#eee);
+  border:1px solid var(--lumiverse-border,#ffffff26);
+  border-radius:14px;
+  overflow:hidden;
+  box-sizing:border-box;
+  box-shadow:0 12px 32px #0005
+}
+.mochi-window-bar {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:8px 12px;
+  min-height:36px;
+  flex-shrink:0;
+  cursor:move;
+  touch-action:none;
+  user-select:none
+}
+.mochi-window-body {
+  flex:1;
+  min-height:0;
+  min-width:0;
+  overflow:hidden
+}
+.mochi-window-close,.mochi-window-resize {
+  color:inherit;
+  background:transparent;
+  border:0;
+  min-width:32px;
+  min-height:32px;
+  cursor:pointer
+}
+.mochi-window-resize {
+  position:absolute;
+  right:0;
+  bottom:0;
+  cursor:nwse-resize;
+  touch-action:none
+}
+.mochi-window button:focus-visible {
+  outline:2px solid var(--lumiverse-primary,#9399ab);
+  outline-offset:-3px
+}
+
+/* @mochi-section window-focus */
+.mochi-window-bar:focus-visible {
+  outline:2px solid var(--lumiverse-primary,#9399ab);
+  outline-offset:-2px
+}
+.mochi-window [hidden] {
+  display:none!important
+}
+
+/* @mochi-section workspace */
+.mochi-workspace {
+  display:flex;
+  flex-direction:column;
+  width:100%;
+  height:100%;
+  min-width:0;
+  min-height:0;
+  overflow:hidden;
+  box-sizing:border-box
+}
+.mochi-workspace[hidden] {
+  display:none!important
+}
+.mochi-workspace>.mochi-view {
+  min-height:0
+}
+
+/* @mochi-section notifications */
+/* Toasts can appear outside the Mochi view, while another Pocket app is open. */
+.mochi-notification-toast.mochi-notification-toast {
+  max-width:calc(100% - 24px);
+  grid-template-columns:32px minmax(0,1fr);
+}
+.mochi-notification-toast .mochi-notification-avatar {
+  width:32px;
+  height:32px;
+  border-radius:50%;
+  overflow:hidden;
+  flex:none;
+  display:grid;
+  place-items:center;
+  background:var(--lp-surface-2);
+}
+.mochi-notification-toast .mochi-notification-avatar img {
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.mochi-notification-toast>.lp-grow { min-width:0; }
+.mochi-notification-toast>.lp-grow>strong { overflow-wrap:anywhere; }
+`;
+
+// src/mochi/ui/styles.ts
+var sections = new Map;
+var chunks = mochi_default.split(/\/\* @mochi-section ([a-z0-9-]+) \*\//);
+for (let i = 1;i < chunks.length; i += 2) {
+  if (sections.has(chunks[i]))
+    throw Error("Duplicate Mochi CSS section: " + chunks[i]);
+  sections.set(chunks[i], chunks[i + 1]);
+}
+function mochiStyle(name) {
+  const css = sections.get(name);
+  if (css === undefined)
+    throw Error("Missing Mochi CSS section: " + name);
+  return (name === "base" ? mochi_tokens_default + `
+` : "") + css;
+}
+
 // src/mochi/settings-workspace.ts
 var SETTINGS_CATEGORIES = ["General", "Texting Behavior", "Availability & Schedules", "Advanced"];
 
@@ -453,11 +4328,7 @@ class ChatSettingsLayout {
     return form;
   }
 }
-var SETTINGS_WORKSPACE_STYLES = `
-.mochi-view[data-settings-workspace=true]{display:flex;flex-direction:column;height:100%;min-height:0;padding:0;overflow:hidden}.mochi-desktop[data-settings-workspace=true]{grid-template-columns:minmax(0,1fr)!important}.mochi-desktop[data-settings-workspace=true]>.mochi-desktop-list,.mochi-desktop[data-settings-workspace=true]>.mochi-profile-panel,.mochi-desktop[data-settings-workspace=true] .mochi-desktop-back{display:none!important}.mochi-settings-workspace{display:flex;flex-direction:column;min-height:0;height:100%;overflow:hidden;background:var(--mochi-surface);color:inherit;container-type:inline-size}.mochi-settings-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px;border-bottom:1px solid var(--mochi-border)}.mochi-settings-heading h3{margin:0;font-size:17px}.mochi-settings-tabs,.mochi-settings-categories{display:flex;flex-wrap:wrap;gap:6px;padding:8px 20px;border-bottom:1px solid var(--mochi-border);flex:none}.mochi-settings-workspace button{min-height:44px;font:inherit;color:inherit;font-size:12px}.mochi-settings-workspace button[aria-pressed=true]{border-color:var(--mochi-accent);box-shadow:inset 0 -2px var(--mochi-accent)}.mochi-settings-workspace>.mochi-muted{margin:0;padding:6px 20px;font-size:11px}.mochi-view .mochi-organized-settings{display:flex;flex:1;flex-direction:column;min-height:0;overflow:hidden;gap:0;padding:0}.mochi-settings-scroll,.mochi-personal-scroll{flex:1;min-height:0;overflow:auto;padding:16px 20px;overscroll-behavior:contain}.mochi-organized-settings>.mochi-actions{flex:none;padding:8px 20px;border-top:1px solid var(--mochi-border);background:var(--mochi-surface)}.mochi-view .mochi-settings-category{display:grid;align-content:start;gap:12px;min-width:0}.mochi-view .mochi-settings-category>.mochi-settings-section,.mochi-view .mochi-settings-scroll>.mochi-settings-section{border:0;border-radius:0;padding:0;background:transparent}.mochi-view .mochi-settings-scroll .mochi-settings-section>summary{padding:8px 0;border:0}.mochi-view .mochi-settings-scroll .mochi-settings-section[open]>:not(summary){margin:0 0 12px}.mochi-view .mochi-settings-category label,.mochi-view .mochi-personal-scroll label{min-width:0}.mochi-character-settings-list{display:grid;gap:0}.mochi-character-settings-row{display:flex;align-items:center;gap:10px;min-height:64px;padding:8px 0;border-bottom:1px solid var(--mochi-border)}.mochi-character-settings-row>div{display:grid;gap:3px;flex:1;min-width:0}.mochi-character-settings-row strong{overflow-wrap:anywhere;font-size:13px}.mochi-character-settings-row small{font-size:11px}.mochi-character-settings-row>.mochi-avatar{width:36px;height:36px;flex:none}.mochi-toolbar-preference{display:flex;gap:6px;align-items:center;border-bottom:1px solid var(--mochi-border);padding:6px 0}.mochi-toolbar-preference>label{flex:1;display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:8px}.mochi-toolbar-preference input[type=checkbox]{width:20px;height:20px;min-height:20px;accent-color:var(--mochi-accent)}.mochi-personal-presentation{display:grid;gap:12px;max-width:780px}.mochi-personal-presentation>button{justify-self:start}.mochi-profile-dock{display:flex;align-items:center;gap:8px;min-width:0}.mochi-profile-dock>.mochi-avatar{width:36px;height:36px;flex:none}.mochi-profile-dock>div{min-width:0;flex:1;display:grid}.mochi-profile-dock select{max-width:100%;min-width:0;font-size:12px}.mochi-profile-dock small{font-size:10px;overflow:hidden;text-overflow:ellipsis}.mochi-profile-dock[data-compact=true] .mochi-dock-username{display:none}.mochi-toolbar-label{font-size:11px}.mochi-view .mochi-custom-toolbar{flex-wrap:wrap;justify-content:flex-end;gap:2px}.mochi-view .mochi-custom-toolbar button{min-height:44px;min-width:40px;padding:6px}.mochi-custom-toolbar .mochi-toolbar-label{margin-left:4px}.mochi-settings-workspace :focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}.mochi-settings-workspace select,.mochi-settings-workspace input,.mochi-settings-workspace textarea{max-width:100%;box-sizing:border-box}.mochi-view .mochi-settings-workspace .mochi-settings-category>button{justify-self:start}
-.mochi-view[data-conversation=true] .mochi-room-header{grid-template-columns:minmax(140px,1fr) minmax(0,auto)}.mochi-view .mochi-room-header .mochi-custom-toolbar{max-width:650px}.mochi-view .mochi-room-header .mochi-custom-toolbar button{display:inline-flex;align-items:center;justify-content:center;flex:none}.mochi-view .mochi-room-header .mochi-custom-toolbar[data-presentation=labels] button:has(.mochi-toolbar-label){width:auto;height:auto;border-radius:12px;padding:8px;gap:4px;white-space:nowrap}.mochi-view .mochi-custom-toolbar button>span:first-child{display:inline-flex;flex:none}.mochi-view .mochi-custom-toolbar svg{width:18px;height:18px;flex:none}.mochi-view .mochi-custom-toolbar .mochi-toolbar-label{margin:0}.mochi-presentation-actions{display:flex;flex-wrap:wrap;gap:8px;flex:none;padding:8px 20px;border-top:1px solid var(--mochi-border);background:var(--mochi-surface)}.mochi-character-detail-nav{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}.mochi-character-fields{display:grid;gap:12px}.mochi-view .mochi-presentation-actions button{min-height:44px}.mochi-view .mochi-settings-workspace .mochi-personal-scroll{overflow-wrap:anywhere}
-@container(max-width:550px){.mochi-settings-heading{padding:10px 12px}.mochi-settings-heading h3{font-size:15px}.mochi-settings-tabs,.mochi-settings-categories{padding:6px 12px;gap:4px}.mochi-settings-scroll,.mochi-personal-scroll{padding:12px}.mochi-settings-categories>button{flex:1 1 40%;white-space:normal}.mochi-organized-settings>.mochi-actions{padding:8px 12px}.mochi-view .mochi-custom-toolbar{max-width:100%}.mochi-view .mochi-custom-toolbar .mochi-toolbar-label{display:none}}
-`;
+var SETTINGS_WORKSPACE_STYLES = mochiStyle("settings-workspace-styles");
 
 // src/mochi/replies.ts
 function replyIdentifier(value) {
@@ -1047,48 +4918,10 @@ class MochiMemoryPanel {
     return root;
   }
 }
-var MOCHI_MEMORY_STYLES = `.mochi-view .mochi-memory-panel{min-width:0;min-height:0;max-height:70%;overflow:auto;flex:0 1 auto;border:1px solid var(--mochi-border);border-radius:12px;margin:6px;padding:10px;background:var(--lp-surface-1,transparent);overflow-wrap:anywhere}.mochi-view .mochi-memory-editor{display:grid;gap:10px;min-width:0}.mochi-view .mochi-memory-editor label{display:grid;gap:5px;min-width:0}.mochi-view .mochi-memory-panel textarea,.mochi-view .mochi-memory-panel input[type=number]{box-sizing:border-box;width:100%;min-width:0;max-width:100%;font:inherit;color:inherit;background:var(--lp-surface-2,#ffffff0c);border:1px solid var(--mochi-border);border-radius:8px;padding:8px}.mochi-view .mochi-memory-panel button{min-height:40px;max-width:100%;white-space:normal;margin:3px}.mochi-view .mochi-memory-text{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;max-height:240px;overflow:auto}.mochi-view .mochi-memory-version{border:1px solid var(--mochi-border);border-radius:8px;padding:8px;margin:8px 0}.mochi-view .mochi-memory-panel :focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}`;
+var MOCHI_MEMORY_STYLES = mochiStyle("mochi-memory-styles");
 
 // src/mochi/styles.ts
-var MOCHI_STYLES = `
-.mochi-presence-dot[data-status=away],.mochi-room-meta[data-status=away]::before{background:#e7b95e}.mochi-presence-dot[data-status=dnd],.mochi-room-meta[data-status=dnd]::before{background:#d77991}.mochi-presence-dot[data-status=offline],.mochi-room-meta[data-status=offline]::before{background:#85818d}
-.mochi-message-meta{display:flex;gap:8px;align-items:center;max-width:100%;min-height:44px}.mochi-message[data-grouped=true]{margin-top:-8px}.mochi-view .mochi-room-header{grid-template-columns:minmax(0,1fr) 96px}
-.mochi-standalone{font-size:10px;font-weight:600;border:1px solid color-mix(in srgb,var(--mochi-accent) 45%,transparent);border-radius:99px;padding:4px 8px;color:var(--mochi-accent);letter-spacing:0}.mochi-view .mochi-room-selector{font-weight:650;border-radius:99px;color:inherit;background:color-mix(in srgb,var(--mochi-accent) 7%,var(--mochi-surface));padding:9px 10px;font-size:14px}.mochi-brand{gap:6px!important}.mochi-view .mochi-message-actions{width:44px;height:44px;min-height:44px;margin-top:-3px;background:transparent;border-color:transparent}.mochi-action-panel,.mochi-participants,.mochi-notification-list{display:grid;gap:12px}.mochi-action-panel :is(button,textarea){width:100%}.mochi-action-panel textarea{min-height:110px;border:1px solid var(--lp-border);border-radius:12px;padding:12px;background:var(--lp-bg);color:var(--lp-text);font:inherit;resize:vertical}.mochi-action-panel .lp-button{display:flex;align-items:center;gap:10px;justify-content:center;min-height:44px}.mochi-action-panel svg{width:20px;height:20px}.mochi-view [data-unread=true]{box-shadow:inset 0 0 0 2px var(--mochi-accent)}.mochi-notification-toast .mochi-notification-avatar{width:32px;height:32px;border-radius:50%;overflow:hidden;flex:none;display:grid;place-items:center;background:var(--lp-surface-2)}.mochi-notification-avatar img{width:100%;height:100%;object-fit:cover}.mochi-notification-toast strong,.mochi-notification-toast span{overflow-wrap:anywhere}.mochi-notification-toast{max-width:calc(100% - 24px)}.mochi-message[data-grouped=true] .mochi-message-avatar{visibility:hidden}
-.mochi-view [hidden]{display:none!important}
-.mochi-view{width:100%;flex:1}
-.mochi-view{--mochi-accent:color-mix(in srgb,var(--lp-accent,#a99bff) 35%,#b7a0e8);--mochi-surface:var(--lp-bg,var(--lumiverse-bg,#17151d));--mochi-border:var(--lp-border,var(--lumiverse-border,#ffffff18));color:var(--lp-text,var(--lumiverse-text,#f7f5ff));background:var(--mochi-surface);font:inherit;line-height:1.45;padding:16px;display:flex;flex-direction:column;gap:14px;overflow:auto;height:100%;min-width:0;box-sizing:border-box;container-type:inline-size}
-.mochi-view *{box-sizing:border-box}.mochi-view h2,.mochi-view h3,.mochi-view p{margin:0}.mochi-view h2{font-size:23px;letter-spacing:-.04em}.mochi-view h3{font-size:17px;overflow-wrap:anywhere}.mochi-view header,.mochi-actions{display:flex;align-items:center;justify-content:space-between;gap:8px}.mochi-brand{display:flex;align-items:center;gap:8px}.mochi-brand>span{color:var(--mochi-accent)}.mochi-view svg{width:20px;height:20px;display:block;flex:none}
-.mochi-view button{font:inherit;color:inherit;cursor:pointer}.mochi-view .lp-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 14px;border:1px solid var(--mochi-border);border-radius:12px;background:color-mix(in srgb,var(--lp-text,#fff) 4%,var(--mochi-surface));font-size:13px;font-weight:600}.mochi-view .mochi-icon-button{width:44px;padding:10px;flex:none;border-radius:50%}.mochi-view .mochi-primary{background:var(--mochi-accent);color:#21182e;border-color:transparent}.mochi-view button:disabled{opacity:.45;cursor:default}.mochi-view button:not(:disabled):hover{border-color:var(--mochi-accent)}.mochi-view :is(button,input,textarea,select):focus-visible{outline:2px solid var(--mochi-accent);outline-offset:3px}
-.mochi-muted{color:var(--lp-muted,var(--lumiverse-text-muted,#a9a3b5));font-size:12px}.mochi-error{color:var(--lp-destructive,#ed7c8c);font-size:13px;overflow-wrap:anywhere}.mochi-room-header{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--mochi-border)}.mochi-room-header .mochi-actions{justify-content:end}.mochi-room-info{display:grid;gap:3px;min-width:0}.mochi-member-strip{display:flex;gap:8px;flex-wrap:wrap}.mochi-member{display:flex;align-items:center;gap:6px;min-width:0;font-size:11px;max-width:100%}.mochi-member>span:last-child{overflow-wrap:anywhere}.mochi-member .mochi-avatar{width:26px;height:26px;font-size:11px;flex:none}
-.mochi-card{width:100%;padding:14px;border:1px solid var(--mochi-border);border-radius:16px;background:color-mix(in srgb,var(--mochi-accent) 4%,var(--mochi-surface));display:flex;gap:12px;text-align:left;align-items:center}.mochi-card-copy{min-width:0;display:grid;gap:4px;flex:1}.mochi-card-copy strong{overflow-wrap:anywhere;font-size:14px}.mochi-preview{font-size:12px;color:var(--lp-muted,#a9a3b5);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}.mochi-room-avatars{width:48px;flex:none;display:flex;flex-wrap:wrap;gap:2px}.mochi-room-avatars .mochi-avatar{width:23px;height:23px;font-size:10px}.mochi-room-avatars[data-single=true] .mochi-avatar{width:44px;height:44px;font-size:18px}
-.mochi-form{display:flex;flex-direction:column;gap:18px;min-width:0}.mochi-view label{display:flex;flex-direction:column;gap:7px;font-size:12px;font-weight:600;min-width:0}.mochi-view :is(input,textarea,select){box-sizing:border-box;width:100%;min-width:0;min-height:44px;padding:11px 12px;border-radius:12px;border:1px solid var(--mochi-border);background:color-mix(in srgb,var(--lp-text,#fff) 3%,var(--mochi-surface));color:inherit;font:inherit;font-size:14px;line-height:1.4}.mochi-view textarea{resize:vertical}.mochi-view option{background:var(--mochi-surface);color:var(--lp-text,#f7f5ff)}.mochi-view .mochi-toggle{flex-direction:row;align-items:center;justify-content:space-between;gap:12px;padding:12px;background:color-mix(in srgb,var(--mochi-accent) 5%,var(--mochi-surface));border:1px solid var(--mochi-border);border-radius:12px}.mochi-view input[type=checkbox]{appearance:auto;min-height:24px;width:24px;height:24px;flex:none;accent-color:var(--mochi-accent);margin:0}
-.mochi-picker{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.mochi-choice{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:8px;min-width:0;padding:12px 6px;border:1px solid transparent;border-radius:14px;background:transparent;font-size:12px!important;line-height:1.35;overflow-wrap:anywhere;text-align:center}.mochi-choice>span:last-child{width:100%;min-width:0}.mochi-choice[aria-pressed=true]{border-color:var(--mochi-accent);background:color-mix(in srgb,var(--mochi-accent) 12%,var(--mochi-surface))}.mochi-choice[aria-pressed=true]::after{content:'✓';position:absolute;right:5px;top:5px;border-radius:50%;width:18px;height:18px;background:var(--mochi-accent);color:#21182e;font-size:12px}.mochi-avatar,.mochi-message-avatar{display:flex;align-items:center;justify-content:center;width:48px;height:48px;flex:none;border-radius:50%;background:color-mix(in srgb,var(--mochi-accent) 18%,var(--mochi-surface));border:1px solid color-mix(in srgb,var(--mochi-accent) 35%,var(--mochi-border));overflow:hidden;color:var(--mochi-accent);font-weight:650}.mochi-avatar img,.mochi-message-avatar img{width:100%;height:100%;object-fit:cover}
-.mochi-thread{display:flex;flex-direction:column;gap:18px;flex:1;min-height:160px;overflow-y:auto;overscroll-behavior:contain;padding:4px 0 10px}.mochi-message{display:flex;gap:8px;align-items:flex-start;min-width:0}.mochi-message[data-role=user]{flex-direction:row-reverse}.mochi-message-avatar{width:32px;height:32px;font-size:12px;margin-top:2px}.mochi-message-body{max-width:min(86%,calc(100% - 40px));min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:5px}.mochi-message[data-role=user] .mochi-message-body{align-items:flex-end}.mochi-message-name{font-size:12px;font-weight:650;overflow-wrap:anywhere}.mochi-bubble{width:fit-content;max-width:100%;background:color-mix(in srgb,var(--lp-text,#fff) 7%,var(--mochi-surface));border:1px solid var(--mochi-border);border-radius:12px;padding:10px 12px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.5}.mochi-message[data-role=user] .mochi-bubble{background:color-mix(in srgb,var(--mochi-accent) 24%,var(--mochi-surface));border-color:color-mix(in srgb,var(--mochi-accent) 28%,var(--mochi-border))}.mochi-message time{font-size:10px;color:var(--lp-muted,#a9a3b5)}
-.mochi-composer{position:sticky;bottom:0;flex-shrink:0;background:var(--mochi-surface);padding:10px 0 max(4px,env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--mochi-border)}.mochi-composer-row{display:flex;gap:8px;align-items:flex-end}.mochi-composer textarea{flex:1;min-height:44px;max-height:112px;resize:none;border-radius:18px;padding:11px 13px}.mochi-composer select{font-size:12px;min-height:36px;padding:7px 10px}.mochi-composer-hint{font-size:10px;color:var(--lp-muted,#a9a3b5)}.mochi-view>header,.mochi-room-header,.mochi-member-strip{flex-shrink:0}
-@container (max-width:320px){.mochi-picker{grid-template-columns:repeat(2,minmax(0,1fr))}.mochi-room-header{gap:6px}.mochi-member-strip{gap:6px}.mochi-standalone{display:none}.mochi-view header .mochi-actions{gap:4px}}
-/* Mochi 03.5: keep all refinements inside the independent app surface. */
-.mochi-view{padding:14px;gap:12px}.mochi-view>header{padding:2px 0 10px;border-bottom:1px solid var(--mochi-border)}.mochi-view h2{font-size:28px;font-weight:800;letter-spacing:-.045em}.mochi-brand{min-width:0;gap:7px!important}.mochi-view .mochi-mascot svg{width:38px;height:32px}.mochi-view header .mochi-icon-button{position:relative;background:transparent;border-color:transparent}.mochi-unread-count{position:absolute;right:1px;top:0;min-width:17px;padding:1px 4px;border-radius:99px;background:var(--mochi-accent);color:#21182e;font-size:10px;line-height:15px}.mochi-view .mochi-room-selector{min-height:46px;padding:10px 14px;border-color:color-mix(in srgb,var(--mochi-accent) 30%,var(--mochi-border));background:color-mix(in srgb,var(--mochi-accent) 9%,var(--mochi-surface));font-size:15px}.mochi-room-header{border:0;padding-bottom:0;gap:8px}.mochi-room-info{gap:5px}.mochi-member-strip{gap:6px;padding-bottom:10px;border-bottom:1px solid var(--mochi-border)}.mochi-member-strip .mochi-member{padding:3px 7px 3px 3px;border-radius:99px;background:color-mix(in srgb,var(--mochi-accent) 5%,var(--mochi-surface));max-width:100%}.mochi-member-strip .mochi-avatar{width:30px;height:30px}.mochi-member-strip .mochi-member>span:last-child{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.3}
-.mochi-thread{gap:14px;padding-top:0}.mochi-message{gap:9px}.mochi-message-avatar{width:36px;height:36px;margin-top:4px}.mochi-message-body{max-width:min(86%,calc(100% - 45px));gap:2px}.mochi-message-meta{width:100%;min-height:36px;gap:6px;position:relative;padding-right:34px}.mochi-message-name{font-size:13px}.mochi-message time{white-space:nowrap;font-size:10px;flex:none}.mochi-message[data-role=user] .mochi-message-meta{justify-content:flex-end}.mochi-view .mochi-message-actions{position:absolute;right:-7px;top:-4px;width:44px;height:44px;margin:0;border:0!important;background:transparent!important;opacity:0}.mochi-view .mochi-message-actions svg{width:15px;height:15px}.mochi-message:hover .mochi-message-actions,.mochi-message:focus-within .mochi-message-actions{opacity:1}.mochi-bubble{padding:12px 14px;border-radius:17px;line-height:1.55}.mochi-message[data-role=assistant] .mochi-bubble{border-top-left-radius:6px}.mochi-message[data-role=user] .mochi-bubble{background:var(--mochi-accent);color:#21182e;border-color:transparent;border-top-right-radius:6px}.mochi-message[data-grouped=true]{margin-top:-6px}.mochi-message[data-grouped=true] .mochi-message-meta{min-height:28px}
-.mochi-composer{gap:7px;padding-top:10px}.mochi-composer-row{gap:6px;align-items:center;padding:4px;border:1px solid var(--mochi-border);border-radius:26px;background:color-mix(in srgb,var(--lp-text,#fff) 4%,var(--mochi-surface))}.mochi-composer textarea{background:transparent;border:0;border-radius:20px;padding:10px 9px}.mochi-composer .mochi-icon-button{height:44px}.mochi-composer select{max-width:100%;border-radius:99px;background:transparent;border-color:transparent}.mochi-composer-hint{text-align:center}.mochi-notification-entry{display:flex;align-items:center;gap:4px;min-width:0}.mochi-notification-entry .mochi-card{flex:1;min-width:0}.mochi-notification-entry>.mochi-icon-button{background:transparent;border-color:transparent}.mochi-notification-list>.mochi-actions{justify-content:flex-start;flex-wrap:wrap}
-@media (hover:none){.mochi-view .mochi-message-actions{opacity:.7}}
-@container (max-width:360px){.mochi-standalone{display:none}}
-/* Layout correction: compact identities, separate author/time hierarchy. */
-.mochi-view .mochi-room-header{grid-template-columns:minmax(0,1fr) 44px}.mochi-view .mochi-member-strip{align-self:flex-start;width:auto;display:flex;align-items:center;gap:10px;flex-wrap:nowrap;padding:0;min-height:44px;border:0;background:transparent;text-align:left}.mochi-portrait-stack{display:flex;align-items:center;padding-left:0;flex:none}.mochi-portrait-stack .mochi-avatar{width:32px;height:32px;border:2px solid var(--mochi-surface)}.mochi-portrait-stack .mochi-avatar+.mochi-avatar{margin-left:-10px}.mochi-participant-count{font-size:12px;color:var(--lp-muted,#a9a3b5)}.mochi-thread{border-top:1px solid var(--mochi-border);padding-top:16px;gap:20px}.mochi-message-avatar{width:38px;height:38px;margin-top:0}.mochi-message-body{max-width:min(86%,calc(100% - 47px));gap:6px}.mochi-message-name{display:block;width:100%;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;line-height:20px;overflow-wrap:normal}.mochi-message[data-role=user] .mochi-message-name{text-align:right}.mochi-message-meta{width:auto;max-width:100%;min-height:24px;padding-right:38px;gap:8px}.mochi-message[data-role=user] .mochi-message-meta{justify-content:flex-end}.mochi-message-meta small{white-space:nowrap;font-size:10px}.mochi-view .mochi-message-actions{top:-10px;right:-6px}.mochi-message[data-grouped=true]{margin-top:-16px}.mochi-message[data-grouped=true] .mochi-message-name{display:none}.mochi-message[data-grouped=true] .mochi-message-meta{min-height:24px}.mochi-bubble{padding:11px 14px}.mochi-composer{margin:0 -14px -14px;padding:10px 14px max(14px,env(safe-area-inset-bottom,0px));gap:6px;background:color-mix(in srgb,var(--mochi-accent) 3%,var(--mochi-surface))}.mochi-responder{position:relative;max-width:70%;width:fit-content;min-width:100px;min-height:44px;border-radius:99px;padding:8px 28px 8px 8px;background:color-mix(in srgb,var(--mochi-accent) 6%,var(--mochi-surface));border:1px solid var(--mochi-border)}.mochi-responder::after{content:'⌄';position:absolute;right:10px;top:10px;color:var(--lp-muted,#a9a3b5);pointer-events:none}.mochi-responder-identity{display:flex;align-items:center;gap:7px;min-width:0}.mochi-responder .mochi-avatar{width:26px;height:26px;border:0;flex:none}.mochi-responder .mochi-avatar svg{width:16px;height:16px}.mochi-responder-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}.mochi-composer .mochi-responder select{position:absolute;inset:0;height:100%;width:100%;opacity:0;cursor:pointer;min-height:44px}.mochi-responder:focus-within{outline:2px solid var(--mochi-accent);outline-offset:2px}
-/* Review correction: corner mascot, heart wordmark, attached metadata. */
-.mochi-view>header{display:grid;grid-template-columns:minmax(0,1fr) auto 52px;gap:8px;align-items:center;min-height:60px}.mochi-view .mochi-mascot svg{width:52px;height:42px}.mochi-mascot{justify-self:end;pointer-events:none}.mochi-wordmark-i{position:relative;display:inline-block}.mochi-wordmark-i::before{content:'♥';position:absolute;top:-2px;left:50%;transform:translateX(-50%) rotate(-12deg);font-size:10px;line-height:1;color:#e89dbd;letter-spacing:0}.mochi-message-heading{display:flex;align-items:baseline;width:100%;min-width:0;gap:8px;padding-top:5px}.mochi-message-name{flex:1;width:auto;font-size:12px;line-height:18px}.mochi-message-heading time{flex:none;font-size:10px;line-height:18px}.mochi-message-avatar{margin-top:8px}.mochi-message-body{gap:4px}.mochi-thread{gap:16px;padding-top:12px}.mochi-message-meta,.mochi-message[data-grouped=true] .mochi-message-meta{width:100%;min-height:16px;gap:4px;padding-right:38px;justify-content:flex-start}.mochi-message[data-role=user] .mochi-message-meta{justify-content:flex-start}.mochi-message-meta small{font-size:10px;line-height:16px}.mochi-view .mochi-message-actions{top:-14px;right:-6px}.mochi-message[data-grouped=true]{margin-top:-12px}.mochi-message[data-grouped=true] .mochi-message-heading{padding-top:0;justify-content:flex-end}.mochi-message[data-grouped=true] .mochi-message-avatar{visibility:hidden}
-/* Final messenger composition; temporary presence visuals carry no state. */
-.mochi-wordmark-i::before{font-size:14px;top:-5px}.mochi-view .mochi-room-header{grid-template-columns:minmax(0,1fr) 96px;align-items:start}.mochi-room-header>.mochi-actions{padding-top:2px}.mochi-room-select{position:relative;min-width:0}.mochi-room-select-icon{position:absolute;left:12px;top:13px;pointer-events:none;color:var(--mochi-accent)}.mochi-room-select-icon svg{width:20px;height:20px}.mochi-view .mochi-room-selector{font-size:14px;font-weight:500;padding-left:40px;padding-right:24px;border-radius:24px}.mochi-room-info{gap:8px}.mochi-room-meta{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--lp-muted,#a9a3b5);min-height:18px;white-space:nowrap}.mochi-room-meta::before{content:'';width:8px;height:8px;flex:none;border-radius:50%;background:#58d998}.mochi-avatar-frame{position:relative;flex:none;width:40px;height:40px;margin-top:5px}.mochi-avatar-frame .mochi-message-avatar{width:40px;height:40px;margin-top:0}.mochi-presence-dot{position:absolute;right:-1px;bottom:-1px;width:12px;height:12px;border:2px solid var(--mochi-surface);border-radius:50%;background:#58d998}.mochi-message-body{max-width:min(86%,calc(100% - 49px));gap:4px}.mochi-message-name{font-size:11px;font-weight:600}.mochi-message-heading{gap:7px;padding-top:6px}.mochi-thread{gap:20px;padding-top:14px;border-top:0}.mochi-message-meta,.mochi-message[data-grouped=true] .mochi-message-meta{height:0;min-height:0;padding:0}.mochi-view .mochi-message-actions{top:-21px;right:-5px}.mochi-message[data-grouped=true]{margin-top:-17px}.mochi-message[data-grouped=true] .mochi-avatar-frame{visibility:hidden}.mochi-message[data-grouped=true] .mochi-message-heading{display:none}.mochi-bubble{border-radius:18px;padding:12px 14px}.mochi-message[data-role=assistant] .mochi-bubble{border-top-left-radius:8px}.mochi-message[data-role=user] .mochi-bubble{border-top-right-radius:8px}
-.mochi-sheet .lp-sheet-panel{border-radius:22px;border:1px solid var(--lp-border);background:var(--lp-bg);box-shadow:0 14px 42px #0003;padding:18px}.mochi-sheet .mochi-action-panel{gap:5px}.mochi-action-context{font-size:11px;line-height:1.5;color:var(--lp-muted);overflow-wrap:anywhere;margin:0 0 8px}.mochi-sheet .mochi-action-panel>.lp-button{justify-content:flex-start;min-height:48px;padding:12px 14px;border:0;border-radius:12px;background:color-mix(in srgb,var(--lp-text) 4%,var(--lp-bg));font-size:13px}.mochi-sheet .mochi-action-panel>.lp-button:hover{background:color-mix(in srgb,var(--lp-accent) 12%,var(--lp-bg))}.mochi-sheet .mochi-action-panel>[aria-label="Delete message"],.mochi-sheet .mochi-action-panel>[aria-label="Confirm delete"]{color:var(--lp-destructive,#d9677d)}.mochi-sheet .lp-sheet-close{border-radius:99px;min-height:44px}.mochi-sheet :is(button,textarea):focus-visible{outline:2px solid var(--lp-accent);outline-offset:2px}
-.mochi-action-context{display:grid;gap:3px;min-width:0}.mochi-action-author{color:var(--lp-text);font-size:12px;font-weight:600;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.mochi-action-context small{font-size:11px;font-weight:400}
-
-.mochi-account-list{display:grid;gap:10px;min-width:0}.mochi-account-list .mochi-card{width:100%;text-align:left}.mochi-account-actions,.mochi-inbox-actions,.mochi-profile-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.mochi-account-actions>.lp-button,.mochi-profile-actions>.lp-button{flex:1 1 140px}.mochi-view .mochi-secondary-action{align-self:flex-start;width:auto;min-height:44px;padding:8px 0;border:0;background:transparent;color:var(--lp-muted);font-size:11px;font-weight:500}.mochi-view .mochi-legacy-action{margin-top:0;padding-top:12px;border-top:1px solid var(--mochi-border);border-radius:0}.mochi-inbox-actions>.lp-button{font-size:11px;padding:8px 10px}.mochi-profile-preview{overflow:hidden;border:1px solid var(--mochi-border);border-radius:14px;background:color-mix(in srgb,var(--mochi-accent) 8%,var(--mochi-surface))}.mochi-profile-banner{height:72px;background:linear-gradient(120deg,color-mix(in srgb,var(--mochi-accent) 35%,var(--mochi-surface)),color-mix(in srgb,var(--mochi-accent) 10%,var(--mochi-surface)))}.mochi-profile-preview-body{position:relative;display:grid;gap:5px;padding:42px 16px 18px;min-width:0}.mochi-profile-preview .mochi-profile-portrait{position:absolute;top:-32px;left:12px;width:64px;height:64px;border:4px solid var(--mochi-surface);font-size:24px}.mochi-profile-preview-name{font-size:20px;line-height:1.3;overflow-wrap:anywhere}.mochi-profile-fields{margin:0;padding:16px;min-width:0;border:1px solid var(--mochi-border);border-radius:12px;display:grid;gap:14px}.mochi-profile-fields legend{padding:0 6px;font-size:11px;font-weight:650;color:var(--lp-muted);letter-spacing:.04em}.mochi-profile-fields input[type=file]{font-size:11px}.mochi-room-connection{color:var(--lp-muted);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mochi-view .mochi-connection-indicator{display:block;min-height:32px;padding:4px 0;max-width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:0;background:transparent;color:var(--mochi-accent);font-size:10px;text-align:left}.mochi-connection-indicator:hover{text-decoration:underline}.mochi-sheet .mochi-action-panel>[aria-label="Discard changes"]{color:var(--lp-destructive,#d9677d)}
-
-/* Compact room chrome and grouped settings. */
-.mochi-view[data-surface=chat] .mochi-room-info{gap:0}.mochi-view[data-surface=chat] .mochi-room-selector{min-height:28px;padding-block:2px;font-size:14px}.mochi-view[data-surface=chat] .mochi-room-meta{margin:1px 0;font-size:10px;line-height:16px;min-height:16px}.mochi-room-meta::before{width:6px;height:6px}.mochi-connection-status{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--lp-muted);font-size:10px;line-height:16px}.mochi-view[data-surface=chat] .mochi-room-header{align-items:start;padding-bottom:10px;gap:8px}.mochi-view[data-surface=chat] .mochi-room-header>.mochi-actions{padding:0}.mochi-view[data-surface=chat] .mochi-room-header .mochi-icon-button{width:40px;min-width:40px;height:40px;min-height:40px;background:transparent;border:0}.mochi-settings-section{display:grid;gap:12px;min-width:0;margin:0;padding:14px;border:1px solid var(--mochi-border);border-radius:12px}.mochi-settings-section>legend{font-size:11px;font-weight:650;color:var(--lp-muted);padding:0 5px}.mochi-settings-section>p{margin:0;font-weight:400;line-height:1.5}.mochi-view details.mochi-settings-section{display:block;padding:0;overflow:hidden}.mochi-settings-section>summary{padding:14px;cursor:pointer;font-size:12px;font-weight:600;min-height:44px;box-sizing:border-box}.mochi-settings-section>summary:focus-visible{outline:2px solid var(--mochi-accent);outline-offset:-3px}.mochi-settings-section[open]>summary{border-bottom:1px solid var(--mochi-border);margin-bottom:14px}.mochi-settings-section[open]>:not(summary){margin-left:14px;margin-right:14px;margin-bottom:14px}.mochi-view .mochi-settings-section .mochi-toggle{background:transparent;border:0;border-radius:0;padding:4px 0;min-height:36px;font-size:11px;font-weight:500}.mochi-settings-section .mochi-picker{grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px}.mochi-settings-section .mochi-choice{font-size:11px;padding:8px 4px}.mochi-settings-section .mochi-assignment{gap:12px}.mochi-settings-section .mochi-assignment h4{display:none}
-.mochi-room-header .lp-conversation-menu>summary{display:grid;place-items:center;width:36px;min-width:36px;min-height:36px;padding:0;background:transparent;border:0;border-radius:50%;font-size:22px}.mochi-room-header .lp-conversation-menu-action{min-height:40px;font-size:12px}.mochi-room-header .lp-conversation-menu>summary:focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}
-.mochi-model-picker{min-width:0}.mochi-model-picker-row{display:flex;align-items:end;flex-wrap:wrap;gap:8px}.mochi-model-picker-row>label{flex:1 1 180px}.mochi-model-picker-row>button{min-height:44px;font-size:11px;padding:8px 10px}.mochi-model-picker>p{margin:6px 0 0;font-size:11px;font-weight:400}
-@container(max-width:600px){.mochi-desktop-main .mochi-view .mochi-room-header,.mochi-sidebar[data-mobile-messenger] .mochi-view .mochi-room-header{grid-template-columns:minmax(0,1fr);gap:6px}.mochi-desktop-main .mochi-view .mochi-room-header>.mochi-actions,.mochi-sidebar[data-mobile-messenger] .mochi-view .mochi-room-header>.mochi-actions{justify-content:flex-start;flex-wrap:wrap;max-width:100%}}
-`;
+var MOCHI_STYLES = mochiStyle("base");
 
 // src/mochi/models.ts
 async function fetchMochiModels(connectionId, signal) {
@@ -1312,12 +5145,10 @@ function showMochiNotification(shell, n, previews, open) {
   toast.setAttribute("role", "status");
   activeNotices.set(toast, { ...n });
   const portrait = el("span", "mochi-notification-avatar", n.title.slice(0, 1));
-  portrait.style.cssText = "width:32px;height:32px;border-radius:50%;overflow:hidden;flex:none;display:grid;place-items:center;background:var(--lp-surface-2)";
   if (n.avatarUrl) {
     const image = el("img");
     image.src = n.avatarUrl;
     image.alt = "";
-    image.style.cssText = "width:100%;height:100%;object-fit:cover";
     portrait.replaceChildren(image);
   }
   const copy = el("span", "lp-grow");
@@ -1328,10 +5159,12 @@ function showMochiNotification(shell, n, previews, open) {
     dismiss();
   };
   shell.append(toast);
-  toast.style.maxWidth = "calc(100% - 24px)";
-  toast.style.gridTemplateColumns = "32px minmax(0,1fr)";
-  copy.style.minWidth = "0";
-  copy.firstElementChild.style.overflowWrap = "anywhere";
+  if (!shell.querySelector(":scope > style[data-mochi-notifications]")) {
+    const style = el("style");
+    style.dataset.mochiNotifications = "true";
+    style.textContent = mochiStyle("notifications");
+    shell.append(style);
+  }
   const timer = setTimeout(() => toast.remove(), 6000);
   const dismiss = () => {
     clearTimeout(timer);
@@ -1676,41 +5509,7 @@ function accountPicker(state, busy, choose, create, legacy, startup, manage, ref
 }
 
 // src/mochi/desktop-styles.ts
-var MOCHI_DESKTOP_STYLES = `
-.mochi-workspace[data-presentation=messenger]{container-type:inline-size}
-.mochi-desktop.mochi-view{display:grid;grid-template-columns:minmax(190px,240px) minmax(0,1fr);gap:0;padding:0;overflow:hidden;height:100%;min-height:0}
-.mochi-desktop-list{display:flex;flex-direction:column;min-height:0;min-width:0;border-right:1px solid var(--lp-border,#ffffff26);background:var(--mochi-surface)}
-.mochi-desktop-list-head{padding:10px;flex:none;display:grid;gap:8px}.mochi-desktop-list-head h3{margin:0;font-size:14px}.mochi-desktop-account{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mochi-shell-account-row{display:flex;align-items:center;gap:2px;min-width:0}.mochi-shell-account-row .mochi-desktop-account{flex:1;min-width:0;font-weight:600}.mochi-shell-account-row button{flex:none;width:40px;height:44px;min-height:44px;padding:8px;background:transparent;border-color:transparent}.mochi-shell-tools{display:flex;gap:6px;min-width:0}.mochi-shell-tools>button:first-child{flex:1;justify-content:center;font-size:12px;min-width:0;padding:8px;min-height:40px;background:transparent}.mochi-shell-tools>button:last-child:not(:first-child){flex:none;width:44px}.mochi-shell-tools svg{width:18px;height:18px}
-.mochi-conversation-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px}.mochi-conversation-filters>.lp-button{min-width:0;min-height:44px;padding:4px 2px;font-size:11px;border:0;background:transparent;white-space:normal;justify-content:center}.mochi-conversation-filters button[aria-pressed=true]{background:var(--lp-surface-2,#ffffff12);box-shadow:inset 0 -2px var(--mochi-accent)}.mochi-shell-notifications{display:flex;justify-content:flex-end;padding:6px 12px;border-bottom:1px solid var(--mochi-border)}.mochi-activity-snapshot{padding:12px 0;border-top:1px solid var(--mochi-border)}.mochi-activity-snapshot h4{font-size:12px;font-weight:600;margin:0 0 6px}
-.mochi-desktop-rooms{flex:1;min-height:0;overflow:auto;padding:6px;display:flex;flex-direction:column;gap:4px}
-.mochi-desktop .mochi-desktop-room{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:10px;border-radius:10px;border:1px solid transparent;background:transparent;color:inherit;min-width:0}
-.mochi-desktop-room[aria-current=true]{background:var(--lp-surface-2,#ffffff12);border-color:var(--mochi-accent)!important}.mochi-desktop-room:hover{background:var(--lp-surface-2,#ffffff12)}
-.mochi-desktop-room-copy{flex:1;min-width:0;display:grid;gap:4px}.mochi-desktop-room-copy strong,.mochi-desktop-room-copy small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mochi-desktop-room-copy strong{font-size:13px}.mochi-desktop-room-copy small{font-size:11px;opacity:.75}.mochi-desktop-room .mochi-room-avatars{flex:none}.mochi-desktop-room .mochi-avatar{width:28px;height:28px}.mochi-desktop-unread{flex:none;font-size:11px;border-radius:99px;padding:2px 6px;background:var(--mochi-accent);color:var(--mochi-surface)}
-.mochi-desktop-main{display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden}.mochi-desktop-main>.mochi-view{flex:1;min-height:0;overflow:auto;border:0;border-radius:0;padding:12px}
-.mochi-desktop-main>.mochi-view[data-conversation=true]{display:flex;flex-direction:column;overflow:hidden}.mochi-desktop-main .mochi-room-header,.mochi-desktop-main .mochi-composer,.mochi-desktop-main .mochi-view>header{flex:none}
-.mochi-desktop-main .mochi-thread{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain}.mochi-desktop-main .mochi-composer{margin-top:auto}.mochi-desktop-main .mochi-thread:focus-visible{outline:2px solid var(--mochi-accent);outline-offset:-2px}
-.mochi-desktop-back{flex:none;padding:6px 12px;border-bottom:1px solid var(--lp-border,#ffffff26)}.mochi-desktop-back button{font:inherit;color:inherit;background:transparent;border:0;min-height:32px;cursor:pointer}
-.mochi-desktop[data-mode=account]{grid-template-columns:minmax(0,1fr)}.mochi-desktop[data-mode=account]>.mochi-desktop-list{display:none}
-.mochi-shell-brand{display:flex;align-items:center;justify-content:space-between;padding:8px 2px}.mochi-shell-brand h2{display:flex;align-items:center;margin:0;line-height:0;font-size:27px;font-weight:800;letter-spacing:-1px}.mochi-shell-mascot{display:flex;align-items:center;justify-content:center;flex:0 0 40px;width:40px;height:36px;line-height:0;color:var(--mochi-accent);pointer-events:none}.mochi-shell-mascot svg{display:block;width:40px;height:36px}
-.mochi-conversation-filter{font:inherit;font-size:12px;padding:10px 12px;min-width:0;width:100%;border:1px solid var(--lp-border,#ffffff26);border-radius:10px;background:var(--lp-bg,transparent);color:inherit;min-height:42px}
-.mochi-desktop-room[hidden],.mochi-desktop-rooms p[hidden]{display:none!important}.mochi-desktop .mochi-conversation-title{font-size:16px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-.mochi-desktop-main .mochi-room-header{grid-template-columns:minmax(0,1fr) auto;align-items:center;padding:4px 0 12px;border-bottom:1px solid var(--lp-border,#ffffff26)}.mochi-desktop-main .mochi-room-header>.mochi-actions{gap:2px;padding:0}
-.mochi-profile-panel{display:none;min-width:0;min-height:0;overflow:auto;overscroll-behavior:contain;padding:16px;border-left:1px solid var(--lp-border,#ffffff26);background:var(--mochi-surface)}
-.mochi-profile-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:24px}.mochi-profile-heading h3{font-size:12px;font-weight:500;color:var(--lp-muted,inherit)}.mochi-profile-heading button{width:auto!important;padding:6px 10px;background:transparent;border-color:transparent;font-size:12px}.mochi-profile-person{display:grid;justify-items:start;gap:8px;margin-bottom:20px}.mochi-profile-person h4{font-size:18px;margin:0;overflow-wrap:anywhere}.mochi-profile-person>.mochi-avatar{height:72px;width:72px}.mochi-profile-panel[data-kind=direct] .mochi-profile-person{justify-items:center;text-align:center;padding:12px 0 24px}.mochi-profile-panel[data-kind=group] .mochi-profile-person{grid-template-columns:36px minmax(0,1fr);column-gap:10px;row-gap:2px;align-items:center;margin-bottom:16px}.mochi-profile-panel[data-kind=group] .mochi-avatar{width:36px;height:36px;grid-row:span 2}.mochi-profile-panel[data-kind=group] h4{font-size:13px}.mochi-profile-panel p{font-size:12px;line-height:1.5;margin:0;overflow-wrap:anywhere;color:var(--lp-muted,inherit)}.mochi-profile-panel button{white-space:normal;min-height:44px;width:100%}.mochi-profile-panel .mochi-profile-settings{margin-top:12px;border-width:1px 0 0;border-radius:0;background:transparent;font-size:12px;color:var(--lp-muted,inherit)}
-.mochi-desktop-main .mochi-search-panel{padding:8px 0;max-height:35%;border-top:0}.mochi-desktop-main .mochi-search-controls{display:grid;grid-template-columns:minmax(0,1fr) minmax(72px,110px) auto auto 40px;align-items:center;gap:5px}.mochi-desktop-main .mochi-search-controls :is(input,select){width:100%;min-height:40px;padding:7px;font-size:12px}.mochi-desktop-main .mochi-search-controls button{width:auto;padding:7px 9px;min-height:40px;font-size:12px}.mochi-desktop-main .mochi-search-secondary{background:transparent;border-color:transparent;color:var(--lp-muted,inherit)}.mochi-desktop-main .mochi-search-panel>[role=status]{font-size:11px;margin-top:4px}.mochi-desktop-main .mochi-search-results{margin-top:6px}.mochi-desktop-main .mochi-search-results:empty{display:none}
-.mochi-desktop :is(button,input,summary):focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}.mochi-desktop-main .lp-conversation-menu-action{min-height:44px;white-space:normal}.mochi-desktop-main .lp-conversation-menu-sheet{max-height:min(70vh,440px);overflow:auto;max-width:min(280px,85cqw)}
-.mochi-desktop-main .lp-conversation-menu-action:nth-of-type(3),.mochi-desktop-main .lp-conversation-menu-action:nth-of-type(4),.mochi-desktop-main .lp-conversation-menu-action:last-child{border-top:1px solid var(--lp-border,#ffffff26)}
-.mochi-desktop .lp-conversation-menu{position:relative;z-index:30}.mochi-desktop .lp-conversation-menu>summary{list-style:none;cursor:pointer}.mochi-desktop .lp-conversation-menu>summary::-webkit-details-marker{display:none}.mochi-desktop .lp-conversation-menu-sheet{position:absolute;right:0;top:calc(100% + 6px);z-index:50;width:224px;max-width:85cqw;max-height:300px;padding:8px;display:grid;gap:3px;overflow:auto;overscroll-behavior:contain;background:var(--mochi-surface,#17151d);color:var(--lp-text,var(--lumiverse-text,#f7f5ff));border:1px solid var(--mochi-border,#777);border-radius:12px;box-shadow:0 12px 32px #0006}.mochi-desktop .lp-conversation-menu-action{appearance:none;display:block;width:100%;text-align:left;padding:9px 10px;border:0;border-radius:7px;color:inherit;background:transparent;font:inherit;font-size:12px;min-height:44px;cursor:pointer}.mochi-desktop .lp-conversation-menu-action:is(:hover,:focus-visible){background:var(--lp-surface-2,#ffffff18);outline:2px solid var(--mochi-accent);outline-offset:-2px}.mochi-desktop .lp-conversation-menu-action:active{box-shadow:inset 0 0 0 1px var(--mochi-accent)}.mochi-desktop .mochi-room-header{position:relative;z-index:5}
-@container (min-width:1000px){.mochi-desktop[data-details=true]{grid-template-columns:minmax(180px,210px) minmax(0,1fr) 224px}.mochi-desktop[data-details=true]>.mochi-profile-panel{display:block}}
-.mochi-desktop .lp-conversation-menu:not([open])>.lp-conversation-menu-sheet{display:none}
-/* Keep hidden chat geometry for existing refresh/scroll anchoring; visibility also removes keyboard access. */
-@container (max-width:999px){.mochi-desktop[data-details=true]>.mochi-desktop-main{visibility:hidden;pointer-events:none;grid-column:2;grid-row:1}.mochi-desktop[data-details=true]>.mochi-profile-panel{display:block;grid-column:2;grid-row:1;z-index:1}.mochi-profile-panel{border-left:0}}
-@container (min-width:640px){.mochi-desktop-back{display:none}}
-@container (max-width:639px){.mochi-desktop.mochi-view{grid-template-columns:minmax(0,1fr)}.mochi-desktop[data-mode=list]>.mochi-desktop-main{display:none}.mochi-desktop[data-mode=chat]>.mochi-desktop-list,.mochi-desktop[data-mode=detail]>.mochi-desktop-list{display:none}.mochi-desktop-list{border-right:0}}
-@container (max-width:639px){.mochi-desktop[data-details=true]>.mochi-desktop-main,.mochi-desktop[data-details=true]>.mochi-profile-panel{grid-column:1;grid-row:1}}
-@container (max-width:639px){.mochi-desktop-main .mochi-search-controls{grid-template-columns:minmax(0,1fr) auto 40px}.mochi-desktop-main .mochi-search-controls input{grid-column:1 / 3}.mochi-desktop-main .mochi-search-controls select{grid-column:1;grid-row:2}.mochi-desktop-main .mochi-search-controls button[type=submit]{grid-column:2;grid-row:2}.mochi-desktop-main .mochi-search-controls button:last-child{grid-column:3;grid-row:1}.mochi-desktop-main .mochi-search-controls .mochi-search-secondary:not(:last-child){grid-column:3;grid-row:2;padding:4px;font-size:11px}}
-`;
+var MOCHI_DESKTOP_STYLES = mochiStyle("desktop");
 
 // src/mochi/details-panel.ts
 function roomDetails(room, characters, close, settings) {
@@ -1777,17 +5576,11 @@ function mochiWordmark() {
   mark.width = 2172;
   mark.height = 724;
   mark.draggable = false;
-  mark.style.cssText = "display:block;width:108px;max-width:100%;height:auto;object-fit:contain";
   return mark;
 }
 
 // src/mochi/reply-styles.ts
-var MOCHI_REPLY_STYLES = `
-.mochi-view .mochi-quote{display:flex;flex-direction:column;gap:3px;min-width:0;max-width:100%;text-align:left;font:inherit;color:inherit;padding:7px 10px;border:0;border-left:3px solid var(--mochi-accent);border-radius:6px;background:var(--lp-surface-2,#ffffff0c);overflow:hidden}
-.mochi-quote strong{font-size:11px;overflow-wrap:anywhere}.mochi-quote span{font-size:12px;white-space:normal;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.mochi-view button.mochi-quote{cursor:pointer;min-height:44px}.mochi-view button.mochi-quote:focus-visible,.mochi-message:focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}
-.mochi-view .mochi-reply-preview{display:flex;align-items:center;gap:6px;min-width:0}.mochi-reply-preview>.mochi-quote{flex:1}.mochi-reply-preview>button{flex:none}
-`;
+var MOCHI_REPLY_STYLES = mochiStyle("mochi-reply-styles");
 
 // src/mochi/reactions.ts
 var REACTION_EMOJI = ["\uD83D\uDC4D", "❤️", "\uD83D\uDE02", "\uD83D\uDE2E", "\uD83D\uDE22", "\uD83C\uDF89", "\uD83E\uDD14", "\uD83D\uDC40"];
@@ -1810,13 +5603,7 @@ function readReactions(value, room) {
 }
 
 // src/mochi/reaction-styles.ts
-var MOCHI_REACTION_STYLES = `
-.mochi-view .mochi-reactions,.mochi-view .mochi-reaction-palette,.mochi-sheet .mochi-reaction-palette{display:flex;flex-wrap:wrap;gap:5px;min-width:0;max-width:100%;margin-top:5px}
-.mochi-view .mochi-reactions:empty{display:none}
-.mochi-view .mochi-reaction{font:inherit;font-size:12px;color:inherit;min-height:32px;padding:4px 8px;border:1px solid var(--mochi-border);border-radius:12px;background:var(--lp-surface-2,#ffffff0c);cursor:pointer;max-width:100%}.mochi-view .mochi-reaction-palette .mochi-reaction{min-width:44px;min-height:44px;font-size:20px}
-.mochi-view .mochi-reaction[aria-pressed=true]{border-color:var(--mochi-accent);background:var(--lp-surface-2,#ffffff18)}.mochi-view .mochi-reaction:focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}
-.mochi-sheet .mochi-reaction{min-width:44px;min-height:44px;font-size:20px;border-radius:12px;border:1px solid var(--mochi-border);background:var(--lp-surface-2,#ffffff0c);color:inherit;cursor:pointer}.mochi-sheet .mochi-reaction:focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}.mochi-sheet .mochi-reaction[aria-pressed=true]{border-color:var(--mochi-accent)}
-`;
+var MOCHI_REACTION_STYLES = mochiStyle("mochi-reaction-styles");
 
 // src/mochi/pins.ts
 var MAX_NOTE_BODY = 2000;
@@ -1954,15 +5741,7 @@ function pinsPanel(room, owner) {
   render();
   return root;
 }
-var MOCHI_PIN_STYLES = `
-.mochi-sheet .mochi-pins-panel{display:grid;gap:10px;min-width:0;overflow-wrap:anywhere}
-.mochi-sheet .mochi-pin-row{display:flex;align-items:center;gap:8px;min-width:0}
-.mochi-sheet .mochi-pin-jump{flex:1;min-width:0;text-align:left;white-space:normal;overflow-wrap:anywhere;background:var(--lp-surface-2,#ffffff0c);color:inherit;border:1px solid var(--mochi-border);border-radius:10px;padding:10px;cursor:pointer}
-.mochi-sheet .mochi-note-editor{display:grid;gap:10px;min-width:0}.mochi-sheet .mochi-note-editor label{display:grid;gap:5px}
-.mochi-sheet .mochi-note-editor input:not([type=checkbox]),.mochi-sheet .mochi-note-editor textarea{box-sizing:border-box;width:100%;min-width:0;background:var(--lp-surface-2,#ffffff0c);color:inherit;border:1px solid var(--mochi-border);border-radius:8px;padding:8px;font:inherit}
-.mochi-sheet .mochi-note-row{display:flex;flex-wrap:wrap;gap:8px;border:1px solid var(--mochi-border);border-radius:10px;padding:10px;min-width:0}.mochi-sheet .mochi-note-row p{width:100%;margin:0;overflow-wrap:anywhere}
-.mochi-sheet .mochi-pins-panel button{min-height:40px}.mochi-sheet .mochi-pins-panel :focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}.mochi-view .mochi-pin-indicator{font-size:11px;color:var(--lp-text-secondary);margin-left:6px}
-`;
+var MOCHI_PIN_STYLES = mochiStyle("mochi-pin-styles");
 
 // src/mochi/search.ts
 var SEARCH_QUERY_MAX = 200;
@@ -2220,13 +5999,7 @@ class MochiSearch {
     return root;
   }
 }
-var MOCHI_SEARCH_STYLES = `
-.mochi-view .mochi-search-panel{flex:0 1 auto;min-height:0;max-height:40%;overflow:auto;border-bottom:1px solid var(--mochi-border);padding:10px;min-width:0}
-.mochi-view .mochi-search-controls{display:flex;flex-wrap:wrap;gap:6px;min-width:0}.mochi-view .mochi-search-controls input{flex:1 1 160px;min-width:0}.mochi-view .mochi-search-controls select{max-width:100%;min-width:0}
-.mochi-view .mochi-search-controls input,.mochi-view .mochi-search-controls select{box-sizing:border-box;background:var(--lp-surface-2,#ffffff0c);color:inherit;border:1px solid var(--mochi-border);border-radius:8px;padding:8px;font:inherit}
-.mochi-view .mochi-search-results{display:grid;gap:6px;min-width:0}.mochi-view .mochi-search-result{display:grid;gap:4px;min-width:0;max-width:100%;text-align:left;overflow-wrap:anywhere;white-space:normal;background:var(--lp-surface-2,#ffffff0c);color:inherit;border:1px solid var(--mochi-border);border-radius:10px;padding:10px;cursor:pointer}.mochi-view .mochi-search-result strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mochi-view .mochi-search-result small{font-size:11px}
-.mochi-view .mochi-search-paging{display:flex;gap:6px;flex-wrap:wrap}.mochi-view .mochi-search-panel button{min-height:40px}.mochi-view .mochi-search-panel :focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}
-`;
+var MOCHI_SEARCH_STYLES = mochiStyle("mochi-search-styles");
 
 // src/mochi/texting.ts
 var TEXTING_OPTIONS = { length: ["short", "balanced", "detailed"], capitalization: ["lowercase", "natural", "formal"], punctuation: ["minimal", "natural", "expressive"], emoji: ["rare", "occasional", "frequent"] };
@@ -2277,16 +6050,10 @@ function textingControls(settings, id, name) {
   group.append(label);
   return group;
 }
-var MOCHI_TEXTING_STYLES = `.mochi-view .mochi-texting-controls{min-width:0;display:grid;gap:8px;border:1px solid var(--mochi-border);border-radius:10px;padding:10px}.mochi-view .mochi-texting-controls label{min-width:0;display:grid;gap:4px;overflow-wrap:anywhere}.mochi-view .mochi-texting-controls select,.mochi-view .mochi-texting-controls textarea{box-sizing:border-box;min-width:0;width:100%;max-width:100%}.mochi-view .mochi-texting-controls :focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}`;
+var MOCHI_TEXTING_STYLES = mochiStyle("mochi-texting-styles");
 
 // src/mochi/disclosure.ts
-var MOCHI_DISCLOSURE_STYLES = `
-.mochi-view details.mochi-disclosure,.mochi-view .mochi-preset-navigation>details.mochi-disclosure,.mochi-view .mochi-settings-scroll details.mochi-disclosure{min-width:0;max-width:100%;box-sizing:border-box;border:1px solid var(--mochi-border);border-radius:12px;padding:0;margin:6px 0;background:var(--lp-surface-2,#ffffff06);overflow:hidden}
-.mochi-view details.mochi-disclosure>summary,.mochi-view .mochi-preset-navigation>details.mochi-disclosure>summary,.mochi-view .mochi-settings-scroll details.mochi-disclosure>summary{display:block;position:relative;box-sizing:border-box;min-height:44px;max-width:100%;padding:12px 36px 12px 12px;margin:0;line-height:20px;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;list-style:none;cursor:pointer;border:0;border-radius:11px;color:inherit}
-.mochi-view details.mochi-disclosure>summary::-webkit-details-marker{display:none}.mochi-view details.mochi-disclosure>summary::after{content:'';position:absolute;right:16px;top:17px;width:7px;height:7px;border-right:2px solid var(--lp-muted,currentColor);border-bottom:2px solid var(--lp-muted,currentColor);transform:rotate(-45deg)}.mochi-view details.mochi-disclosure[open]>summary::after{transform:rotate(45deg);top:15px}.mochi-view details.mochi-disclosure[open]>summary{border-bottom:1px solid var(--mochi-border);border-radius:11px 11px 0 0}.mochi-view details.mochi-disclosure>summary:hover{background:color-mix(in srgb,var(--mochi-accent) 8%,transparent)}.mochi-view details.mochi-disclosure>summary:focus-visible{outline:2px solid var(--mochi-accent);outline-offset:-3px}.mochi-view details.mochi-disclosure>:not(summary){margin:10px 12px;max-width:calc(100% - 24px);box-sizing:border-box;min-width:0;overflow-wrap:anywhere}.mochi-view .mochi-settings-scroll details.mochi-disclosure[open]>:not(summary){margin:12px;max-width:calc(100% - 24px)}.mochi-view .mochi-preset-navigation{border:0;gap:8px}.mochi-view .mochi-preset-navigation>details.mochi-disclosure{flex:1 1 240px;align-self:start}.mochi-view .mochi-preview-overview{display:flex;flex-wrap:wrap;gap:6px 16px;padding:10px 0}.mochi-view .mochi-preview-overview>span{font-size:12px}.mochi-view .mochi-preview-group{min-width:0}.mochi-view .mochi-preview-warning{border-left:3px solid var(--mochi-accent);padding:8px 12px;background:color-mix(in srgb,var(--mochi-accent) 7%,transparent)}.mochi-view .mochi-preview-panel pre{white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%;font:inherit}.mochi-view .mochi-preview-identity{font-size:13px;margin:6px 0}.mochi-view .mochi-preset-entry{min-width:0}
-.mochi-view .mochi-preview-controls select{width:auto;flex:1 1 200px}.mochi-view .mochi-preview-controls button{flex:0 0 auto}
-@container(max-width:550px){.mochi-view .mochi-preset-heading h3{flex:1 0 100%;min-width:0;overflow-wrap:normal}.mochi-view .mochi-preset-heading{gap:8px}.mochi-view .mochi-preset-heading button{flex:0 1 auto}}
-`;
+var MOCHI_DISCLOSURE_STYLES = mochiStyle("mochi-disclosure-styles");
 
 // src/mochi/prompt-blocks.ts
 var blockId = (kind = "block") => kind + "_" + crypto.randomUUID().replaceAll("-", "");
@@ -2649,7 +6416,7 @@ class MochiPreview {
     return root;
   }
 }
-var MOCHI_PREVIEW_STYLES = `.mochi-view .mochi-preview-panel{min-width:0;min-height:0;max-height:40%;overflow:auto;flex:0 1 auto;padding:10px;border-bottom:1px solid var(--mochi-border);overflow-wrap:anywhere}.mochi-view .mochi-preview-controls{display:flex;flex-wrap:wrap;gap:6px;min-width:0}.mochi-view .mochi-preview-controls select{max-width:100%;min-width:0;background:var(--lp-surface-2,#ffffff0c);color:inherit;border:1px solid var(--mochi-border);padding:8px;border-radius:8px}.mochi-view .mochi-preview-panel button{min-height:40px}.mochi-view .mochi-preview-text{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;max-width:100%}.mochi-view .mochi-preview-panel :focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}`;
+var MOCHI_PREVIEW_STYLES = mochiStyle("mochi-preview-styles");
 
 // src/mochi/block-editor.ts
 class PromptBlockEditor {
@@ -3070,10 +6837,7 @@ class PromptBlockEditor {
     return root;
   }
 }
-var PROMPT_BLOCK_STYLES = `
-.mochi-view .mochi-block-columns{min-width:0}.mochi-view .mochi-block-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:12px 0}.mochi-view .mochi-block-category{border:1px solid var(--mochi-border);border-radius:9px;margin:8px 0;background:var(--mochi-surface)}.mochi-view .mochi-block-category>summary{cursor:pointer;min-height:44px;padding:0 12px;line-height:44px;font-size:13px}.mochi-view .mochi-block-category>summary>button{float:right;margin:0;border:0;min-width:44px}.mochi-view .mochi-block-count{margin-left:10px;font-size:11px;opacity:.65}.mochi-view .mochi-category-tools{padding:8px 12px;display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid var(--mochi-border)}.mochi-view .mochi-category-tools[hidden]{display:none}.mochi-view .mochi-category-tools>input{flex:1 1 160px}.mochi-view .mochi-prompt-block{padding:2px 10px;border-top:1px solid var(--mochi-border)}.mochi-view .mochi-prompt-block[data-enabled=false] .mochi-block-title{opacity:.55}.mochi-view .mochi-block-row{display:flex;align-items:center;gap:10px;min-height:48px;min-width:0}.mochi-view .mochi-block-title{flex:1;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mochi-view .mochi-block-row small{font-size:11px;opacity:.65}.mochi-view .mochi-block-drag{cursor:grab;opacity:.5}.mochi-view .mochi-block-action{font:inherit;min-height:40px;padding:7px 10px;border:1px solid var(--mochi-border);border-radius:7px;color:inherit;background:transparent;cursor:pointer;font-size:12px}.mochi-view .mochi-block-action:disabled{opacity:.45;cursor:default}.mochi-view .mochi-block-action:hover:not(:disabled){background:color-mix(in srgb,currentColor 5%,var(--mochi-surface))}.mochi-view .mochi-block-name{border-color:transparent}.mochi-view .mochi-block-overflow{position:relative;flex:none}.mochi-view .mochi-block-overflow>summary{list-style:none;cursor:pointer;min-width:36px;min-height:44px;display:grid;place-items:center}.mochi-view .mochi-block-row-actions{position:absolute;right:0;top:100%;z-index:4;background:var(--mochi-surface);border:1px solid var(--mochi-border);border-radius:8px;padding:5px;display:grid;min-width:150px;box-shadow:0 5px 15px color-mix(in srgb,currentColor 12%,transparent)}.mochi-view .mochi-block-overflow:not([open])>.mochi-block-row-actions{display:none}.mochi-view .mochi-block-detail{min-width:0;display:grid;gap:12px}.mochi-view .mochi-block-detail>button:first-child{justify-self:start}.mochi-view .mochi-block-detail label{border:0;padding:0}.mochi-view .mochi-block-detail label:has(input[type=checkbox]){display:flex;align-items:center;gap:10px;font-size:12px}.mochi-view .mochi-block-detail textarea{min-height:clamp(280px,45vh,650px);resize:vertical;line-height:1.65;font-family:ui-monospace,monospace}.mochi-view .mochi-block-settings{border-top:1px solid var(--mochi-border);padding-top:6px}.mochi-view .mochi-block-settings[open]{display:flex;flex-wrap:wrap;gap:12px}.mochi-view .mochi-block-settings>summary{width:100%}.mochi-view .mochi-block-settings>label{flex:1 1 180px}.mochi-view .mochi-block-settings select{width:100%}.mochi-view .mochi-block-picker{padding:0 12px}.mochi-view .mochi-block-picker>summary,.mochi-view .mochi-block-detail summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:12px}.mochi-view .mochi-block-picker[open]{display:grid;gap:8px;padding-bottom:12px}.mochi-view .mochi-macro-browser{border:1px solid var(--mochi-border);padding:12px;border-radius:8px;display:grid;gap:8px}.mochi-view .mochi-macro-item{padding:12px 0;border-bottom:1px solid var(--mochi-border);display:grid;gap:5px}.mochi-view .mochi-macro-item code{overflow-wrap:anywhere;white-space:pre-wrap}.mochi-view .mochi-block-editor :focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}.mochi-view .mochi-block-editor input[type=checkbox]{width:20px;height:20px;min-height:20px;flex:none;accent-color:var(--mochi-accent)}
-@container(max-width:550px){.mochi-view .mochi-block-row{gap:5px;flex-wrap:wrap;padding:4px 0}.mochi-view .mochi-block-row small{order:2;flex-basis:100%;padding-left:38px}.mochi-view .mochi-block-drag{display:none}.mochi-view .mochi-block-category>summary{padding:0 8px}.mochi-view .mochi-prompt-block{padding:2px 8px}.mochi-view .mochi-block-action{min-height:44px}}
-`;
+var PROMPT_BLOCK_STYLES = mochiStyle("block-editor");
 
 // src/mochi/preset-panel.ts
 var scope3 = (r) => JSON.stringify([r.accountId || "", r.id, r.associationRevision || 0]);
@@ -3545,14 +7309,11 @@ class MochiPresetPanel {
 function libraryRemove(root) {
   root.querySelector(".mochi-preset-library")?.remove();
 }
-var MOCHI_PRESET_STYLES = `.mochi-view .mochi-preset-panel{min-width:0;min-height:0;max-height:45%;overflow:auto;flex:0 1 auto;padding:10px;border-bottom:1px solid var(--mochi-border);overflow-wrap:anywhere}.mochi-view .mochi-preset-panel button{min-height:40px;margin:3px}.mochi-view .mochi-preset-panel select{max-width:100%;min-width:0}.mochi-view .mochi-preset-editor{display:grid;gap:8px;min-width:0}.mochi-view .mochi-preset-editor label{display:grid;gap:4px;min-width:0}.mochi-view .mochi-preset-editor input,.mochi-view .mochi-preset-editor textarea{box-sizing:border-box;width:100%;min-width:0;font:inherit;background:color-mix(in srgb,currentColor 3%,var(--mochi-surface));color:inherit;border:1px solid var(--mochi-border);border-radius:8px;padding:8px}.mochi-view .mochi-preset-entry{border:1px solid var(--mochi-border);border-radius:10px;padding:8px;margin-top:8px}.mochi-view .mochi-preset-panel :focus-visible{outline:2px solid var(--mochi-accent);outline-offset:2px}`;
-var MOCHI_PRESET_WORKSPACE_BASE = PROMPT_BLOCK_STYLES + `.mochi-view .mochi-preset-panel{max-height:70%;container-type:inline-size;background:var(--mochi-surface);border:1px solid var(--mochi-border);border-radius:12px;margin:6px}.mochi-view .mochi-preset-workspace{display:grid;gap:12px;margin-top:12px;min-width:0}.mochi-view .mochi-preset-library,.mochi-view .mochi-preset-edit-pane{min-width:0;border:1px solid var(--mochi-border);border-radius:10px;padding:10px;background:color-mix(in srgb,currentColor 3%,var(--mochi-surface))}.mochi-view .mochi-preset-library{display:grid;align-content:start;gap:6px;max-height:220px;overflow:auto}.mochi-view .mochi-preset-library-item{font:inherit;min-width:0;text-align:left;white-space:normal;overflow-wrap:anywhere;border:1px solid var(--mochi-border);border-radius:8px;background:transparent;color:inherit;padding:8px}.mochi-view .mochi-preset-library-item[aria-pressed=true]{border-color:var(--mochi-accent);background:color-mix(in srgb,var(--mochi-accent) 8%,var(--mochi-surface))}.mochi-view .mochi-preset-binding{border:1px solid var(--mochi-border);padding:8px;border-radius:10px}.mochi-view .mochi-preset-binding>summary{min-height:44px;padding:10px 0;cursor:pointer}.mochi-view .mochi-preset-panel h3,.mochi-view .mochi-preset-panel h4{margin:0 0 10px;font-weight:600}.mochi-view .mochi-preset-editor label{padding:8px;border:1px solid var(--mochi-border);border-radius:8px}.mochi-view .mochi-placement-row{border:1px solid var(--mochi-border);border-radius:8px;padding:10px;margin:8px 0;min-width:0}.mochi-view .mochi-placement-row-head{display:flex;flex-wrap:wrap;align-items:center;gap:5px}.mochi-view .mochi-preset-panel pre{white-space:pre-wrap;overflow-wrap:anywhere}.mochi-view .mochi-placement-editor select{max-width:100%;background:color-mix(in srgb,currentColor 3%,var(--mochi-surface));color:inherit;border:1px solid var(--mochi-border);padding:8px}.mochi-view .mochi-preview-panel{border:1px solid var(--mochi-border);border-radius:12px;margin:6px;background:var(--mochi-surface)}.mochi-view .mochi-preview-panel>details{border:1px solid var(--mochi-border);border-radius:8px;padding:10px;margin-top:8px;background:color-mix(in srgb,currentColor 3%,var(--mochi-surface))}.mochi-view .mochi-preview-panel summary{cursor:pointer;font-weight:600;min-height:32px}.mochi-view .mochi-preview-text{max-height:320px;overflow:auto;padding:8px;border-left:2px solid var(--mochi-border)}.mochi-view .mochi-preview-warning{border-left:3px solid var(--mochi-accent);padding:6px 10px}.mochi-view .mochi-preview-identity{font-weight:600}@container(min-width:600px){.mochi-view .mochi-preset-workspace{grid-template-columns:minmax(115px,155px) minmax(0,1fr)}.mochi-view .mochi-preset-library{max-height:none}}`;
-var MOCHI_PRESET_DEDICATED_STYLES = `
-.mochi-view[data-preset-workspace=true]{display:flex!important;flex-direction:column;min-height:0;height:100%;overflow:hidden;padding:0}.mochi-desktop[data-preset-workspace=true]{grid-template-columns:minmax(0,1fr)!important}.mochi-desktop[data-preset-workspace=true]>.mochi-desktop-list,.mochi-desktop[data-preset-workspace=true]>.mochi-profile-panel,.mochi-desktop[data-preset-workspace=true] .mochi-desktop-back,.mochi-desktop[data-preset-workspace=true] .mochi-shell-notifications{display:none!important}.mochi-view .mochi-preset-panel{flex:1 1 auto;max-height:none;height:100%;box-sizing:border-box;margin:0;border:0;border-radius:0;padding:24px clamp(14px,4vw,64px);overflow:auto;background:var(--mochi-surface);container-type:inline-size}.mochi-view .mochi-preset-panel>h3{font-size:19px;margin:0 0 6px}.mochi-view .mochi-preset-panel>.mochi-muted{font-size:12px;margin:6px 0}.mochi-view .mochi-preset-workspace{display:block;margin-top:16px}.mochi-view .mochi-preset-library{display:block;max-height:none;border:0;border-bottom:1px solid var(--mochi-border);border-radius:0;padding:0 0 8px;margin-bottom:16px;background:transparent}.mochi-view .mochi-preset-library>summary{cursor:pointer;min-height:44px;font-size:13px;line-height:44px}.mochi-view .mochi-preset-library-item{margin:4px;font-size:12px}.mochi-view .mochi-preset-edit-pane{border:0;padding:0;background:transparent}.mochi-view .mochi-preset-editor{gap:12px}.mochi-view .mochi-preset-editor>label{border:0;padding:0}.mochi-view .mochi-preset-editor>button{justify-self:start}.mochi-view .mochi-preset-editor>button[type=submit]{border-color:var(--mochi-accent);font-weight:600}.mochi-view .mochi-preset-binding{border-width:0 0 1px;border-radius:0;padding:0;background:transparent}.mochi-view .mochi-preset-binding>summary{font-size:12px}.mochi-view .mochi-preset-binding[open]{padding-bottom:12px}.mochi-view .mochi-preset-panel[data-block-editing=true]>h3,.mochi-view .mochi-preset-panel[data-block-editing=true]>p{display:none}.mochi-view .mochi-preset-panel[data-block-editing=true]>.mochi-preset-workspace{margin-top:14px}.mochi-view[data-preset-workspace=true]>.mochi-preview-panel{flex:1;max-height:none;overflow:auto;margin:0;border:0;border-radius:0;padding:24px}.mochi-view .mochi-preset-panel pre{white-space:pre-wrap;overflow-wrap:anywhere}
-@container(max-width:550px){.mochi-view .mochi-preset-panel{padding:14px}.mochi-view .mochi-preset-panel button{max-width:100%;white-space:normal}.mochi-view .mochi-preset-panel>h3{font-size:17px}}
-`;
-var MOCHI_PRESET_CHROME_STYLES = `.mochi-view .mochi-preset-heading{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px}.mochi-view .mochi-preset-heading h3{flex:1;margin:0;font-size:18px}.mochi-view .mochi-preset-heading button{font-size:12px}.mochi-view .mochi-preset-panel>.mochi-preset-heading+p{margin:0 0 8px}.mochi-view .mochi-preset-panel>.mochi-preset-workspace{margin-top:4px}.mochi-view .mochi-preset-panel>.mochi-preset-workspace>.mochi-preset-library{margin-bottom:10px;padding-bottom:0}.mochi-view .mochi-preset-panel[data-block-editing=true]>.mochi-preset-heading{justify-content:flex-end}.mochi-view .mochi-preset-panel[data-block-editing=true]>.mochi-preset-heading>h3{display:none}.mochi-view .mochi-preset-panel[data-block-editing=true]>.mochi-preset-heading+p{display:none}.mochi-view .mochi-preset-panel[data-block-editing=true] .mochi-block-detail>h4{font-size:20px}.mochi-view .mochi-preset-panel[data-block-editing=true] .mochi-block-detail>p{margin:0}.mochi-view .mochi-preset-panel[data-block-editing=true] .mochi-block-detail>label:has(input[type=checkbox]){display:inline-flex}`;
-var MOCHI_PRESET_WORKSPACE_STYLES = MOCHI_PRESET_WORKSPACE_BASE + MOCHI_PRESET_DEDICATED_STYLES + MOCHI_PRESET_CHROME_STYLES + `.mochi-view .mochi-preset-editor .mochi-block-detail label{border:0;padding:0}.mochi-view .mochi-block-switches{display:flex;gap:24px;flex-wrap:wrap}.mochi-view .mochi-preset-editor .mochi-block-switches label{flex-direction:row;min-height:32px;justify-content:flex-start;gap:10px}.mochi-view .mochi-preset-editor .mochi-block-switches input{margin:0}.mochi-view .mochi-block-detail>h4{margin:0}.mochi-view .mochi-block-detail{gap:10px}.mochi-view .mochi-preset-navigation{display:flex;flex-wrap:wrap;gap:8px 24px;border-bottom:1px solid var(--mochi-border);margin-bottom:12px}.mochi-view .mochi-preset-navigation>details{flex:1 1 220px;border:0;margin:0;padding:0}.mochi-view .mochi-preset-navigation>details[open]{flex-basis:100%}.mochi-view .mochi-preset-navigation>details>summary{min-height:40px;padding:0;line-height:40px}.mochi-view .mochi-preset-panel{padding-top:16px}.mochi-view .mochi-preset-editor label:has(input[readonly]){display:none}`;
+var MOCHI_PRESET_STYLES = mochiStyle("mochi-preset-styles");
+var MOCHI_PRESET_WORKSPACE_BASE = PROMPT_BLOCK_STYLES + mochiStyle("preset-workspace-base");
+var MOCHI_PRESET_DEDICATED_STYLES = mochiStyle("mochi-preset-dedicated-styles");
+var MOCHI_PRESET_CHROME_STYLES = mochiStyle("mochi-preset-chrome-styles");
+var MOCHI_PRESET_WORKSPACE_STYLES = MOCHI_PRESET_WORKSPACE_BASE + MOCHI_PRESET_DEDICATED_STYLES + MOCHI_PRESET_CHROME_STYLES + mochiStyle("preset-workspace-final");
 
 // src/mochi/view.ts
 function action(label, icon, compact = false) {
@@ -6242,7 +10003,7 @@ function createMochiWorkspace(options) {
   if (options.presentation)
     frame.dataset.presentation = options.presentation;
   const style = document.createElement("style");
-  style.textContent = ".mochi-workspace{display:flex;flex-direction:column;width:100%;height:100%;min-width:0;min-height:0;overflow:hidden;box-sizing:border-box}.mochi-workspace[hidden]{display:none!important}.mochi-workspace>.mochi-view{min-height:0}";
+  style.textContent = mochiStyle("workspace");
   frame.append(style);
   options.root.append(frame);
   let opened = false, destroyed = false, dirty = true;
@@ -6422,7 +10183,7 @@ function createMochiWindow(ui, session, notificationPolicy, onOpen) {
   panel.className = "mochi-window";
   panel.setAttribute("aria-label", "Mochi window");
   const style = document.createElement("style");
-  style.textContent = ".mochi-window{display:flex;flex-direction:column;width:100%;height:100%;min-width:0;min-height:0;position:relative;background:var(--lumiverse-bg-elevated,#201e25);color:var(--lumiverse-text,#eee);border:1px solid var(--lumiverse-border,#ffffff26);border-radius:14px;overflow:hidden;box-sizing:border-box;box-shadow:0 12px 32px #0005}.mochi-window-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;min-height:36px;flex-shrink:0;cursor:move;touch-action:none;user-select:none}.mochi-window-body{flex:1;min-height:0;min-width:0;overflow:hidden}.mochi-window-close,.mochi-window-resize{color:inherit;background:transparent;border:0;min-width:32px;min-height:32px;cursor:pointer}.mochi-window-resize{position:absolute;right:0;bottom:0;cursor:nwse-resize;touch-action:none}.mochi-window button:focus-visible{outline:2px solid var(--lumiverse-primary,#9399ab);outline-offset:-3px}";
+  style.textContent = mochiStyle("window");
   const bar = document.createElement("header");
   bar.className = "mochi-window-bar";
   bar.append("Mochi");
@@ -6466,7 +10227,7 @@ function createMochiWindow(ui, session, notificationPolicy, onOpen) {
   widget.root.style.height = "100%";
   widget.root.append(panel);
   const focusStyle = document.createElement("style");
-  focusStyle.textContent = ".mochi-window-bar:focus-visible{outline:2px solid var(--lumiverse-primary,#9399ab);outline-offset:-2px}.mochi-window [hidden]{display:none!important}";
+  focusStyle.textContent = mochiStyle("window-focus");
   panel.append(focusStyle);
   panel.addEventListener("focusin", (event) => {
     if (event.target !== close)
@@ -6630,45 +10391,7 @@ function createMochiWindow(ui, session, notificationPolicy, onOpen) {
 }
 
 // src/mochi/sidebar-styles.ts
-var MOCHI_SIDEBAR_STYLES = `
-.mochi-sidebar{height:100%;min-height:0;display:flex;flex-direction:column;color:var(--lumiverse-text,#eee);font:inherit}
-.mochi-sidebar-nav{display:flex;gap:8px;padding:12px;flex-shrink:0}
-.mochi-sidebar-picker{overflow:auto;padding:0 12px 16px;min-height:0}
-.mochi-sidebar-nav>button,.mochi-sidebar-picker button{font:inherit;color:inherit;background:var(--lumiverse-bg-elevated,#29262f);border:1px solid var(--lumiverse-border,#ffffff26);border-radius:10px;min-height:44px;padding:8px 12px;cursor:pointer}
-.mochi-sidebar button:focus-visible{outline:2px solid var(--lumiverse-primary,#9399ab);outline-offset:2px}
-.mochi-sidebar button:disabled{opacity:.6;cursor:default}
-.mochi-sidebar-account{display:flex;align-items:center;text-align:left;gap:12px;width:100%;margin:8px 0}
-.mochi-sidebar-account[aria-pressed=true]{border-color:var(--lumiverse-primary,#9399ab)}
-.mochi-sidebar-avatar{display:grid;place-items:center;flex:0 0 40px;width:40px;height:40px;border-radius:50%;overflow:hidden;background:var(--lumiverse-bg,#18161d)}
-.mochi-sidebar-avatar img{width:100%;height:100%;object-fit:cover}
-.mochi-sidebar-label{min-width:0;display:flex;flex-direction:column;gap:3px;overflow-wrap:anywhere}
-.mochi-sidebar-label small{opacity:.7}
-.mochi-sidebar-message{margin:12px 0;font-size:.9em;opacity:.8}
-.mochi-sidebar-body{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column}
-.mochi-sidebar [hidden]{display:none!important}
-.mochi-mobile-surface .mochi-sidebar-nav{padding:4px 8px;justify-content:space-between}
-.mochi-sidebar[data-mobile-messenger] .mochi-workspace{flex:1;min-height:0;overflow:hidden}
-.mochi-sidebar[data-mobile-messenger] .mochi-desktop.mochi-view{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);height:100%;overflow:hidden}
-.mochi-sidebar[data-mobile-messenger] .mochi-desktop[data-mode=list]>.mochi-desktop-main{display:none}
-.mochi-sidebar[data-mobile-messenger] .mochi-desktop[data-mode=chat]>.mochi-desktop-list,.mochi-sidebar[data-mobile-messenger] .mochi-desktop[data-mode=detail]>.mochi-desktop-list{display:none}
-.mochi-sidebar[data-mobile-messenger] .mochi-desktop-main,.mochi-sidebar[data-mobile-messenger] .mochi-profile-panel{grid-column:1;grid-row:1}
-.mochi-sidebar[data-mobile-messenger] .mochi-desktop[data-details=true]>.mochi-desktop-main{visibility:hidden;pointer-events:none}
-.mochi-sidebar[data-mobile-messenger] .mochi-desktop[data-details=true]>.mochi-profile-panel{display:block;grid-column:1;grid-row:1;border:0}
-.mochi-sidebar[data-mobile-messenger] .mochi-desktop-back{display:block;padding:2px 8px;flex:none}
-.mochi-sidebar[data-mobile-messenger] .mochi-desktop-back button{min-height:40px}
-.mochi-sidebar[data-mobile-messenger] .mochi-desktop-main>.mochi-view{flex:1;min-height:0;min-width:0;padding:8px;overflow:auto}
-.mochi-sidebar[data-mobile-messenger] .mochi-desktop-main>.mochi-view[data-conversation=true]{overflow:hidden}
-.mochi-sidebar[data-mobile-messenger] .mochi-thread{flex:1 1 0;min-height:0;max-height:none;overflow:auto;overscroll-behavior:contain}
-.mochi-sidebar[data-mobile-messenger] .mochi-room-header{grid-template-columns:minmax(0,1fr) auto;gap:4px;padding-bottom:6px;flex:none}
-.mochi-sidebar[data-mobile-messenger] .mochi-room-header>.mochi-actions{gap:0;flex-wrap:nowrap}
-.mochi-sidebar[data-mobile-messenger] .mochi-room-header .mochi-icon-button{width:36px;min-width:36px;height:40px;min-height:40px;padding:8px}
-.mochi-sidebar[data-mobile-messenger] .mochi-composer{position:static;flex:none;margin-top:0;padding:6px 0 0;gap:4px}
-.mochi-sidebar[data-mobile-messenger] .mochi-composer-row{min-width:0;gap:4px}
-.mochi-sidebar[data-mobile-messenger] .mochi-composer textarea{min-width:0;max-height:min(112px,25dvh);font-size:16px}
-.mochi-sidebar[data-mobile-messenger] .mochi-composer .mochi-icon-button{flex:none;width:44px;min-width:44px;padding:10px}
-.mochi-sidebar[data-mobile-messenger] .mochi-bubble{overflow-wrap:anywhere;min-width:0}
-.mochi-sidebar[data-mobile-messenger] .lp-conversation-menu-sheet{max-width:min(260px,85cqw);max-height:min(300px,55dvh)}
-`;
+var MOCHI_SIDEBAR_STYLES = mochiStyle("mochi-sidebar-styles");
 
 // src/frontend/surface.ts
 var PHONE_ASPECT = 9 / 18.4;
@@ -6765,7 +10488,7 @@ function createMochiMobileSurface(ui, content) {
   panel.className = "mochi-mobile-surface";
   panel.setAttribute("aria-label", "Mochi mobile messenger");
   const style = document.createElement("style");
-  style.textContent = ".mochi-mobile-surface{display:flex;flex-direction:column;overflow:hidden;box-sizing:border-box;background:var(--lumiverse-bg-elevated,#201e25);color:var(--lumiverse-text,#eee);padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);font:400 13px/1.5 Inter,ui-sans-serif,system-ui,sans-serif}.mochi-mobile-surface>.mochi-sidebar{flex:1;min-width:0;min-height:0;width:100%;overflow:hidden}.mochi-mobile-surface [hidden]{display:none!important}";
+  style.textContent = mochiStyle("mobile-surface");
   panel.append(style);
   widget.root.style.height = "100%";
   widget.root.append(panel);
@@ -7121,7 +10844,7 @@ function createMochiLauncher(ui, pocket, session, navigation) {
   const widget = ui.createFloatWidget(options);
   const root = document.createElement("div"), style = document.createElement("style"), button = document.createElement("button");
   root.className = "mochi-launcher-root";
-  style.textContent = ".mochi-launcher-root{width:58px;height:58px;display:grid;place-items:center}.mochi-launcher{width:52px;height:52px;padding:6px;background:var(--lumiverse-bg-elevated,#201e25);color:var(--lumiverse-primary,#a6a0d9);border:1px solid var(--lumiverse-border,#ffffff26);border-radius:14px;cursor:pointer}.mochi-launcher svg{width:100%;height:100%;display:block}.mochi-launcher:focus-visible{outline:2px solid currentColor;outline-offset:2px}";
+  style.textContent = mochiStyle("launcher");
   button.type = "button";
   button.className = "mochi-launcher";
   button.title = "Open Mochi messenger";

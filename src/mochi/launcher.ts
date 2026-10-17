@@ -1,3 +1,4 @@
+import {mochiStyle} from './ui/styles.js'
 import type { SpindleFrontendContext, SpindleFloatWidgetHandle } from 'lumiverse-spindle-types'
 import type { MochiSession } from './session.js'
 import type { MochiSidebar } from './sidebar.js'
@@ -12,7 +13,7 @@ export function createMochiLauncher(ui:SpindleFrontendContext['ui'], pocket:Spin
   const widget=ui.createFloatWidget(options)
   const root=document.createElement('div'),style=document.createElement('style'),button=document.createElement('button')
   root.className='mochi-launcher-root'
-  style.textContent='.mochi-launcher-root{width:58px;height:58px;display:grid;place-items:center}.mochi-launcher{width:52px;height:52px;padding:6px;background:var(--lumiverse-bg-elevated,#201e25);color:var(--lumiverse-primary,#a6a0d9);border:1px solid var(--lumiverse-border,#ffffff26);border-radius:14px;cursor:pointer}.mochi-launcher svg{width:100%;height:100%;display:block}.mochi-launcher:focus-visible{outline:2px solid currentColor;outline-offset:2px}'
+  style.textContent=mochiStyle('launcher')
   button.type='button';button.className='mochi-launcher';button.title='Open Mochi messenger';button.setAttribute('aria-label','Open Mochi messenger');button.innerHTML=MOCHI_SIDEBAR_ICON
   let disposed=false,dragged=false,timer:ReturnType<typeof setTimeout>|undefined
   const click=()=>{if(!dragged&&!disposed)navigation.openMessenger()};button.addEventListener('click',click)

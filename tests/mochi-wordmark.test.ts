@@ -1,3 +1,4 @@
+import {MOCHI_STYLES} from '../src/mochi/styles.js'
 import {expect,test} from 'bun:test'
 import {createHash} from 'node:crypto'
 import {JSDOM} from 'jsdom'
@@ -15,9 +16,9 @@ test('embedded PNG is the exact supplied asset with its original proportions and
 test('wordmark stays accessible and proportional without an external asset dependency',()=>{
   const dom=new JSDOM(),prior=globalThis.document;globalThis.document=dom.window.document
   try{
-    const mark=mochiWordmark();document.body.append(mark)
+    const mark=mochiWordmark(),style=document.createElement('style');style.textContent=MOCHI_STYLES;document.head.append(style);document.body.append(mark);const computed=dom.window.getComputedStyle(mark)
     expect(mark.alt).toBe('Mochi');expect(mark.src).toBe(image)
-    expect(mark.width/mark.height).toBe(3);expect(mark.style.height).toBe('auto')
-    expect(mark.style.maxWidth).toBe('100%');expect(mark.style.objectFit).toBe('contain');expect(mark.draggable).toBe(false)
+    expect(mark.width/mark.height).toBe(3);expect(computed.height).toBe('auto')
+    expect(computed.maxWidth).toBe('100%');expect(computed.objectFit).toBe('contain');expect(mark.draggable).toBe(false)
   }finally{globalThis.document=prior;dom.window.close()}
 })
