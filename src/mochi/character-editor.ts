@@ -1,4 +1,5 @@
-import {el,button} from '../frontend/shared.js'
+import {mochiButton as button} from './ui/icon-slots.js'
+import {el} from '../frontend/shared.js'
 import {textingControls} from './texting-controls.js'
 import {defaultMochiSettings,type MochiCharacter} from './types.js'
 import {defaultPresence,STATUSES} from './presence.js'

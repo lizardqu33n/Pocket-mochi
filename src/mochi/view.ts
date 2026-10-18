@@ -1,13 +1,14 @@
+import {mochiDisclosureIcon} from './ui/icon-slots.js'
+import {mochiButton as button} from './ui/icon-slots.js'
 import {CharacterEditor} from './character-editor.js'
 import {measureMochiComposer,mochiPixelToken} from './ui/geometry.js'
 import {GROUP_ICONS,chatIdentity,chatPortrait} from './chat-identity.js'
-import {MOCHI_TOOLBAR_ICONS} from './toolbar-icons.js'
+import {mochiIcon} from './ui/icon-slots.js'
 import {PersonalSettings} from './personal-settings.js'
 import {ChatSettingsLayout,SETTINGS_WORKSPACE_STYLES} from './settings-workspace.js'
 import {TOOLBAR_LABELS,type ToolbarAction} from './ui-preferences.js'
 import {MochiMemoryPanel,MOCHI_MEMORY_STYLES} from './memory-panel.js'
-import { button, el, requestId } from '../frontend/shared.js'
-import { POCKET_ICONS } from '../frontend/components/icons.js'
+import { el, requestId } from '../frontend/shared.js'
 import { MOCHI_STYLES } from './styles.js'
 import { mochiModelPicker, type MochiModelChoices } from './models.js'
 import { GENERATION_ERROR_MESSAGES } from './generation-errors.js'
@@ -19,14 +20,12 @@ import { accountPicker } from './account-picker.js'
 import type { MochiPhone } from './phone-selection.js'
 import { SCHEDULE_LABELS, TERMINAL, type PublicRuntime } from './scheduling.js'
 
+const ACTION_SLOTS:Record<string,string>={'Search conversation':'search','Mochi notifications':'notifications','Participants':'participants','Presets':'toolbar-presets','Conversation Memory':'toolbar-memory','Preview AI prompt':'toolbar-preview','Pins & Notes':'toolbar-notes','Chat Settings':'toolbar-settings','Back to conversations':'back','Account Settings':'account-settings','Log out of fictional account':'account-logout'}
 function action(label: string, icon: string, compact = false): HTMLButtonElement {
   const node = button('', `lp-button${compact ? ' mochi-icon-button' : ''}`)
   node.setAttribute('aria-label', label); node.title = label
-  const glyph = el('span','mochi-icon-slot'); glyph.dataset.mochiIconSlot=icon; glyph.setAttribute('aria-hidden', 'true')
-  const extra: Record<string, string> = { stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>', copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4H4v12h4"/>', edit: '<path d="m15 4 5 5-11 11H4v-5L15 4Z M12 7l5 5"/>', more: '<path d="M5 12h.01M12 12h.01M19 12h.01"/>', people: '<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6M18 15a5 5 0 0 1 3 5"/>' }
-  extra.close = '<path d="m6 6 12 12M18 6 6 18"/>'
-  extra.search = '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/>'
-  glyph.innerHTML = MOCHI_TOOLBAR_ICONS[icon] || POCKET_ICONS[icon] || `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${extra[icon] || '<path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-2l2 2M4 17l2 2a7 7 0 0 0 12-2"/>'}</svg>`
+  const slot=ACTION_SLOTS[label]||icon
+  const glyph=mochiIcon(icon,slot);node.dataset.mochiAction=slot
   node.append(glyph); if (!compact) node.append(el('span', '', label))
   return node
 }
@@ -561,7 +560,7 @@ export class MochiView {
     if(this.state){
       const controls=this.inboxControls(),[change,profiles,create,notices]=Array.from(controls.querySelectorAll<HTMLButtonElement>(':scope > button'))
       for(const control of [change,profiles]){control.classList.add('mochi-icon-button');control.lastElementChild?.remove()}
-      create.setAttribute('aria-label','New Chat');create.title='New Chat';create.textContent='+ New Chat';newChat=create;noticesButton=notices
+      create.setAttribute('aria-label','New Chat');create.title='New Chat';create.replaceChildren(mochiIcon('plus','add'),el('span','','New Chat'));newChat=create;noticesButton=notices
     }else heading.append(identity)
     const filter=el('input','mochi-conversation-filter');filter.type='search';filter.placeholder='Find a conversation';filter.setAttribute('aria-label','Find a conversation');filter.value=this.conversationFilter;filter.disabled=!this.state
     heading.append(filter)
@@ -677,7 +676,7 @@ export class MochiView {
       selector.onchange = () => {const target=selector.value;selector.value=room.id;this.confirmNavigation(()=>this.openRoom(target),selector,target!==room.id)}
       selector.title = room.title
       const roomSelector = el('div', 'mochi-room-select')
-      const groupIcon = el('span', 'mochi-room-select-icon'); groupIcon.setAttribute('aria-hidden', 'true'); groupIcon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6M18 15a5 5 0 0 1 3 5"/></svg>'
+      const groupIcon = el('span', 'mochi-room-select-icon'); groupIcon.setAttribute('aria-hidden', 'true'); groupIcon.append(mochiIcon('people','participants'))
       roomSelector.append(groupIcon, selector)
       const statuses = room.characterIds.map(id=>statusFor(room,id)), online = statuses.filter(s=>s==='online').length
       info.setAttribute('aria-label','Character profile');info.title='Open Character Profile'
@@ -689,7 +688,7 @@ export class MochiView {
       const inbox = action('Chat inbox', 'back', true); inbox.onclick = () => this.confirmNavigation(() => { this.select(''); this.navigate() },inbox,true)
       const openSettings = () => this.openSettings('chat',more)
       const menu=el('details','lp-conversation-menu'), more=el('summary','lp-nav-action')
-      more.setAttribute('aria-label','Room options');more.title='Room options';const moreIcon=el('span');moreIcon.setAttribute('aria-hidden','true');moreIcon.innerHTML=MOCHI_TOOLBAR_ICONS.ellipsis;more.append(moreIcon)
+      more.setAttribute('aria-label','Room options');more.title='Room options';more.dataset.mochiAction='room-options';more.append(mochiIcon('ellipsis','room-options'))
       const menuSheet=el('div','lp-conversation-menu-sheet')
       const menuAction=(label:string,callback:()=>void)=>{const item=button(label,'lp-conversation-menu-action');item.setAttribute('aria-label',label);item.addEventListener('click',()=>{menu.open=false;callback()});return item}
       menuSheet.append(menuAction('Participants',()=>{const members=el('div','mochi-participants');for(const id of room.characterIds){const c=this.state?.characters.find(c=>c.id===id),name=room.settings?.characterNames[id]||c?.name||'Unavailable character';const row=el('div','mochi-member');row.append(portrait(name,c?.avatarUrl),el('span','',name));members.append(row)}this.sheet(roomHeader,'Room participants',members);members.closest('dialog')?.addEventListener('close',()=>{if(more.isConnected)more.focus()},{once:true})}),menuAction('Settings',openSettings))
@@ -816,7 +815,7 @@ export class MochiView {
     const picker = el('div', 'mochi-picker'); picker.setAttribute('role', 'group'); picker.setAttribute('aria-label', 'Chat characters')
     let updateGroupIcon=()=>{}
     const selected=el('div','mochi-participant-chips'),choose=el('details','mochi-character-picker'),summary=el('summary','','Choose participants'),search=el('input');search.type='search';search.placeholder='Search characters';search.setAttribute('aria-label','Search chat characters');choose.append(summary,search,picker)
-    const refreshChips=()=>{selected.replaceChildren();for(const id of draft.characterIds){const c=state.characters.find(c=>c.id===id),chip=button((c?.name||'Unavailable character')+' ×','mochi-participant-chip');chip.setAttribute('aria-label','Remove participant '+(c?.name||id));chip.onclick=()=>{draft.characterIds=draft.characterIds.filter(x=>x!==id);refreshChips();for(const b of picker.querySelectorAll<HTMLElement>('[data-character-id]'))b.setAttribute('aria-pressed',String(draft.characterIds.includes(b.dataset.characterId!)))};selected.append(chip)}updateGroupIcon()}
+    const refreshChips=()=>{selected.replaceChildren();for(const id of draft.characterIds){const c=state.characters.find(c=>c.id===id),chip=button((c?.name||'Unavailable character'),'mochi-participant-chip');chip.append(mochiIcon('close','participant-remove'));chip.setAttribute('aria-label','Remove participant '+(c?.name||id));chip.onclick=()=>{draft.characterIds=draft.characterIds.filter(x=>x!==id);refreshChips();for(const b of picker.querySelectorAll<HTMLElement>('[data-character-id]'))b.setAttribute('aria-pressed',String(draft.characterIds.includes(b.dataset.characterId!)))};selected.append(chip)}updateGroupIcon()}
     for (const character of state.characters) {
       const choice = button('', 'mochi-choice')
       choice.dataset.characterId=character.id;choice.append(portrait(character.name, character.avatarUrl))
@@ -860,7 +859,7 @@ export class MochiView {
       const nextResponder=el('select');for(const id of ['auto',...room.characterIds]){const option=el('option','',id==='auto'?'Automatic responder':state.characters.find(c=>c.id===id)?.name||id);option.value=id;nextResponder.append(option)}nextResponder.value=this.responders.get(room.id)||'auto';nextResponder.onchange=()=>this.responders.set(room.id,nextResponder.value);field('Next responder',nextResponder);group.append(el('p','mochi-muted','Next responder applies now for the next reply in this frontend session. It does not require Save or change the saved response mode.'));nextResponder.setAttribute('aria-description','This conversation · Next reply selection applies now in this frontend session; it does not change saved response mode.')
       auto.disabled=!!settings.responseMode
       group.append(el('p','mochi-muted','This conversation · Requires Save. Natural may choose silence or delayed replies; Instant requests an eligible reply; Manual disables automatic replies, while Continue still works. A selected mode controls automatic replies; Existing behavior uses the automatic-reply checkbox. Ordinary replies do not require idle/background autonomy.'))
-      section('Background messaging',true).classList.add('mochi-disclosure')
+      {const background=section('Background messaging',true);background.classList.add('mochi-disclosure');mochiDisclosureIcon(background)}
       group.append(el('p','mochi-muted','Permission, presence and schedule actions apply now. AI timing/status suggestions require Save. Background autonomy is separate from ordinary replies to your messages.'))
       const accountBackground = el('input'); accountBackground.type = 'checkbox'; accountBackground.checked = !!state.backgroundEnabled; accountBackground.disabled = this.busy
       const aiBehavior = el('input'); aiBehavior.type='checkbox';aiBehavior.checked=!!settings.aiBehavior;aiBehavior.disabled=this.busy||(!settings.aiBehavior&&(!state.backgroundEnabled||!room.background?.enabled));aiBehavior.onchange=()=>{settings.aiBehavior=aiBehavior.checked};field('Allow AI delivery timing and status suggestions',aiBehavior)
@@ -1038,8 +1037,8 @@ export class MochiView {
       const confirm = action('Confirm delete', 'trash'); confirm.onclick = () => { this.dispatch('mochi:message_action', { roomId: room.id, revision, messageId: message.id, action: 'delete', confirmed: true }); sheet?.dismiss() }
       content.replaceChildren(el('p', '', 'Delete this saved message? Only this message and its prior versions will be removed. Later messages stay unchanged. This cannot be undone.'), confirm)
     }
-    const reply=action('Reply','back');reply.onclick=()=>{this.replyTargets.set(this.replyKey(room),message.id);sheet?.dismiss();this.redraw();const root=this.presenceRoot;root?.querySelector<HTMLTextAreaElement>('[aria-label="Message"]')?.focus({preventScroll:true})}
-    const react=action('React','more');react.disabled=this.busy||Boolean(this.state?.jobs?.[room.id]);react.onclick=()=>{
+    const reply=action('Reply','reply');reply.onclick=()=>{this.replyTargets.set(this.replyKey(room),message.id);sheet?.dismiss();this.redraw();const root=this.presenceRoot;root?.querySelector<HTMLTextAreaElement>('[aria-label="Message"]')?.focus({preventScroll:true})}
+    const react=action('React','smile');react.disabled=this.busy||Boolean(this.state?.jobs?.[room.id]);react.onclick=()=>{
       const palette=el('div','mochi-reaction-palette');palette.setAttribute('aria-label','Common emoji reactions')
       let selected:string[]=[];try{selected=readReactions('reactions'in message?message.reactions:undefined,room).filter(r=>r.actor==='user'&&r.actorId===(room.accountId||'legacy')).map(r=>r.emoji)}catch{/* Backend preserves unsupported records. */}
       for(const emoji of REACTION_EMOJI){const choice=button(emoji,'mochi-reaction');choice.type='button';choice.setAttribute('aria-label',`Toggle ${REACTION_NAMES[emoji]} reaction`);choice.setAttribute('aria-pressed',String(selected.includes(emoji)));choice.onclick=()=>{this.dispatch('mochi:reaction',{roomId:room.id,revision,messageId:message.id,emoji});sheet?.dismiss()};palette.append(choice)}content.replaceChildren(palette);palette.querySelector<HTMLButtonElement>('button')?.focus()
@@ -1100,7 +1099,7 @@ export class MochiView {
       const character = this.state?.characters.find(c => c.id === responder.value)
       const name = responder.value === 'auto' ? 'Automatic' : room.settings?.characterNames[responder.value] || character?.name || responder.value
       const avatar = portrait(name, character?.avatarUrl)
-      if (responder.value === 'auto') avatar.innerHTML = POCKET_ICONS.contacts
+      if (responder.value === 'auto') avatar.replaceChildren(mochiIcon('contacts','responder-auto'))
       identity.replaceChildren(avatar)
       responderField.title = `Next responder: ${name}`
     }

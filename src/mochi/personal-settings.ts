@@ -1,6 +1,7 @@
-import {el,button,requestId} from '../frontend/shared.js'
+import {mochiButton as button} from './ui/icon-slots.js'
+import {el,requestId} from '../frontend/shared.js'
 import {sharedUIDefaults,validateUIPreferences,TOOLBAR_LABELS,type UIPreferences,type UIPreferenceRecord} from './ui-preferences.js'
-import {MOCHI_TOOLBAR_ICONS} from './toolbar-icons.js'
+import {mochiIcon} from './ui/icon-slots.js'
 export const messengerUIPreferences=sharedUIDefaults
 export const PERSONAL_CATEGORIES=['Appearance','Toolbar','Notifications','Accessibility','General'] as const
 export class PersonalSettings {
@@ -31,7 +32,7 @@ export class PersonalSettings {
  render():HTMLElement{
   const root=el('section','mochi-personal-presentation mochi-category-workspace');root.dataset.categoryOpen=String(this.categoryOpen)
   const nav=el('nav','mochi-settings-categories');nav.setAttribute('aria-label','Personal settings categories')
-  for(const name of PERSONAL_CATEGORIES){const tab=button(name);tab.setAttribute('aria-label',name);tab.setAttribute('aria-pressed',String(this.category===name));tab.onclick=()=>{this.category=name;this.focusCategory=true;this.categoryOpen=true;this.redraw()};nav.append(tab)}
+  for(const name of PERSONAL_CATEGORIES){const tab=button(name,'lp-button mochi-category-tab');tab.setAttribute('aria-label',name);tab.setAttribute('aria-pressed',String(this.category===name));tab.onclick=()=>{this.category=name;this.focusCategory=true;this.categoryOpen=true;this.redraw()};nav.append(tab)}
   const body=el('div','mochi-settings-scroll'),back=button('Back to Personal categories','mochi-category-back');back.onclick=()=>{this.categoryOpen=false;this.focusCategory=true;this.redraw()};body.append(back,el('h4','',this.category))
   const status=el('p','mochi-muted',this.status);status.setAttribute('role','status');if(!this.saved||this.status.includes('Unable')||this.category==='General')body.append(status)
   const refresh=button('Refresh presentation');refresh.onclick=()=>{this.load(true);this.redraw()};if(this.category==='General'||!this.saved)body.append(refresh)
@@ -42,7 +43,7 @@ export class PersonalSettings {
   if(!this.saved.revision&&this.layouts.length){
    const setup=el('section','mochi-shared-setup');setup.append(el('h4','','Choose your shared layout'),el('p','mochi-muted','Original account layouts remain saved. Choose one or start with new defaults.'))
    for(const item of [...this.layouts,{name:'New defaults',record:{preferences:messengerUIPreferences(),accountId:'defaults',revision:0}}]){
-    const id=item.record.accountId||'legacy',choice=button(item.name+' · '+item.record.preferences.presentation+' · '+item.record.preferences.dock);choice.setAttribute('aria-pressed',String(this.source===id));choice.onclick=()=>{this.source=id;this.draft=structuredClone(item.record.preferences);this.redraw()};const preview=el('div','mochi-toolbar-live-preview');preview.setAttribute('aria-label','Layout preview for '+item.name);for(const key of item.record.preferences.order.filter(k=>!item.record.preferences.hidden.includes(k)&&['presets','memory','preview','notes'].includes(k))){const icon=el('span');icon.innerHTML=MOCHI_TOOLBAR_ICONS[key==='notes'?'pin':key==='presets'?'sliders':key==='memory'?'brain':'eye']||'';icon.title=TOOLBAR_LABELS[key];preview.append(icon)}setup.append(choice,preview,el('small','mochi-muted','Source: '+id),el('small','mochi-muted',item.record.preferences.order.filter(k=>!item.record.preferences.hidden.includes(k)).map(k=>TOOLBAR_LABELS[k]).join(' · ')))
+    const id=item.record.accountId||'legacy',choice=button(item.name+' · '+item.record.preferences.presentation+' · '+item.record.preferences.dock);choice.setAttribute('aria-pressed',String(this.source===id));choice.onclick=()=>{this.source=id;this.draft=structuredClone(item.record.preferences);this.redraw()};const preview=el('div','mochi-toolbar-live-preview');preview.setAttribute('aria-label','Layout preview for '+item.name);for(const key of item.record.preferences.order.filter(k=>!item.record.preferences.hidden.includes(k)&&['presets','memory','preview','notes'].includes(k))){const icon=el('span');icon.append(mochiIcon(key==='notes'?'pin':key==='presets'?'sliders':key==='memory'?'brain':key==='search'?'search':'eye','toolbar-'+key));icon.title=TOOLBAR_LABELS[key];preview.append(icon)}setup.append(choice,preview,el('small','mochi-muted','Source: '+id),el('small','mochi-muted',item.record.preferences.order.filter(k=>!item.record.preferences.hidden.includes(k)).map(k=>TOOLBAR_LABELS[k]).join(' · ')))
    }const use=button('Use selected shared layout','mochi-primary');use.disabled=!this.source||!!this.ticket;use.onclick=()=>{this.request('save');this.redraw()};setup.append(use);body.append(setup);return root
   }
   const choice=(label:string,key:'presentation'|'dock',values:Array<[string,string]>)=>{const wrap=el('label','',label),select=el('select');select.setAttribute('aria-label',label);for(const [value,name]of values){const o=el('option','',name);o.value=value;select.append(o)}select.value=draft[key];select.onchange=()=>{(draft as any)[key]=select.value;this.redraw()};wrap.append(select);body.append(wrap)}
@@ -53,7 +54,7 @@ export class PersonalSettings {
    choice('Toolbar presentation','presentation',[['icons','Compact icons'],['labels','Icons and labels']])
    const preview=el('div','mochi-toolbar-live-preview');preview.setAttribute('aria-label','Toolbar preview')
    const movable=draft.order.filter(k=>!['search','participants','notifications','settings'].includes(k))
-   for(const key of movable.filter(k=>!draft.hidden.includes(k))){const icon=el('span');icon.innerHTML=MOCHI_TOOLBAR_ICONS[key==='notes'?'pin':key==='presets'?'sliders':key==='memory'?'brain':'eye']||'';icon.title=TOOLBAR_LABELS[key];icon.setAttribute('aria-label',TOOLBAR_LABELS[key]);preview.append(icon)}body.append(preview)
+   for(const key of movable.filter(k=>!draft.hidden.includes(k))){const icon=el('span');icon.append(mochiIcon(key==='notes'?'pin':key==='presets'?'sliders':key==='memory'?'brain':key==='search'?'search':'eye','toolbar-'+key));icon.title=TOOLBAR_LABELS[key];icon.setAttribute('aria-label',TOOLBAR_LABELS[key]);preview.append(icon)}body.append(preview)
    for(const visible of [true,false]){
     const group=el('section','mochi-toolbar-choice-group');group.append(el('h5','',visible?'Visible shortcuts':'Hidden shortcuts'))
     for(const key of movable.filter(k=>draft.hidden.includes(k)!==visible)){

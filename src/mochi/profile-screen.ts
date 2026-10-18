@@ -1,4 +1,5 @@
-import { button, el } from '../frontend/shared.js'
+import {mochiButton as button} from './ui/icon-slots.js'
+import { el } from '../frontend/shared.js'
 import type { PersonaSyncReview, MochiAccount, MochiAccountBank } from './accounts.js'
 import type { MochiPersona } from './types.js'
 

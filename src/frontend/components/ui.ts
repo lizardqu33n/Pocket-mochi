@@ -1,3 +1,4 @@
+import {mochiButton} from '../../mochi/ui/icon-slots.js'
 import { el,cssPixelToken } from '../shared.js'
 
 function classes(...values: Array<string | false | null | undefined>): string {
@@ -96,7 +97,7 @@ export function showPocketSheet(anchor: HTMLElement, title: string, content: HTM
   const panel = el('div', 'lp-sheet-panel')
   const heading = el('h2', 'lp-title', title)
   dialog.setAttribute('aria-label', title)
-  const close = el('button', 'lp-button lp-sheet-close', 'Done'); close.type = 'button'
+  const close = className.includes('mochi')||anchor.closest('.mochi-view,.mochi-sidebar,.mochi-window') ? mochiButton('Done','lp-button lp-sheet-close') : el('button', 'lp-button lp-sheet-close', 'Done'); close.type = 'button'
   const home = content.parentNode
   const marker = document.createComment('sheet content')
   home?.insertBefore(marker, content)

@@ -4,6 +4,8 @@ Generated with `bun scripts/audit-mochi-theme.ts`. Every Mochi rule and inherite
 
 Read [THEME-CONTRACT.md](THEME-CONTRACT.md) for safe layout and examples. Full declarations: [theme-inventory.json](theme-inventory.json). `selector only` means edit that exact scoped selector; visibility/containment and zero/fill/inherited resets deliberately remain structural. Scope shared selectors to a Mochi root in a theme.
 
+Icons: [complete named slot reference](reference/icons.md), [recipes and asset security](ICON-THEMING.md), [rendering-site inventory](icon-inventory.json).
+
 | Surface section | Complete selector/property reference | Rules |
 |---|---|---:|
 | base | [Open reference](reference/base.md) | 340 |
@@ -30,4 +32,5 @@ Read [THEME-CONTRACT.md](THEME-CONTRACT.md) for safe layout and examples. Full d
 | window-focus | [Open reference](reference/window-focus.md) | 2 |
 | workspace | [Open reference](reference/workspace.md) | 3 |
 | notifications | [Open reference](reference/notifications.md) | 5 |
+| icons | [Open reference](reference/icons.md) | 223 |
 | shared-pocket | [Open reference](reference/shared-pocket.md) | 141 |

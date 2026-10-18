@@ -1,6 +1,7 @@
 import tokens from './mochi-tokens.css' with {type:'text'}
 import components from './mochi.css' with {type:'text'}
 import theme from './mochi-theme.css' with {type:'text'}
+import icons from './icons.css' with {type:'text'}
 
 // Text imports embed CSS in frontend.js. Retain the old style-element boundaries:
 // desktop overrides, handset rules and editor styles keep their original cascade.
@@ -17,5 +18,5 @@ export function mochiStyle(name:string):string {
  // Independent chrome and notifications also need tokens, even without a view.
  // Theme copies preserve delivery into detached/host-mounted surfaces. Public
  // token defaults have zero specificity, so later defaults cannot defeat themes.
- return (tokenSections.has(name)?tokens+'\n':'')+css+'\n'+theme
+ return (tokenSections.has(name)?tokens+'\n':'')+css+'\n'+(tokenSections.has(name)?icons+'\n':'')+theme
 }

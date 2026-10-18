@@ -1,0 +1,2655 @@
+{
+  "schemaVersion": 1,
+  "provenance": "icons/provenance.json",
+  "slots": [
+    {
+      "slot": "plus",
+      "icon": "plus",
+      "upstream": "plus",
+      "selector": "[data-mochi-icon-action=\"plus\"]",
+      "tokens": [
+        "--mochi-icon-plus-size",
+        "--mochi-icon-plus-color",
+        "--mochi-icon-plus-stroke-width",
+        "--mochi-icon-plus-image"
+      ]
+    },
+    {
+      "slot": "settings",
+      "icon": "settings",
+      "upstream": "settings",
+      "selector": "[data-mochi-icon-action=\"settings\"]",
+      "tokens": [
+        "--mochi-icon-settings-size",
+        "--mochi-icon-settings-color",
+        "--mochi-icon-settings-stroke-width",
+        "--mochi-icon-settings-image"
+      ]
+    },
+    {
+      "slot": "logout",
+      "icon": "logout",
+      "upstream": "log-out",
+      "selector": "[data-mochi-icon-action=\"logout\"]",
+      "tokens": [
+        "--mochi-icon-logout-size",
+        "--mochi-icon-logout-color",
+        "--mochi-icon-logout-stroke-width",
+        "--mochi-icon-logout-image"
+      ]
+    },
+    {
+      "slot": "sort",
+      "icon": "sort",
+      "upstream": "arrow-down-wide-narrow",
+      "selector": "[data-mochi-icon-action=\"sort\"]",
+      "tokens": [
+        "--mochi-icon-sort-size",
+        "--mochi-icon-sort-color",
+        "--mochi-icon-sort-stroke-width",
+        "--mochi-icon-sort-image"
+      ]
+    },
+    {
+      "slot": "grid",
+      "icon": "grid",
+      "upstream": "layout-grid",
+      "selector": "[data-mochi-icon-action=\"grid\"]",
+      "tokens": [
+        "--mochi-icon-grid-size",
+        "--mochi-icon-grid-color",
+        "--mochi-icon-grid-stroke-width",
+        "--mochi-icon-grid-image"
+      ]
+    },
+    {
+      "slot": "list",
+      "icon": "list",
+      "upstream": "list",
+      "selector": "[data-mochi-icon-action=\"list\"]",
+      "tokens": [
+        "--mochi-icon-list-size",
+        "--mochi-icon-list-color",
+        "--mochi-icon-list-stroke-width",
+        "--mochi-icon-list-image"
+      ]
+    },
+    {
+      "slot": "check",
+      "icon": "check",
+      "upstream": "square-check",
+      "selector": "[data-mochi-icon-action=\"check\"]",
+      "tokens": [
+        "--mochi-icon-check-size",
+        "--mochi-icon-check-color",
+        "--mochi-icon-check-stroke-width",
+        "--mochi-icon-check-image"
+      ]
+    },
+    {
+      "slot": "archive",
+      "icon": "archive",
+      "upstream": "archive",
+      "selector": "[data-mochi-icon-action=\"archive\"]",
+      "tokens": [
+        "--mochi-icon-archive-size",
+        "--mochi-icon-archive-color",
+        "--mochi-icon-archive-stroke-width",
+        "--mochi-icon-archive-image"
+      ]
+    },
+    {
+      "slot": "brain",
+      "icon": "brain",
+      "upstream": "brain",
+      "selector": "[data-mochi-icon-action=\"brain\"]",
+      "tokens": [
+        "--mochi-icon-brain-size",
+        "--mochi-icon-brain-color",
+        "--mochi-icon-brain-stroke-width",
+        "--mochi-icon-brain-image"
+      ]
+    },
+    {
+      "slot": "smile",
+      "icon": "smile",
+      "upstream": "smile",
+      "selector": "[data-mochi-icon-action=\"smile\"]",
+      "tokens": [
+        "--mochi-icon-smile-size",
+        "--mochi-icon-smile-color",
+        "--mochi-icon-smile-stroke-width",
+        "--mochi-icon-smile-image"
+      ]
+    },
+    {
+      "slot": "sliders",
+      "icon": "sliders",
+      "upstream": "sliders-horizontal",
+      "selector": "[data-mochi-icon-action=\"sliders\"]",
+      "tokens": [
+        "--mochi-icon-sliders-size",
+        "--mochi-icon-sliders-color",
+        "--mochi-icon-sliders-stroke-width",
+        "--mochi-icon-sliders-image"
+      ]
+    },
+    {
+      "slot": "profile",
+      "icon": "profile",
+      "upstream": "user-round",
+      "selector": "[data-mochi-icon-action=\"profile\"]",
+      "tokens": [
+        "--mochi-icon-profile-size",
+        "--mochi-icon-profile-color",
+        "--mochi-icon-profile-stroke-width",
+        "--mochi-icon-profile-image"
+      ]
+    },
+    {
+      "slot": "panel",
+      "icon": "panel",
+      "upstream": "panel-right",
+      "selector": "[data-mochi-icon-action=\"panel\"]",
+      "tokens": [
+        "--mochi-icon-panel-size",
+        "--mochi-icon-panel-color",
+        "--mochi-icon-panel-stroke-width",
+        "--mochi-icon-panel-image"
+      ]
+    },
+    {
+      "slot": "layers",
+      "icon": "layers",
+      "upstream": "layers",
+      "selector": "[data-mochi-icon-action=\"layers\"]",
+      "tokens": [
+        "--mochi-icon-layers-size",
+        "--mochi-icon-layers-color",
+        "--mochi-icon-layers-stroke-width",
+        "--mochi-icon-layers-image"
+      ]
+    },
+    {
+      "slot": "bookmark",
+      "icon": "bookmark",
+      "upstream": "bookmark",
+      "selector": "[data-mochi-icon-action=\"bookmark\"]",
+      "tokens": [
+        "--mochi-icon-bookmark-size",
+        "--mochi-icon-bookmark-color",
+        "--mochi-icon-bookmark-stroke-width",
+        "--mochi-icon-bookmark-image"
+      ]
+    },
+    {
+      "slot": "eye",
+      "icon": "eye",
+      "upstream": "eye",
+      "selector": "[data-mochi-icon-action=\"eye\"]",
+      "tokens": [
+        "--mochi-icon-eye-size",
+        "--mochi-icon-eye-color",
+        "--mochi-icon-eye-stroke-width",
+        "--mochi-icon-eye-image"
+      ]
+    },
+    {
+      "slot": "pin",
+      "icon": "pin",
+      "upstream": "pin",
+      "selector": "[data-mochi-icon-action=\"pin\"]",
+      "tokens": [
+        "--mochi-icon-pin-size",
+        "--mochi-icon-pin-color",
+        "--mochi-icon-pin-stroke-width",
+        "--mochi-icon-pin-image"
+      ]
+    },
+    {
+      "slot": "ellipsis",
+      "icon": "ellipsis",
+      "upstream": "ellipsis",
+      "selector": "[data-mochi-icon-action=\"ellipsis\"]",
+      "tokens": [
+        "--mochi-icon-ellipsis-size",
+        "--mochi-icon-ellipsis-color",
+        "--mochi-icon-ellipsis-stroke-width",
+        "--mochi-icon-ellipsis-image"
+      ]
+    },
+    {
+      "slot": "more",
+      "icon": "more",
+      "upstream": "ellipsis",
+      "selector": "[data-mochi-icon-action=\"more\"]",
+      "tokens": [
+        "--mochi-icon-more-size",
+        "--mochi-icon-more-color",
+        "--mochi-icon-more-stroke-width",
+        "--mochi-icon-more-image"
+      ]
+    },
+    {
+      "slot": "power",
+      "icon": "power",
+      "upstream": "power",
+      "selector": "[data-mochi-icon-action=\"power\"]",
+      "tokens": [
+        "--mochi-icon-power-size",
+        "--mochi-icon-power-color",
+        "--mochi-icon-power-stroke-width",
+        "--mochi-icon-power-image"
+      ]
+    },
+    {
+      "slot": "home",
+      "icon": "home",
+      "upstream": "house",
+      "selector": "[data-mochi-icon-action=\"home\"]",
+      "tokens": [
+        "--mochi-icon-home-size",
+        "--mochi-icon-home-color",
+        "--mochi-icon-home-stroke-width",
+        "--mochi-icon-home-image"
+      ]
+    },
+    {
+      "slot": "messages",
+      "icon": "messages",
+      "upstream": "messages-square",
+      "selector": "[data-mochi-icon-action=\"messages\"]",
+      "tokens": [
+        "--mochi-icon-messages-size",
+        "--mochi-icon-messages-color",
+        "--mochi-icon-messages-stroke-width",
+        "--mochi-icon-messages-image"
+      ]
+    },
+    {
+      "slot": "contacts",
+      "icon": "contacts",
+      "upstream": "users-round",
+      "selector": "[data-mochi-icon-action=\"contacts\"]",
+      "tokens": [
+        "--mochi-icon-contacts-size",
+        "--mochi-icon-contacts-color",
+        "--mochi-icon-contacts-stroke-width",
+        "--mochi-icon-contacts-image"
+      ]
+    },
+    {
+      "slot": "people",
+      "icon": "people",
+      "upstream": "users-round",
+      "selector": "[data-mochi-icon-action=\"people\"]",
+      "tokens": [
+        "--mochi-icon-people-size",
+        "--mochi-icon-people-color",
+        "--mochi-icon-people-stroke-width",
+        "--mochi-icon-people-image"
+      ]
+    },
+    {
+      "slot": "camera",
+      "icon": "camera",
+      "upstream": "camera",
+      "selector": "[data-mochi-icon-action=\"camera\"]",
+      "tokens": [
+        "--mochi-icon-camera-size",
+        "--mochi-icon-camera-color",
+        "--mochi-icon-camera-stroke-width",
+        "--mochi-icon-camera-image"
+      ]
+    },
+    {
+      "slot": "gallery",
+      "icon": "gallery",
+      "upstream": "image",
+      "selector": "[data-mochi-icon-action=\"gallery\"]",
+      "tokens": [
+        "--mochi-icon-gallery-size",
+        "--mochi-icon-gallery-color",
+        "--mochi-icon-gallery-stroke-width",
+        "--mochi-icon-gallery-image"
+      ]
+    },
+    {
+      "slot": "notes",
+      "icon": "notes",
+      "upstream": "notebook-pen",
+      "selector": "[data-mochi-icon-action=\"notes\"]",
+      "tokens": [
+        "--mochi-icon-notes-size",
+        "--mochi-icon-notes-color",
+        "--mochi-icon-notes-stroke-width",
+        "--mochi-icon-notes-image"
+      ]
+    },
+    {
+      "slot": "weather",
+      "icon": "weather",
+      "upstream": "cloud-sun",
+      "selector": "[data-mochi-icon-action=\"weather\"]",
+      "tokens": [
+        "--mochi-icon-weather-size",
+        "--mochi-icon-weather-color",
+        "--mochi-icon-weather-stroke-width",
+        "--mochi-icon-weather-image"
+      ]
+    },
+    {
+      "slot": "calendar",
+      "icon": "calendar",
+      "upstream": "calendar",
+      "selector": "[data-mochi-icon-action=\"calendar\"]",
+      "tokens": [
+        "--mochi-icon-calendar-size",
+        "--mochi-icon-calendar-color",
+        "--mochi-icon-calendar-stroke-width",
+        "--mochi-icon-calendar-image"
+      ]
+    },
+    {
+      "slot": "trackers",
+      "icon": "trackers",
+      "upstream": "chart-no-axes-column",
+      "selector": "[data-mochi-icon-action=\"trackers\"]",
+      "tokens": [
+        "--mochi-icon-trackers-size",
+        "--mochi-icon-trackers-color",
+        "--mochi-icon-trackers-stroke-width",
+        "--mochi-icon-trackers-image"
+      ]
+    },
+    {
+      "slot": "notifications",
+      "icon": "notifications",
+      "upstream": "bell",
+      "selector": "[data-mochi-icon-action=\"notifications\"]",
+      "tokens": [
+        "--mochi-icon-notifications-size",
+        "--mochi-icon-notifications-color",
+        "--mochi-icon-notifications-stroke-width",
+        "--mochi-icon-notifications-image"
+      ]
+    },
+    {
+      "slot": "back",
+      "icon": "back",
+      "upstream": "arrow-left",
+      "selector": "[data-mochi-icon-action=\"back\"]",
+      "tokens": [
+        "--mochi-icon-back-size",
+        "--mochi-icon-back-color",
+        "--mochi-icon-back-stroke-width",
+        "--mochi-icon-back-image"
+      ]
+    },
+    {
+      "slot": "send",
+      "icon": "send",
+      "upstream": "send",
+      "selector": "[data-mochi-icon-action=\"send\"]",
+      "tokens": [
+        "--mochi-icon-send-size",
+        "--mochi-icon-send-color",
+        "--mochi-icon-send-stroke-width",
+        "--mochi-icon-send-image"
+      ]
+    },
+    {
+      "slot": "sparkle",
+      "icon": "sparkle",
+      "upstream": "sparkles",
+      "selector": "[data-mochi-icon-action=\"sparkle\"]",
+      "tokens": [
+        "--mochi-icon-sparkle-size",
+        "--mochi-icon-sparkle-color",
+        "--mochi-icon-sparkle-stroke-width",
+        "--mochi-icon-sparkle-image"
+      ]
+    },
+    {
+      "slot": "trash",
+      "icon": "trash",
+      "upstream": "trash-2",
+      "selector": "[data-mochi-icon-action=\"trash\"]",
+      "tokens": [
+        "--mochi-icon-trash-size",
+        "--mochi-icon-trash-color",
+        "--mochi-icon-trash-stroke-width",
+        "--mochi-icon-trash-image"
+      ]
+    },
+    {
+      "slot": "stop",
+      "icon": "stop",
+      "upstream": "square",
+      "selector": "[data-mochi-icon-action=\"stop\"]",
+      "tokens": [
+        "--mochi-icon-stop-size",
+        "--mochi-icon-stop-color",
+        "--mochi-icon-stop-stroke-width",
+        "--mochi-icon-stop-image"
+      ]
+    },
+    {
+      "slot": "copy",
+      "icon": "copy",
+      "upstream": "copy",
+      "selector": "[data-mochi-icon-action=\"copy\"]",
+      "tokens": [
+        "--mochi-icon-copy-size",
+        "--mochi-icon-copy-color",
+        "--mochi-icon-copy-stroke-width",
+        "--mochi-icon-copy-image"
+      ]
+    },
+    {
+      "slot": "edit",
+      "icon": "edit",
+      "upstream": "pencil",
+      "selector": "[data-mochi-icon-action=\"edit\"]",
+      "tokens": [
+        "--mochi-icon-edit-size",
+        "--mochi-icon-edit-color",
+        "--mochi-icon-edit-stroke-width",
+        "--mochi-icon-edit-image"
+      ]
+    },
+    {
+      "slot": "close",
+      "icon": "close",
+      "upstream": "x",
+      "selector": "[data-mochi-icon-action=\"close\"]",
+      "tokens": [
+        "--mochi-icon-close-size",
+        "--mochi-icon-close-color",
+        "--mochi-icon-close-stroke-width",
+        "--mochi-icon-close-image"
+      ]
+    },
+    {
+      "slot": "search",
+      "icon": "search",
+      "upstream": "search",
+      "selector": "[data-mochi-icon-action=\"search\"]",
+      "tokens": [
+        "--mochi-icon-search-size",
+        "--mochi-icon-search-color",
+        "--mochi-icon-search-stroke-width",
+        "--mochi-icon-search-image"
+      ]
+    },
+    {
+      "slot": "refresh",
+      "icon": "refresh",
+      "upstream": "refresh-cw",
+      "selector": "[data-mochi-icon-action=\"refresh\"]",
+      "tokens": [
+        "--mochi-icon-refresh-size",
+        "--mochi-icon-refresh-color",
+        "--mochi-icon-refresh-stroke-width",
+        "--mochi-icon-refresh-image"
+      ]
+    },
+    {
+      "slot": "up",
+      "icon": "up",
+      "upstream": "arrow-up",
+      "selector": "[data-mochi-icon-action=\"up\"]",
+      "tokens": [
+        "--mochi-icon-up-size",
+        "--mochi-icon-up-color",
+        "--mochi-icon-up-stroke-width",
+        "--mochi-icon-up-image"
+      ]
+    },
+    {
+      "slot": "down",
+      "icon": "down",
+      "upstream": "arrow-down",
+      "selector": "[data-mochi-icon-action=\"down\"]",
+      "tokens": [
+        "--mochi-icon-down-size",
+        "--mochi-icon-down-color",
+        "--mochi-icon-down-stroke-width",
+        "--mochi-icon-down-image"
+      ]
+    },
+    {
+      "slot": "right",
+      "icon": "right",
+      "upstream": "arrow-right",
+      "selector": "[data-mochi-icon-action=\"right\"]",
+      "tokens": [
+        "--mochi-icon-right-size",
+        "--mochi-icon-right-color",
+        "--mochi-icon-right-stroke-width",
+        "--mochi-icon-right-image"
+      ]
+    },
+    {
+      "slot": "drag",
+      "icon": "drag",
+      "upstream": "grip-vertical",
+      "selector": "[data-mochi-icon-action=\"drag\"]",
+      "tokens": [
+        "--mochi-icon-drag-size",
+        "--mochi-icon-drag-color",
+        "--mochi-icon-drag-stroke-width",
+        "--mochi-icon-drag-image"
+      ]
+    },
+    {
+      "slot": "maximize",
+      "icon": "maximize",
+      "upstream": "maximize",
+      "selector": "[data-mochi-icon-action=\"maximize\"]",
+      "tokens": [
+        "--mochi-icon-maximize-size",
+        "--mochi-icon-maximize-color",
+        "--mochi-icon-maximize-stroke-width",
+        "--mochi-icon-maximize-image"
+      ]
+    },
+    {
+      "slot": "restore",
+      "icon": "restore",
+      "upstream": "minimize",
+      "selector": "[data-mochi-icon-action=\"restore\"]",
+      "tokens": [
+        "--mochi-icon-restore-size",
+        "--mochi-icon-restore-color",
+        "--mochi-icon-restore-stroke-width",
+        "--mochi-icon-restore-image"
+      ]
+    },
+    {
+      "slot": "resize",
+      "icon": "resize",
+      "upstream": "move-diagonal-2",
+      "selector": "[data-mochi-icon-action=\"resize\"]",
+      "tokens": [
+        "--mochi-icon-resize-size",
+        "--mochi-icon-resize-color",
+        "--mochi-icon-resize-stroke-width",
+        "--mochi-icon-resize-image"
+      ]
+    },
+    {
+      "slot": "reply",
+      "icon": "reply",
+      "upstream": "reply",
+      "selector": "[data-mochi-icon-action=\"reply\"]",
+      "tokens": [
+        "--mochi-icon-reply-size",
+        "--mochi-icon-reply-color",
+        "--mochi-icon-reply-stroke-width",
+        "--mochi-icon-reply-image"
+      ]
+    },
+    {
+      "slot": "download",
+      "icon": "download",
+      "upstream": "download",
+      "selector": "[data-mochi-icon-action=\"download\"]",
+      "tokens": [
+        "--mochi-icon-download-size",
+        "--mochi-icon-download-color",
+        "--mochi-icon-download-stroke-width",
+        "--mochi-icon-download-image"
+      ]
+    },
+    {
+      "slot": "upload",
+      "icon": "upload",
+      "upstream": "upload",
+      "selector": "[data-mochi-icon-action=\"upload\"]",
+      "tokens": [
+        "--mochi-icon-upload-size",
+        "--mochi-icon-upload-color",
+        "--mochi-icon-upload-stroke-width",
+        "--mochi-icon-upload-image"
+      ]
+    },
+    {
+      "slot": "lock",
+      "icon": "lock",
+      "upstream": "lock-keyhole",
+      "selector": "[data-mochi-icon-action=\"lock\"]",
+      "tokens": [
+        "--mochi-icon-lock-size",
+        "--mochi-icon-lock-color",
+        "--mochi-icon-lock-stroke-width",
+        "--mochi-icon-lock-image"
+      ]
+    },
+    {
+      "slot": "unlock",
+      "icon": "unlock",
+      "upstream": "lock-keyhole-open",
+      "selector": "[data-mochi-icon-action=\"unlock\"]",
+      "tokens": [
+        "--mochi-icon-unlock-size",
+        "--mochi-icon-unlock-color",
+        "--mochi-icon-unlock-stroke-width",
+        "--mochi-icon-unlock-image"
+      ]
+    },
+    {
+      "slot": "accessibility",
+      "icon": "accessibility",
+      "upstream": "accessibility",
+      "selector": "[data-mochi-icon-action=\"accessibility\"]",
+      "tokens": [
+        "--mochi-icon-accessibility-size",
+        "--mochi-icon-accessibility-color",
+        "--mochi-icon-accessibility-stroke-width",
+        "--mochi-icon-accessibility-image"
+      ]
+    },
+    {
+      "slot": "palette",
+      "icon": "palette",
+      "upstream": "palette",
+      "selector": "[data-mochi-icon-action=\"palette\"]",
+      "tokens": [
+        "--mochi-icon-palette-size",
+        "--mochi-icon-palette-color",
+        "--mochi-icon-palette-stroke-width",
+        "--mochi-icon-palette-image"
+      ]
+    },
+    {
+      "slot": "volume",
+      "icon": "volume",
+      "upstream": "volume-2",
+      "selector": "[data-mochi-icon-action=\"volume\"]",
+      "tokens": [
+        "--mochi-icon-volume-size",
+        "--mochi-icon-volume-color",
+        "--mochi-icon-volume-stroke-width",
+        "--mochi-icon-volume-image"
+      ]
+    },
+    {
+      "slot": "info",
+      "icon": "info",
+      "upstream": "info",
+      "selector": "[data-mochi-icon-action=\"info\"]",
+      "tokens": [
+        "--mochi-icon-info-size",
+        "--mochi-icon-info-color",
+        "--mochi-icon-info-stroke-width",
+        "--mochi-icon-info-image"
+      ]
+    },
+    {
+      "slot": "warning",
+      "icon": "warning",
+      "upstream": "triangle-alert",
+      "selector": "[data-mochi-icon-action=\"warning\"]",
+      "tokens": [
+        "--mochi-icon-warning-size",
+        "--mochi-icon-warning-color",
+        "--mochi-icon-warning-stroke-width",
+        "--mochi-icon-warning-image"
+      ]
+    },
+    {
+      "slot": "save",
+      "icon": "save",
+      "upstream": "save",
+      "selector": "[data-mochi-icon-action=\"save\"]",
+      "tokens": [
+        "--mochi-icon-save-size",
+        "--mochi-icon-save-color",
+        "--mochi-icon-save-stroke-width",
+        "--mochi-icon-save-image"
+      ]
+    },
+    {
+      "slot": "chevron",
+      "icon": "chevron",
+      "upstream": "chevron-down",
+      "selector": "[data-mochi-icon-action=\"chevron\"]",
+      "tokens": [
+        "--mochi-icon-chevron-size",
+        "--mochi-icon-chevron-color",
+        "--mochi-icon-chevron-stroke-width",
+        "--mochi-icon-chevron-image"
+      ]
+    },
+    {
+      "slot": "toolbar-presets",
+      "icon": "sliders",
+      "upstream": "sliders-horizontal",
+      "selector": "[data-mochi-icon-action=\"toolbar-presets\"]",
+      "tokens": [
+        "--mochi-icon-toolbar-presets-size",
+        "--mochi-icon-toolbar-presets-color",
+        "--mochi-icon-toolbar-presets-stroke-width",
+        "--mochi-icon-toolbar-presets-image"
+      ]
+    },
+    {
+      "slot": "toolbar-memory",
+      "icon": "brain",
+      "upstream": "brain",
+      "selector": "[data-mochi-icon-action=\"toolbar-memory\"]",
+      "tokens": [
+        "--mochi-icon-toolbar-memory-size",
+        "--mochi-icon-toolbar-memory-color",
+        "--mochi-icon-toolbar-memory-stroke-width",
+        "--mochi-icon-toolbar-memory-image"
+      ]
+    },
+    {
+      "slot": "toolbar-preview",
+      "icon": "eye",
+      "upstream": "eye",
+      "selector": "[data-mochi-icon-action=\"toolbar-preview\"]",
+      "tokens": [
+        "--mochi-icon-toolbar-preview-size",
+        "--mochi-icon-toolbar-preview-color",
+        "--mochi-icon-toolbar-preview-stroke-width",
+        "--mochi-icon-toolbar-preview-image"
+      ]
+    },
+    {
+      "slot": "toolbar-notes",
+      "icon": "pin",
+      "upstream": "pin",
+      "selector": "[data-mochi-icon-action=\"toolbar-notes\"]",
+      "tokens": [
+        "--mochi-icon-toolbar-notes-size",
+        "--mochi-icon-toolbar-notes-color",
+        "--mochi-icon-toolbar-notes-stroke-width",
+        "--mochi-icon-toolbar-notes-image"
+      ]
+    },
+    {
+      "slot": "toolbar-settings",
+      "icon": "settings",
+      "upstream": "settings",
+      "selector": "[data-mochi-icon-action=\"toolbar-settings\"]",
+      "tokens": [
+        "--mochi-icon-toolbar-settings-size",
+        "--mochi-icon-toolbar-settings-color",
+        "--mochi-icon-toolbar-settings-stroke-width",
+        "--mochi-icon-toolbar-settings-image"
+      ]
+    },
+    {
+      "slot": "room-options",
+      "icon": "ellipsis",
+      "upstream": "ellipsis",
+      "selector": "[data-mochi-icon-action=\"room-options\"]",
+      "tokens": [
+        "--mochi-icon-room-options-size",
+        "--mochi-icon-room-options-color",
+        "--mochi-icon-room-options-stroke-width",
+        "--mochi-icon-room-options-image"
+      ]
+    },
+    {
+      "slot": "responder-auto",
+      "icon": "contacts",
+      "upstream": "users-round",
+      "selector": "[data-mochi-icon-action=\"responder-auto\"]",
+      "tokens": [
+        "--mochi-icon-responder-auto-size",
+        "--mochi-icon-responder-auto-color",
+        "--mochi-icon-responder-auto-stroke-width",
+        "--mochi-icon-responder-auto-image"
+      ]
+    },
+    {
+      "slot": "participants",
+      "icon": "people",
+      "upstream": "users-round",
+      "selector": "[data-mochi-icon-action=\"participants\"]",
+      "tokens": [
+        "--mochi-icon-participants-size",
+        "--mochi-icon-participants-color",
+        "--mochi-icon-participants-stroke-width",
+        "--mochi-icon-participants-image"
+      ]
+    },
+    {
+      "slot": "selected",
+      "icon": "check",
+      "upstream": "square-check",
+      "selector": "[data-mochi-icon-action=\"selected\"]",
+      "tokens": [
+        "--mochi-icon-selected-size",
+        "--mochi-icon-selected-color",
+        "--mochi-icon-selected-stroke-width",
+        "--mochi-icon-selected-image"
+      ]
+    },
+    {
+      "slot": "disclosure",
+      "icon": "chevron",
+      "upstream": "chevron-down",
+      "selector": "[data-mochi-icon-action=\"disclosure\"]",
+      "tokens": [
+        "--mochi-icon-disclosure-size",
+        "--mochi-icon-disclosure-color",
+        "--mochi-icon-disclosure-stroke-width",
+        "--mochi-icon-disclosure-image"
+      ]
+    },
+    {
+      "slot": "participant-remove",
+      "icon": "close",
+      "upstream": "x",
+      "selector": "[data-mochi-icon-action=\"participant-remove\"]",
+      "tokens": [
+        "--mochi-icon-participant-remove-size",
+        "--mochi-icon-participant-remove-color",
+        "--mochi-icon-participant-remove-stroke-width",
+        "--mochi-icon-participant-remove-image"
+      ]
+    },
+    {
+      "slot": "block-add",
+      "icon": "plus",
+      "upstream": "plus",
+      "selector": "[data-mochi-icon-action=\"block-add\"]",
+      "tokens": [
+        "--mochi-icon-block-add-size",
+        "--mochi-icon-block-add-color",
+        "--mochi-icon-block-add-stroke-width",
+        "--mochi-icon-block-add-image"
+      ]
+    },
+    {
+      "slot": "block-drag",
+      "icon": "drag",
+      "upstream": "grip-vertical",
+      "selector": "[data-mochi-icon-action=\"block-drag\"]",
+      "tokens": [
+        "--mochi-icon-block-drag-size",
+        "--mochi-icon-block-drag-color",
+        "--mochi-icon-block-drag-stroke-width",
+        "--mochi-icon-block-drag-image"
+      ]
+    },
+    {
+      "slot": "block-more",
+      "icon": "ellipsis",
+      "upstream": "ellipsis",
+      "selector": "[data-mochi-icon-action=\"block-more\"]",
+      "tokens": [
+        "--mochi-icon-block-more-size",
+        "--mochi-icon-block-more-color",
+        "--mochi-icon-block-more-stroke-width",
+        "--mochi-icon-block-more-image"
+      ]
+    },
+    {
+      "slot": "window-close",
+      "icon": "close",
+      "upstream": "x",
+      "selector": "[data-mochi-icon-action=\"window-close\"]",
+      "tokens": [
+        "--mochi-icon-window-close-size",
+        "--mochi-icon-window-close-color",
+        "--mochi-icon-window-close-stroke-width",
+        "--mochi-icon-window-close-image"
+      ]
+    },
+    {
+      "slot": "window-maximize",
+      "icon": "maximize",
+      "upstream": "maximize",
+      "selector": "[data-mochi-icon-action=\"window-maximize\"]",
+      "tokens": [
+        "--mochi-icon-window-maximize-size",
+        "--mochi-icon-window-maximize-color",
+        "--mochi-icon-window-maximize-stroke-width",
+        "--mochi-icon-window-maximize-image"
+      ]
+    },
+    {
+      "slot": "window-resize",
+      "icon": "resize",
+      "upstream": "move-diagonal-2",
+      "selector": "[data-mochi-icon-action=\"window-resize\"]",
+      "tokens": [
+        "--mochi-icon-window-resize-size",
+        "--mochi-icon-window-resize-color",
+        "--mochi-icon-window-resize-stroke-width",
+        "--mochi-icon-window-resize-image"
+      ]
+    },
+    {
+      "slot": "delete",
+      "icon": "trash",
+      "upstream": "trash-2",
+      "selector": "[data-mochi-icon-action=\"delete\"]",
+      "tokens": [
+        "--mochi-icon-delete-size",
+        "--mochi-icon-delete-color",
+        "--mochi-icon-delete-stroke-width",
+        "--mochi-icon-delete-image"
+      ]
+    },
+    {
+      "slot": "add",
+      "icon": "plus",
+      "upstream": "plus",
+      "selector": "[data-mochi-icon-action=\"add\"]",
+      "tokens": [
+        "--mochi-icon-add-size",
+        "--mochi-icon-add-color",
+        "--mochi-icon-add-stroke-width",
+        "--mochi-icon-add-image"
+      ]
+    },
+    {
+      "slot": "presets",
+      "icon": "sliders",
+      "upstream": "sliders-horizontal",
+      "selector": "[data-mochi-icon-action=\"presets\"]",
+      "tokens": [
+        "--mochi-icon-presets-size",
+        "--mochi-icon-presets-color",
+        "--mochi-icon-presets-stroke-width",
+        "--mochi-icon-presets-image"
+      ]
+    },
+    {
+      "slot": "preview",
+      "icon": "eye",
+      "upstream": "eye",
+      "selector": "[data-mochi-icon-action=\"preview\"]",
+      "tokens": [
+        "--mochi-icon-preview-size",
+        "--mochi-icon-preview-color",
+        "--mochi-icon-preview-stroke-width",
+        "--mochi-icon-preview-image"
+      ]
+    },
+    {
+      "slot": "memory",
+      "icon": "brain",
+      "upstream": "brain",
+      "selector": "[data-mochi-icon-action=\"memory\"]",
+      "tokens": [
+        "--mochi-icon-memory-size",
+        "--mochi-icon-memory-color",
+        "--mochi-icon-memory-stroke-width",
+        "--mochi-icon-memory-image"
+      ]
+    },
+    {
+      "slot": "appearance",
+      "icon": "palette",
+      "upstream": "palette",
+      "selector": "[data-mochi-icon-action=\"appearance\"]",
+      "tokens": [
+        "--mochi-icon-appearance-size",
+        "--mochi-icon-appearance-color",
+        "--mochi-icon-appearance-stroke-width",
+        "--mochi-icon-appearance-image"
+      ]
+    },
+    {
+      "slot": "toolbar",
+      "icon": "panel",
+      "upstream": "panel-right",
+      "selector": "[data-mochi-icon-action=\"toolbar\"]",
+      "tokens": [
+        "--mochi-icon-toolbar-size",
+        "--mochi-icon-toolbar-color",
+        "--mochi-icon-toolbar-stroke-width",
+        "--mochi-icon-toolbar-image"
+      ]
+    },
+    {
+      "slot": "availability",
+      "icon": "calendar",
+      "upstream": "calendar",
+      "selector": "[data-mochi-icon-action=\"availability\"]",
+      "tokens": [
+        "--mochi-icon-availability-size",
+        "--mochi-icon-availability-color",
+        "--mochi-icon-availability-stroke-width",
+        "--mochi-icon-availability-image"
+      ]
+    },
+    {
+      "slot": "general",
+      "icon": "info",
+      "upstream": "info",
+      "selector": "[data-mochi-icon-action=\"general\"]",
+      "tokens": [
+        "--mochi-icon-general-size",
+        "--mochi-icon-general-color",
+        "--mochi-icon-general-stroke-width",
+        "--mochi-icon-general-image"
+      ]
+    },
+    {
+      "slot": "export",
+      "icon": "download",
+      "upstream": "download",
+      "selector": "[data-mochi-icon-action=\"export\"]",
+      "tokens": [
+        "--mochi-icon-export-size",
+        "--mochi-icon-export-color",
+        "--mochi-icon-export-stroke-width",
+        "--mochi-icon-export-image"
+      ]
+    },
+    {
+      "slot": "import",
+      "icon": "upload",
+      "upstream": "upload",
+      "selector": "[data-mochi-icon-action=\"import\"]",
+      "tokens": [
+        "--mochi-icon-import-size",
+        "--mochi-icon-import-color",
+        "--mochi-icon-import-stroke-width",
+        "--mochi-icon-import-image"
+      ]
+    },
+    {
+      "slot": "account-plus",
+      "icon": "plus",
+      "upstream": "plus",
+      "selector": "[data-mochi-icon-action=\"account-plus\"]",
+      "tokens": [
+        "--mochi-icon-account-plus-size",
+        "--mochi-icon-account-plus-color",
+        "--mochi-icon-account-plus-stroke-width",
+        "--mochi-icon-account-plus-image"
+      ]
+    },
+    {
+      "slot": "account-settings",
+      "icon": "settings",
+      "upstream": "settings",
+      "selector": "[data-mochi-icon-action=\"account-settings\"]",
+      "tokens": [
+        "--mochi-icon-account-settings-size",
+        "--mochi-icon-account-settings-color",
+        "--mochi-icon-account-settings-stroke-width",
+        "--mochi-icon-account-settings-image"
+      ]
+    },
+    {
+      "slot": "account-logout",
+      "icon": "logout",
+      "upstream": "log-out",
+      "selector": "[data-mochi-icon-action=\"account-logout\"]",
+      "tokens": [
+        "--mochi-icon-account-logout-size",
+        "--mochi-icon-account-logout-color",
+        "--mochi-icon-account-logout-stroke-width",
+        "--mochi-icon-account-logout-image"
+      ]
+    },
+    {
+      "slot": "account-sort",
+      "icon": "sort",
+      "upstream": "arrow-down-wide-narrow",
+      "selector": "[data-mochi-icon-action=\"account-sort\"]",
+      "tokens": [
+        "--mochi-icon-account-sort-size",
+        "--mochi-icon-account-sort-color",
+        "--mochi-icon-account-sort-stroke-width",
+        "--mochi-icon-account-sort-image"
+      ]
+    },
+    {
+      "slot": "account-grid",
+      "icon": "grid",
+      "upstream": "layout-grid",
+      "selector": "[data-mochi-icon-action=\"account-grid\"]",
+      "tokens": [
+        "--mochi-icon-account-grid-size",
+        "--mochi-icon-account-grid-color",
+        "--mochi-icon-account-grid-stroke-width",
+        "--mochi-icon-account-grid-image"
+      ]
+    },
+    {
+      "slot": "account-list",
+      "icon": "list",
+      "upstream": "list",
+      "selector": "[data-mochi-icon-action=\"account-list\"]",
+      "tokens": [
+        "--mochi-icon-account-list-size",
+        "--mochi-icon-account-list-color",
+        "--mochi-icon-account-list-stroke-width",
+        "--mochi-icon-account-list-image"
+      ]
+    },
+    {
+      "slot": "account-check",
+      "icon": "check",
+      "upstream": "square-check",
+      "selector": "[data-mochi-icon-action=\"account-check\"]",
+      "tokens": [
+        "--mochi-icon-account-check-size",
+        "--mochi-icon-account-check-color",
+        "--mochi-icon-account-check-stroke-width",
+        "--mochi-icon-account-check-image"
+      ]
+    },
+    {
+      "slot": "account-archive",
+      "icon": "archive",
+      "upstream": "archive",
+      "selector": "[data-mochi-icon-action=\"account-archive\"]",
+      "tokens": [
+        "--mochi-icon-account-archive-size",
+        "--mochi-icon-account-archive-color",
+        "--mochi-icon-account-archive-stroke-width",
+        "--mochi-icon-account-archive-image"
+      ]
+    },
+    {
+      "slot": "account-profile",
+      "icon": "profile",
+      "upstream": "user-round",
+      "selector": "[data-mochi-icon-action=\"account-profile\"]",
+      "tokens": [
+        "--mochi-icon-account-profile-size",
+        "--mochi-icon-account-profile-color",
+        "--mochi-icon-account-profile-stroke-width",
+        "--mochi-icon-account-profile-image"
+      ]
+    }
+  ],
+  "sites": [
+    {
+      "file": "src/mochi/account-picker.ts",
+      "line": 1,
+      "kind": "icon or action boundary",
+      "source": "import {mochiButton as button} from './ui/icon-slots.js'"
+    },
+    {
+      "file": "src/mochi/account-picker.ts",
+      "line": 9,
+      "kind": "icon or action boundary",
+      "source": "const card=button('','mochi-card');card.disabled=busy;card.setAttribute('aria-label','Use Mochi account '+a.displayName)"
+    },
+    {
+      "file": "src/mochi/account-picker.ts",
+      "line": 16,
+      "kind": "icon or action boundary",
+      "source": "const add=button('Create Mochi account','lp-button mochi-primary');add.disabled=busy;add.onclick=create;actions.append(add)"
+    },
+    {
+      "file": "src/mochi/account-picker.ts",
+      "line": 17,
+      "kind": "icon or action boundary",
+      "source": "const settings=button('Manage Mochi profiles','lp-button');settings.disabled=busy;settings.onclick=manage;actions.append(settings)"
+    },
+    {
+      "file": "src/mochi/account-picker.ts",
+      "line": 18,
+      "kind": "icon or action boundary",
+      "source": "const reload=button('Refresh accounts','lp-button mochi-secondary-action');reload.disabled=busy;reload.onclick=refresh;page.append(reload)"
+    },
+    {
+      "file": "src/mochi/account-picker.ts",
+      "line": 19,
+      "kind": "icon or action boundary",
+      "source": "const old=button('Unassigned legacy chats','lp-button mochi-secondary-action mochi-legacy-action');old.disabled=busy;old.onclick=legacy;page.append(old)"
+    },
+    {
+      "file": "src/mochi/block-editor.ts",
+      "line": 2,
+      "kind": "icon or action boundary",
+      "source": "import {mochiButton as button} from './ui/icon-slots.js'"
+    },
+    {
+      "file": "src/mochi/block-editor.ts",
+      "line": 13,
+      "kind": "icon or action boundary",
+      "source": "const toolbar=el('div','mochi-block-toolbar'),add=button('+ Add category','lp-button')"
+    },
+    {
+      "file": "src/mochi/block-editor.ts",
+      "line": 19,
+      "kind": "icon or action boundary",
+      "source": "const action=(label:string,run:()=>void,disabled=false)=>{const b=button(label,'mochi-block-action');b.disabled=disabled;b.onclick=run;return b}"
+    },
+    {
+      "file": "src/mochi/block-editor.ts",
+      "line": 31,
+      "kind": "icon or action boundary",
+      "source": "const tools=el('div','mochi-category-tools'),menu=action('⋯',()=>{tools.hidden=!tools.hidden});menu.setAttribute('aria-label','Manage category '+c.name);menu.onclick=e=>{e.preventDefault();tools.hidden=!tools.hidden};summary.append(menu);tools.hidden=true;const name=el('input');name.value=c.name;name.maxLength=80;name.setAttribute('aria-label','Category name '+(ci+1));name.oninput=()=>{c.name=name.value;summary.querySelector('strong')!.textContent=name.value}"
+    },
+    {
+      "file": "src/mochi/block-editor.ts",
+      "line": 33,
+      "kind": "icon or action boundary",
+      "source": "tools.append(name,action('Move category up',()=>moveCategory(-1),ci===0),action('Move category down',()=>moveCategory(1),ci===doc.categories.length-1))"
+    },
+    {
+      "file": "src/mochi/block-editor.ts",
+      "line": 34,
+      "kind": "icon or action boundary",
+      "source": "const remove=action('Remove category',()=>{"
+    },
+    {
+      "file": "src/mochi/block-editor.ts",
+      "line": 36,
+      "kind": "icon or action boundary",
+      "source": "const confirm=action('Confirm remove category and blocks',()=>{doc.categories.splice(ci,1);redraw()});remove.replaceWith(confirm);confirm.focus()"
+    },
+    {
+      "file": "src/mochi/block-editor.ts",
+      "line": 43,
+      "kind": "icon or action boundary",
+      "source": "const edit=action('Edit',()=>{this.selected=b.id;this.focusSelected=true;this.detailScroll=0;this.macroOpen=false;this.cursor={start:b.content.length,end:b.content.length};redraw()});edit.classList.add('mochi-block-name');edit.setAttribute('aria-label','Edit block '+b.name)"
+    },
+    {
+      "file": "src/mochi/block-editor.ts",
+      "line": 44,
+      "kind": "icon or action boundary",
+      "source": "head.append(Object.assign(mochiIcon('drag','block-drag'),{className:'mochi-icon-slot mochi-block-drag'}),toggle,el('strong','mochi-block-title',b.name),el('small','mochi-muted',b.role+' · '+b.position+(b.audience==='all'?'':' · '+b.audience)+(b.locked?' · locked':'')))"
+    },
+    {
+      "file": "src/mochi/block-editor.ts",
+      "line": 45,
+      "kind": "icon or action boundary",
+      "source": "head.append(edit);const overflow=el('details','mochi-block-overflow'),overflowTitle=el('summary');overflowTitle.append(mochiIcon('ellipsis','block-more'));overflowTitle.setAttribute('aria-label','More actions for '+b.name);const actions=el('div','mochi-block-row-actions');overflow.append(overflowTitle,actions);head.append(overflow)"
+    },
+    {
+      "file": "src/mochi/block-editor.ts",
+      "line": 47,
+      "kind": "icon or action boundary",
+      "source": "actions.append(action('↑',()=>moveBlock(c,i,-1),i===0||b.locked),action('↓',()=>moveBlock(c,i,1),i===c.blocks.length-1||b.locked),action('Duplicate',duplicate,count>=60),action('Delete',()=>{const confirm=action('Confirm delete '+b.name,()=>{c.blocks.splice(i,1);if(this.selected===b.id)this.selected='';redraw()});actions.lastElementChild!.replaceWith(confirm);confirm.focus()},b.locked))"
+    },
+    {
+      "file": "src/mochi/block-editor.ts",
+      "line": 52,
+      "kind": "icon or action boundary",
+      "source": "const picker=el('details','mochi-block-picker');{const addSummary=el('summary','','Add Block');addSummary.setAttribute('aria-label','+ Add Block');addSummary.prepend(mochiIcon('plus','block-add'));picker.append(addSummary)}"
+    },
+    {
+      "file": "src/mochi/block-editor.ts",
+      "line": 58,
+      "kind": "icon or action boundary",
+      "source": "const insert=action('Insert selected block',()=>{if(select.value==='')return;const b=fromTemplate(BLOCK_TEMPLATES[Number(select.value)]);c.blocks.push(b);this.selected=b.id;this.focusSelected=true;this.detailScroll=0;redraw()},count>=60);picker.append(search,select,description,insert);category.append(picker);list.append(category)"
+    },
+    {
+      "file": "src/mochi/block-editor.ts",
+      "line": 62,
+      "kind": "icon or action boundary",
+      "source": "const b=selected,pane=el('section','mochi-block-detail');pane.setAttribute('aria-label','Block editor');const savedDetailScroll=this.detailScroll;pane.onscroll=()=>{this.detailScroll=pane.scrollTop};queueMicrotask(()=>{if(!pane.isConnected)return;pane.scrollTop=savedDetailScroll;if(this.focusSelected){pane.scrollIntoView?.({block:'nearest'});pane.querySelector<HTMLInputElement>('[aria-label=\"Block name\"]')?.focus({preventScroll:true});this.focusSelected=false}});const back=action('← Back to Blocks',()=>{this.selected='';redraw()});back.setAttribute('aria-label','Back to Blocks');pane.append(back,el('h4','',b.name),el('p','mochi-muted','Draft block · changes are not published or applied.'))"
+    },
+    {
+      "file": "src/mochi/block-editor.ts",
+      "line": 70,
+      "kind": "icon or action boundary",
+      "source": "const macro=action('Insert Macro',()=>{remember();this.macroOpen=!this.macroOpen;redraw()},b.locked);pane.append(macro)"
+    },
+    {
+      "file": "src/mochi/block-editor.ts",
+      "line": 73,
+      "kind": "icon or action boundary",
+      "source": "const show=()=>{results.replaceChildren();for(const m of MACRO_REFERENCE.filter(m=>`${m.name} ${m.syntax} ${m.description} ${m.source}`.toLowerCase().includes(search.value.toLowerCase()))){const card=el('article','mochi-macro-item');card.append(el('strong','',m.name),el('code','',m.syntax),el('p','mochi-muted',m.description),el('small','mochi-muted',`${m.source} · Requires: ${m.context}`));const insert=action('Insert '+m.name,()=>{const syntax=m.syntax==='{{persona_outlet::name}}'?'{{persona_outlet::'+(outlet.value.trim()||'name')+'}}':m.syntax;const start=Math.min(this.cursor.start,b.content.length),end=Math.min(this.cursor.end,b.content.length);if(b.content.length-end+start+syntax.length>8000){this.notice='Block content limit reached.';redraw();return}b.content=b.content.slice(0,start)+syntax+b.content.slice(end);this.cursor={start:start+syntax.length,end:start+syntax.length};this.macroOpen=false;redraw()},m.source.startsWith('Unsupported'));card.append(insert);results.append(card)}if(!results.children.length)results.append(el('p','mochi-muted','No matching macros.'))};search.oninput=show;show();pane.append(browser)"
+    },
+    {
+      "file": "src/mochi/block-editor.ts",
+      "line": 82,
+      "kind": "icon or action boundary",
+      "source": "const preview=el('details');preview.append(el('summary','','Preview block text'),el('p','mochi-muted','Unresolved draft text only. Use Preview draft prompt for authorized context and token estimates; no provider request.'),textPreview=el('pre','mochi-preview-text',b.content));pane.append(preview,action('Done editing block',()=>{this.selected='';redraw()}));workspace.replaceChildren(pane)"
+    },
+    {
+      "file": "src/mochi/character-editor.ts",
+      "line": 1,
+      "kind": "icon or action boundary",
+      "source": "import {mochiButton as button} from './ui/icon-slots.js'"
+    },
+    {
+      "file": "src/mochi/character-editor.ts",
+      "line": 29,
+      "kind": "icon or action boundary",
+      "source": "const actions=el('div','mochi-actions'),save=button('Save character profile','mochi-primary'),cancel=button('Cancel character changes');save.onclick=()=>send({characterId:character.id,revision:saved.revision,about:value.about,texting:value.texting||null,availability:value.availability||null});cancel.onclick=()=>{this.drafts.delete(character.id);redraw()};actions.append(save,cancel);root.append(actions);return root"
+    },
+    {
+      "file": "src/mochi/chat-identity.ts",
+      "line": 4,
+      "kind": "retained artwork/content",
+      "source": "export {GROUP_ICONS} from './group-icons.js'"
+    },
+    {
+      "file": "src/mochi/details-panel.ts",
+      "line": 1,
+      "kind": "icon or action boundary",
+      "source": "import {mochiButton as button} from './ui/icon-slots.js'"
+    },
+    {
+      "file": "src/mochi/details-panel.ts",
+      "line": 13,
+      "kind": "icon or action boundary",
+      "source": "const back=button('Back','lp-button');back.setAttribute('aria-label','Close character profile');back.title='Back to conversation';back.onclick=close;heading.append(title,back);panel.append(heading)"
+    },
+    {
+      "file": "src/mochi/details-panel.ts",
+      "line": 29,
+      "kind": "icon or action boundary",
+      "source": "const configure=button(direct?'Chat settings':'Chat settings & group icon','lp-button mochi-profile-settings');configure.setAttribute('aria-label','Open conversation settings');configure.onclick=settings;panel.append(configure)"
+    },
+    {
+      "file": "src/mochi/group-icons.ts",
+      "line": 2,
+      "kind": "retained artwork/content",
+      "source": "export const GROUP_ICONS=['💬','🌙','⭐','🌸','🍡','🎮','📚','🎵','🌿','❤️'] as const"
+    },
+    {
+      "file": "src/mochi/group-icons.ts",
+      "line": 5,
+      "kind": "retained artwork/content",
+      "source": "if(typeof value!=='string'||!GROUP_ICONS.includes(value as typeof GROUP_ICONS[number]))throw Error('Choose a supported group icon.')"
+    },
+    {
+      "file": "src/mochi/launcher.ts",
+      "line": 5,
+      "kind": "retained artwork/content",
+      "source": "import { MOCHI_SIDEBAR_ICON } from './sidebar-icon.js'"
+    },
+    {
+      "file": "src/mochi/launcher.ts",
+      "line": 17,
+      "kind": "retained artwork/content",
+      "source": "button.type='button';button.className='mochi-launcher';button.title='Open Mochi messenger';button.setAttribute('aria-label','Open Mochi messenger');button.innerHTML=MOCHI_SIDEBAR_ICON"
+    },
+    {
+      "file": "src/mochi/memory-panel.ts",
+      "line": 1,
+      "kind": "icon or action boundary",
+      "source": "import {mochiButton as button} from './ui/icon-slots.js'"
+    },
+    {
+      "file": "src/mochi/memory-panel.ts",
+      "line": 72,
+      "kind": "icon or action boundary",
+      "source": "const warning=el('span','mochi-preview-warning','This changes future AI context and may cancel active/pending replies. '),yes=button(label,'lp-button'),no=button('Keep current memory','lp-button')"
+    },
+    {
+      "file": "src/mochi/memory-panel.ts",
+      "line": 79,
+      "kind": "icon or action boundary",
+      "source": "const refresh=button('Refresh memory','lp-button');refresh.disabled=!!this.ticket;refresh.onclick=()=>this.request({action:'read'});const close=button('Close memory','lp-button');const leave=()=>{this.reset();this.renderAgain();this.returned()};close.onclick=()=>{if(!this.generating){leave();return}const warning=el('span','mochi-preview-warning','A summary is still generating. Closing will cancel it. Saved memories stay intact. '),yes=button('Cancel summary & close','lp-button'),no=button('Stay here','lp-button');yes.onclick=leave;no.onclick=()=>{this.renderAgain();this.root?.querySelector<HTMLButtonElement>('button')?.focus()};warning.append(yes,no);close.replaceWith(warning);no.focus()};root.append(refresh,close)"
+    },
+    {
+      "file": "src/mochi/memory-panel.ts",
+      "line": 90,
+      "kind": "icon or action boundary",
+      "source": "const generate=button('Generate summary','lp-button');generate.setAttribute('aria-label','Generate summary');generate.disabled=this.generating||!!this.ticket||this.unavailable()||!room.messages.length;generate.onclick=()=>{if(this.suggestion){const yes=button('Confirm generate a replacement suggestion','lp-button');yes.onclick=()=>this.generate();generate.replaceWith(yes);yes.focus()}else this.generate()};const stop=button('Stop summary','lp-button');stop.setAttribute('aria-label','Stop summary');stop.hidden=!this.generating;stop.disabled=!this.generating;stop.onclick=()=>{this.stopSummary();this.status='Summary stopped. Your saved memory and draft are unchanged.';this.renderAgain()};generation.append(generate,stop,el('p','mochi-muted','One request, full chosen prefix. Oversized ranges are rejected rather than silently trimmed.'))"
+    },
+    {
+      "file": "src/mochi/memory-panel.ts",
+      "line": 95,
+      "kind": "icon or action boundary",
+      "source": "const use=button('Use suggestion in summary editor','lp-button');use.disabled=!!this.ticket||this.generating"
+    },
+    {
+      "file": "src/mochi/memory-panel.ts",
+      "line": 97,
+      "kind": "icon or action boundary",
+      "source": "use.onclick=()=>{if(this.draft){const yes=button('Confirm replace unsaved summary draft','lp-button');yes.onclick=replace;use.replaceWith(yes);yes.focus()}else replace()}"
+    },
+    {
+      "file": "src/mochi/memory-panel.ts",
+      "line": 98,
+      "kind": "icon or action boundary",
+      "source": "const discard=button('Discard AI suggestion','lp-button');discard.onclick=()=>{const yes=button('Confirm discard AI suggestion','lp-button');yes.onclick=()=>{this.suggestionDrafts.delete(this.key);this.suggestion=undefined;this.renderAgain()};discard.replaceWith(yes);yes.focus()};preview.append(use,discard);root.append(preview)"
+    },
+    {
+      "file": "src/mochi/memory-panel.ts",
+      "line": 100,
+      "kind": "icon or action boundary",
+      "source": "if(!this.draft){const edit=button(current?'Edit current summary':'Create summary','lp-button');edit.disabled=!!this.ticket||!room.messages.length;edit.onclick=()=>{this.start(room)};root.append(edit);if(!room.messages.length)root.append(el('p','mochi-muted','Save a conversation message before selecting summary coverage.'))}"
+    },
+    {
+      "file": "src/mochi/memory-panel.ts",
+      "line": 112,
+      "kind": "icon or action boundary",
+      "source": "const dirty=el('p','mochi-muted','Draft — not applied. Save creates a new version.');dirty.setAttribute('role','status');const save=button(d.suggestionId?'Apply summary as new version':'Save summary version','lp-button');save.title='Save reviewed memory to this conversation; generating or using a suggestion does not save it.';save.type='submit';save.disabled=full||!!this.ticket||!d.suggestionId&&d.revision!==room.revision"
+    },
+    {
+      "file": "src/mochi/memory-panel.ts",
+      "line": 113,
+      "kind": "icon or action boundary",
+      "source": "if(!d.suggestionId&&d.revision!==room.revision){form.append(el('p','mochi-preview-warning','Conversation changed. Review the saved messages and covered boundary before saving.'));const review=button('Use refreshed conversation revision','lp-button');review.onclick=()=>{d.revision=room.revision;this.renderAgain()};form.append(review)}"
+    },
+    {
+      "file": "src/mochi/memory-panel.ts",
+      "line": 116,
+      "kind": "icon or action boundary",
+      "source": "if(d.suggestionId){form.append(el('p','mochi-muted','AI-based draft. Apply revalidates the original source; changed coverage requires regeneration or explicit manual review.'));const manual=button('Review as a manual draft','lp-button');manual.disabled=!!this.ticket;manual.onclick=()=>{const yes=button('Confirm manual review of text and covered messages','lp-button');yes.onclick=()=>{delete d.suggestionId;d.revision=room.revision;this.renderAgain()};manual.replaceWith(yes);yes.focus()};form.append(manual)}"
+    },
+    {
+      "file": "src/mochi/memory-panel.ts",
+      "line": 117,
+      "kind": "icon or action boundary",
+      "source": "const discard=button('Discard summary draft','lp-button');discard.disabled=!!this.ticket;discard.onclick=()=>{const yes=button('Confirm discard draft','lp-button');yes.onclick=()=>{this.drafts.delete(this.key);this.draft=undefined;this.renderAgain()};discard.replaceWith(yes);yes.focus()};form.append(dirty,save,discard);root.append(form)"
+    },
+    {
+      "file": "src/mochi/memory-panel.ts",
+      "line": 119,
+      "kind": "icon or action boundary",
+      "source": "if(current&&!this.draft){for(const [action,label]of [['disable','Disable summary'],['clear','Clear current summary']] as const){const b=button(label,'lp-button');b.disabled=!!this.ticket||action==='disable'&&!current.enabled;b.onclick=()=>this.confirm(b,'Confirm '+label.toLowerCase(),()=>this.request({action,confirmed:true}));root.append(b)}}"
+    },
+    {
+      "file": "src/mochi/memory-panel.ts",
+      "line": 120,
+      "kind": "icon or action boundary",
+      "source": "if(this.memory){const history=el('details');history.append(el('summary','',`Previous versions (${this.memory.versions.length}/100 retained)`));for(const [i,v]of this.memory.versions.entries()){const row=el('section','mochi-memory-version');row.append(el('h4','',`Version ${i+1} · ${new Date(v.savedAt).toLocaleString()}${v.id===this.memory.currentId?' · Selected saved version':''}`),el('p','mochi-muted',`${v.enabled?'Enabled when saved':'Disabled when saved'} · ${v.coverage?'Messages 1–'+v.coverage.count:'Cleared'}${v.restoredFrom?' · Restored copy':''}`),el('pre','mochi-memory-text',v.text||'Cleared'));const restore=button('Restore version '+(i+1),'lp-button');restore.disabled=full||!!this.ticket||!!this.draft;restore.onclick=()=>this.confirm(restore,'Confirm restore as new version',()=>this.request({action:'restore',versionId:v.id,confirmed:true}));row.append(restore);history.append(row)}root.append(history)}"
+    },
+    {
+      "file": "src/mochi/models.ts",
+      "line": 1,
+      "kind": "icon or action boundary",
+      "source": "import {mochiButton as button} from './ui/icon-slots.js'"
+    },
+    {
+      "file": "src/mochi/models.ts",
+      "line": 16,
+      "kind": "icon or action boundary",
+      "source": "const root=el('div','mochi-model-picker'),label=el('label','','Model'),row=el('div','mochi-model-picker-row'),select=el('select'),refresh=button('Refresh models','lp-button'),status=el('p','mochi-muted')"
+    },
+    {
+      "file": "src/mochi/notifications.ts",
+      "line": 1,
+      "kind": "icon or action boundary",
+      "source": "import {mochiButton as button} from './ui/icon-slots.js'"
+    },
+    {
+      "file": "src/mochi/notifications.ts",
+      "line": 20,
+      "kind": "icon or action boundary",
+      "source": "const toast = button('', 'lp-floating-notification mochi-notification-toast'); toast.setAttribute('role', 'status')"
+    },
+    {
+      "file": "src/mochi/personal-settings.ts",
+      "line": 1,
+      "kind": "icon or action boundary",
+      "source": "import {mochiButton as button} from './ui/icon-slots.js'"
+    },
+    {
+      "file": "src/mochi/personal-settings.ts",
+      "line": 35,
+      "kind": "icon or action boundary",
+      "source": "for(const name of PERSONAL_CATEGORIES){const tab=button(name,'lp-button mochi-category-tab');tab.setAttribute('aria-label',name);tab.setAttribute('aria-pressed',String(this.category===name));tab.onclick=()=>{this.category=name;this.focusCategory=true;this.categoryOpen=true;this.redraw()};nav.append(tab)}"
+    },
+    {
+      "file": "src/mochi/personal-settings.ts",
+      "line": 36,
+      "kind": "icon or action boundary",
+      "source": "const body=el('div','mochi-settings-scroll'),back=button('Back to Personal categories','mochi-category-back');back.onclick=()=>{this.categoryOpen=false;this.focusCategory=true;this.redraw()};body.append(back,el('h4','',this.category))"
+    },
+    {
+      "file": "src/mochi/personal-settings.ts",
+      "line": 38,
+      "kind": "icon or action boundary",
+      "source": "const refresh=button('Refresh presentation');refresh.onclick=()=>{this.load(true);this.redraw()};if(this.category==='General'||!this.saved)body.append(refresh)"
+    },
+    {
+      "file": "src/mochi/personal-settings.ts",
+      "line": 46,
+      "kind": "icon or action boundary",
+      "source": "const id=item.record.accountId||'legacy',choice=button(item.name+' · '+item.record.preferences.presentation+' · '+item.record.preferences.dock);choice.setAttribute('aria-pressed',String(this.source===id));choice.onclick=()=>{this.source=id;this.draft=structuredClone(item.record.preferences);this.redraw()};const preview=el('div','mochi-toolbar-live-preview');preview.setAttribute('aria-label','Layout preview for '+item.name);for(const key of item.record.preferences.order.filter(k=>!item.record.preferences.hidden.includes(k)&&['presets','memory','preview','notes'].includes(k))){const icon=el('span');icon.append(mochiIcon(key==='notes'?'pin':key==='presets'?'sliders':key==='memory'?'brain':key==='search'?'search':'eye','toolbar-'+key));icon.title=TOOLBAR_LABELS[key];preview.append(icon)}setup.append(choice,preview,el('small','mochi-muted','Source: '+id),el('small','mochi-muted',item.record.preferences.order.filter(k=>!item.record.preferences.hidden.includes(k)).map(k=>TOOLBAR_LABELS[k]).join(' · ')))"
+    },
+    {
+      "file": "src/mochi/personal-settings.ts",
+      "line": 47,
+      "kind": "icon or action boundary",
+      "source": "}const use=button('Use selected shared layout','mochi-primary');use.disabled=!this.source||!!this.ticket;use.onclick=()=>{this.request('save');this.redraw()};setup.append(use);body.append(setup);return root"
+    },
+    {
+      "file": "src/mochi/personal-settings.ts",
+      "line": 57,
+      "kind": "icon or action boundary",
+      "source": "for(const key of movable.filter(k=>!draft.hidden.includes(k))){const icon=el('span');icon.append(mochiIcon(key==='notes'?'pin':key==='presets'?'sliders':key==='memory'?'brain':key==='search'?'search':'eye','toolbar-'+key));icon.title=TOOLBAR_LABELS[key];icon.setAttribute('aria-label',TOOLBAR_LABELS[key]);preview.append(icon)}body.append(preview)"
+    },
+    {
+      "file": "src/mochi/personal-settings.ts",
+      "line": 61,
+      "kind": "icon or action boundary",
+      "source": "const row=el('div','mochi-toolbar-preference'),toggle=button((visible?'Hide ':'Show ')+TOOLBAR_LABELS[key]);toggle.setAttribute('aria-label','Show '+TOOLBAR_LABELS[key]);toggle.setAttribute('aria-pressed',String(visible));toggle.onclick=()=>{draft.hidden=draft.hidden.filter(k=>k!==key);if(visible)draft.hidden.push(key);this.redraw()}"
+    },
+    {
+      "file": "src/mochi/personal-settings.ts",
+      "line": 63,
+      "kind": "icon or action boundary",
+      "source": "const up=button('↑'),down=button('↓');up.setAttribute('aria-label','Move '+TOOLBAR_LABELS[key]+' up');down.setAttribute('aria-label','Move '+TOOLBAR_LABELS[key]+' down');up.disabled=index===0;down.disabled=index===movable.length-1;up.onclick=()=>move(-1);down.onclick=()=>move(1);row.append(toggle,up,down);group.append(row)"
+    },
+    {
+      "file": "src/mochi/personal-settings.ts",
+      "line": 68,
+      "kind": "icon or action boundary",
+      "source": "const wrap=el('label','mochi-scale-control',label),range=el('input'),output=el('output','',String(draft[key]||100)+'%');range.type='range';range.min='85';range.max=String(max);range.step='5';range.value=String(draft[key]||100);range.setAttribute('aria-label',label);range.setAttribute('aria-valuetext',range.value+'%');range.oninput=()=>{draft[key]=Number(range.value);output.value=range.value+'%';range.setAttribute('aria-valuetext',range.value+'%');const surface=root.closest<HTMLElement>('.mochi-desktop')||root.closest<HTMLElement>('.mochi-view');for(const node of [surface,...Array.from(surface?.querySelectorAll<HTMLElement>('.mochi-view,.mochi-sheet')||[])])node?.style.setProperty(key==='interfaceScale'?'--mochi-saved-interface-scale':'--mochi-saved-message-scale',String(Number(range.value)/100))};const reset=button('Reset '+label.toLowerCase());reset.onclick=()=>{draft[key]=100;this.redraw()};wrap.append(output,range,reset);body.append(wrap)"
+    },
+    {
+      "file": "src/mochi/personal-settings.ts",
+      "line": 70,
+      "kind": "icon or action boundary",
+      "source": "const preview=el('section','mochi-accessibility-preview');preview.append(el('h5','','Live preview'),el('p','','Navigation, settings and button labels'),button('Example control'),el('p','mochi-scale-message','A message bubble with independent text size.'));body.append(preview,el('p','mochi-muted','Preview updates immediately. Save applies across fictional accounts. Browser zoom remains available.'))"
+    },
+    {
+      "file": "src/mochi/personal-settings.ts",
+      "line": 73,
+      "kind": "icon or action boundary",
+      "source": "const actions=el('div','mochi-presentation-actions'),save=button('Save presentation','mochi-primary'),cancel=button('Cancel changes'),reset=button('Restore defaults');cancel.setAttribute('aria-label','Cancel presentation changes');reset.setAttribute('aria-label','Restore default presentation');save.disabled=!!this.ticket||(!this.saved.revision&&this.layouts.length>0&&!this.source);save.onclick=()=>{this.request('save');this.redraw()};cancel.onclick=()=>{this.discard();this.redraw()};reset.onclick=()=>{this.draft=messengerUIPreferences();this.redraw()};actions.append(save,cancel,reset);root.append(actions)"
+    },
+    {
+      "file": "src/mochi/pins-panel.ts",
+      "line": 1,
+      "kind": "icon or action boundary",
+      "source": "import {mochiButton as button} from './ui/icon-slots.js'"
+    },
+    {
+      "file": "src/mochi/pins-panel.ts",
+      "line": 21,
+      "kind": "icon or action boundary",
+      "source": "const row=el('div','mochi-pin-row'),jump=button(`${m.name}: ${quoteExcerpt(m.content)}`,'mochi-pin-jump')"
+    },
+    {
+      "file": "src/mochi/pins-panel.ts",
+      "line": 23,
+      "kind": "icon or action boundary",
+      "source": "const remove=button('Unpin','lp-button');remove.disabled=owner.unavailable;remove.setAttribute('aria-label',`Unpin message by ${m.name}`);remove.onclick=()=>owner.mutate({action:'pin',messageId:id,pinned:false})"
+    },
+    {
+      "file": "src/mochi/pins-panel.ts",
+      "line": 38,
+      "kind": "icon or action boundary",
+      "source": "const save=button('Save system note','lp-button');save.type='submit';save.disabled=owner.unavailable"
+    },
+    {
+      "file": "src/mochi/pins-panel.ts",
+      "line": 39,
+      "kind": "icon or action boundary",
+      "source": "const cancel=button('Cancel editing','lp-button');cancel.type='button';cancel.onclick=()=>{"
+    },
+    {
+      "file": "src/mochi/pins-panel.ts",
+      "line": 40,
+      "kind": "icon or action boundary",
+      "source": "if(JSON.stringify(draft.note)!==draft.baseline){const confirm=button('Discard note draft','lp-button');confirm.onclick=()=>{owner.draft=undefined;owner.setDraft(undefined);render()};cancel.replaceWith(confirm);confirm.focus()}"
+    },
+    {
+      "file": "src/mochi/pins-panel.ts",
+      "line": 47,
+      "kind": "icon or action boundary",
+      "source": "const retry=button('Apply draft to refreshed chat','lp-button');retry.type='button';retry.disabled=owner.unavailable;retry.onclick=()=>{draft.revision=room.revision;render()}"
+    },
+    {
+      "file": "src/mochi/pins-panel.ts",
+      "line": 55,
+      "kind": "icon or action boundary",
+      "source": "const edit=button('Edit note','lp-button');edit.disabled=owner.unavailable;edit.setAttribute('aria-label',`Edit system note ${n.title}`);edit.onclick=()=>start(n)"
+    },
+    {
+      "file": "src/mochi/pins-panel.ts",
+      "line": 56,
+      "kind": "icon or action boundary",
+      "source": "const toggle=button(n.enabled?'Disable note':'Enable note','lp-button');toggle.disabled=owner.unavailable;toggle.onclick=()=>owner.mutate({action:'note_save',noteId:n.id,title:n.title,body:n.body,enabled:!n.enabled})"
+    },
+    {
+      "file": "src/mochi/pins-panel.ts",
+      "line": 57,
+      "kind": "icon or action boundary",
+      "source": "const remove=button('Delete note','lp-button');remove.disabled=owner.unavailable;remove.onclick=()=>{const confirm=button('Confirm delete note','lp-button');confirm.onclick=()=>owner.mutate({action:'note_delete',noteId:n.id,confirmed:true});remove.replaceWith(confirm);confirm.focus()}"
+    },
+    {
+      "file": "src/mochi/pins-panel.ts",
+      "line": 60,
+      "kind": "icon or action boundary",
+      "source": "const add=button('New system note','lp-button');add.disabled=owner.unavailable||(room.systemNotes||[]).length>=8;add.onclick=()=>start();root.append(add)"
+    },
+    {
+      "file": "src/mochi/placement-controls.ts",
+      "line": 1,
+      "kind": "icon or action boundary",
+      "source": "import {mochiButton as button} from './ui/icon-slots.js'"
+    },
+    {
+      "file": "src/mochi/placement-controls.ts",
+      "line": 13,
+      "kind": "icon or action boundary",
+      "source": "const up=button('Move up','lp-button'),down=button('Move down','lp-button'),remove=button('Remove row','lp-button');up.disabled=i===0;down.disabled=i===draft.placement.rows.length-1;up.setAttribute('aria-label',`Move ${row.title} up`);down.setAttribute('aria-label',`Move ${row.title} down`);remove.setAttribute('aria-label',`Remove ${row.title}`)"
+    },
+    {
+      "file": "src/mochi/placement-controls.ts",
+      "line": 19,
+      "kind": "icon or action boundary",
+      "source": "const add=button('Add context row','lp-button');add.disabled=draft.placement.rows.length>=12;add.onclick=()=>{const key=choice.value;draft.placement!.rows.push({id:'section_'+crypto.randomUUID().replaceAll('-',''),title:key.replace('mochi_',''),template:'{{'+key+'}}'});redraw()};root.append(choice,add)"
+    },
+    {
+      "file": "src/mochi/preset-panel.ts",
+      "line": 2,
+      "kind": "icon or action boundary",
+      "source": "import {mochiButton as button} from './ui/icon-slots.js'"
+    },
+    {
+      "file": "src/mochi/preset-panel.ts",
+      "line": 53,
+      "kind": "icon or action boundary",
+      "source": "const refresh=button('Refresh preset library','lp-button');refresh.onclick=()=>this.load();const close=button('Return to conversation','lp-button');close.onclick=()=>{clearTimeout(this.timer);this.ticket='';this.open=false;this.redraw();this.returned()};const heading=el('div','mochi-preset-heading');heading.append(root.querySelector('h3')!,close);root.prepend(heading);controls.append(refresh)"
+    },
+    {
+      "file": "src/mochi/preset-panel.ts",
+      "line": 54,
+      "kind": "icon or action boundary",
+      "source": "const restore=button('Restore Mochi Default','lp-button');restore.onclick=()=>{const confirm=button('Confirm restore default','lp-button');confirm.onclick=()=>this.bind(DEFAULT_PRESET_ID,1);restore.replaceWith(confirm);confirm.focus()};controls.append(restore,el('small','mochi-muted','Applying a preset or restoring Default may cancel this chat’s pending replies. Publishing alone does not.'))"
+    },
+    {
+      "file": "src/mochi/preset-panel.ts",
+      "line": 61,
+      "kind": "icon or action boundary",
+      "source": "const apply=button('Apply selected preset','lp-button');apply.disabled=Boolean(this.ticket);apply.onclick=()=>{const id=select.value,p=this.bank!.presets.find(p=>p.id===id);const confirm=button('Confirm apply preset','lp-button');confirm.onclick=()=>this.bind(id,Number(revisionSelect.value));apply.replaceWith(confirm);confirm.focus()};controls.append(select,revisionSelect,apply)"
+    },
+    {
+      "file": "src/mochi/preset-panel.ts",
+      "line": 62,
+      "kind": "icon or action boundary",
+      "source": "const bound=this.bank.presets.find(p=>p.id===room.preset?.id);if(bound&&bound.revisions.length>room.preset!.revision){const update=button('Update to latest','lp-button');update.onclick=()=>{const confirm=button('Confirm update to latest','lp-button');confirm.onclick=()=>this.bind(bound.id,bound.revisions.length);update.replaceWith(confirm);confirm.focus()};controls.append(update)}"
+    },
+    {
+      "file": "src/mochi/preset-panel.ts",
+      "line": 63,
+      "kind": "icon or action boundary",
+      "source": "const create=button('Create preset','lp-button');create.disabled=Boolean(this.ticket)||Boolean(this.draft);create.onclick=()=>this.edit('create');const duplicate=button('Duplicate Mochi Default','lp-button');duplicate.disabled=Boolean(this.ticket)||Boolean(this.draft);duplicate.onclick=()=>this.request({action:'duplicate',id:DEFAULT_PRESET_ID,name:'Mochi Default copy',revision:this.bank!.revision});if(!this.draft)heading.append(create);controls.append(duplicate)"
+    },
+    {
+      "file": "src/mochi/preset-panel.ts",
+      "line": 64,
+      "kind": "icon or action boundary",
+      "source": "const customize=button('Customize Mochi Default v2','lp-button');customize.disabled=Boolean(this.ticket)||Boolean(this.draft);customize.onclick=()=>{this.customizing=true;this.request({action:'duplicate',id:DEFAULT_V2_PRESET_ID,sourceRevision:1,name:'Mochi Default v2 copy',revision:this.bank!.revision})};if(!this.draft)heading.append(customize)"
+    },
+    {
+      "file": "src/mochi/preset-panel.ts",
+      "line": 69,
+      "kind": "icon or action boundary",
+      "source": "for(const p of inspectable){const item=button(`${p.name} · r${p.revisions.length}${isBuiltInPreset(p.id)?' · built-in':p.archived?' · archived':''}`,'mochi-preset-library-item');item.setAttribute('aria-pressed',String(selected===p.id));item.onclick=()=>{const choose=()=>{this.draft=undefined;this.drafts.delete(this.key);this.selectedId=p.id;this.selectedRevision=undefined;this.redraw()};if(this.draft){const confirm=button('Discard draft and open preset','lp-button');confirm.onclick=choose;item.replaceWith(confirm);confirm.focus()}else choose()};library.append(item)}"
+    },
+    {
+      "file": "src/mochi/preset-panel.ts",
+      "line": 77,
+      "kind": "icon or action boundary",
+      "source": "const convert=button('Create block draft from this revision','lp-button');convert.onclick=()=>{d.blocks=convertLegacy(d);d.layout='blocks-v1';delete d.placement;d.dmInstructions='';d.groupInstructions='';this.redraw()}"
+    },
+    {
+      "file": "src/mochi/preset-panel.ts",
+      "line": 81,
+      "kind": "icon or action boundary",
+      "source": "const preview=button('Preview draft prompt','lp-button');preview.disabled=!this.previewDraft;preview.onclick=()=>{try{this.previewDraft?.(validateBlocks(d.blocks))}catch(error){this.status=(error as Error).message;this.redraw()}};form.append(preview)"
+    },
+    {
+      "file": "src/mochi/preset-panel.ts",
+      "line": 84,
+      "kind": "icon or action boundary",
+      "source": "const publish=button(d.action==='rename'?'Save preset name':'Publish preset revision','lp-button');publish.type='submit';publish.disabled=Boolean(this.ticket)||(d.action!=='rename'&&d.layout!=='blocks-v1');const cancel=button('Cancel preset editing','lp-button');cancel.onclick=()=>{const confirm=button('Discard preset draft','lp-button');confirm.onclick=()=>{this.drafts.delete(this.key);this.draft=undefined;this.redraw()};cancel.replaceWith(confirm);confirm.focus()}"
+    },
+    {
+      "file": "src/mochi/preset-panel.ts",
+      "line": 86,
+      "kind": "icon or action boundary",
+      "source": "if(d.revision!==this.bank.revision){publish.disabled=true;const review=button('Use refreshed library revision','lp-button');review.onclick=()=>{d.revision=this.bank!.revision;this.redraw()};const saved=this.bank.presets.find(p=>p.id===d.id);form.append(el('p','mochi-muted','Library changed. Review the current published content before using the refreshed revision.'),el('pre','',saved?JSON.stringify(saved.revisions.at(-1)): 'No saved preset for this new draft.'),review)}"
+    },
+    {
+      "file": "src/mochi/preset-panel.ts",
+      "line": 93,
+      "kind": "icon or action boundary",
+      "source": "const edit=button('Edit / publish','lp-button');edit.disabled=p.archived||Boolean(this.ticket);edit.onclick=()=>this.edit('publish',p,published.revision);const rename=button('Rename','lp-button');rename.disabled=Boolean(this.ticket);rename.onclick=()=>this.edit('rename',p)"
+    },
+    {
+      "file": "src/mochi/preset-panel.ts",
+      "line": 94,
+      "kind": "icon or action boundary",
+      "source": "const copy=button(isBuiltInPreset(p.id)?'Duplicate / customize':'Duplicate','lp-button');copy.disabled=Boolean(this.ticket);copy.onclick=()=>{this.customizing=isBuiltInPreset(p.id);this.request({action:'duplicate',id:p.id,sourceRevision:published.revision,name:(p.name+' copy').slice(0,80),revision:this.bank!.revision})}"
+    },
+    {
+      "file": "src/mochi/preset-panel.ts",
+      "line": 95,
+      "kind": "icon or action boundary",
+      "source": "const archive=button(p.archived?'Restore archived preset':'Archive','lp-button');archive.disabled=Boolean(this.ticket);archive.onclick=()=>this.request({action:p.archived?'restore':'archive',id:p.id,revision:this.bank!.revision});if(published.layout==='blocks-v1'){for(const c of published.blocks!.categories){const section=el('details');section.append(el('summary','',c.name+' · '+c.blocks.length+' blocks'));for(const b of c.blocks)section.append(el('p','',`${b.enabled?'Enabled':'Disabled'} · ${b.name} · ${b.role} · ${b.position} · ${b.audience}`),el('pre','',b.content));row.append(section)}}else row.append(el('p','mochi-muted',published.layout==='manual-v1'?'Legacy manual context placement':'Legacy automatic context placement'),el('pre','',published.dmInstructions||'No additional DM instructions.'),el('pre','',published.groupInstructions||'No additional Group instructions.'))"
+    },
+    {
+      "file": "src/mochi/preset-panel.ts",
+      "line": 102,
+      "kind": "icon or action boundary",
+      "source": "for(const details of root.querySelectorAll<HTMLDetailsElement>('details')){if(details.closest('.mochi-block-editor'))continue;const key=details.querySelector('summary')?.textContent||'';details.classList.add('mochi-disclosure');mochiDisclosureIcon(details);details.querySelector('summary')?.setAttribute('title',key);details.open=this.disclosures.has(key);details.ontoggle=()=>{if(details.open)this.disclosures.add(key);else this.disclosures.delete(key)}}"
+    },
+    {
+      "file": "src/mochi/preview-panel.ts",
+      "line": 2,
+      "kind": "icon or action boundary",
+      "source": "import {mochiButton as button} from './ui/icon-slots.js'"
+    },
+    {
+      "file": "src/mochi/preview-panel.ts",
+      "line": 44,
+      "kind": "icon or action boundary",
+      "source": "const refresh=button('Refresh preview','lp-button');refresh.onclick=()=>this.refresh();const close=button(this.draftBlocks?'Back to preset draft':'Close preview','lp-button');close.onclick=()=>{this.cancel();this.open=false;this.redraw();this.returned()};controls.append(scenario,responder,refresh,close);root.append(controls)"
+    },
+    {
+      "file": "src/mochi/preview-panel.ts",
+      "line": 56,
+      "kind": "icon or action boundary",
+      "source": "const disclosure=(label:string,key=label)=>{const details=el('details','mochi-disclosure'),summary=el('summary','',label);summary.title=label;details.open=this.expanded.has(key);details.ontoggle=()=>{if(details.open)this.expanded.add(key);else this.expanded.delete(key)};details.append(summary);mochiDisclosureIcon(details);return details}"
+    },
+    {
+      "file": "src/mochi/profile-screen.ts",
+      "line": 1,
+      "kind": "icon or action boundary",
+      "source": "import {mochiButton as button} from './ui/icon-slots.js'"
+    },
+    {
+      "file": "src/mochi/profile-screen.ts",
+      "line": 36,
+      "kind": "icon or action boundary",
+      "source": "if(this.confirmation){const {kind,account}=this.confirmation;form.append(el('h3','',kind==='archive'?'Archive profile?':'Restore profile?'),el('p','mochi-muted',kind==='archive'?`Archive ${account.displayName} and preserve every chat and schedule? Autonomous work will stop while archived.`:`Restore ${account.displayName}? Preserved schedules may resume subject to their expiry and limits.`));const confirm=button(kind==='archive'?'Confirm archive and preserve chats':'Confirm restore profile','lp-button '+(kind==='archive'?'mochi-danger-action':'mochi-primary'));confirm.disabled=busy;confirm.onclick=()=>{send('mochi:account_'+kind,{accountId:account.id,revision:account.revision,confirmed:true,...(kind==='archive'?{roomPolicy:'preserve'}:{})});this.confirmation=undefined};const cancel=button('Cancel','lp-button');cancel.disabled=busy;cancel.onclick=()=>{this.confirmation=undefined;redraw()};form.append(confirm,cancel);return form}"
+    },
+    {
+      "file": "src/mochi/profile-screen.ts",
+      "line": 39,
+      "kind": "icon or action boundary",
+      "source": "const create=button('New profile','lp-button mochi-primary');create.disabled=busy;create.onclick=()=>{this.start();refreshSources();redraw()};form.append(create)"
+    },
+    {
+      "file": "src/mochi/profile-screen.ts",
+      "line": 41,
+      "kind": "icon or action boundary",
+      "source": "const edit=button('','mochi-card');edit.disabled=busy"
+    },
+    {
+      "file": "src/mochi/profile-screen.ts",
+      "line": 45,
+      "kind": "icon or action boundary",
+      "source": "for(const account of this.state.accounts.filter(a=>a.archived)){const restore=button('Restore '+account.displayName,'lp-button');restore.disabled=busy;restore.onclick=()=>{this.confirmation={kind:'restore',account};redraw()};form.append(restore)}"
+    },
+    {
+      "file": "src/mochi/profile-screen.ts",
+      "line": 46,
+      "kind": "icon or action boundary",
+      "source": "const back=button('Back','lp-button');back.onclick=exit;form.append(back);return form"
+    },
+    {
+      "file": "src/mochi/profile-screen.ts",
+      "line": 51,
+      "kind": "icon or action boundary",
+      "source": "const back=button('Back to Accounts','lp-button');back.onclick=()=>confirmDiscard(exit,back);form.prepend(back);form.querySelector('h3')!.tabIndex=-1"
+    },
+    {
+      "file": "src/mochi/profile-screen.ts",
+      "line": 75,
+      "kind": "icon or action boundary",
+      "source": "const row=el('div','mochi-persona-row'),pick=button('','mochi-persona-choice'),avatar=el('span','mochi-sidebar-avatar',p.name.slice(0,1));if(p.avatarUrl){const img=el('img');img.src=p.avatarUrl;img.alt='';avatar.replaceChildren(img)}"
+    },
+    {
+      "file": "src/mochi/profile-screen.ts",
+      "line": 80,
+      "kind": "icon or action boundary",
+      "source": "const independent=button(draft.id?'Use independent AI identity':'Independent Mochi Account','lp-button');independent.onclick=()=>{draft.persona='manual';draft.linked=false;draft.addonIds=[];redraw()};ai.append(independent)"
+    },
+    {
+      "file": "src/mochi/profile-screen.ts",
+      "line": 82,
+      "kind": "icon or action boundary",
+      "source": "const refresh=button('Refresh personas','lp-button mochi-secondary-action');refresh.onclick=refreshSources;ai.append(refresh)"
+    },
+    {
+      "file": "src/mochi/profile-screen.ts",
+      "line": 87,
+      "kind": "icon or action boundary",
+      "source": "if(saved?.personaLink){const sync=button('Sync from Lumiverse','lp-button');sync.disabled=busy||this.hasUnsavedChanges();sync.onclick=()=>{if(this.hasUnsavedChanges()){sync.disabled=true;linked.append(el('p','mochi-muted','Save or cancel your changes first.'));return}send('mochi:account_sync_preview',{accountId:saved.id,revision:saved.revision})};linked.append(sync,el('small','mochi-muted','Save or cancel draft changes before reviewing sync.'))}"
+    },
+    {
+      "file": "src/mochi/profile-screen.ts",
+      "line": 115,
+      "kind": "icon or action boundary",
+      "source": "if(saved){const archive=button('Archive profile','lp-button mochi-danger-action');archive.disabled=busy;archive.onclick=()=>{this.confirmation={kind:'archive',account:saved};redraw()};form.append(archive)}"
+    },
+    {
+      "file": "src/mochi/profile-screen.ts",
+      "line": 116,
+      "kind": "icon or action boundary",
+      "source": "const save=button(busy?'Saving…':'Save profile','lp-button mochi-primary');save.type='submit';save.disabled=busy"
+    },
+    {
+      "file": "src/mochi/profile-screen.ts",
+      "line": 117,
+      "kind": "icon or action boundary",
+      "source": "const cancel=button('Cancel profile changes','lp-button');cancel.disabled=busy;cancel.onclick=()=>confirmDiscard(()=>{this.draft=null;exit()},cancel);const actions=el('div','mochi-profile-actions');actions.append(save,cancel);form.append(actions)"
+    },
+    {
+      "file": "src/mochi/profile-screen.ts",
+      "line": 124,
+      "kind": "icon or action boundary",
+      "source": "const back=button('Back to Edit Account','lp-button');back.onclick=()=>confirmDiscard(()=>{this.backSync();redraw()},back);root.append(back)"
+    },
+    {
+      "file": "src/mochi/profile-screen.ts",
+      "line": 141,
+      "kind": "icon or action boundary",
+      "source": "const apply=button('Apply approved changes','lp-button mochi-primary');apply.disabled=busy;apply.onclick=()=>send('mochi:account_sync',{accountId:review.accountId,revision:review.revision,signature:review.signature,fields:[...this.syncFields],addons:[...this.syncAddons].map(([id,enabled])=>({id,enabled}))});root.append(apply)"
+    },
+    {
+      "file": "src/mochi/reactions.ts",
+      "line": 2,
+      "kind": "retained artwork/content",
+      "source": "export const REACTION_EMOJI=['👍','❤️','😂','😮','😢','🎉','🤔','👀'] as const"
+    },
+    {
+      "file": "src/mochi/reactions.ts",
+      "line": 10,
+      "kind": "retained artwork/content",
+      "source": "if(!r||!REACTION_EMOJI.includes(r.emoji)||typeof r.name!=='string'||r.name.length>120||!r.name.trim()||!['user','character'].includes(r.actor)||typeof r.actorId!=='string'||(r.actor==='user'?r.actorId!=='legacy'&&!/^account_[a-f0-9]{32}$/.test(r.actorId):!/^[A-Za-z0-9_.:-]{1,180}$/.test(r.actorId)))throw Error('Unsupported reaction ownership; stored history was preserved.')"
+    },
+    {
+      "file": "src/mochi/search-panel.ts",
+      "line": 1,
+      "kind": "icon or action boundary",
+      "source": "import {mochiButton as button} from './ui/icon-slots.js'"
+    },
+    {
+      "file": "src/mochi/search-panel.ts",
+      "line": 62,
+      "kind": "icon or action boundary",
+      "source": "const search=button('Search','lp-button');search.type='submit'"
+    },
+    {
+      "file": "src/mochi/search-panel.ts",
+      "line": 63,
+      "kind": "icon or action boundary",
+      "source": "const clear=button('Clear','lp-button mochi-search-secondary');clear.setAttribute('aria-label','Clear search');clear.title='Clear search';clear.onclick=()=>{this.cancel();this.query='';this.sender='';this.page=undefined;this.status='Enter text to search this conversation.';this.redraw()}"
+    },
+    {
+      "file": "src/mochi/search-panel.ts",
+      "line": 64,
+      "kind": "icon or action boundary",
+      "source": "const close=button('×','lp-button mochi-search-secondary');close.setAttribute('aria-label','Close search');close.title='Close search';close.onclick=()=>{if(this.pending)this.status='Search canceled. Search again when ready.';this.cancel();this.open=false;this.redraw();this.returned()}"
+    },
+    {
+      "file": "src/mochi/search-panel.ts",
+      "line": 68,
+      "kind": "icon or action boundary",
+      "source": "for(const result of this.page?.results||[]){const entry=button('','mochi-search-result');entry.setAttribute('aria-label',`Go to message ${result.position} by ${result.name}`);entry.append(el('strong','',result.name),el('small','',`${new Date(result.createdAt).toLocaleString()} · Message ${result.position}`),el('span','',result.excerpt));entry.onclick=()=>this.run(0,result.id);results.append(entry)}"
+    },
+    {
+      "file": "src/mochi/search-panel.ts",
+      "line": 69,
+      "kind": "icon or action boundary",
+      "source": "if(this.page){const paging=el('div','mochi-search-paging');if(this.page.offset){const prev=button('Previous results','lp-button');prev.onclick=()=>this.run(Math.max(0,this.page!.offset-30));paging.append(prev)}if(this.page.nextOffset!==undefined){const next=button('Next results','lp-button');next.onclick=()=>this.run(this.page!.nextOffset);paging.append(next)}results.append(paging)}"
+    },
+    {
+      "file": "src/mochi/service.ts",
+      "line": 16,
+      "kind": "retained artwork/content",
+      "source": "import { REACTION_EMOJI, readReactions } from './reactions.js'"
+    },
+    {
+      "file": "src/mochi/service.ts",
+      "line": 518,
+      "kind": "icon or action boundary",
+      "source": "async action(userId: string, input: any): Promise<void> {"
+    },
+    {
+      "file": "src/mochi/service.ts",
+      "line": 576,
+      "kind": "retained artwork/content",
+      "source": "if(!REACTION_EMOJI.includes(input.emoji)||input.actor!==undefined||input.actorId!==undefined||input.characterId!==undefined)throw Error('Invalid user reaction.')"
+    },
+    {
+      "file": "src/mochi/service.ts",
+      "line": 1027,
+      "kind": "icon or action boundary",
+      "source": "if (payload.type === 'mochi:message_action') await this.action(userId, payload)"
+    },
+    {
+      "file": "src/mochi/session.ts",
+      "line": 119,
+      "kind": "icon or action boundary",
+      "source": "const clean = (action: () => void) => { try { action() } catch (error) { failure ||= error } }"
+    },
+    {
+      "file": "src/mochi/settings-workspace.ts",
+      "line": 1,
+      "kind": "icon or action boundary",
+      "source": "import {mochiButton as button} from './ui/icon-slots.js'"
+    },
+    {
+      "file": "src/mochi/settings-workspace.ts",
+      "line": 36,
+      "kind": "icon or action boundary",
+      "source": "const edit=button('Edit');edit.setAttribute('aria-label',`Edit character ${index+1}: ${name}`);edit.dataset.characterId=id;edit.onclick=()=>{this.overviewScroll=this.scroll;this.scroll=0;this.character=id;this.characterTab=this.category==='Availability & Schedules'?'availability':'texting';this.focus='back';redraw()};row.append(avatar,copy,edit);list.append(row)"
+    },
+    {
+      "file": "src/mochi/settings-workspace.ts",
+      "line": 42,
+      "kind": "icon or action boundary",
+      "source": "for(const name of ['Presets','Preview AI prompt','Conversation Memory','Pins & Notes']){const b=button(name);b.onclick=()=>tools(name,b);categories.get(name==='Presets'?'AI & Replies':name==='Pins & Notes'?'Advanced':'Memory & Context')!.append(b)}"
+    },
+    {
+      "file": "src/mochi/settings-workspace.ts",
+      "line": 47,
+      "kind": "icon or action boundary",
+      "source": "for(const name of SETTINGS_CATEGORIES){const tab=button(name,'lp-button mochi-category-tab');tab.setAttribute('aria-label',name);tab.setAttribute('aria-pressed',String(this.category===name));tab.onclick=()=>{this.category=name;this.focusCategory=true;this.categoryOpen=true;this.character='';this.scroll=0;redraw()};nav.append(tab)}"
+    },
+    {
+      "file": "src/mochi/settings-workspace.ts",
+      "line": 48,
+      "kind": "icon or action boundary",
+      "source": "const categoryBack=button('Back to Chat categories','mochi-category-back');categoryBack.onclick=()=>{this.categoryOpen=false;this.focusCategory=true;redraw()};scroller.append(categoryBack)"
+    },
+    {
+      "file": "src/mochi/settings-workspace.ts",
+      "line": 57,
+      "kind": "icon or action boundary",
+      "source": "const detailNav=el('nav','mochi-character-detail-nav');for(const [key,label]of [['texting','Texting & nickname'],['availability','Availability'],['profile','Mochi Character Profile']] as const){const tab=button(label);tab.setAttribute('aria-label','Character '+key+' settings');tab.setAttribute('aria-pressed',String(this.characterTab===key));tab.onclick=()=>{this.characterTab=key;this.scroll=0;redraw()};detailNav.append(tab)}"
+    },
+    {
+      "file": "src/mochi/settings-workspace.ts",
+      "line": 59,
+      "kind": "icon or action boundary",
+      "source": "const back=button('Back to characters');back.onclick=()=>{const id=this.character;this.character='';this.scroll=this.overviewScroll;this.focus=id;redraw()}"
+    },
+    {
+      "file": "src/mochi/sidebar-icon.ts",
+      "line": 5,
+      "kind": "retained artwork/content",
+      "source": "export const MOCHI_SIDEBAR_ICON = mascot"
+    },
+    {
+      "file": "src/mochi/sidebar.ts",
+      "line": 1,
+      "kind": "icon or action boundary",
+      "source": "import {mochiButton} from './ui/icon-slots.js'"
+    },
+    {
+      "file": "src/mochi/sidebar.ts",
+      "line": 30,
+      "kind": "icon or action boundary",
+      "source": "const button=(label:string,click:(node:HTMLButtonElement)=>void)=>{const node=mochiButton(label,'');node.onclick=()=>click(node);return node}"
+    },
+    {
+      "file": "src/mochi/sidebar.ts",
+      "line": 57,
+      "kind": "icon or action boundary",
+      "source": "const accounts=button('Refresh accounts',()=>session.prepareNavigation()),open=button('Open Mochi',()=>present())"
+    },
+    {
+      "file": "src/mochi/sidebar.ts",
+      "line": 58,
+      "kind": "icon or action boundary",
+      "source": "const close=button('Close',anchor=>session.view.confirmGenerationExit(()=>{workspace?.close();mobileSurface?.hide();showPicker()},anchor))"
+    },
+    {
+      "file": "src/mochi/sidebar.ts",
+      "line": 61,
+      "kind": "icon or action boundary",
+      "source": "const glyph=(label:string,icon:string,click:(node:HTMLButtonElement)=>void)=>{const node=button('',click);node.className='mochi-account-icon';node.title=label;node.setAttribute('aria-label',label);node.dataset.mochiAction='account-'+icon;node.append(mochiIcon(icon,'account-'+icon));return node}"
+    },
+    {
+      "file": "src/mochi/sidebar.ts",
+      "line": 96,
+      "kind": "icon or action boundary",
+      "source": "const create=glyph('New account','plus',anchor=>edit(anchor,true));create.disabled=state.switching;tools.append(search,create);picker.append(tools)"
+    },
+    {
+      "file": "src/mochi/sidebar.ts",
+      "line": 99,
+      "kind": "icon or action boundary",
+      "source": "const order=glyph(descending?'Sort ascending':'Sort descending','sort',()=>{descending=!descending;render()}),view=glyph(grid?'Show list':'Show grid',grid?'list':'grid',()=>{grid=!grid;render()}),batch=glyph('Select multiple accounts','check',()=>{bulk=!bulk;selected.clear();render()});batch.setAttribute('aria-pressed',String(bulk))"
+    },
+    {
+      "file": "src/mochi/sidebar.ts",
+      "line": 100,
+      "kind": "icon or action boundary",
+      "source": "const archive=glyph(archived?'Show active accounts':'Show archived accounts','archive',()=>{archived=!archived;selected.clear();render()});archive.setAttribute('aria-pressed',String(archived));bar.append(sortBy,order,view,batch,archive);picker.append(bar)"
+    },
+    {
+      "file": "src/mochi/sidebar.ts",
+      "line": 107,
+      "kind": "icon or action boundary",
+      "source": "const node=button('',anchor=>{if(archived)session.view.openAccountRecovery(anchor,showPicker);else session.view.selectNavigationAccount(account.id,anchor,()=>render())});node.className='mochi-sidebar-account';node.dataset.accountId=account.id"
+    },
+    {
+      "file": "src/mochi/sidebar.ts",
+      "line": 111,
+      "kind": "icon or action boundary",
+      "source": "row.append(node);if(!archived){const settings=glyph('Edit account '+account.displayName,'settings',anchor=>edit(anchor,false,account.id));settings.disabled=state.switching;row.append(settings)}list.append(row)"
+    },
+    {
+      "file": "src/mochi/sidebar.ts",
+      "line": 113,
+      "kind": "icon or action boundary",
+      "source": "if(bulk){message(`${selected.size} selected · ${all.filter(a=>selected.has(a.id)).reduce((n,a)=>n+a.roomIds.length,0)} preserved chats`);picker.append(button('Select all shown',()=>{visible.forEach(a=>selected.add(a.id));render()}),button('Clear selection',()=>{selected.clear();render()}))}"
+    },
+    {
+      "file": "src/mochi/sidebar.ts",
+      "line": 114,
+      "kind": "icon or action boundary",
+      "source": "if(state.accounts.legacyRoomCount){const recovery=document.createElement('details'),summary=document.createElement('summary');summary.textContent='Legacy recovery';recovery.append(summary,button(`Review ${state.accounts.legacyRoomCount} unassigned chats`,anchor=>session.view.selectNavigationAccount(undefined,anchor,present)));picker.append(recovery)}"
+    },
+    {
+      "file": "src/mochi/toolbar-icons.ts",
+      "line": 2,
+      "kind": "icon or action boundary",
+      "source": "/** Compatibility string API. Mochi uses mochiIcon() for asset lifecycle. */"
+    },
+    {
+      "file": "src/mochi/ui/icon-slots.ts",
+      "line": 40,
+      "kind": "icon or action boundary",
+      "source": "export function mochiIcon(icon:string,slot=icon):HTMLSpanElement {"
+    },
+    {
+      "file": "src/mochi/ui/icon-slots.ts",
+      "line": 45,
+      "kind": "icon or action boundary",
+      "source": "node.innerHTML=(LUCIDE[icon]||LUCIDE.refresh).replace(/>\\s+</g,'><').trim()"
+    },
+    {
+      "file": "src/mochi/ui/icon-slots.ts",
+      "line": 80,
+      "kind": "icon or action boundary",
+      "source": "const glyphs:Record<string,string>={'×':'close','✕':'close','↑':'up','↓':'down','⋯':'more','⠿':'drag','□':'maximize','◢':'resize'}"
+    },
+    {
+      "file": "src/mochi/ui/icon-slots.ts",
+      "line": 96,
+      "kind": "icon or action boundary",
+      "source": "export function mochiButton(label:string,className='lp-button'):HTMLButtonElement {"
+    },
+    {
+      "file": "src/mochi/ui/icon-slots.ts",
+      "line": 99,
+      "kind": "icon or action boundary",
+      "source": "if(icon){node.setAttribute('aria-label',({up:'Move up',down:'Move down',more:'More actions',close:'Close'} as Record<string,string>)[icon]||icon);node.append(mochiIcon(icon));node.dataset.mochiAction=icon}"
+    },
+    {
+      "file": "src/mochi/ui/icon-slots.ts",
+      "line": 100,
+      "kind": "icon or action boundary",
+      "source": "else if(label.startsWith('← ')){node.append(mochiIcon('back'),document.createTextNode(label.slice(2)));node.dataset.mochiAction='back'}"
+    },
+    {
+      "file": "src/mochi/ui/icon-slots.ts",
+      "line": 101,
+      "kind": "icon or action boundary",
+      "source": "else if(label.startsWith('+ ')){node.setAttribute('aria-label',label);node.append(mochiIcon('plus','add'),document.createTextNode(label.slice(2)));node.dataset.mochiAction='add'}"
+    },
+    {
+      "file": "src/mochi/ui/icon-slots.ts",
+      "line": 105,
+      "kind": "icon or action boundary",
+      "source": "if(entry){const slot=mochiIcon(entry[1],entry[2]);slot.dataset.mochiOptional='true';node.prepend(slot);node.dataset.mochiAction=entry[2]}"
+    },
+    {
+      "file": "src/mochi/ui/icon-slots.ts",
+      "line": 107,
+      "kind": "icon or action boundary",
+      "source": "if(/(?:^|\\s)mochi-(?:choice|category-tab)(?:\\s|$)/.test(className)){const selected=mochiIcon('check','selected');selected.dataset.mochiSelectedIndicator='true';node.append(selected)}"
+    },
+    {
+      "file": "src/mochi/ui/icon-slots.ts",
+      "line": 112,
+      "kind": "icon or action boundary",
+      "source": "export function mochiDisclosureIcon(details:HTMLElement):void {"
+    },
+    {
+      "file": "src/mochi/ui/icon-slots.ts",
+      "line": 114,
+      "kind": "icon or action boundary",
+      "source": "if(summary&&!summary.querySelector('[data-mochi-icon-action=\"disclosure\"]'))summary.append(mochiIcon('chevron','disclosure'))"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 2,
+      "kind": "icon or action boundary",
+      "source": "import {mochiButton as button} from './ui/icon-slots.js'"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 5,
+      "kind": "retained artwork/content",
+      "source": "import {GROUP_ICONS,chatIdentity,chatPortrait} from './chat-identity.js'"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 24,
+      "kind": "icon or action boundary",
+      "source": "function action(label: string, icon: string, compact = false): HTMLButtonElement {"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 25,
+      "kind": "icon or action boundary",
+      "source": "const node = button('', `lp-button${compact ? ' mochi-icon-button' : ''}`)"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 28,
+      "kind": "icon or action boundary",
+      "source": "const glyph=mochiIcon(icon,slot);node.dataset.mochiAction=slot"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 41,
+      "kind": "retained artwork/content",
+      "source": "import {MOCHI_SIDEBAR_ICON} from './sidebar-icon.js'"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 42,
+      "kind": "retained artwork/content",
+      "source": "import {mochiWordmark} from './wordmark.js'"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 45,
+      "kind": "retained artwork/content",
+      "source": "import {REACTION_EMOJI,REACTION_NAMES,readReactions} from './reactions.js'"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 207,
+      "kind": "icon or action boundary",
+      "source": "const node=navigate&&original?button('','mochi-quote'):el('div','mochi-quote');node.setAttribute('aria-label',label)"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 284,
+      "kind": "icon or action boundary",
+      "source": "const stay=action('Stay here','back'),leave=action('Cancel generation & leave','stop');content.append(stay,leave)"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 293,
+      "kind": "icon or action boundary",
+      "source": "const keep=action('Keep editing','edit'),discard=action(notice?'Discard edits, cancel generation & leave':'Discard changes','back')"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 556,
+      "kind": "retained artwork/content",
+      "source": "const wordmark=el('h2'),mascot=el('span','mochi-shell-mascot');wordmark.setAttribute('aria-label','Mochi');wordmark.append(mochiWordmark());mascot.innerHTML=MOCHI_SIDEBAR_ICON;mascot.setAttribute('aria-hidden','true');branding.append(wordmark,mascot);heading.append(branding)"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 563,
+      "kind": "icon or action boundary",
+      "source": "create.setAttribute('aria-label','New Chat');create.title='New Chat';create.replaceChildren(mochiIcon('plus','add'),el('span','','New Chat'));newChat=create;noticesButton=notices"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 569,
+      "kind": "icon or action boundary",
+      "source": "for(const [key,label] of [['all','All'],['groups','Groups']] as const){const control=button(label,'lp-button');control.setAttribute('aria-pressed',String(this.conversationView===key));control.onclick=()=>{this.conversationView=key;for(const [id,node]of viewButtons)node.setAttribute('aria-pressed',String(id===key));updateFilter()};viewButtons.set(key,control);views.append(control)}"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 574,
+      "kind": "icon or action boundary",
+      "source": "const row=button('','mochi-desktop-room');row.setAttribute('aria-label',`Open conversation: ${room.title}`)"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 595,
+      "kind": "icon or action boundary",
+      "source": "const settings=action('Account Settings','settings',true);settings.disabled=!this.accountNavigation;settings.onclick=()=>this.accountNavigation?.settings(settings)"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 596,
+      "kind": "icon or action boundary",
+      "source": "const logout=action('Log out of fictional account','logout',true);logout.onclick=()=>{if(this.accountNavigation?.logout)this.accountNavigation.logout(logout);else this.logoutNavigationAccount(logout,()=>this.redraw())}"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 601,
+      "kind": "icon or action boundary",
+      "source": "const back=el('div','mochi-desktop-back'),backButton=button('← Conversations');backButton.setAttribute('aria-label','Back to conversations')"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 621,
+      "kind": "icon or action boundary",
+      "source": "const change=action('Switch Mochi account','people');change.onclick=()=>{if(this.accountNavigation)this.accountNavigation.picker();else this.exitPortal(()=>this.showPicker(),change,true)};controls.append(change)"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 622,
+      "kind": "icon or action boundary",
+      "source": "const profiles=action(stateAccountLabel(this.state?.accountId),'profile');profiles.disabled=this.busy"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 624,
+      "kind": "icon or action boundary",
+      "source": "const create=action('New chat','plus');create.disabled=this.busy;create.onclick=()=>this.exitPortal(()=>{this.creating=true;this.draft=null;this.refreshChoices();this.redraw()},create);controls.append(create)"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 625,
+      "kind": "icon or action boundary",
+      "source": "if(this.notificationPolicy().enabled){const notices=action('Mochi notifications','notifications',true),unread=this.state?.notifications?.filter(n=>!n.read).length||0;notices.title=`Mochi notifications · ${unread} unread`;notices.setAttribute('aria-description',`${unread} unread notifications`);notices.onclick=()=>this.exitPortal(()=>{this.leave();this.notificationsOpen=!this.notificationsOpen;this.redraw()},notices,true);controls.append(notices)}"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 640,
+      "kind": "retained artwork/content",
+      "source": "wordmark.append(mochiWordmark())"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 644,
+      "kind": "icon or action boundary",
+      "source": "const bell = action('Mochi notifications', 'notifications', true); const unread = this.state?.notifications?.filter(n => !n.read).length || 0; bell.dataset.unread = String(unread > 0); bell.title = `Mochi notifications · ${unread} unread`; if (unread) bell.append(el('span', 'mochi-unread-count', String(unread)))"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 651,
+      "kind": "icon or action boundary",
+      "source": "const choose = action('Choose conversation', 'back'); choose.onclick = configure; page.append(choose); return page"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 656,
+      "kind": "icon or action boundary",
+      "source": "const choose = action('Choose connection', 'settings')"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 674,
+      "kind": "icon or action boundary",
+      "source": "const info = surface==='desktop'?button('', 'mochi-room-info mochi-identity-button'):el('div','mochi-room-info'), selector = el('select', 'mochi-room-selector'); selector.setAttribute('aria-label', 'Select chat')"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 679,
+      "kind": "icon or action boundary",
+      "source": "const groupIcon = el('span', 'mochi-room-select-icon'); groupIcon.setAttribute('aria-hidden', 'true'); groupIcon.append(mochiIcon('people','participants'))"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 688,
+      "kind": "icon or action boundary",
+      "source": "const inbox = action('Chat inbox', 'back', true); inbox.onclick = () => this.confirmNavigation(() => { this.select(''); this.navigate() },inbox,true)"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 691,
+      "kind": "icon or action boundary",
+      "source": "more.setAttribute('aria-label','Room options');more.title='Room options';more.dataset.mochiAction='room-options';more.append(mochiIcon('ellipsis','room-options'))"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 693,
+      "kind": "icon or action boundary",
+      "source": "const menuAction=(label:string,callback:()=>void)=>{const item=button(label,'lp-conversation-menu-action');item.setAttribute('aria-label',label);item.addEventListener('click',()=>{menu.open=false;callback()});return item}"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 718,
+      "kind": "icon or action boundary",
+      "source": "for(const key of ['search','notifications','participants'] as const){const original=Array.from(menuSheet.querySelectorAll<HTMLButtonElement>('button')).find(b=>b.textContent===route[key]);if(!original&&surface!=='desktop')continue;const shortcut=action(TOOLBAR_LABELS[key],icons[key],true);if(original)shortcut.onclick=()=>original.click();else{shortcut.disabled=true;shortcut.title='Mochi notifications are disabled on this surface'}permanent.append(shortcut);if(original&&['search','participants'].includes(key))original.remove()}"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 719,
+      "kind": "icon or action boundary",
+      "source": "for(const key of preferences.order){if(['search','participants','notifications','settings'].includes(key)||preferences.hidden.includes(key))continue;const original=Array.from(menuSheet.querySelectorAll<HTMLButtonElement>('button')).find(b=>b.textContent===route[key]);if(!original)continue;const shortcut=action(TOOLBAR_LABELS[key],icons[key],true);shortcut.title=TOOLBAR_LABELS[key];if(preferences.presentation==='labels')shortcut.append(el('span','mochi-toolbar-label',TOOLBAR_LABELS[key]));shortcut.onclick=()=>original.click();controls.append(shortcut)}"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 721,
+      "kind": "icon or action boundary",
+      "source": "const chatSettings=action('Chat Settings','settings',true);chatSettings.onclick=()=>this.openSettings('chat',chatSettings)"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 741,
+      "kind": "icon or action boundary",
+      "source": "const change=action('Switch Mochi account','people');change.onclick=()=>this.showPicker();inboxActions.append(change)"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 742,
+      "kind": "icon or action boundary",
+      "source": "const profiles=action(stateAccountLabel(this.state.accountId),'profile');profiles.disabled=this.busy;profiles.onclick=()=>{this.leave();this.profilesOpen=true;const current=this.profiles.state?.accounts.find(a=>a.id===this.state?.accountId);if(current)this.profiles.start(current);else this.profiles.draft=null;this.dispatch('mochi:accounts')};inboxActions.append(profiles)"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 743,
+      "kind": "icon or action boundary",
+      "source": "const create = action('New chat', 'plus'); create.classList.add('mochi-primary'); create.disabled = this.busy"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 747,
+      "kind": "icon or action boundary",
+      "source": "const row = button('', 'mochi-card')"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 776,
+      "kind": "icon or action boundary",
+      "source": "const head=el('div','mochi-settings-heading'),close=button(room?'Return to conversation':'Return to conversations');head.append(el('h3','','Mochi Settings'),close)"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 779,
+      "kind": "icon or action boundary",
+      "source": "for(const [key,label]of [['chat','Chat'],['personal','Personal']] as const){const tab=button(label);tab.setAttribute('aria-pressed',String(this.settingsPage===key));tab.disabled=key==='chat'&&!room;tab.onclick=()=>{this.settingsPage=key;this.personalSettings.load();this.redraw()};tabs.append(tab)}"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 818,
+      "kind": "icon or action boundary",
+      "source": "const refreshChips=()=>{selected.replaceChildren();for(const id of draft.characterIds){const c=state.characters.find(c=>c.id===id),chip=button((c?.name||'Unavailable character'),'mochi-participant-chip');chip.append(mochiIcon('close','participant-remove'));chip.setAttribute('aria-label','Remove participant '+(c?.name||id));chip.onclick=()=>{draft.characterIds=draft.characterIds.filter(x=>x!==id);refreshChips();for(const b of picker.querySelectorAll<HTMLElement>('[data-character-id]'))b.setAttribute('aria-pressed',String(draft.characterIds.includes(b.dataset.characterId!)))};selected.append(chip)}updateGroupIcon()}"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 820,
+      "kind": "icon or action boundary",
+      "source": "const choice = button('', 'mochi-choice')"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 827,
+      "kind": "retained artwork/content",
+      "source": "const groupIconField=el('select');for(const value of ['',...GROUP_ICONS]){const option=el('option','',value||'Automatic member portraits');option.value=value;groupIconField.append(option)}groupIconField.value=draft.groupIcon||'';groupIconField.onchange=()=>{draft.groupIcon=groupIconField.value};field('Group icon',groupIconField)"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 852,
+      "kind": "icon or action boundary",
+      "source": "const refresh=button('Refresh connections & personas','lp-button mochi-secondary-action');refresh.onclick=()=>this.refreshChoices();group.append(refresh)"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 862,
+      "kind": "icon or action boundary",
+      "source": "{const background=section('Background messaging',true);background.classList.add('mochi-disclosure');mochiDisclosureIcon(background)}"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 875,
+      "kind": "icon or action boundary",
+      "source": "const schedule = action('Schedule character message', 'plus'); schedule.type = 'button'; schedule.disabled = this.busy"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 896,
+      "kind": "icon or action boundary",
+      "source": "const plan=action(`Schedule status change for ${name}`,'plus');plan.type='button';plan.disabled=this.busy;plan.onclick=()=>{presence.transitions.push({at:new Date(when.value).getTime(),status:next.value as typeof presence.automatic});setPresence()};group.append(plan)"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 897,
+      "kind": "icon or action boundary",
+      "source": "if(presence.transitions.length){const clear=action(`Clear status schedule for ${name}`,'trash');clear.type='button';clear.disabled=this.busy;clear.onclick=()=>{presence.transitions=[];setPresence()};group.append(clear)}"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 899,
+      "kind": "icon or action boundary",
+      "source": "const inherited=!settings.textingStyles?.[id];const chatTexting=el('div','mochi-texting-chat');chatTexting.append(el('small','mochi-muted',inherited?'Inherited character texting defaults':'Explicit chat texting override'));const useDefaults=button('Use character texting defaults');useDefaults.onclick=()=>{if(settings.textingStyles)delete settings.textingStyles[id];this.redraw()};chatTexting.append(useDefaults,textingControls(settings,id,name));group.append(chatTexting);const presenceDefaults=button('Use character availability defaults (applies now)');presenceDefaults.disabled=this.busy;presenceDefaults.onclick=()=>this.dispatch('mochi:presence',{roomId:room.id,revision:room.revision,characterId:id,useDefault:true});group.append(el('small','mochi-muted',room.background?.presence?.[id]?'Explicit chat availability override':'Inherited character availability defaults'),presenceDefaults)"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 903,
+      "kind": "icon or action boundary",
+      "source": "const save = action(this.busy ? 'Saving…' : room ? 'Save settings' : 'Create chat', room ? 'settings' : 'plus'); save.classList.add('mochi-primary'); save.type = 'submit'; save.disabled = this.busy"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 904,
+      "kind": "icon or action boundary",
+      "source": "const cancel = action('Cancel', 'back'); cancel.disabled = this.busy; cancel.onclick = () => this.confirmNavigation(() => { this.creating = false; this.editing = false; this.draft = null; this.settingsDraft = null;this.settingsPage='';this.personalSettings.discard();this.characterEditor.discard();this.settingsReturnFocus=true; this.redraw() },cancel)"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 920,
+      "kind": "icon or action boundary",
+      "source": "const cancelJob = action('Cancel scheduled message', 'close'); cancelJob.type = 'button'; cancelJob.disabled = this.busy"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 929,
+      "kind": "icon or action boundary",
+      "source": "if(!this.profiles.state){const load=action('Load profiles for assignment','people');load.type='button';load.disabled=this.busy;load.onclick=()=>this.dispatch('mochi:accounts');section.append(load);return section}"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 933,
+      "kind": "icon or action boundary",
+      "source": "const assign=action(room.accountId?'Reassign chat':'Assign legacy chat','people');assign.type='button';assign.disabled=true"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 946,
+      "kind": "icon or action boundary",
+      "source": "if(desktop){const first=visible[0];thread.dataset.firstMessageId=isDisplayMessage(first)?first.id:'';if(room.messages.length>limit){const earlier=button('Show earlier messages','lp-button');earlier.onclick=()=>{this.desktopHistory.set(room.id,limit+100);this.redraw()};thread.append(earlier)}}"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 969,
+      "kind": "icon or action boundary",
+      "source": "const more = action(`Actions for ${displayName}`, 'more', true); more.classList.add('mochi-message-actions'); more.onclick = () => this.messageActions(more, room, message)"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 976,
+      "kind": "retained artwork/content",
+      "source": "for(const emoji of REACTION_EMOJI){const actors=reactions.filter(r=>r.emoji===emoji);if(!actors.length)continue"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 977,
+      "kind": "icon or action boundary",
+      "source": "const selected=actors.some(r=>r.actor==='user'&&r.actorId===(room.accountId||'legacy')),chip=button(`${emoji} ${actors.length}`,'mochi-reaction')"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 985,
+      "kind": "icon or action boundary",
+      "source": "for(const [label,icon,target] of [['React','smile','React'],['Reply','back','Reply'],['Edit message','edit','Edit message'],[room.chatPins?.includes(message.id)?'Unpin':'Pin','pin',room.chatPins?.includes(message.id)?'Unpin':'Pin'],['Copy message','copy','Copy message'],['More message actions','ellipsis','']] as const){const control=action(label,icon,true);control.disabled=locked&&!['Reply','Copy message','More message actions'].includes(label);control.onclick=event=>{event.stopPropagation();this.messageActions(control,room,message,target||undefined)};strip.append(control)}"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 1026,
+      "kind": "icon or action boundary",
+      "source": "const copy = action('Copy message', 'copy'); copy.onclick = async () => {"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 1030,
+      "kind": "icon or action boundary",
+      "source": "const edit = action('Edit message', 'edit'); edit.disabled = this.busy"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 1033,
+      "kind": "icon or action boundary",
+      "source": "const save = action('Save message', 'edit'); save.onclick = () => { if (!input.value.trim()) { input.focus(); return }; this.dispatch('mochi:message_action', { roomId: room.id, revision, messageId: message.id, action: 'edit', content: input.value }); sheet?.dismiss() }"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 1036,
+      "kind": "icon or action boundary",
+      "source": "const remove = action('Delete message', 'trash'); remove.disabled = this.busy; remove.onclick = () => {"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 1037,
+      "kind": "icon or action boundary",
+      "source": "const confirm = action('Confirm delete', 'trash'); confirm.onclick = () => { this.dispatch('mochi:message_action', { roomId: room.id, revision, messageId: message.id, action: 'delete', confirmed: true }); sheet?.dismiss() }"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 1040,
+      "kind": "icon or action boundary",
+      "source": "const reply=action('Reply','reply');reply.onclick=()=>{this.replyTargets.set(this.replyKey(room),message.id);sheet?.dismiss();this.redraw();const root=this.presenceRoot;root?.querySelector<HTMLTextAreaElement>('[aria-label=\"Message\"]')?.focus({preventScroll:true})}"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 1041,
+      "kind": "icon or action boundary",
+      "source": "const react=action('React','smile');react.disabled=this.busy||Boolean(this.state?.jobs?.[room.id]);react.onclick=()=>{"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 1044,
+      "kind": "retained artwork/content",
+      "source": "for(const emoji of REACTION_EMOJI){const choice=button(emoji,'mochi-reaction');choice.type='button';choice.setAttribute('aria-label',`Toggle ${REACTION_NAMES[emoji]} reaction`);choice.setAttribute('aria-pressed',String(selected.includes(emoji)));choice.onclick=()=>{this.dispatch('mochi:reaction',{roomId:room.id,revision,messageId:message.id,emoji});sheet?.dismiss()};palette.append(choice)}content.replaceChildren(palette);palette.querySelector<HTMLButtonElement>('button')?.focus()"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 1046,
+      "kind": "icon or action boundary",
+      "source": "const pinned=room.chatPins?.includes(message.id)||false,pin=button(pinned?'Unpin':'Pin','lp-button');pin.disabled=this.busy||Boolean(this.state?.jobs?.[room.id]);pin.onclick=()=>{this.pendingNoteSave=undefined;this.dispatch('mochi:pinned_content',{roomId:room.id,revision,messageId:message.id,action:'pin',pinned:!pinned});sheet?.dismiss()}"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 1049,
+      "kind": "icon or action boundary",
+      "source": "const reroll = action('Regenerate message', 'refresh'); reroll.disabled = this.busy || Boolean(this.state?.jobs?.[room.id])"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 1050,
+      "kind": "icon or action boundary",
+      "source": "reroll.onclick = () => { const confirm = action('Confirm reroll', 'refresh'); confirm.onclick = () => { this.dispatch('mochi:regenerate', { roomId: room.id, revision, messageId: message.id, confirmed: true }); sheet?.dismiss() }; content.replaceChildren(el('p', '', 'Reroll using the conversation before this reply? The previous text is retained. Later messages stay unchanged and may no longer fit the new reply.'), confirm) }"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 1071,
+      "kind": "icon or action boundary",
+      "source": "const clearRead = action('Clear read', 'trash'); clearRead.disabled = this.busy || !entries.some(n => n.read); clearRead.onclick = () => this.clearNotices('read', entries.filter(n => n.read))"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 1072,
+      "kind": "icon or action boundary",
+      "source": "const clearAll = action('Clear all', 'trash'); clearAll.disabled = this.busy || !entries.length"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 1073,
+      "kind": "icon or action boundary",
+      "source": "clearAll.onclick = () => { const content = el('div', 'mochi-action-panel'); const sheet = this.sheet(clearAll, 'Clear all notifications?', content); const confirm = action('Confirm clear all', 'trash'); confirm.onclick = () => { this.clearNotices('all', entries); sheet?.dismiss() }; content.append(el('p', '', 'Dismiss these notifications, including unread ones? Saved room messages stay intact. New notifications arriving afterwards will remain.'), confirm) }"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 1078,
+      "kind": "icon or action boundary",
+      "source": "const row = button('', 'mochi-card'); const copy = el('div', 'mochi-card-copy'); copy.append(el('strong', '', `${n.title} · ${n.roomTitle}`), el('span', 'mochi-preview', notificationBody(n, this.notificationPolicy().previews)), el('small', 'mochi-muted', n.read ? 'Read' : 'New')); row.append(portrait(n.title, n.avatarUrl), copy); row.onclick = () => this.openRoom(n.roomId)"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 1079,
+      "kind": "icon or action boundary",
+      "source": "const dismiss = action(`Dismiss notification from ${n.title}`, 'close', true); dismiss.disabled = this.busy; dismiss.onclick = () => this.clearNotices('dismiss', [n]); entry.append(row, dismiss); list.append(entry)"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 1081,
+      "kind": "icon or action boundary",
+      "source": "const back = action('Back to rooms', 'back'); back.onclick = () => { this.notificationsOpen = false; this.redraw() }; list.append(back)"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 1102,
+      "kind": "icon or action boundary",
+      "source": "if (responder.value === 'auto') avatar.replaceChildren(mochiIcon('contacts','responder-auto'))"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 1109,
+      "kind": "icon or action boundary",
+      "source": "for(const option of Array.from(responder.options)){const choose=button(option.textContent||'', 'mochi-responder-choice');choose.setAttribute('aria-label',option.value==='auto'?'Automatic responder':'Respond as '+option.textContent);choose.setAttribute('aria-pressed',String(option.value===responder.value));choose.onclick=()=>{responder.value=option.value;this.responders.set(room.id,option.value);showResponder();for(const item of responderChoices.querySelectorAll('button'))item.setAttribute('aria-pressed',String(item===choose));responderField.open=false;responderToggle.focus({preventScroll:true})};responderChoices.append(choose)}"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 1122,
+      "kind": "icon or action boundary",
+      "source": "const submit = action('Send', 'send', true); submit.classList.add('mochi-primary'); submit.type = 'submit'; submit.disabled = this.busy || Boolean(job) || this.memoryPanel.generating"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 1123,
+      "kind": "icon or action boundary",
+      "source": "const stop = action('Stop reply', 'stop', true); stop.disabled = !job; stop.hidden = !job; stop.onclick = () => {"
+    },
+    {
+      "file": "src/mochi/view.ts",
+      "line": 1131,
+      "kind": "icon or action boundary",
+      "source": "if(target){const preview=el('div','mochi-reply-preview');preview.append(this.quoteNode(room,target));const clear=action('Clear reply target','close',true);clear.onclick=()=>{this.replyTargets.delete(this.replyKey(room));this.redraw();this.presenceRoot?.querySelector<HTMLTextAreaElement>('[aria-label=\"Message\"]')?.focus({preventScroll:true})};preview.append(clear);form.append(preview)}"
+    },
+    {
+      "file": "src/mochi/window.ts",
+      "line": 53,
+      "kind": "icon or action boundary",
+      "source": "const close=document.createElement('button');close.className='mochi-window-close';close.type='button';close.append(mochiIcon('close','window-close'));close.setAttribute('aria-label','Hide Mochi window');close.title='Hide Mochi window'"
+    },
+    {
+      "file": "src/mochi/window.ts",
+      "line": 55,
+      "kind": "icon or action boundary",
+      "source": "const maximize=document.createElement('button');maximize.type='button';maximize.className='mochi-window-close';maximize.append(mochiIcon('maximize','window-maximize'))"
+    },
+    {
+      "file": "src/mochi/window.ts",
+      "line": 59,
+      "kind": "icon or action boundary",
+      "source": "const grip=document.createElement('button');grip.className='mochi-window-resize';grip.type='button';grip.append(mochiIcon('resize','window-resize'));grip.dataset.resizeHandle='se';grip.setAttribute('data-spindle-float-resize-handle','');grip.setAttribute('aria-label','Resize Mochi window');grip.title='Drag to resize, or use arrow keys'"
+    },
+    {
+      "file": "src/mochi/wordmark.ts",
+      "line": 4,
+      "kind": "retained artwork/content",
+      "source": "export function mochiWordmark(): HTMLImageElement {"
+    },
+    {
+      "file": "src/frontend/components/ui.ts",
+      "line": 1,
+      "kind": "Mochi-owned shared boundary",
+      "source": "import {mochiButton} from '../../mochi/ui/icon-slots.js'"
+    },
+    {
+      "file": "src/frontend/components/ui.ts",
+      "line": 100,
+      "kind": "Mochi-owned shared boundary",
+      "source": "const close = className.includes('mochi')||anchor.closest('.mochi-view,.mochi-sidebar,.mochi-window') ? mochiButton('Done','lp-button lp-sheet-close') : el('button', 'lp-button lp-sheet-close', 'Done'); close.type = 'button'"
+    },
+    {
+      "file": "src/frontend/components/portal.ts",
+      "line": 1,
+      "kind": "Mochi-owned shared boundary",
+      "source": "import {mochiButton} from '../../mochi/ui/icon-slots.js'"
+    },
+    {
+      "file": "src/frontend/components/portal.ts",
+      "line": 34,
+      "kind": "Mochi-owned shared boundary",
+      "source": "if(this.destination!=='home'){const back=(this.destination==='mochi'?mochiButton:button)('← Back','pocket-portal-back');back.setAttribute('aria-label',this.destination==='mochi'?'Back in Mochi':'Back to portal');back.onclick=()=>{const exit=()=>this.show('home');if(this.destination==='mochi'&&this.mochiNavigation)this.mochiNavigation.back(exit,back);else exit()};nav.append(back)}"
+    }
+  ],
+  "retained": [
+    "Mochi mascot and wordmark: launcher, brand, portal shortcut",
+    "Character/account portraits and chosen group emoji",
+    "Reaction emoji and user-authored message/preset/preview content",
+    "Native disclosure markers, selects, checkboxes, search cancel and number spinners (browser accessibility controls)",
+    "Pocket phone/home art, device diagrams and app/chart/weather icons outside Mochi ownership"
+  ]
+}

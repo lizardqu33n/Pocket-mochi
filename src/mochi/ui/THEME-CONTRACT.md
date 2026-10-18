@@ -1,5 +1,12 @@
 # Mochi whole-interface CSS contract v2
 
+CSS-01 Phase 3 adds [named icon slots and optional safe local image replacements](ICON-THEMING.md).
+The existing icon selectors/artwork-key hooks remain compatible; semantic action
+slots and their size/color/stroke/image tokens are listed in [reference/icons.md](reference/icons.md).
+The icon layer preserves native control semantics, existing hit targets and theme
+inheritance. Text-only controls can opt in to icons. Internal SVG/image fill and
+hidden state are structural; use slot size tokens for replacement-aware sizing.
+
 Start with [UI-CUSTOMIZATION-MAP.md](UI-CUSTOMIZATION-MAP.md). It links a complete
 reference for all 24 Mochi CSS sections and shared Pocket primitives: outer
 Accounts/navigation/editor, Settings and Personal categories, accessibility,

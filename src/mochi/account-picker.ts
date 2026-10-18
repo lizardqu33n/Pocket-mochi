@@ -1,4 +1,5 @@
-import {button,el} from '../frontend/shared.js'
+import {mochiButton as button} from './ui/icon-slots.js'
+import {el} from '../frontend/shared.js'
 import type {AccountScreenState} from './profile-screen.js'
 export function accountPicker(state:AccountScreenState|null,busy:boolean,choose:(id:string)=>void,create:()=>void,legacy:()=>void,startup:(preference:string)=>void,manage:()=>void,refresh:()=>void):HTMLElement{
   const page=el('section','mochi-form mochi-account-picker');page.append(el('h3','','Choose your Mochi account'),el('p','mochi-muted','Keep each fictional identity and its conversations separate.'))

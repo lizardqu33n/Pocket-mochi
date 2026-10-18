@@ -32325,6 +32325,5226 @@
       ]
     },
     {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 3,
+      "selector": ".mochi-icon-slot[data-mochi-icon-slot]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "display",
+          "token": null,
+          "default": "inline-flex",
+          "important": false,
+          "structural": true
+        },
+        {
+          "property": "position",
+          "token": null,
+          "default": "relative",
+          "important": false,
+          "structural": true
+        },
+        {
+          "property": "flex",
+          "token": null,
+          "default": "none",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "align-items",
+          "token": null,
+          "default": "center",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "justify-content",
+          "token": null,
+          "default": "center",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "width",
+          "token": "--mochi-slot-width",
+          "default": "var(--mochi-slot-width,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "height",
+          "token": "--mochi-slot-height",
+          "default": "var(--mochi-slot-height,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "color",
+          "token": "--mochi-slot-color",
+          "default": "var(--mochi-slot-color,currentColor)",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "vertical-align",
+          "token": null,
+          "default": "middle",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "pointer-events",
+          "token": null,
+          "default": "none",
+          "important": false,
+          "structural": true
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 8,
+      "selector": ".mochi-icon-slot > svg,.mochi-icon-slot > img",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "display",
+          "token": null,
+          "default": "block",
+          "important": false,
+          "structural": true
+        },
+        {
+          "property": "width",
+          "token": null,
+          "default": "100%",
+          "important": true,
+          "structural": true
+        },
+        {
+          "property": "height",
+          "token": null,
+          "default": "100%",
+          "important": true,
+          "structural": true
+        },
+        {
+          "property": "margin",
+          "token": null,
+          "default": "0",
+          "important": false,
+          "structural": true
+        },
+        {
+          "property": "object-fit",
+          "token": null,
+          "default": "contain",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 11,
+      "selector": ".mochi-icon-slot > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-stroke-width",
+          "default": "var(--mochi-icon-stroke-width,1.7)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 12,
+      "selector": ".mochi-icon-slot > [hidden]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "display",
+          "token": null,
+          "default": "none",
+          "important": true,
+          "structural": true
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 13,
+      "selector": ".mochi-icon-slot[data-mochi-optional]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "display",
+          "token": "--mochi-icon-text-display",
+          "default": "var(--mochi-icon-text-display,none)",
+          "important": false,
+          "structural": true
+        },
+        {
+          "property": "margin-inline-end",
+          "token": "--mochi-icon-text-gap",
+          "default": "var(--mochi-icon-text-gap,4px)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 14,
+      "selector": ":is(button,summary,a):hover > .mochi-icon-slot",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "color",
+          "token": "--mochi-icon-hover-color",
+          "default": "var(--mochi-icon-hover-color,var(--mochi-slot-color,currentColor))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 15,
+      "selector": ":is(button,summary,a):focus-visible > .mochi-icon-slot",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "color",
+          "token": "--mochi-icon-focus-color",
+          "default": "var(--mochi-icon-focus-color,var(--mochi-slot-color,currentColor))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 16,
+      "selector": ":is([aria-pressed=true],[aria-selected=true],[data-selected=true]) > .mochi-icon-slot",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "color",
+          "token": "--mochi-icon-selected-color",
+          "default": "var(--mochi-icon-selected-color,var(--mochi-slot-color,currentColor))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 17,
+      "selector": ":is(button:disabled,[aria-disabled=true]) > .mochi-icon-slot",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "opacity",
+          "token": "--mochi-icon-disabled-opacity",
+          "default": "var(--mochi-icon-disabled-opacity,1)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 19,
+      "selector": ".mochi-view",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-icon-context-width",
+          "token": "--mochi-v2-svg-width",
+          "default": "20px",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-icon-context-height",
+          "token": "--mochi-v2-svg-height",
+          "default": "20px",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 20,
+      "selector": ".mochi-action-panel",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-icon-context-width",
+          "token": "--mochi-v2-action-panel-svg-width",
+          "default": "20px",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-icon-context-height",
+          "token": "--mochi-v2-action-panel-svg-height",
+          "default": "20px",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 21,
+      "selector": ".mochi-shell-tools",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-icon-context-width",
+          "token": "--mochi-v2-shell-tools-svg-width",
+          "default": "18px",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-icon-context-height",
+          "token": "--mochi-v2-shell-tools-svg-height",
+          "default": "18px",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 22,
+      "selector": ".mochi-conversation-filters",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-icon-context-width",
+          "token": null,
+          "default": "12px",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-icon-context-height",
+          "token": null,
+          "default": "12px",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 23,
+      "selector": ".mochi-bottom-toolbar,.mochi-header-controls",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-icon-context-width",
+          "token": "--mochi-header-icon-size",
+          "default": "var(--mochi-header-icon-size,18px)",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-icon-context-height",
+          "token": "--mochi-header-icon-size",
+          "default": "var(--mochi-header-icon-size,18px)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 24,
+      "selector": ".mochi-account-icon",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-icon-context-width",
+          "token": "--mochi-accounts-icon-size",
+          "default": "var(--mochi-accounts-icon-size,16px)",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-icon-context-height",
+          "token": "--mochi-accounts-icon-size",
+          "default": "var(--mochi-accounts-icon-size,16px)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 25,
+      "selector": ".mochi-message-actions",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-icon-context-width",
+          "token": "--mochi-v2-message-actions-svg-width",
+          "default": "15px",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-icon-context-height",
+          "token": "--mochi-v2-message-actions-svg-height",
+          "default": "15px",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 26,
+      "selector": ".mochi-action-strip",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-icon-context-width",
+          "token": "--mochi-v2-action-strip-svg-width",
+          "default": "16px",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-icon-context-height",
+          "token": "--mochi-v2-action-strip-svg-height",
+          "default": "16px",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 27,
+      "selector": ".mochi-responder .mochi-avatar",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-icon-context-width",
+          "token": "--mochi-v2-responder-avatar-svg-width",
+          "default": "16px",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-icon-context-height",
+          "token": "--mochi-v2-responder-avatar-svg-height",
+          "default": "16px",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 28,
+      "selector": ".mochi-toolbar-live-preview",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-icon-context-width",
+          "token": "--mochi-v2-toolbar-live-preview-span-width",
+          "default": "24px",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-icon-context-height",
+          "token": "--mochi-v2-toolbar-live-preview-span-height",
+          "default": "24px",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 30,
+      "selector": ".mochi-icon-slot[data-mochi-selected-indicator]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "display",
+          "token": null,
+          "default": "none",
+          "important": false,
+          "structural": true
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 31,
+      "selector": ".mochi-choice[aria-pressed=true] > [data-mochi-selected-indicator]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "display",
+          "token": null,
+          "default": "inline-flex",
+          "important": false,
+          "structural": true
+        },
+        {
+          "property": "position",
+          "token": null,
+          "default": "absolute",
+          "important": false,
+          "structural": true
+        },
+        {
+          "property": "right",
+          "token": "--mochi-v2-choice-aria-pressed-true-after-right",
+          "default": "5px",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "top",
+          "token": "--mochi-v2-choice-aria-pressed-true-after-top",
+          "default": "5px",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-icon-context-width",
+          "token": "--mochi-v2-choice-aria-pressed-true-after-width",
+          "default": "18px",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-icon-context-height",
+          "token": "--mochi-v2-choice-aria-pressed-true-after-height",
+          "default": "18px",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "border-radius",
+          "token": "--mochi-v2-choice-aria-pressed-true-after-border-radius",
+          "default": "50%",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "background",
+          "token": "--mochi-accent",
+          "default": "var(--mochi-accent)",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "color",
+          "token": "--mochi-v2-choice-aria-pressed-true-after-color",
+          "default": "#21182e",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 32,
+      "selector": ".mochi-category-tab[aria-pressed=true] > [data-mochi-selected-indicator]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "display",
+          "token": null,
+          "default": "inline-flex",
+          "important": false,
+          "structural": true
+        },
+        {
+          "property": "margin-inline-start",
+          "token": "--mochi-v2-settings-categories-button-aria-pressed-true-after-margin-inline-start",
+          "default": "auto",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-icon-context-width",
+          "token": null,
+          "default": "14px",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-icon-context-height",
+          "token": null,
+          "default": "14px",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 33,
+      "selector": ".mochi-choice:has(> [data-mochi-selected-indicator])::after",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "content",
+          "token": "--mochi-v2-choice-aria-pressed-true-after-content",
+          "default": "none",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 34,
+      "selector": ".mochi-character-picker .mochi-choice:has(> [data-mochi-selected-indicator])::after",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "content",
+          "token": "--mochi-v2-character-picker-choice-aria-pressed-true-after-content",
+          "default": "var(--mochi-v2-choice-aria-pressed-true-after-content,none)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 35,
+      "selector": ".mochi-view .mochi-settings-categories button:has(> [data-mochi-selected-indicator])::after",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "content",
+          "token": "--mochi-v2-settings-categories-button-aria-pressed-true-after-content",
+          "default": "none",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 36,
+      "selector": ".mochi-view details.mochi-disclosure:has(> summary > [data-mochi-icon-action=disclosure]) > summary::after",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "content",
+          "token": "--mochi-v2-detailsdisclosure-summary-after-content",
+          "default": "none",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 37,
+      "selector": ".mochi-icon-slot[data-mochi-legacy-glyph=true]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "display",
+          "token": null,
+          "default": "none",
+          "important": true,
+          "structural": true
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 38,
+      "selector": ".mochi-disclosure > summary > [data-mochi-icon-action=disclosure]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "position",
+          "token": null,
+          "default": "absolute",
+          "important": false,
+          "structural": true
+        },
+        {
+          "property": "right",
+          "token": "--mochi-v2-detailsdisclosure-summary-after-right",
+          "default": "16px",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "top",
+          "token": "--mochi-v2-detailsdisclosure-summary-after-top",
+          "default": "17px",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-icon-context-width",
+          "token": null,
+          "default": "12px",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-icon-context-height",
+          "token": null,
+          "default": "12px",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "transform",
+          "token": "--mochi-disclosure-icon-closed-transform",
+          "default": "var(--mochi-disclosure-icon-closed-transform,rotate(-90deg))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "color",
+          "token": null,
+          "default": "var(--lp-muted,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 39,
+      "selector": ".mochi-disclosure[open] > summary > [data-mochi-icon-action=disclosure]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "top",
+          "token": "--mochi-v2-detailsdisclosure-open-summary-after-top",
+          "default": "15px",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "transform",
+          "token": "--mochi-disclosure-icon-open-transform",
+          "default": "var(--mochi-disclosure-icon-open-transform,none)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 41,
+      "selector": "[data-mochi-icon-action=\"plus\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-plus-size",
+          "default": "var(--mochi-icon-plus-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-plus-size",
+          "default": "var(--mochi-icon-plus-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-plus-color",
+          "default": "var(--mochi-icon-plus-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 42,
+      "selector": "[data-mochi-icon-action=\"plus\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-plus-stroke-width",
+          "default": "var(--mochi-icon-plus-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 43,
+      "selector": "[data-mochi-icon-action=\"settings\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-settings-size",
+          "default": "var(--mochi-icon-settings-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-settings-size",
+          "default": "var(--mochi-icon-settings-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-settings-color",
+          "default": "var(--mochi-icon-settings-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 44,
+      "selector": "[data-mochi-icon-action=\"settings\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-settings-stroke-width",
+          "default": "var(--mochi-icon-settings-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 45,
+      "selector": "[data-mochi-icon-action=\"logout\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-logout-size",
+          "default": "var(--mochi-icon-logout-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-logout-size",
+          "default": "var(--mochi-icon-logout-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-logout-color",
+          "default": "var(--mochi-icon-logout-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 46,
+      "selector": "[data-mochi-icon-action=\"logout\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-logout-stroke-width",
+          "default": "var(--mochi-icon-logout-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 47,
+      "selector": "[data-mochi-icon-action=\"sort\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-sort-size",
+          "default": "var(--mochi-icon-sort-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-sort-size",
+          "default": "var(--mochi-icon-sort-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-sort-color",
+          "default": "var(--mochi-icon-sort-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 48,
+      "selector": "[data-mochi-icon-action=\"sort\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-sort-stroke-width",
+          "default": "var(--mochi-icon-sort-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 49,
+      "selector": "[data-mochi-icon-action=\"grid\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-grid-size",
+          "default": "var(--mochi-icon-grid-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-grid-size",
+          "default": "var(--mochi-icon-grid-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-grid-color",
+          "default": "var(--mochi-icon-grid-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 50,
+      "selector": "[data-mochi-icon-action=\"grid\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-grid-stroke-width",
+          "default": "var(--mochi-icon-grid-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 51,
+      "selector": "[data-mochi-icon-action=\"list\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-list-size",
+          "default": "var(--mochi-icon-list-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-list-size",
+          "default": "var(--mochi-icon-list-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-list-color",
+          "default": "var(--mochi-icon-list-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 52,
+      "selector": "[data-mochi-icon-action=\"list\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-list-stroke-width",
+          "default": "var(--mochi-icon-list-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 53,
+      "selector": "[data-mochi-icon-action=\"check\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-check-size",
+          "default": "var(--mochi-icon-check-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-check-size",
+          "default": "var(--mochi-icon-check-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-check-color",
+          "default": "var(--mochi-icon-check-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 54,
+      "selector": "[data-mochi-icon-action=\"check\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-check-stroke-width",
+          "default": "var(--mochi-icon-check-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 55,
+      "selector": "[data-mochi-icon-action=\"archive\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-archive-size",
+          "default": "var(--mochi-icon-archive-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-archive-size",
+          "default": "var(--mochi-icon-archive-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-archive-color",
+          "default": "var(--mochi-icon-archive-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 56,
+      "selector": "[data-mochi-icon-action=\"archive\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-archive-stroke-width",
+          "default": "var(--mochi-icon-archive-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 57,
+      "selector": "[data-mochi-icon-action=\"brain\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-brain-size",
+          "default": "var(--mochi-icon-brain-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-brain-size",
+          "default": "var(--mochi-icon-brain-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-brain-color",
+          "default": "var(--mochi-icon-brain-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 58,
+      "selector": "[data-mochi-icon-action=\"brain\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-brain-stroke-width",
+          "default": "var(--mochi-icon-brain-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 59,
+      "selector": "[data-mochi-icon-action=\"smile\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-smile-size",
+          "default": "var(--mochi-icon-smile-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-smile-size",
+          "default": "var(--mochi-icon-smile-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-smile-color",
+          "default": "var(--mochi-icon-smile-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 60,
+      "selector": "[data-mochi-icon-action=\"smile\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-smile-stroke-width",
+          "default": "var(--mochi-icon-smile-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 61,
+      "selector": "[data-mochi-icon-action=\"sliders\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-sliders-size",
+          "default": "var(--mochi-icon-sliders-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-sliders-size",
+          "default": "var(--mochi-icon-sliders-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-sliders-color",
+          "default": "var(--mochi-icon-sliders-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 62,
+      "selector": "[data-mochi-icon-action=\"sliders\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-sliders-stroke-width",
+          "default": "var(--mochi-icon-sliders-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 63,
+      "selector": "[data-mochi-icon-action=\"profile\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-profile-size",
+          "default": "var(--mochi-icon-profile-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-profile-size",
+          "default": "var(--mochi-icon-profile-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-profile-color",
+          "default": "var(--mochi-icon-profile-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 64,
+      "selector": "[data-mochi-icon-action=\"profile\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-profile-stroke-width",
+          "default": "var(--mochi-icon-profile-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 65,
+      "selector": "[data-mochi-icon-action=\"panel\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-panel-size",
+          "default": "var(--mochi-icon-panel-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-panel-size",
+          "default": "var(--mochi-icon-panel-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-panel-color",
+          "default": "var(--mochi-icon-panel-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 66,
+      "selector": "[data-mochi-icon-action=\"panel\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-panel-stroke-width",
+          "default": "var(--mochi-icon-panel-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 67,
+      "selector": "[data-mochi-icon-action=\"layers\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-layers-size",
+          "default": "var(--mochi-icon-layers-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-layers-size",
+          "default": "var(--mochi-icon-layers-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-layers-color",
+          "default": "var(--mochi-icon-layers-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 68,
+      "selector": "[data-mochi-icon-action=\"layers\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-layers-stroke-width",
+          "default": "var(--mochi-icon-layers-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 69,
+      "selector": "[data-mochi-icon-action=\"bookmark\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-bookmark-size",
+          "default": "var(--mochi-icon-bookmark-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-bookmark-size",
+          "default": "var(--mochi-icon-bookmark-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-bookmark-color",
+          "default": "var(--mochi-icon-bookmark-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 70,
+      "selector": "[data-mochi-icon-action=\"bookmark\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-bookmark-stroke-width",
+          "default": "var(--mochi-icon-bookmark-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 71,
+      "selector": "[data-mochi-icon-action=\"eye\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-eye-size",
+          "default": "var(--mochi-icon-eye-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-eye-size",
+          "default": "var(--mochi-icon-eye-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-eye-color",
+          "default": "var(--mochi-icon-eye-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 72,
+      "selector": "[data-mochi-icon-action=\"eye\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-eye-stroke-width",
+          "default": "var(--mochi-icon-eye-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 73,
+      "selector": "[data-mochi-icon-action=\"pin\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-pin-size",
+          "default": "var(--mochi-icon-pin-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-pin-size",
+          "default": "var(--mochi-icon-pin-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-pin-color",
+          "default": "var(--mochi-icon-pin-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 74,
+      "selector": "[data-mochi-icon-action=\"pin\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-pin-stroke-width",
+          "default": "var(--mochi-icon-pin-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 75,
+      "selector": "[data-mochi-icon-action=\"ellipsis\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-ellipsis-size",
+          "default": "var(--mochi-icon-ellipsis-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-ellipsis-size",
+          "default": "var(--mochi-icon-ellipsis-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-ellipsis-color",
+          "default": "var(--mochi-icon-ellipsis-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 76,
+      "selector": "[data-mochi-icon-action=\"ellipsis\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-ellipsis-stroke-width",
+          "default": "var(--mochi-icon-ellipsis-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 77,
+      "selector": "[data-mochi-icon-action=\"more\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-more-size",
+          "default": "var(--mochi-icon-more-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-more-size",
+          "default": "var(--mochi-icon-more-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-more-color",
+          "default": "var(--mochi-icon-more-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 78,
+      "selector": "[data-mochi-icon-action=\"more\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-more-stroke-width",
+          "default": "var(--mochi-icon-more-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 79,
+      "selector": "[data-mochi-icon-action=\"power\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-power-size",
+          "default": "var(--mochi-icon-power-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-power-size",
+          "default": "var(--mochi-icon-power-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-power-color",
+          "default": "var(--mochi-icon-power-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 80,
+      "selector": "[data-mochi-icon-action=\"power\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-power-stroke-width",
+          "default": "var(--mochi-icon-power-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 81,
+      "selector": "[data-mochi-icon-action=\"home\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-home-size",
+          "default": "var(--mochi-icon-home-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-home-size",
+          "default": "var(--mochi-icon-home-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-home-color",
+          "default": "var(--mochi-icon-home-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 82,
+      "selector": "[data-mochi-icon-action=\"home\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-home-stroke-width",
+          "default": "var(--mochi-icon-home-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 83,
+      "selector": "[data-mochi-icon-action=\"messages\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-messages-size",
+          "default": "var(--mochi-icon-messages-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-messages-size",
+          "default": "var(--mochi-icon-messages-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-messages-color",
+          "default": "var(--mochi-icon-messages-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 84,
+      "selector": "[data-mochi-icon-action=\"messages\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-messages-stroke-width",
+          "default": "var(--mochi-icon-messages-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 85,
+      "selector": "[data-mochi-icon-action=\"contacts\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-contacts-size",
+          "default": "var(--mochi-icon-contacts-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-contacts-size",
+          "default": "var(--mochi-icon-contacts-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-contacts-color",
+          "default": "var(--mochi-icon-contacts-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 86,
+      "selector": "[data-mochi-icon-action=\"contacts\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-contacts-stroke-width",
+          "default": "var(--mochi-icon-contacts-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 87,
+      "selector": "[data-mochi-icon-action=\"people\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-people-size",
+          "default": "var(--mochi-icon-people-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-people-size",
+          "default": "var(--mochi-icon-people-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-people-color",
+          "default": "var(--mochi-icon-people-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 88,
+      "selector": "[data-mochi-icon-action=\"people\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-people-stroke-width",
+          "default": "var(--mochi-icon-people-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 89,
+      "selector": "[data-mochi-icon-action=\"camera\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-camera-size",
+          "default": "var(--mochi-icon-camera-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-camera-size",
+          "default": "var(--mochi-icon-camera-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-camera-color",
+          "default": "var(--mochi-icon-camera-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 90,
+      "selector": "[data-mochi-icon-action=\"camera\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-camera-stroke-width",
+          "default": "var(--mochi-icon-camera-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 91,
+      "selector": "[data-mochi-icon-action=\"gallery\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-gallery-size",
+          "default": "var(--mochi-icon-gallery-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-gallery-size",
+          "default": "var(--mochi-icon-gallery-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-gallery-color",
+          "default": "var(--mochi-icon-gallery-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 92,
+      "selector": "[data-mochi-icon-action=\"gallery\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-gallery-stroke-width",
+          "default": "var(--mochi-icon-gallery-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 93,
+      "selector": "[data-mochi-icon-action=\"notes\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-notes-size",
+          "default": "var(--mochi-icon-notes-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-notes-size",
+          "default": "var(--mochi-icon-notes-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-notes-color",
+          "default": "var(--mochi-icon-notes-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 94,
+      "selector": "[data-mochi-icon-action=\"notes\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-notes-stroke-width",
+          "default": "var(--mochi-icon-notes-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 95,
+      "selector": "[data-mochi-icon-action=\"weather\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-weather-size",
+          "default": "var(--mochi-icon-weather-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-weather-size",
+          "default": "var(--mochi-icon-weather-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-weather-color",
+          "default": "var(--mochi-icon-weather-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 96,
+      "selector": "[data-mochi-icon-action=\"weather\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-weather-stroke-width",
+          "default": "var(--mochi-icon-weather-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 97,
+      "selector": "[data-mochi-icon-action=\"calendar\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-calendar-size",
+          "default": "var(--mochi-icon-calendar-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-calendar-size",
+          "default": "var(--mochi-icon-calendar-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-calendar-color",
+          "default": "var(--mochi-icon-calendar-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 98,
+      "selector": "[data-mochi-icon-action=\"calendar\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-calendar-stroke-width",
+          "default": "var(--mochi-icon-calendar-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 99,
+      "selector": "[data-mochi-icon-action=\"trackers\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-trackers-size",
+          "default": "var(--mochi-icon-trackers-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-trackers-size",
+          "default": "var(--mochi-icon-trackers-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-trackers-color",
+          "default": "var(--mochi-icon-trackers-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 100,
+      "selector": "[data-mochi-icon-action=\"trackers\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-trackers-stroke-width",
+          "default": "var(--mochi-icon-trackers-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 101,
+      "selector": "[data-mochi-icon-action=\"notifications\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-notifications-size",
+          "default": "var(--mochi-icon-notifications-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-notifications-size",
+          "default": "var(--mochi-icon-notifications-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-notifications-color",
+          "default": "var(--mochi-icon-notifications-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 102,
+      "selector": "[data-mochi-icon-action=\"notifications\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-notifications-stroke-width",
+          "default": "var(--mochi-icon-notifications-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 103,
+      "selector": "[data-mochi-icon-action=\"back\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-back-size",
+          "default": "var(--mochi-icon-back-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-back-size",
+          "default": "var(--mochi-icon-back-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-back-color",
+          "default": "var(--mochi-icon-back-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 104,
+      "selector": "[data-mochi-icon-action=\"back\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-back-stroke-width",
+          "default": "var(--mochi-icon-back-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 105,
+      "selector": "[data-mochi-icon-action=\"send\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-send-size",
+          "default": "var(--mochi-icon-send-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-send-size",
+          "default": "var(--mochi-icon-send-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-send-color",
+          "default": "var(--mochi-icon-send-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 106,
+      "selector": "[data-mochi-icon-action=\"send\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-send-stroke-width",
+          "default": "var(--mochi-icon-send-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 107,
+      "selector": "[data-mochi-icon-action=\"sparkle\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-sparkle-size",
+          "default": "var(--mochi-icon-sparkle-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-sparkle-size",
+          "default": "var(--mochi-icon-sparkle-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-sparkle-color",
+          "default": "var(--mochi-icon-sparkle-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 108,
+      "selector": "[data-mochi-icon-action=\"sparkle\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-sparkle-stroke-width",
+          "default": "var(--mochi-icon-sparkle-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 109,
+      "selector": "[data-mochi-icon-action=\"trash\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-trash-size",
+          "default": "var(--mochi-icon-trash-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-trash-size",
+          "default": "var(--mochi-icon-trash-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-trash-color",
+          "default": "var(--mochi-icon-trash-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 110,
+      "selector": "[data-mochi-icon-action=\"trash\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-trash-stroke-width",
+          "default": "var(--mochi-icon-trash-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 111,
+      "selector": "[data-mochi-icon-action=\"stop\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-stop-size",
+          "default": "var(--mochi-icon-stop-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-stop-size",
+          "default": "var(--mochi-icon-stop-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-stop-color",
+          "default": "var(--mochi-icon-stop-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 112,
+      "selector": "[data-mochi-icon-action=\"stop\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-stop-stroke-width",
+          "default": "var(--mochi-icon-stop-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 113,
+      "selector": "[data-mochi-icon-action=\"copy\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-copy-size",
+          "default": "var(--mochi-icon-copy-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-copy-size",
+          "default": "var(--mochi-icon-copy-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-copy-color",
+          "default": "var(--mochi-icon-copy-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 114,
+      "selector": "[data-mochi-icon-action=\"copy\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-copy-stroke-width",
+          "default": "var(--mochi-icon-copy-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 115,
+      "selector": "[data-mochi-icon-action=\"edit\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-edit-size",
+          "default": "var(--mochi-icon-edit-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-edit-size",
+          "default": "var(--mochi-icon-edit-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-edit-color",
+          "default": "var(--mochi-icon-edit-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 116,
+      "selector": "[data-mochi-icon-action=\"edit\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-edit-stroke-width",
+          "default": "var(--mochi-icon-edit-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 117,
+      "selector": "[data-mochi-icon-action=\"close\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-close-size",
+          "default": "var(--mochi-icon-close-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-close-size",
+          "default": "var(--mochi-icon-close-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-close-color",
+          "default": "var(--mochi-icon-close-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 118,
+      "selector": "[data-mochi-icon-action=\"close\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-close-stroke-width",
+          "default": "var(--mochi-icon-close-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 119,
+      "selector": "[data-mochi-icon-action=\"search\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-search-size",
+          "default": "var(--mochi-icon-search-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-search-size",
+          "default": "var(--mochi-icon-search-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-search-color",
+          "default": "var(--mochi-icon-search-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 120,
+      "selector": "[data-mochi-icon-action=\"search\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-search-stroke-width",
+          "default": "var(--mochi-icon-search-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 121,
+      "selector": "[data-mochi-icon-action=\"refresh\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-refresh-size",
+          "default": "var(--mochi-icon-refresh-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-refresh-size",
+          "default": "var(--mochi-icon-refresh-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-refresh-color",
+          "default": "var(--mochi-icon-refresh-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 122,
+      "selector": "[data-mochi-icon-action=\"refresh\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-refresh-stroke-width",
+          "default": "var(--mochi-icon-refresh-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 123,
+      "selector": "[data-mochi-icon-action=\"up\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-up-size",
+          "default": "var(--mochi-icon-up-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-up-size",
+          "default": "var(--mochi-icon-up-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-up-color",
+          "default": "var(--mochi-icon-up-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 124,
+      "selector": "[data-mochi-icon-action=\"up\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-up-stroke-width",
+          "default": "var(--mochi-icon-up-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 125,
+      "selector": "[data-mochi-icon-action=\"down\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-down-size",
+          "default": "var(--mochi-icon-down-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-down-size",
+          "default": "var(--mochi-icon-down-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-down-color",
+          "default": "var(--mochi-icon-down-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 126,
+      "selector": "[data-mochi-icon-action=\"down\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-down-stroke-width",
+          "default": "var(--mochi-icon-down-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 127,
+      "selector": "[data-mochi-icon-action=\"right\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-right-size",
+          "default": "var(--mochi-icon-right-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-right-size",
+          "default": "var(--mochi-icon-right-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-right-color",
+          "default": "var(--mochi-icon-right-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 128,
+      "selector": "[data-mochi-icon-action=\"right\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-right-stroke-width",
+          "default": "var(--mochi-icon-right-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 129,
+      "selector": "[data-mochi-icon-action=\"drag\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-drag-size",
+          "default": "var(--mochi-icon-drag-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-drag-size",
+          "default": "var(--mochi-icon-drag-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-drag-color",
+          "default": "var(--mochi-icon-drag-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 130,
+      "selector": "[data-mochi-icon-action=\"drag\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-drag-stroke-width",
+          "default": "var(--mochi-icon-drag-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 131,
+      "selector": "[data-mochi-icon-action=\"maximize\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-maximize-size",
+          "default": "var(--mochi-icon-maximize-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-maximize-size",
+          "default": "var(--mochi-icon-maximize-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-maximize-color",
+          "default": "var(--mochi-icon-maximize-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 132,
+      "selector": "[data-mochi-icon-action=\"maximize\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-maximize-stroke-width",
+          "default": "var(--mochi-icon-maximize-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 133,
+      "selector": "[data-mochi-icon-action=\"restore\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-restore-size",
+          "default": "var(--mochi-icon-restore-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-restore-size",
+          "default": "var(--mochi-icon-restore-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-restore-color",
+          "default": "var(--mochi-icon-restore-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 134,
+      "selector": "[data-mochi-icon-action=\"restore\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-restore-stroke-width",
+          "default": "var(--mochi-icon-restore-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 135,
+      "selector": "[data-mochi-icon-action=\"resize\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-resize-size",
+          "default": "var(--mochi-icon-resize-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-resize-size",
+          "default": "var(--mochi-icon-resize-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-resize-color",
+          "default": "var(--mochi-icon-resize-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 136,
+      "selector": "[data-mochi-icon-action=\"resize\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-resize-stroke-width",
+          "default": "var(--mochi-icon-resize-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 137,
+      "selector": "[data-mochi-icon-action=\"reply\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-reply-size",
+          "default": "var(--mochi-icon-reply-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-reply-size",
+          "default": "var(--mochi-icon-reply-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-reply-color",
+          "default": "var(--mochi-icon-reply-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 138,
+      "selector": "[data-mochi-icon-action=\"reply\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-reply-stroke-width",
+          "default": "var(--mochi-icon-reply-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 139,
+      "selector": "[data-mochi-icon-action=\"download\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-download-size",
+          "default": "var(--mochi-icon-download-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-download-size",
+          "default": "var(--mochi-icon-download-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-download-color",
+          "default": "var(--mochi-icon-download-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 140,
+      "selector": "[data-mochi-icon-action=\"download\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-download-stroke-width",
+          "default": "var(--mochi-icon-download-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 141,
+      "selector": "[data-mochi-icon-action=\"upload\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-upload-size",
+          "default": "var(--mochi-icon-upload-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-upload-size",
+          "default": "var(--mochi-icon-upload-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-upload-color",
+          "default": "var(--mochi-icon-upload-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 142,
+      "selector": "[data-mochi-icon-action=\"upload\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-upload-stroke-width",
+          "default": "var(--mochi-icon-upload-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 143,
+      "selector": "[data-mochi-icon-action=\"lock\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-lock-size",
+          "default": "var(--mochi-icon-lock-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-lock-size",
+          "default": "var(--mochi-icon-lock-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-lock-color",
+          "default": "var(--mochi-icon-lock-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 144,
+      "selector": "[data-mochi-icon-action=\"lock\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-lock-stroke-width",
+          "default": "var(--mochi-icon-lock-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 145,
+      "selector": "[data-mochi-icon-action=\"unlock\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-unlock-size",
+          "default": "var(--mochi-icon-unlock-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-unlock-size",
+          "default": "var(--mochi-icon-unlock-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-unlock-color",
+          "default": "var(--mochi-icon-unlock-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 146,
+      "selector": "[data-mochi-icon-action=\"unlock\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-unlock-stroke-width",
+          "default": "var(--mochi-icon-unlock-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 147,
+      "selector": "[data-mochi-icon-action=\"accessibility\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-accessibility-size",
+          "default": "var(--mochi-icon-accessibility-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-accessibility-size",
+          "default": "var(--mochi-icon-accessibility-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-accessibility-color",
+          "default": "var(--mochi-icon-accessibility-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 148,
+      "selector": "[data-mochi-icon-action=\"accessibility\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-accessibility-stroke-width",
+          "default": "var(--mochi-icon-accessibility-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 149,
+      "selector": "[data-mochi-icon-action=\"palette\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-palette-size",
+          "default": "var(--mochi-icon-palette-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-palette-size",
+          "default": "var(--mochi-icon-palette-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-palette-color",
+          "default": "var(--mochi-icon-palette-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 150,
+      "selector": "[data-mochi-icon-action=\"palette\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-palette-stroke-width",
+          "default": "var(--mochi-icon-palette-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 151,
+      "selector": "[data-mochi-icon-action=\"volume\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-volume-size",
+          "default": "var(--mochi-icon-volume-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-volume-size",
+          "default": "var(--mochi-icon-volume-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-volume-color",
+          "default": "var(--mochi-icon-volume-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 152,
+      "selector": "[data-mochi-icon-action=\"volume\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-volume-stroke-width",
+          "default": "var(--mochi-icon-volume-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 153,
+      "selector": "[data-mochi-icon-action=\"info\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-info-size",
+          "default": "var(--mochi-icon-info-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-info-size",
+          "default": "var(--mochi-icon-info-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-info-color",
+          "default": "var(--mochi-icon-info-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 154,
+      "selector": "[data-mochi-icon-action=\"info\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-info-stroke-width",
+          "default": "var(--mochi-icon-info-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 155,
+      "selector": "[data-mochi-icon-action=\"warning\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-warning-size",
+          "default": "var(--mochi-icon-warning-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-warning-size",
+          "default": "var(--mochi-icon-warning-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-warning-color",
+          "default": "var(--mochi-icon-warning-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 156,
+      "selector": "[data-mochi-icon-action=\"warning\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-warning-stroke-width",
+          "default": "var(--mochi-icon-warning-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 157,
+      "selector": "[data-mochi-icon-action=\"save\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-save-size",
+          "default": "var(--mochi-icon-save-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-save-size",
+          "default": "var(--mochi-icon-save-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-save-color",
+          "default": "var(--mochi-icon-save-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 158,
+      "selector": "[data-mochi-icon-action=\"save\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-save-stroke-width",
+          "default": "var(--mochi-icon-save-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 159,
+      "selector": "[data-mochi-icon-action=\"chevron\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-chevron-size",
+          "default": "var(--mochi-icon-chevron-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-chevron-size",
+          "default": "var(--mochi-icon-chevron-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-chevron-color",
+          "default": "var(--mochi-icon-chevron-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 160,
+      "selector": "[data-mochi-icon-action=\"chevron\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-chevron-stroke-width",
+          "default": "var(--mochi-icon-chevron-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 161,
+      "selector": "[data-mochi-icon-action=\"toolbar-presets\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-toolbar-presets-size",
+          "default": "var(--mochi-icon-toolbar-presets-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-toolbar-presets-size",
+          "default": "var(--mochi-icon-toolbar-presets-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-toolbar-presets-color",
+          "default": "var(--mochi-icon-toolbar-presets-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 162,
+      "selector": "[data-mochi-icon-action=\"toolbar-presets\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-toolbar-presets-stroke-width",
+          "default": "var(--mochi-icon-toolbar-presets-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 163,
+      "selector": "[data-mochi-icon-action=\"toolbar-memory\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-toolbar-memory-size",
+          "default": "var(--mochi-icon-toolbar-memory-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-toolbar-memory-size",
+          "default": "var(--mochi-icon-toolbar-memory-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-toolbar-memory-color",
+          "default": "var(--mochi-icon-toolbar-memory-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 164,
+      "selector": "[data-mochi-icon-action=\"toolbar-memory\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-toolbar-memory-stroke-width",
+          "default": "var(--mochi-icon-toolbar-memory-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 165,
+      "selector": "[data-mochi-icon-action=\"toolbar-preview\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-toolbar-preview-size",
+          "default": "var(--mochi-icon-toolbar-preview-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-toolbar-preview-size",
+          "default": "var(--mochi-icon-toolbar-preview-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-toolbar-preview-color",
+          "default": "var(--mochi-icon-toolbar-preview-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 166,
+      "selector": "[data-mochi-icon-action=\"toolbar-preview\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-toolbar-preview-stroke-width",
+          "default": "var(--mochi-icon-toolbar-preview-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 167,
+      "selector": "[data-mochi-icon-action=\"toolbar-notes\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-toolbar-notes-size",
+          "default": "var(--mochi-icon-toolbar-notes-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-toolbar-notes-size",
+          "default": "var(--mochi-icon-toolbar-notes-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-toolbar-notes-color",
+          "default": "var(--mochi-icon-toolbar-notes-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 168,
+      "selector": "[data-mochi-icon-action=\"toolbar-notes\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-toolbar-notes-stroke-width",
+          "default": "var(--mochi-icon-toolbar-notes-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 169,
+      "selector": "[data-mochi-icon-action=\"toolbar-settings\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-toolbar-settings-size",
+          "default": "var(--mochi-icon-toolbar-settings-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-toolbar-settings-size",
+          "default": "var(--mochi-icon-toolbar-settings-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-toolbar-settings-color",
+          "default": "var(--mochi-icon-toolbar-settings-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 170,
+      "selector": "[data-mochi-icon-action=\"toolbar-settings\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-toolbar-settings-stroke-width",
+          "default": "var(--mochi-icon-toolbar-settings-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 171,
+      "selector": "[data-mochi-icon-action=\"room-options\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-room-options-size",
+          "default": "var(--mochi-icon-room-options-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-room-options-size",
+          "default": "var(--mochi-icon-room-options-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-room-options-color",
+          "default": "var(--mochi-icon-room-options-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 172,
+      "selector": "[data-mochi-icon-action=\"room-options\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-room-options-stroke-width",
+          "default": "var(--mochi-icon-room-options-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 173,
+      "selector": "[data-mochi-icon-action=\"responder-auto\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-responder-auto-size",
+          "default": "var(--mochi-icon-responder-auto-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-responder-auto-size",
+          "default": "var(--mochi-icon-responder-auto-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-responder-auto-color",
+          "default": "var(--mochi-icon-responder-auto-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 174,
+      "selector": "[data-mochi-icon-action=\"responder-auto\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-responder-auto-stroke-width",
+          "default": "var(--mochi-icon-responder-auto-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 175,
+      "selector": "[data-mochi-icon-action=\"participants\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-participants-size",
+          "default": "var(--mochi-icon-participants-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-participants-size",
+          "default": "var(--mochi-icon-participants-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-participants-color",
+          "default": "var(--mochi-icon-participants-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 176,
+      "selector": "[data-mochi-icon-action=\"participants\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-participants-stroke-width",
+          "default": "var(--mochi-icon-participants-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 177,
+      "selector": "[data-mochi-icon-action=\"selected\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-selected-size",
+          "default": "var(--mochi-icon-selected-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-selected-size",
+          "default": "var(--mochi-icon-selected-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-selected-color",
+          "default": "var(--mochi-icon-selected-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 178,
+      "selector": "[data-mochi-icon-action=\"selected\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-selected-stroke-width",
+          "default": "var(--mochi-icon-selected-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 179,
+      "selector": "[data-mochi-icon-action=\"disclosure\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-disclosure-size",
+          "default": "var(--mochi-icon-disclosure-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-disclosure-size",
+          "default": "var(--mochi-icon-disclosure-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-disclosure-color",
+          "default": "var(--mochi-icon-disclosure-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 180,
+      "selector": "[data-mochi-icon-action=\"disclosure\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-disclosure-stroke-width",
+          "default": "var(--mochi-icon-disclosure-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 181,
+      "selector": "[data-mochi-icon-action=\"participant-remove\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-participant-remove-size",
+          "default": "var(--mochi-icon-participant-remove-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-participant-remove-size",
+          "default": "var(--mochi-icon-participant-remove-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-participant-remove-color",
+          "default": "var(--mochi-icon-participant-remove-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 182,
+      "selector": "[data-mochi-icon-action=\"participant-remove\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-participant-remove-stroke-width",
+          "default": "var(--mochi-icon-participant-remove-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 183,
+      "selector": "[data-mochi-icon-action=\"block-add\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-block-add-size",
+          "default": "var(--mochi-icon-block-add-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-block-add-size",
+          "default": "var(--mochi-icon-block-add-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-block-add-color",
+          "default": "var(--mochi-icon-block-add-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 184,
+      "selector": "[data-mochi-icon-action=\"block-add\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-block-add-stroke-width",
+          "default": "var(--mochi-icon-block-add-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 185,
+      "selector": "[data-mochi-icon-action=\"block-drag\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-block-drag-size",
+          "default": "var(--mochi-icon-block-drag-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-block-drag-size",
+          "default": "var(--mochi-icon-block-drag-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-block-drag-color",
+          "default": "var(--mochi-icon-block-drag-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 186,
+      "selector": "[data-mochi-icon-action=\"block-drag\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-block-drag-stroke-width",
+          "default": "var(--mochi-icon-block-drag-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 187,
+      "selector": "[data-mochi-icon-action=\"block-more\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-block-more-size",
+          "default": "var(--mochi-icon-block-more-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-block-more-size",
+          "default": "var(--mochi-icon-block-more-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-block-more-color",
+          "default": "var(--mochi-icon-block-more-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 188,
+      "selector": "[data-mochi-icon-action=\"block-more\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-block-more-stroke-width",
+          "default": "var(--mochi-icon-block-more-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 189,
+      "selector": "[data-mochi-icon-action=\"window-close\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-window-close-size",
+          "default": "var(--mochi-icon-window-close-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-window-close-size",
+          "default": "var(--mochi-icon-window-close-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-window-close-color",
+          "default": "var(--mochi-icon-window-close-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 190,
+      "selector": "[data-mochi-icon-action=\"window-close\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-window-close-stroke-width",
+          "default": "var(--mochi-icon-window-close-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 191,
+      "selector": "[data-mochi-icon-action=\"window-maximize\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-window-maximize-size",
+          "default": "var(--mochi-icon-window-maximize-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-window-maximize-size",
+          "default": "var(--mochi-icon-window-maximize-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-window-maximize-color",
+          "default": "var(--mochi-icon-window-maximize-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 192,
+      "selector": "[data-mochi-icon-action=\"window-maximize\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-window-maximize-stroke-width",
+          "default": "var(--mochi-icon-window-maximize-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 193,
+      "selector": "[data-mochi-icon-action=\"window-resize\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-window-resize-size",
+          "default": "var(--mochi-icon-window-resize-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-window-resize-size",
+          "default": "var(--mochi-icon-window-resize-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-window-resize-color",
+          "default": "var(--mochi-icon-window-resize-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 194,
+      "selector": "[data-mochi-icon-action=\"window-resize\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-window-resize-stroke-width",
+          "default": "var(--mochi-icon-window-resize-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 195,
+      "selector": "[data-mochi-icon-action=\"delete\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-delete-size",
+          "default": "var(--mochi-icon-delete-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-delete-size",
+          "default": "var(--mochi-icon-delete-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-delete-color",
+          "default": "var(--mochi-icon-delete-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 196,
+      "selector": "[data-mochi-icon-action=\"delete\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-delete-stroke-width",
+          "default": "var(--mochi-icon-delete-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 197,
+      "selector": "[data-mochi-icon-action=\"add\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-add-size",
+          "default": "var(--mochi-icon-add-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-add-size",
+          "default": "var(--mochi-icon-add-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-add-color",
+          "default": "var(--mochi-icon-add-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 198,
+      "selector": "[data-mochi-icon-action=\"add\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-add-stroke-width",
+          "default": "var(--mochi-icon-add-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 199,
+      "selector": "[data-mochi-icon-action=\"presets\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-presets-size",
+          "default": "var(--mochi-icon-presets-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-presets-size",
+          "default": "var(--mochi-icon-presets-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-presets-color",
+          "default": "var(--mochi-icon-presets-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 200,
+      "selector": "[data-mochi-icon-action=\"presets\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-presets-stroke-width",
+          "default": "var(--mochi-icon-presets-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 201,
+      "selector": "[data-mochi-icon-action=\"preview\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-preview-size",
+          "default": "var(--mochi-icon-preview-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-preview-size",
+          "default": "var(--mochi-icon-preview-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-preview-color",
+          "default": "var(--mochi-icon-preview-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 202,
+      "selector": "[data-mochi-icon-action=\"preview\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-preview-stroke-width",
+          "default": "var(--mochi-icon-preview-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 203,
+      "selector": "[data-mochi-icon-action=\"memory\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-memory-size",
+          "default": "var(--mochi-icon-memory-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-memory-size",
+          "default": "var(--mochi-icon-memory-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-memory-color",
+          "default": "var(--mochi-icon-memory-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 204,
+      "selector": "[data-mochi-icon-action=\"memory\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-memory-stroke-width",
+          "default": "var(--mochi-icon-memory-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 205,
+      "selector": "[data-mochi-icon-action=\"appearance\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-appearance-size",
+          "default": "var(--mochi-icon-appearance-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-appearance-size",
+          "default": "var(--mochi-icon-appearance-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-appearance-color",
+          "default": "var(--mochi-icon-appearance-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 206,
+      "selector": "[data-mochi-icon-action=\"appearance\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-appearance-stroke-width",
+          "default": "var(--mochi-icon-appearance-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 207,
+      "selector": "[data-mochi-icon-action=\"toolbar\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-toolbar-size",
+          "default": "var(--mochi-icon-toolbar-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-toolbar-size",
+          "default": "var(--mochi-icon-toolbar-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-toolbar-color",
+          "default": "var(--mochi-icon-toolbar-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 208,
+      "selector": "[data-mochi-icon-action=\"toolbar\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-toolbar-stroke-width",
+          "default": "var(--mochi-icon-toolbar-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 209,
+      "selector": "[data-mochi-icon-action=\"availability\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-availability-size",
+          "default": "var(--mochi-icon-availability-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-availability-size",
+          "default": "var(--mochi-icon-availability-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-availability-color",
+          "default": "var(--mochi-icon-availability-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 210,
+      "selector": "[data-mochi-icon-action=\"availability\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-availability-stroke-width",
+          "default": "var(--mochi-icon-availability-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 211,
+      "selector": "[data-mochi-icon-action=\"general\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-general-size",
+          "default": "var(--mochi-icon-general-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-general-size",
+          "default": "var(--mochi-icon-general-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-general-color",
+          "default": "var(--mochi-icon-general-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 212,
+      "selector": "[data-mochi-icon-action=\"general\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-general-stroke-width",
+          "default": "var(--mochi-icon-general-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 213,
+      "selector": "[data-mochi-icon-action=\"export\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-export-size",
+          "default": "var(--mochi-icon-export-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-export-size",
+          "default": "var(--mochi-icon-export-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-export-color",
+          "default": "var(--mochi-icon-export-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 214,
+      "selector": "[data-mochi-icon-action=\"export\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-export-stroke-width",
+          "default": "var(--mochi-icon-export-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 215,
+      "selector": "[data-mochi-icon-action=\"import\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-import-size",
+          "default": "var(--mochi-icon-import-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-import-size",
+          "default": "var(--mochi-icon-import-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-import-color",
+          "default": "var(--mochi-icon-import-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 216,
+      "selector": "[data-mochi-icon-action=\"import\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-import-stroke-width",
+          "default": "var(--mochi-icon-import-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 217,
+      "selector": "[data-mochi-icon-action=\"account-plus\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-account-plus-size",
+          "default": "var(--mochi-icon-account-plus-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-account-plus-size",
+          "default": "var(--mochi-icon-account-plus-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-account-plus-color",
+          "default": "var(--mochi-icon-account-plus-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 218,
+      "selector": "[data-mochi-icon-action=\"account-plus\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-account-plus-stroke-width",
+          "default": "var(--mochi-icon-account-plus-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 219,
+      "selector": "[data-mochi-icon-action=\"account-settings\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-account-settings-size",
+          "default": "var(--mochi-icon-account-settings-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-account-settings-size",
+          "default": "var(--mochi-icon-account-settings-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-account-settings-color",
+          "default": "var(--mochi-icon-account-settings-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 220,
+      "selector": "[data-mochi-icon-action=\"account-settings\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-account-settings-stroke-width",
+          "default": "var(--mochi-icon-account-settings-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 221,
+      "selector": "[data-mochi-icon-action=\"account-logout\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-account-logout-size",
+          "default": "var(--mochi-icon-account-logout-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-account-logout-size",
+          "default": "var(--mochi-icon-account-logout-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-account-logout-color",
+          "default": "var(--mochi-icon-account-logout-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 222,
+      "selector": "[data-mochi-icon-action=\"account-logout\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-account-logout-stroke-width",
+          "default": "var(--mochi-icon-account-logout-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 223,
+      "selector": "[data-mochi-icon-action=\"account-sort\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-account-sort-size",
+          "default": "var(--mochi-icon-account-sort-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-account-sort-size",
+          "default": "var(--mochi-icon-account-sort-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-account-sort-color",
+          "default": "var(--mochi-icon-account-sort-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 224,
+      "selector": "[data-mochi-icon-action=\"account-sort\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-account-sort-stroke-width",
+          "default": "var(--mochi-icon-account-sort-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 225,
+      "selector": "[data-mochi-icon-action=\"account-grid\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-account-grid-size",
+          "default": "var(--mochi-icon-account-grid-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-account-grid-size",
+          "default": "var(--mochi-icon-account-grid-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-account-grid-color",
+          "default": "var(--mochi-icon-account-grid-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 226,
+      "selector": "[data-mochi-icon-action=\"account-grid\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-account-grid-stroke-width",
+          "default": "var(--mochi-icon-account-grid-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 227,
+      "selector": "[data-mochi-icon-action=\"account-list\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-account-list-size",
+          "default": "var(--mochi-icon-account-list-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-account-list-size",
+          "default": "var(--mochi-icon-account-list-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-account-list-color",
+          "default": "var(--mochi-icon-account-list-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 228,
+      "selector": "[data-mochi-icon-action=\"account-list\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-account-list-stroke-width",
+          "default": "var(--mochi-icon-account-list-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 229,
+      "selector": "[data-mochi-icon-action=\"account-check\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-account-check-size",
+          "default": "var(--mochi-icon-account-check-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-account-check-size",
+          "default": "var(--mochi-icon-account-check-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-account-check-color",
+          "default": "var(--mochi-icon-account-check-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 230,
+      "selector": "[data-mochi-icon-action=\"account-check\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-account-check-stroke-width",
+          "default": "var(--mochi-icon-account-check-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 231,
+      "selector": "[data-mochi-icon-action=\"account-archive\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-account-archive-size",
+          "default": "var(--mochi-icon-account-archive-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-account-archive-size",
+          "default": "var(--mochi-icon-account-archive-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-account-archive-color",
+          "default": "var(--mochi-icon-account-archive-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 232,
+      "selector": "[data-mochi-icon-action=\"account-archive\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-account-archive-stroke-width",
+          "default": "var(--mochi-icon-account-archive-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 233,
+      "selector": "[data-mochi-icon-action=\"account-profile\"]",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "--mochi-slot-width",
+          "token": "--mochi-icon-account-profile-size",
+          "default": "var(--mochi-icon-account-profile-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-height",
+          "token": "--mochi-icon-account-profile-size",
+          "default": "var(--mochi-icon-account-profile-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)))",
+          "important": false,
+          "structural": false
+        },
+        {
+          "property": "--mochi-slot-color",
+          "token": "--mochi-icon-account-profile-color",
+          "default": "var(--mochi-icon-account-profile-color,currentColor)",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
+      "section": "icons",
+      "file": "src/mochi/ui/icons.css",
+      "line": 234,
+      "selector": "[data-mochi-icon-action=\"account-profile\"] > svg",
+      "conditions": [],
+      "declarations": [
+        {
+          "property": "stroke-width",
+          "token": "--mochi-icon-account-profile-stroke-width",
+          "default": "var(--mochi-icon-account-profile-stroke-width,var(--mochi-icon-stroke-width,1.7))",
+          "important": false,
+          "structural": false
+        }
+      ]
+    },
+    {
       "section": "shared-pocket",
       "file": "src/styles.ts",
       "line": 27,
@@ -35229,7 +40449,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 69,
+      "line": 70,
       "selector": ".pocket-portal",
       "conditions": [],
       "declarations": [
@@ -35329,7 +40549,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 70,
+      "line": 71,
       "selector": ".pocket-portal *",
       "conditions": [],
       "declarations": [
@@ -35345,7 +40565,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 70,
+      "line": 71,
       "selector": ".pocket-portal [hidden]",
       "conditions": [],
       "declarations": [
@@ -35361,7 +40581,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 70,
+      "line": 71,
       "selector": ".pocket-portal-nav",
       "conditions": [],
       "declarations": [
@@ -35419,7 +40639,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 70,
+      "line": 71,
       "selector": ".pocket-portal button",
       "conditions": [],
       "declarations": [
@@ -35442,7 +40662,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 70,
+      "line": 71,
       "selector": ".pocket-portal-home",
       "conditions": [],
       "declarations": [
@@ -35486,7 +40706,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 70,
+      "line": 71,
       "selector": ".pocket-portal-eyebrow",
       "conditions": [],
       "declarations": [
@@ -35523,7 +40743,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 70,
+      "line": 71,
       "selector": ".pocket-portal h2",
       "conditions": [],
       "declarations": [
@@ -35567,7 +40787,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 70,
+      "line": 71,
       "selector": ".pocket-portal-intro",
       "conditions": [],
       "declarations": [
@@ -35590,7 +40810,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 70,
+      "line": 71,
       "selector": ".pocket-portal-info",
       "conditions": [],
       "declarations": [
@@ -35655,7 +40875,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 70,
+      "line": 71,
       "selector": ".pocket-portal-destinations",
       "conditions": [],
       "declarations": [
@@ -35678,7 +40898,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 70,
+      "line": 71,
       "selector": ".pocket-portal-destination",
       "conditions": [],
       "declarations": [
@@ -35771,7 +40991,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 70,
+      "line": 71,
       "selector": ".pocket-portal-destination small",
       "conditions": [],
       "declarations": [
@@ -35808,7 +41028,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 70,
+      "line": 71,
       "selector": ".pocket-portal-destination strong",
       "conditions": [],
       "declarations": [
@@ -35852,7 +41072,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 70,
+      "line": 71,
       "selector": ".pocket-portal-destination>span:not(.pocket-portal-art):not(.pocket-portal-arrow)",
       "conditions": [],
       "declarations": [
@@ -35889,7 +41109,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 70,
+      "line": 71,
       "selector": ".pocket-portal-art",
       "conditions": [],
       "declarations": [
@@ -35926,7 +41146,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 70,
+      "line": 71,
       "selector": ".pocket-portal-art svg",
       "conditions": [],
       "declarations": [
@@ -35956,7 +41176,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 70,
+      "line": 71,
       "selector": ".pocket-portal-arrow",
       "conditions": [],
       "declarations": [
@@ -35993,7 +41213,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 70,
+      "line": 71,
       "selector": ".pocket-portal-destination:hover",
       "conditions": [],
       "declarations": [
@@ -36016,7 +41236,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 70,
+      "line": 71,
       "selector": ".pocket-portal :is(button,input,textarea,select):focus-visible",
       "conditions": [],
       "declarations": [
@@ -36039,7 +41259,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 70,
+      "line": 71,
       "selector": ".pocket-portal .lumiphone-device-drawer",
       "conditions": [],
       "declarations": [
@@ -36062,7 +41282,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 70,
+      "line": 71,
       "selector": ".pocket-portal .lumiphone-device-footer",
       "conditions": [],
       "declarations": [
@@ -36092,7 +41312,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 70,
+      "line": 71,
       "selector": ".pocket-portal .lumiphone-device-access",
       "conditions": [],
       "declarations": [
@@ -36171,7 +41391,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 70,
+      "line": 71,
       "selector": ".pocket-portal .lumiphone-device-access:disabled",
       "conditions": [],
       "declarations": [
@@ -36194,7 +41414,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 70,
+      "line": 71,
       "selector": ".pocket-portal .lumiphone-device-access:not(:disabled):hover",
       "conditions": [],
       "declarations": [
@@ -36217,7 +41437,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 70,
+      "line": 71,
       "selector": ".pocket-portal .mochi-view",
       "conditions": [],
       "declarations": [
@@ -36261,7 +41481,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 70,
+      "line": 71,
       "selector": ".pocket-portal .mochi-view>header",
       "conditions": [],
       "declarations": [
@@ -36305,7 +41525,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 70,
+      "line": 71,
       "selector": ".pocket-portal .mochi-view>header>.mochi-actions",
       "conditions": [],
       "declarations": [
@@ -36321,7 +41541,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 70,
+      "line": 71,
       "selector": ".pocket-portal .mochi-view>header .mochi-icon-button",
       "conditions": [],
       "declarations": [
@@ -36372,7 +41592,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 70,
+      "line": 71,
       "selector": ".pocket-portal .mochi-view h2",
       "conditions": [],
       "declarations": [
@@ -36395,7 +41615,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 70,
+      "line": 71,
       "selector": ".pocket-portal .mochi-view .mochi-card",
       "conditions": [],
       "declarations": [
@@ -36411,7 +41631,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 70,
+      "line": 71,
       "selector": ".pocket-portal .mochi-view>.lp-button",
       "conditions": [],
       "declarations": [
@@ -36462,7 +41682,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 70,
+      "line": 71,
       "selector": ".pocket-portal .mochi-view>.mochi-primary",
       "conditions": [],
       "declarations": [
@@ -36485,7 +41705,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 72,
+      "line": 73,
       "selector": ".pocket-portal-body",
       "conditions": [
         "@media (min-width:721px) and (min-height:541px)"
@@ -36510,7 +41730,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 72,
+      "line": 73,
       "selector": ".pocket-portal .mochi-form",
       "conditions": [
         "@media (min-width:721px) and (min-height:541px)"
@@ -36528,7 +41748,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 72,
+      "line": 73,
       "selector": ".pocket-portal .mochi-form .mochi-picker",
       "conditions": [
         "@media (min-width:721px) and (min-height:541px)"
@@ -36553,7 +41773,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 72,
+      "line": 73,
       "selector": ".pocket-portal .mochi-form .mochi-choice",
       "conditions": [
         "@media (min-width:721px) and (min-height:541px)"
@@ -36571,7 +41791,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 74,
+      "line": 75,
       "selector": ".pocket-portal-nav",
       "conditions": [],
       "declarations": [
@@ -36587,7 +41807,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 74,
+      "line": 75,
       "selector": ".pocket-portal-nav>span",
       "conditions": [],
       "declarations": [
@@ -36603,7 +41823,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 74,
+      "line": 75,
       "selector": ".pocket-portal-back",
       "conditions": [],
       "declarations": [
@@ -36647,7 +41867,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 74,
+      "line": 75,
       "selector": ".pocket-portal .mochi-profile-screen",
       "conditions": [],
       "declarations": [
@@ -36663,7 +41883,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 74,
+      "line": 75,
       "selector": ".pocket-portal .mochi-view .mochi-inbox-actions>.lp-button",
       "conditions": [],
       "declarations": [
@@ -36686,7 +41906,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 74,
+      "line": 75,
       "selector": ".pocket-portal .mochi-account-picker .mochi-secondary-action",
       "conditions": [],
       "declarations": [
@@ -36702,7 +41922,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 74,
+      "line": 75,
       "selector": ".pocket-portal .mochi-profile-actions .lp-button",
       "conditions": [],
       "declarations": [
@@ -36718,7 +41938,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 74,
+      "line": 75,
       "selector": ".pocket-portal .mochi-connection-indicator",
       "conditions": [],
       "declarations": [
@@ -36734,7 +41954,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 74,
+      "line": 75,
       "selector": ".pocket-portal .mochi-profile-fields input,.pocket-portal .mochi-profile-fields select,.pocket-portal .mochi-profile-fields textarea",
       "conditions": [],
       "declarations": [
@@ -36757,7 +41977,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 76,
+      "line": 77,
       "selector": ".pocket-portal .mochi-sheet",
       "conditions": [],
       "declarations": [
@@ -36815,7 +42035,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 76,
+      "line": 77,
       "selector": ".pocket-portal .mochi-sheet h2",
       "conditions": [],
       "declarations": [
@@ -36838,7 +42058,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 76,
+      "line": 77,
       "selector": ".mochi-unsaved-sheet .lp-sheet-close",
       "conditions": [],
       "declarations": [
@@ -36854,7 +42074,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 77,
+      "line": 78,
       "selector": ".pocket-portal-destinations",
       "conditions": [],
       "declarations": [
@@ -36870,7 +42090,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 77,
+      "line": 78,
       "selector": ".pocket-portal-destination",
       "conditions": [],
       "declarations": [
@@ -36900,7 +42120,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 77,
+      "line": 78,
       "selector": ".pocket-portal-art",
       "conditions": [],
       "declarations": [
@@ -36930,7 +42150,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 77,
+      "line": 78,
       "selector": ".pocket-portal-art svg",
       "conditions": [],
       "declarations": [
@@ -36953,7 +42173,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 77,
+      "line": 78,
       "selector": ".pocket-portal-destination small",
       "conditions": [],
       "declarations": [
@@ -36983,7 +42203,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 77,
+      "line": 78,
       "selector": ".pocket-portal-destination strong",
       "conditions": [],
       "declarations": [
@@ -37006,7 +42226,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 77,
+      "line": 78,
       "selector": ".pocket-portal-destination>span:not(.pocket-portal-art):not(.pocket-portal-arrow)",
       "conditions": [],
       "declarations": [
@@ -37029,7 +42249,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 78,
+      "line": 79,
       "selector": ".pocket-portal[data-destination=mochi]",
       "conditions": [],
       "declarations": [
@@ -37066,7 +42286,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 78,
+      "line": 79,
       "selector": ".pocket-portal[data-destination=mochi]>.pocket-portal-body",
       "conditions": [],
       "declarations": [
@@ -37124,7 +42344,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 78,
+      "line": 79,
       "selector": ".pocket-portal .mochi-sidebar",
       "conditions": [],
       "declarations": [
@@ -37147,7 +42367,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 78,
+      "line": 79,
       "selector": ".pocket-portal .mochi-workspace[data-presentation=messenger]>.mochi-view",
       "conditions": [],
       "declarations": [
@@ -37177,7 +42397,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 78,
+      "line": 79,
       "selector": ".pocket-portal .mochi-workspace[data-presentation=messenger] .mochi-desktop-main>.mochi-view",
       "conditions": [],
       "declarations": [
@@ -37200,7 +42420,7 @@
     {
       "section": "shared-pocket",
       "file": "src/frontend/components/portal.ts",
-      "line": 78,
+      "line": 79,
       "selector": ".pocket-portal .mochi-workspace[data-presentation=messenger] .mochi-desktop-main>.mochi-view[data-conversation=true]",
       "conditions": [],
       "declarations": [

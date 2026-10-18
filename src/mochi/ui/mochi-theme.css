@@ -3,3 +3,9 @@
  * See THEME-CONTRACT.md and starter-theme.css. Empty preserves host defaults.
  * This file is embedded locally; it never loads a theme or asset over the network.
  */
+
+/* Optional named-icon recipes (leave unset for default artwork):
+.mochi-view { --mochi-icon-toolbar-presets-size:20px; --mochi-icon-toolbar-presets-stroke-width:2; }
+.mochi-settings-workspace { --mochi-icon-text-display:inline-flex; }
+See ICON-THEMING.md for a complete local data-image substitution, safe fallback,
+optional bundled owner assets, and the full reference/icons.md slot list. */

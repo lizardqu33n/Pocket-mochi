@@ -1,4 +1,5 @@
-import { button, el } from '../frontend/shared.js'
+import {mochiButton as button} from './ui/icon-slots.js'
+import { el } from '../frontend/shared.js'
 
 export interface MochiModelChoices { models: string[]; labels: Record<string,string> }
 

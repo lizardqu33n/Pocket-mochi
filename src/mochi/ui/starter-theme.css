@@ -169,3 +169,9 @@
 .mochi-view { --mochi-menu-max-height: 300px; }
 .mochi-sheet { --mochi-dialog-width: min(520px,calc(100vw - 24px)); }
 */
+
+/* Named icon examples (opt in; see ICON-THEMING.md and reference/icons.md):
+.mochi-view { --mochi-icon-toolbar-presets-size:20px; --mochi-icon-toolbar-presets-stroke-width:2; }
+.mochi-settings-workspace { --mochi-icon-text-display:inline-flex; }
+Local SVG/PNG image tokens use quoted data URLs and keep Lucide on load failure.
+The complete example and security rules are in ICON-THEMING.md. */

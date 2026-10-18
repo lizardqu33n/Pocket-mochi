@@ -28,6 +28,7 @@ The complete reference is [UI-CUSTOMIZATION-MAP.md](UI-CUSTOMIZATION-MAP.md); ma
 | window-focus | 2 | 2 |
 | workspace | 3 | 1 |
 | notifications | 5 | 10 |
+| icons | 223 | 333 |
 | shared-pocket | 141 | 394 |
 
 ## Inline assignments
@@ -35,14 +36,14 @@ The complete reference is [UI-CUSTOMIZATION-MAP.md](UI-CUSTOMIZATION-MAP.md); ma
 These are private measurements, saved accessibility backing values, or host root-fill invariants. Dialog measurements live in the shared sheet helper and are consumed through CSS variables.
 
 - src/mochi/mobile-surface.ts:14 — host root fill invariant
-- src/mochi/personal-settings.ts:67 — saved accessibility backing values
+- src/mochi/personal-settings.ts:68 — saved accessibility backing values
 - src/mochi/ui/geometry.ts:4 — private geometry measurements; public CSS controls mapped separately
 - src/mochi/ui/geometry.ts:5 — private geometry measurements; public CSS controls mapped separately
-- src/mochi/view.ts:711 — private geometry measurements; public CSS controls mapped separately
+- src/mochi/view.ts:710 — private geometry measurements; public CSS controls mapped separately
+- src/mochi/view.ts:770 — saved accessibility backing values
 - src/mochi/view.ts:771 — saved accessibility backing values
-- src/mochi/view.ts:772 — saved accessibility backing values
-- src/mochi/view.ts:988 — private geometry measurements; public CSS controls mapped separately
-- src/mochi/window.ts:60 — host root fill invariant
+- src/mochi/view.ts:987 — private geometry measurements; public CSS controls mapped separately
+- src/mochi/window.ts:61 — host root fill invariant
 
 ## Common semantic tokens
 

@@ -197,3 +197,11 @@ State arrays and text fields are normalized and bounded on every read. Tracker r
 - `src/styles.ts` — centralized phone/design tokens and responsive states.
 
  its installed checkout is `Lumiverse/data/extensions/lumiphone/repo` and built entries are `dist/backend.js` and `dist/frontend.js`.
+## Mochi icon customization
+
+Mochi bundles verified Lucide SVG artwork locally, with CSS-themeable semantic
+slots and optional safe local SVG/PNG/JPEG/WebP replacements. Start with
+[icon theming and examples](src/mochi/ui/ICON-THEMING.md), the
+[named slot reference](src/mochi/ui/reference/icons.md), and the
+[v2 CSS contract](src/mochi/ui/THEME-CONTRACT.md). No owner icons/fonts are required.
+Edit `mochi-theme.css`, then rebuild the tracked frontend with `bun run build:frontend`.

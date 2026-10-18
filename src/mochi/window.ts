@@ -1,3 +1,4 @@
+import {mochiIcon} from './ui/icon-slots.js'
 import {mochiStyle} from './ui/styles.js'
 import type { SpindleFrontendContext, SpindleFloatWidgetHandle } from 'lumiverse-spindle-types'
 import type { MochiSession } from './session.js'
@@ -49,13 +50,13 @@ export function createMochiWindow(ui: MochiWindowUI, session: MochiSession,
   const style = document.createElement('style')
   style.textContent=mochiStyle('window')
   const bar=document.createElement('header');bar.className='mochi-window-bar';bar.append('Mochi')
-  const close=document.createElement('button');close.className='mochi-window-close';close.type='button';close.textContent='×';close.setAttribute('aria-label','Hide Mochi window');close.title='Hide Mochi window'
+  const close=document.createElement('button');close.className='mochi-window-close';close.type='button';close.append(mochiIcon('close','window-close'));close.setAttribute('aria-label','Hide Mochi window');close.title='Hide Mochi window'
   bar.tabIndex=0;bar.setAttribute('aria-label','Mochi title bar');bar.setAttribute('aria-description','Use arrow keys to move the window. Escape hides it.')
-  const maximize=document.createElement('button');maximize.type='button';maximize.className='mochi-window-close';maximize.textContent='□'
+  const maximize=document.createElement('button');maximize.type='button';maximize.className='mochi-window-close';maximize.append(mochiIcon('maximize','window-maximize'))
   const canMaximize=typeof widget.setFullscreen==='function'&&typeof widget.isFullscreen==='function'
   const syncControls=()=>{const full=maximized();maximize.setAttribute('aria-label',full?'Restore Mochi window':'Maximize Mochi window');maximize.title=full?'Restore window':'Maximize window';maximize.setAttribute('aria-pressed',String(full));grip.hidden=full;grip.disabled=full;bar.setAttribute('aria-description',full?'Window maximized. Escape hides it.':'Use arrow keys to move the window. Escape hides it.')}
   const body=document.createElement('div');body.className='mochi-window-body'
-  const grip=document.createElement('button');grip.className='mochi-window-resize';grip.type='button';grip.textContent='◢';grip.dataset.resizeHandle='se';grip.setAttribute('data-spindle-float-resize-handle','');grip.setAttribute('aria-label','Resize Mochi window');grip.title='Drag to resize, or use arrow keys'
+  const grip=document.createElement('button');grip.className='mochi-window-resize';grip.type='button';grip.append(mochiIcon('resize','window-resize'));grip.dataset.resizeHandle='se';grip.setAttribute('data-spindle-float-resize-handle','');grip.setAttribute('aria-label','Resize Mochi window');grip.title='Drag to resize, or use arrow keys'
   if(canMaximize)bar.append(maximize)
   bar.append(close);panel.append(style,bar,body,grip);widget.root.style.height='100%';widget.root.append(panel)
   const focusStyle=document.createElement('style');focusStyle.textContent=mochiStyle('window-focus');panel.append(focusStyle)

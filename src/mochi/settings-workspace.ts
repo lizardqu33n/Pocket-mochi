@@ -1,5 +1,6 @@
+import {mochiButton as button} from './ui/icon-slots.js'
 import {mochiStyle} from './ui/styles.js'
-import {el,button} from '../frontend/shared.js'
+import {el} from '../frontend/shared.js'
 import type {MochiRoom,MochiState} from './types.js'
 import {statusFor} from './presence.js'
 
@@ -43,7 +44,7 @@ export class ChatSettingsLayout {
   const scroller=el('div','mochi-settings-scroll');scroller.onscroll=()=>{this.scroll=scroller.scrollTop}
   const footer=form.querySelector<HTMLElement>(':scope>.mochi-actions')!
   form.replaceChildren(nav,scroller,footer)
-  for(const name of SETTINGS_CATEGORIES){const tab=button(name);tab.setAttribute('aria-label',name);tab.setAttribute('aria-pressed',String(this.category===name));tab.onclick=()=>{this.category=name;this.focusCategory=true;this.categoryOpen=true;this.character='';this.scroll=0;redraw()};nav.append(tab)}
+  for(const name of SETTINGS_CATEGORIES){const tab=button(name,'lp-button mochi-category-tab');tab.setAttribute('aria-label',name);tab.setAttribute('aria-pressed',String(this.category===name));tab.onclick=()=>{this.category=name;this.focusCategory=true;this.categoryOpen=true;this.character='';this.scroll=0;redraw()};nav.append(tab)}
   const categoryBack=button('Back to Chat categories','mochi-category-back');categoryBack.onclick=()=>{this.categoryOpen=false;this.focusCategory=true;redraw()};scroller.append(categoryBack)
   if(this.character){
    const detail=characters.find(s=>s.dataset.characterId===this.character)

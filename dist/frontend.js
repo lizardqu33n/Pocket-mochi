@@ -46,6 +46,1450 @@ function rpContextPowerButton(enabled, save) {
 // src/domain/gallery-page.ts
 var GALLERY_PAGE_SIZE = 48;
 
+// src/mochi/ui/icons/plus.svg
+var plus_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-plus"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M5 12h14" />
+  <path d="M12 5v14" />
+</svg>
+`;
+
+// src/mochi/ui/icons/settings.svg
+var settings_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-settings"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+  <circle cx="12" cy="12" r="3" />
+</svg>
+`;
+
+// src/mochi/ui/icons/log-out.svg
+var log_out_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-log-out"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+  <polyline points="16 17 21 12 16 7" />
+  <line x1="21" x2="9" y1="12" y2="12" />
+</svg>
+`;
+
+// src/mochi/ui/icons/arrow-down-wide-narrow.svg
+var arrow_down_wide_narrow_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-arrow-down-wide-narrow"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m3 16 4 4 4-4" />
+  <path d="M7 20V4" />
+  <path d="M11 4h10" />
+  <path d="M11 8h7" />
+  <path d="M11 12h4" />
+</svg>
+`;
+
+// src/mochi/ui/icons/layout-grid.svg
+var layout_grid_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-layout-grid"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <rect width="7" height="7" x="3" y="3" rx="1" />
+  <rect width="7" height="7" x="14" y="3" rx="1" />
+  <rect width="7" height="7" x="14" y="14" rx="1" />
+  <rect width="7" height="7" x="3" y="14" rx="1" />
+</svg>
+`;
+
+// src/mochi/ui/icons/list.svg
+var list_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-list"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M3 12h.01" />
+  <path d="M3 18h.01" />
+  <path d="M3 6h.01" />
+  <path d="M8 12h13" />
+  <path d="M8 18h13" />
+  <path d="M8 6h13" />
+</svg>
+`;
+
+// src/mochi/ui/icons/square-check.svg
+var square_check_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-square-check"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <rect width="18" height="18" x="3" y="3" rx="2" />
+  <path d="m9 12 2 2 4-4" />
+</svg>
+`;
+
+// src/mochi/ui/icons/archive.svg
+var archive_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-archive"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <rect width="20" height="5" x="2" y="3" rx="1" />
+  <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" />
+  <path d="M10 12h4" />
+</svg>
+`;
+
+// src/mochi/ui/icons/brain.svg
+var brain_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-brain"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z" />
+  <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z" />
+  <path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4" />
+  <path d="M17.599 6.5a3 3 0 0 0 .399-1.375" />
+  <path d="M6.003 5.125A3 3 0 0 0 6.401 6.5" />
+  <path d="M3.477 10.896a4 4 0 0 1 .585-.396" />
+  <path d="M19.938 10.5a4 4 0 0 1 .585.396" />
+  <path d="M6 18a4 4 0 0 1-1.967-.516" />
+  <path d="M19.967 17.484A4 4 0 0 1 18 18" />
+</svg>
+`;
+
+// src/mochi/ui/icons/smile.svg
+var smile_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-smile"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <circle cx="12" cy="12" r="10" />
+  <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+  <line x1="9" x2="9.01" y1="9" y2="9" />
+  <line x1="15" x2="15.01" y1="9" y2="9" />
+</svg>
+`;
+
+// src/mochi/ui/icons/sliders-horizontal.svg
+var sliders_horizontal_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-sliders-horizontal"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <line x1="21" x2="14" y1="4" y2="4" />
+  <line x1="10" x2="3" y1="4" y2="4" />
+  <line x1="21" x2="12" y1="12" y2="12" />
+  <line x1="8" x2="3" y1="12" y2="12" />
+  <line x1="21" x2="16" y1="20" y2="20" />
+  <line x1="12" x2="3" y1="20" y2="20" />
+  <line x1="14" x2="14" y1="2" y2="6" />
+  <line x1="8" x2="8" y1="10" y2="14" />
+  <line x1="16" x2="16" y1="18" y2="22" />
+</svg>
+`;
+
+// src/mochi/ui/icons/user-round.svg
+var user_round_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-user-round"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <circle cx="12" cy="8" r="5" />
+  <path d="M20 21a8 8 0 0 0-16 0" />
+</svg>
+`;
+
+// src/mochi/ui/icons/panel-right.svg
+var panel_right_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-panel-right"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <rect width="18" height="18" x="3" y="3" rx="2" />
+  <path d="M15 3v18" />
+</svg>
+`;
+
+// src/mochi/ui/icons/layers.svg
+var layers_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-layers"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z" />
+  <path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12" />
+  <path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17" />
+</svg>
+`;
+
+// src/mochi/ui/icons/bookmark.svg
+var bookmark_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-bookmark"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
+</svg>
+`;
+
+// src/mochi/ui/icons/eye.svg
+var eye_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-eye"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
+  <circle cx="12" cy="12" r="3" />
+</svg>
+`;
+
+// src/mochi/ui/icons/pin.svg
+var pin_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-pin"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 17v5" />
+  <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+</svg>
+`;
+
+// src/mochi/ui/icons/ellipsis.svg
+var ellipsis_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-ellipsis"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <circle cx="12" cy="12" r="1" />
+  <circle cx="19" cy="12" r="1" />
+  <circle cx="5" cy="12" r="1" />
+</svg>
+`;
+
+// src/mochi/ui/icons/power.svg
+var power_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-power"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 2v10" />
+  <path d="M18.4 6.6a9 9 0 1 1-12.77.04" />
+</svg>
+`;
+
+// src/mochi/ui/icons/house.svg
+var house_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-house"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" />
+  <path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+</svg>
+`;
+
+// src/mochi/ui/icons/messages-square.svg
+var messages_square_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-messages-square"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z" />
+  <path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1" />
+</svg>
+`;
+
+// src/mochi/ui/icons/users-round.svg
+var users_round_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-users-round"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M18 21a8 8 0 0 0-16 0" />
+  <circle cx="10" cy="8" r="5" />
+  <path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3" />
+</svg>
+`;
+
+// src/mochi/ui/icons/camera.svg
+var camera_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-camera"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+  <circle cx="12" cy="13" r="3" />
+</svg>
+`;
+
+// src/mochi/ui/icons/image.svg
+var image_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-image"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+  <circle cx="9" cy="9" r="2" />
+  <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+</svg>
+`;
+
+// src/mochi/ui/icons/notebook-pen.svg
+var notebook_pen_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-notebook-pen"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4" />
+  <path d="M2 6h4" />
+  <path d="M2 10h4" />
+  <path d="M2 14h4" />
+  <path d="M2 18h4" />
+  <path d="M21.378 5.626a1 1 0 1 0-3.004-3.004l-5.01 5.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z" />
+</svg>
+`;
+
+// src/mochi/ui/icons/cloud-sun.svg
+var cloud_sun_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-cloud-sun"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 2v2" />
+  <path d="m4.93 4.93 1.41 1.41" />
+  <path d="M20 12h2" />
+  <path d="m19.07 4.93-1.41 1.41" />
+  <path d="M15.947 12.65a4 4 0 0 0-5.925-4.128" />
+  <path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6Z" />
+</svg>
+`;
+
+// src/mochi/ui/icons/calendar.svg
+var calendar_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-calendar"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M8 2v4" />
+  <path d="M16 2v4" />
+  <rect width="18" height="18" x="3" y="4" rx="2" />
+  <path d="M3 10h18" />
+</svg>
+`;
+
+// src/mochi/ui/icons/chart-no-axes-column.svg
+var chart_no_axes_column_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-chart-no-axes-column"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <line x1="18" x2="18" y1="20" y2="10" />
+  <line x1="12" x2="12" y1="20" y2="4" />
+  <line x1="6" x2="6" y1="20" y2="14" />
+</svg>
+`;
+
+// src/mochi/ui/icons/bell.svg
+var bell_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-bell"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M10.268 21a2 2 0 0 0 3.464 0" />
+  <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" />
+</svg>
+`;
+
+// src/mochi/ui/icons/arrow-left.svg
+var arrow_left_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-arrow-left"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m12 19-7-7 7-7" />
+  <path d="M19 12H5" />
+</svg>
+`;
+
+// src/mochi/ui/icons/send.svg
+var send_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-send"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z" />
+  <path d="m21.854 2.147-10.94 10.939" />
+</svg>
+`;
+
+// src/mochi/ui/icons/sparkles.svg
+var sparkles_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-sparkles"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
+  <path d="M20 3v4" />
+  <path d="M22 5h-4" />
+  <path d="M4 17v2" />
+  <path d="M5 18H3" />
+</svg>
+`;
+
+// src/mochi/ui/icons/trash-2.svg
+var trash_2_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-trash-2"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M3 6h18" />
+  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+  <line x1="10" x2="10" y1="11" y2="17" />
+  <line x1="14" x2="14" y1="11" y2="17" />
+</svg>
+`;
+
+// src/mochi/ui/icons/square.svg
+var square_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-square"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <rect width="18" height="18" x="3" y="3" rx="2" />
+</svg>
+`;
+
+// src/mochi/ui/icons/copy.svg
+var copy_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-copy"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+  <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+</svg>
+`;
+
+// src/mochi/ui/icons/pencil.svg
+var pencil_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-pencil"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
+  <path d="m15 5 4 4" />
+</svg>
+`;
+
+// src/mochi/ui/icons/x.svg
+var x_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-x"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M18 6 6 18" />
+  <path d="m6 6 12 12" />
+</svg>
+`;
+
+// src/mochi/ui/icons/search.svg
+var search_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-search"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <circle cx="11" cy="11" r="8" />
+  <path d="m21 21-4.3-4.3" />
+</svg>
+`;
+
+// src/mochi/ui/icons/refresh-cw.svg
+var refresh_cw_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-refresh-cw"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+  <path d="M21 3v5h-5" />
+  <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+  <path d="M8 16H3v5" />
+</svg>
+`;
+
+// src/mochi/ui/icons/arrow-up.svg
+var arrow_up_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-arrow-up"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m5 12 7-7 7 7" />
+  <path d="M12 19V5" />
+</svg>
+`;
+
+// src/mochi/ui/icons/arrow-down.svg
+var arrow_down_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-arrow-down"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 5v14" />
+  <path d="m19 12-7 7-7-7" />
+</svg>
+`;
+
+// src/mochi/ui/icons/arrow-right.svg
+var arrow_right_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-arrow-right"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M5 12h14" />
+  <path d="m12 5 7 7-7 7" />
+</svg>
+`;
+
+// src/mochi/ui/icons/grip-vertical.svg
+var grip_vertical_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-grip-vertical"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <circle cx="9" cy="12" r="1" />
+  <circle cx="9" cy="5" r="1" />
+  <circle cx="9" cy="19" r="1" />
+  <circle cx="15" cy="12" r="1" />
+  <circle cx="15" cy="5" r="1" />
+  <circle cx="15" cy="19" r="1" />
+</svg>
+`;
+
+// src/mochi/ui/icons/maximize.svg
+var maximize_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-maximize"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+  <path d="M21 8V5a2 2 0 0 0-2-2h-3" />
+  <path d="M3 16v3a2 2 0 0 0 2 2h3" />
+  <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+</svg>
+`;
+
+// src/mochi/ui/icons/minimize.svg
+var minimize_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-minimize"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M8 3v3a2 2 0 0 1-2 2H3" />
+  <path d="M21 8h-3a2 2 0 0 1-2-2V3" />
+  <path d="M3 16h3a2 2 0 0 1 2 2v3" />
+  <path d="M16 21v-3a2 2 0 0 1 2-2h3" />
+</svg>
+`;
+
+// src/mochi/ui/icons/move-diagonal-2.svg
+var move_diagonal_2_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-move-diagonal-2"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M19 13v6h-6" />
+  <path d="M5 11V5h6" />
+  <path d="m5 5 14 14" />
+</svg>
+`;
+
+// src/mochi/ui/icons/reply.svg
+var reply_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-reply"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <polyline points="9 17 4 12 9 7" />
+  <path d="M20 18v-2a4 4 0 0 0-4-4H4" />
+</svg>
+`;
+
+// src/mochi/ui/icons/download.svg
+var download_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-download"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+  <polyline points="7 10 12 15 17 10" />
+  <line x1="12" x2="12" y1="15" y2="3" />
+</svg>
+`;
+
+// src/mochi/ui/icons/upload.svg
+var upload_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-upload"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+  <polyline points="17 8 12 3 7 8" />
+  <line x1="12" x2="12" y1="3" y2="15" />
+</svg>
+`;
+
+// src/mochi/ui/icons/lock-keyhole.svg
+var lock_keyhole_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-lock-keyhole"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <circle cx="12" cy="16" r="1" />
+  <rect x="3" y="10" width="18" height="12" rx="2" />
+  <path d="M7 10V7a5 5 0 0 1 10 0v3" />
+</svg>
+`;
+
+// src/mochi/ui/icons/lock-keyhole-open.svg
+var lock_keyhole_open_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-lock-keyhole-open"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <circle cx="12" cy="16" r="1" />
+  <rect width="18" height="12" x="3" y="10" rx="2" />
+  <path d="M7 10V7a5 5 0 0 1 9.33-2.5" />
+</svg>
+`;
+
+// src/mochi/ui/icons/accessibility.svg
+var accessibility_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-accessibility"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <circle cx="16" cy="4" r="1" />
+  <path d="m18 19 1-7-6 1" />
+  <path d="m5 8 3-3 5.5 3-2.36 3.5" />
+  <path d="M4.24 14.5a5 5 0 0 0 6.88 6" />
+  <path d="M13.76 17.5a5 5 0 0 0-6.88-6" />
+</svg>
+`;
+
+// src/mochi/ui/icons/palette.svg
+var palette_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-palette"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
+  <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
+  <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />
+  <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
+  <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" />
+</svg>
+`;
+
+// src/mochi/ui/icons/volume-2.svg
+var volume_2_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-volume-2"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z" />
+  <path d="M16 9a5 5 0 0 1 0 6" />
+  <path d="M19.364 18.364a9 9 0 0 0 0-12.728" />
+</svg>
+`;
+
+// src/mochi/ui/icons/info.svg
+var info_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-info"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <circle cx="12" cy="12" r="10" />
+  <path d="M12 16v-4" />
+  <path d="M12 8h.01" />
+</svg>
+`;
+
+// src/mochi/ui/icons/triangle-alert.svg
+var triangle_alert_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-triangle-alert"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
+  <path d="M12 9v4" />
+  <path d="M12 17h.01" />
+</svg>
+`;
+
+// src/mochi/ui/icons/save.svg
+var save_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-save"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
+  <path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7" />
+  <path d="M7 3v4a1 1 0 0 0 1 1h7" />
+</svg>
+`;
+
+// src/mochi/ui/icons/chevron-down.svg
+var chevron_down_default = `<!-- @license lucide-static v0.468.0 - ISC -->
+<svg
+  class="lucide lucide-chevron-down"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m6 9 6 6 6-6" />
+</svg>
+`;
+
+// src/mochi/ui/lucide.ts
+/*!
+ISC License
+
+Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2022 as part of Feather (MIT). All other copyright (c) for Lucide are held by Lucide Contributors 2022.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+The MIT License (MIT)
+
+Copyright (c) 2013-present Cole Bemis
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
+var LUCIDE = {
+  plus: plus_default,
+  settings: settings_default,
+  logout: log_out_default,
+  sort: arrow_down_wide_narrow_default,
+  grid: layout_grid_default,
+  list: list_default,
+  check: square_check_default,
+  archive: archive_default,
+  brain: brain_default,
+  smile: smile_default,
+  sliders: sliders_horizontal_default,
+  profile: user_round_default,
+  panel: panel_right_default,
+  layers: layers_default,
+  bookmark: bookmark_default,
+  eye: eye_default,
+  pin: pin_default,
+  ellipsis: ellipsis_default,
+  more: ellipsis_default,
+  power: power_default,
+  home: house_default,
+  messages: messages_square_default,
+  contacts: users_round_default,
+  people: users_round_default,
+  camera: camera_default,
+  gallery: image_default,
+  notes: notebook_pen_default,
+  weather: cloud_sun_default,
+  calendar: calendar_default,
+  trackers: chart_no_axes_column_default,
+  notifications: bell_default,
+  back: arrow_left_default,
+  send: send_default,
+  sparkle: sparkles_default,
+  trash: trash_2_default,
+  stop: square_default,
+  copy: copy_default,
+  edit: pencil_default,
+  close: x_default,
+  search: search_default,
+  refresh: refresh_cw_default,
+  up: arrow_up_default,
+  down: arrow_down_default,
+  right: arrow_right_default,
+  drag: grip_vertical_default,
+  maximize: maximize_default,
+  restore: minimize_default,
+  resize: move_diagonal_2_default,
+  reply: reply_default,
+  download: download_default,
+  upload: upload_default,
+  lock: lock_keyhole_default,
+  unlock: lock_keyhole_open_default,
+  accessibility: accessibility_default,
+  palette: palette_default,
+  volume: volume_2_default,
+  info: info_default,
+  warning: triangle_alert_default,
+  save: save_default,
+  chevron: chevron_down_default
+};
+
+// src/mochi/ui/icon-assets.ts
+var MOCHI_ICON_ASSETS = {};
+
+// src/mochi/ui/icon-slots.ts
+var LIMIT = 131072;
+var tags = new Set(["svg", "g", "path", "circle", "ellipse", "rect", "line", "polyline", "polygon"]);
+var attrs = new Set(["xmlns", "viewBox", "width", "height", "fill", "stroke", "stroke-width", "stroke-linecap", "stroke-linejoin", "stroke-miterlimit", "fill-rule", "clip-rule", "opacity", "fill-opacity", "stroke-opacity", "transform", "d", "cx", "cy", "r", "rx", "ry", "x", "y", "x1", "x2", "y1", "y2", "points"]);
+function iconSVGData(svg) {
+  if (typeof svg !== "string" || svg.length > LIMIT || /<!|<\?|&/.test(svg))
+    return;
+  const doc = new DOMParser().parseFromString(svg, "image/svg+xml"), root = doc.documentElement;
+  if (root.localName !== "svg" || doc.querySelector("parsererror") || !root.hasAttribute("viewBox"))
+    return;
+  for (const n of [root, ...root.querySelectorAll("*")]) {
+    if (!tags.has(n.tagName) || n.namespaceURI !== "http://www.w3.org/2000/svg")
+      return;
+    for (const a of n.attributes) {
+      if (!attrs.has(a.name) || a.name === "xmlns" && a.value !== "http://www.w3.org/2000/svg")
+        return;
+      if (a.name !== "xmlns" && /url\s*\(|[<>:;\\]|(?:script|https?|data)\s*:/i.test(a.value))
+        return;
+    }
+  }
+  return "data:image/svg+xml," + encodeURIComponent(new XMLSerializer().serializeToString(root));
+}
+function safeIconData(value) {
+  if (typeof value !== "string" || value.length > LIMIT)
+    return;
+  const m = /^data:image\/(svg\+xml|png|jpeg|webp);?(base64)?,([\s\S]+)$/i.exec(value);
+  if (!m)
+    return;
+  try {
+    if (m[1].toLowerCase() === "svg+xml")
+      return iconSVGData(m[2] ? atob(m[3]) : decodeURIComponent(m[3]));
+    if (m[2] && /^[A-Za-z0-9+/]+={0,2}$/.test(m[3]))
+      return value;
+  } catch {}
+}
+function iconAssetData(value) {
+  if (!value || typeof value !== "object")
+    return;
+  return "svg" in value ? iconSVGData(value.svg) : safeIconData(value.data);
+}
+function cssAsset(raw) {
+  const m = /^url\(\s*(['"])(data:[\s\S]+)\1\s*\)$/.exec(raw.trim());
+  return m ? safeIconData(m[2]) : undefined;
+}
+function mochiIcon(icon, slot = icon) {
+  if (!/^[a-z][a-z0-9-]*$/.test(slot))
+    throw Error("Invalid Mochi icon slot");
+  const node = document.createElement("span");
+  node.className = "mochi-icon-slot";
+  node.dataset.mochiIconSlot = icon;
+  node.dataset.mochiIconAction = slot;
+  node.setAttribute("aria-hidden", "true");
+  node.innerHTML = (LUCIDE[icon] || LUCIDE.refresh).replace(/>\s+</g, "><").trim();
+  const svg = node.querySelector("svg");
+  svg.setAttribute("data-mochi-icon", icon);
+  svg.setAttribute("aria-hidden", "true");
+  svg.setAttribute("focusable", "false");
+  const image = document.createElement("img");
+  image.className = "mochi-icon-replacement";
+  image.alt = "";
+  image.draggable = false;
+  image.hidden = true;
+  node.append(image);
+  let generation = 0, last = "";
+  const refresh = () => {
+    if (!node.isConnected)
+      return;
+    const style = node.ownerDocument.defaultView?.getComputedStyle(node);
+    const legacy = slot === "disclosure" ? ["--mochi-v2-detailsdisclosure-summary-after-content"] : slot === "selected" ? node.closest(".mochi-settings-categories") ? ["--mochi-v2-settings-categories-button-aria-pressed-true-after-content"] : ["--mochi-v2-character-picker-choice-aria-pressed-true-after-content", "--mochi-v2-choice-aria-pressed-true-after-content"] : [];
+    node.dataset.mochiLegacyGlyph = String(legacy.some((token) => !!style?.getPropertyValue(token).trim()));
+    const css = style?.getPropertyValue("--mochi-icon-" + slot + "-image").trim() || "";
+    const asset = MOCHI_ICON_ASSETS[slot];
+    const source = css && css !== "none" ? cssAsset(css) : asset ? iconAssetData(asset) : undefined;
+    const key = (source || "") + "|" + css;
+    if (last === key)
+      return;
+    last = key;
+    const ticket = ++generation;
+    node.dataset.mochiIconState = css && css !== "none" || asset ? "fallback" : "default";
+    image.hidden = true;
+    svg.removeAttribute("hidden");
+    image.removeAttribute("src");
+    if (!source)
+      return;
+    image.onload = () => {
+      if (ticket === generation && image.naturalWidth && image.naturalHeight) {
+        image.hidden = false;
+        svg.setAttribute("hidden", "");
+        node.dataset.mochiIconState = "custom";
+      }
+    };
+    image.onerror = () => {
+      if (ticket === generation) {
+        image.hidden = true;
+        svg.removeAttribute("hidden");
+        node.dataset.mochiIconState = "fallback";
+      }
+    };
+    image.src = source;
+  };
+  const schedule = () => {
+    if (typeof requestAnimationFrame === "function")
+      requestAnimationFrame(refresh);
+    else
+      queueMicrotask(refresh);
+  };
+  schedule();
+  node.addEventListener("mochi:icons-refresh", refresh);
+  return node;
+}
+var glyphs = { "×": "close", "✕": "close", "↑": "up", "↓": "down", "⋯": "more", "⠿": "drag", "□": "maximize", "◢": "resize" };
+var TEXT_ACTIONS = [
+  [/^(?:Back|Return to)/i, "back", "back"],
+  [/^Close|^Done$|^Cancel/i, "close", "close"],
+  [/^Refresh|^Retry|^Restore/i, "refresh", "refresh"],
+  [/^Save|^Publish|^Apply|^Confirm apply|^Use selected/i, "save", "save"],
+  [/^Delete|^Remove|^Confirm delete|^Discard/i, "trash", "delete"],
+  [/^New |^Create |^\+ Add|^Add /i, "plus", "add"],
+  [/^Edit|^Rename|^Customize/i, "edit", "edit"],
+  [/^Duplicate|^Copy/i, "copy", "copy"],
+  [/^Search/i, "search", "search"],
+  [/^Move .* up$/i, "up", "up"],
+  [/^Move .* down$/i, "down", "down"],
+  [/^.*[Ss]ettings|^Advanced$/, "settings", "settings"],
+  [/^Presets|^AI & Replies$/, "sliders", "presets"],
+  [/^Preview/i, "eye", "preview"],
+  [/^Memory & Context$|^Conversation Memory$/, "brain", "memory"],
+  [/^Pins & Notes$/, "pin", "notes"],
+  [/^Participants$/, "people", "participants"],
+  [/^Notifications$/, "notifications", "notifications"],
+  [/^Accessibility$/, "accessibility", "accessibility"],
+  [/^Appearance$/, "palette", "appearance"],
+  [/^Toolbar$/, "panel", "toolbar"],
+  [/^Availability & Schedules$/, "calendar", "availability"],
+  [/^General$/, "info", "general"],
+  [/^Archive/i, "archive", "archive"],
+  [/^Export/i, "download", "export"],
+  [/^Import/i, "upload", "import"]
+];
+function mochiButton(label, className = "lp-button") {
+  const node = document.createElement("button");
+  node.type = "button";
+  node.className = className;
+  const icon = glyphs[label];
+  if (icon) {
+    node.setAttribute("aria-label", { up: "Move up", down: "Move down", more: "More actions", close: "Close" }[icon] || icon);
+    node.append(mochiIcon(icon));
+    node.dataset.mochiAction = icon;
+  } else if (label.startsWith("← ")) {
+    node.append(mochiIcon("back"), document.createTextNode(label.slice(2)));
+    node.dataset.mochiAction = "back";
+  } else if (label.startsWith("+ ")) {
+    node.setAttribute("aria-label", label);
+    node.append(mochiIcon("plus", "add"), document.createTextNode(label.slice(2)));
+    node.dataset.mochiAction = "add";
+  } else {
+    node.textContent = label;
+    const entry = TEXT_ACTIONS.find(([pattern]) => pattern.test(label));
+    if (entry) {
+      const slot = mochiIcon(entry[1], entry[2]);
+      slot.dataset.mochiOptional = "true";
+      node.prepend(slot);
+      node.dataset.mochiAction = entry[2];
+    }
+  }
+  if (/(?:^|\s)mochi-(?:choice|category-tab)(?:\s|$)/.test(className)) {
+    const selected = mochiIcon("check", "selected");
+    selected.dataset.mochiSelectedIndicator = "true";
+    node.append(selected);
+  }
+  return node;
+}
+function mochiDisclosureIcon(details) {
+  const summary = details.querySelector(":scope > summary");
+  if (summary && !summary.querySelector('[data-mochi-icon-action="disclosure"]'))
+    summary.append(mochiIcon("chevron", "disclosure"));
+}
+
 // src/frontend/shared.ts
 function el(tag, className = "", content = "") {
   const node = document.createElement(tag);
@@ -5052,6 +6496,249 @@ var mochi_theme_default = `/* Mochi public theme entry point, contract v2 (whole
  * See THEME-CONTRACT.md and starter-theme.css. Empty preserves host defaults.
  * This file is embedded locally; it never loads a theme or asset over the network.
  */
+
+/* Optional named-icon recipes (leave unset for default artwork):
+.mochi-view { --mochi-icon-toolbar-presets-size:20px; --mochi-icon-toolbar-presets-stroke-width:2; }
+.mochi-settings-workspace { --mochi-icon-text-display:inline-flex; }
+See ICON-THEMING.md for a complete local data-image substitution, safe fallback,
+optional bundled owner assets, and the full reference/icons.md slot list. */
+`;
+
+// src/mochi/ui/icons.css
+var icons_default = `/* @mochi-section icons */
+/* Dimensions affect artwork only. Button hit targets and focus remain native. */
+.mochi-icon-slot[data-mochi-icon-slot] {
+ display:inline-flex; position:relative; flex:none; align-items:center; justify-content:center;
+ width:var(--mochi-slot-width,var(--mochi-icon-size,var(--mochi-icon-context-width,20px))); height:var(--mochi-slot-height,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));
+ color:var(--mochi-slot-color,currentColor); vertical-align:middle; pointer-events:none;
+}
+.mochi-icon-slot > svg,.mochi-icon-slot > img {
+ display:block; width:100%!important; height:100%!important; margin:0; object-fit:contain;
+}
+.mochi-icon-slot > svg {stroke-width:var(--mochi-icon-stroke-width,1.7);}
+.mochi-icon-slot > [hidden] {display:none!important;}
+.mochi-icon-slot[data-mochi-optional] {display:var(--mochi-icon-text-display,none);margin-inline-end:var(--mochi-icon-text-gap,4px);}
+:is(button,summary,a):hover > .mochi-icon-slot {color:var(--mochi-icon-hover-color,var(--mochi-slot-color,currentColor));}
+:is(button,summary,a):focus-visible > .mochi-icon-slot {color:var(--mochi-icon-focus-color,var(--mochi-slot-color,currentColor));}
+:is([aria-pressed=true],[aria-selected=true],[data-selected=true]) > .mochi-icon-slot {color:var(--mochi-icon-selected-color,var(--mochi-slot-color,currentColor));}
+:is(button:disabled,[aria-disabled=true]) > .mochi-icon-slot {opacity:var(--mochi-icon-disabled-opacity,1);}
+/* Keep v2 dimension tokens as the contextual fallback for the new slots. */
+.mochi-view {--mochi-icon-context-width:var(--mochi-v2-svg-width,20px);--mochi-icon-context-height:var(--mochi-v2-svg-height,20px);}
+.mochi-action-panel {--mochi-icon-context-width:var(--mochi-v2-action-panel-svg-width,20px);--mochi-icon-context-height:var(--mochi-v2-action-panel-svg-height,20px);}
+.mochi-shell-tools {--mochi-icon-context-width:var(--mochi-v2-shell-tools-svg-width,18px);--mochi-icon-context-height:var(--mochi-v2-shell-tools-svg-height,18px);}
+.mochi-conversation-filters {--mochi-icon-context-width:12px;--mochi-icon-context-height:12px;}
+.mochi-bottom-toolbar,.mochi-header-controls {--mochi-icon-context-width:var(--mochi-header-icon-size,18px);--mochi-icon-context-height:var(--mochi-header-icon-size,18px);}
+.mochi-account-icon {--mochi-icon-context-width:var(--mochi-accounts-icon-size,16px);--mochi-icon-context-height:var(--mochi-accounts-icon-size,16px);}
+.mochi-message-actions {--mochi-icon-context-width:var(--mochi-v2-message-actions-svg-width,15px);--mochi-icon-context-height:var(--mochi-v2-message-actions-svg-height,15px);}
+.mochi-action-strip {--mochi-icon-context-width:var(--mochi-v2-action-strip-svg-width,16px);--mochi-icon-context-height:var(--mochi-v2-action-strip-svg-height,16px);}
+.mochi-responder .mochi-avatar {--mochi-icon-context-width:var(--mochi-v2-responder-avatar-svg-width,16px);--mochi-icon-context-height:var(--mochi-v2-responder-avatar-svg-height,16px);}
+.mochi-toolbar-live-preview {--mochi-icon-context-width:var(--mochi-v2-toolbar-live-preview-span-width,24px);--mochi-icon-context-height:var(--mochi-v2-toolbar-live-preview-span-height,24px);}
+/* Custom selected marks replace font glyphs; native form controls are retained. */
+.mochi-icon-slot[data-mochi-selected-indicator] {display:none;}
+.mochi-choice[aria-pressed=true] > [data-mochi-selected-indicator] {display:inline-flex;position:absolute;right:var(--mochi-v2-choice-aria-pressed-true-after-right,5px);top:var(--mochi-v2-choice-aria-pressed-true-after-top,5px);--mochi-icon-context-width:var(--mochi-v2-choice-aria-pressed-true-after-width,18px);--mochi-icon-context-height:var(--mochi-v2-choice-aria-pressed-true-after-height,18px);border-radius:var(--mochi-v2-choice-aria-pressed-true-after-border-radius,50%);background:var(--mochi-accent);color:var(--mochi-v2-choice-aria-pressed-true-after-color,#21182e);}
+.mochi-category-tab[aria-pressed=true] > [data-mochi-selected-indicator] {display:inline-flex;margin-inline-start:var(--mochi-v2-settings-categories-button-aria-pressed-true-after-margin-inline-start,auto);--mochi-icon-context-width:14px;--mochi-icon-context-height:14px;}
+.mochi-choice:has(> [data-mochi-selected-indicator])::after {content:var(--mochi-v2-choice-aria-pressed-true-after-content,none);}
+.mochi-character-picker .mochi-choice:has(> [data-mochi-selected-indicator])::after {content:var(--mochi-v2-character-picker-choice-aria-pressed-true-after-content,var(--mochi-v2-choice-aria-pressed-true-after-content,none));}
+.mochi-view .mochi-settings-categories button:has(> [data-mochi-selected-indicator])::after {content:var(--mochi-v2-settings-categories-button-aria-pressed-true-after-content,none);}
+.mochi-view details.mochi-disclosure:has(> summary > [data-mochi-icon-action=disclosure]) > summary::after {content:var(--mochi-v2-detailsdisclosure-summary-after-content,none);}
+.mochi-icon-slot[data-mochi-legacy-glyph=true] {display:none!important;}
+.mochi-disclosure > summary > [data-mochi-icon-action=disclosure] {position:absolute;right:var(--mochi-v2-detailsdisclosure-summary-after-right,16px);top:var(--mochi-v2-detailsdisclosure-summary-after-top,17px);--mochi-icon-context-width:12px;--mochi-icon-context-height:12px;transform:var(--mochi-disclosure-icon-closed-transform,rotate(-90deg));color:var(--lp-muted,currentColor);}
+.mochi-disclosure[open] > summary > [data-mochi-icon-action=disclosure] {top:var(--mochi-v2-detailsdisclosure-open-summary-after-top,15px);transform:var(--mochi-disclosure-icon-open-transform,none);}
+/* @generated action tokens */
+[data-mochi-icon-action="plus"] {--mochi-slot-width:var(--mochi-icon-plus-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-plus-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-plus-color,currentColor);}
+[data-mochi-icon-action="plus"] > svg {stroke-width:var(--mochi-icon-plus-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="settings"] {--mochi-slot-width:var(--mochi-icon-settings-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-settings-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-settings-color,currentColor);}
+[data-mochi-icon-action="settings"] > svg {stroke-width:var(--mochi-icon-settings-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="logout"] {--mochi-slot-width:var(--mochi-icon-logout-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-logout-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-logout-color,currentColor);}
+[data-mochi-icon-action="logout"] > svg {stroke-width:var(--mochi-icon-logout-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="sort"] {--mochi-slot-width:var(--mochi-icon-sort-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-sort-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-sort-color,currentColor);}
+[data-mochi-icon-action="sort"] > svg {stroke-width:var(--mochi-icon-sort-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="grid"] {--mochi-slot-width:var(--mochi-icon-grid-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-grid-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-grid-color,currentColor);}
+[data-mochi-icon-action="grid"] > svg {stroke-width:var(--mochi-icon-grid-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="list"] {--mochi-slot-width:var(--mochi-icon-list-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-list-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-list-color,currentColor);}
+[data-mochi-icon-action="list"] > svg {stroke-width:var(--mochi-icon-list-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="check"] {--mochi-slot-width:var(--mochi-icon-check-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-check-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-check-color,currentColor);}
+[data-mochi-icon-action="check"] > svg {stroke-width:var(--mochi-icon-check-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="archive"] {--mochi-slot-width:var(--mochi-icon-archive-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-archive-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-archive-color,currentColor);}
+[data-mochi-icon-action="archive"] > svg {stroke-width:var(--mochi-icon-archive-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="brain"] {--mochi-slot-width:var(--mochi-icon-brain-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-brain-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-brain-color,currentColor);}
+[data-mochi-icon-action="brain"] > svg {stroke-width:var(--mochi-icon-brain-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="smile"] {--mochi-slot-width:var(--mochi-icon-smile-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-smile-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-smile-color,currentColor);}
+[data-mochi-icon-action="smile"] > svg {stroke-width:var(--mochi-icon-smile-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="sliders"] {--mochi-slot-width:var(--mochi-icon-sliders-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-sliders-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-sliders-color,currentColor);}
+[data-mochi-icon-action="sliders"] > svg {stroke-width:var(--mochi-icon-sliders-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="profile"] {--mochi-slot-width:var(--mochi-icon-profile-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-profile-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-profile-color,currentColor);}
+[data-mochi-icon-action="profile"] > svg {stroke-width:var(--mochi-icon-profile-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="panel"] {--mochi-slot-width:var(--mochi-icon-panel-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-panel-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-panel-color,currentColor);}
+[data-mochi-icon-action="panel"] > svg {stroke-width:var(--mochi-icon-panel-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="layers"] {--mochi-slot-width:var(--mochi-icon-layers-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-layers-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-layers-color,currentColor);}
+[data-mochi-icon-action="layers"] > svg {stroke-width:var(--mochi-icon-layers-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="bookmark"] {--mochi-slot-width:var(--mochi-icon-bookmark-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-bookmark-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-bookmark-color,currentColor);}
+[data-mochi-icon-action="bookmark"] > svg {stroke-width:var(--mochi-icon-bookmark-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="eye"] {--mochi-slot-width:var(--mochi-icon-eye-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-eye-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-eye-color,currentColor);}
+[data-mochi-icon-action="eye"] > svg {stroke-width:var(--mochi-icon-eye-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="pin"] {--mochi-slot-width:var(--mochi-icon-pin-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-pin-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-pin-color,currentColor);}
+[data-mochi-icon-action="pin"] > svg {stroke-width:var(--mochi-icon-pin-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="ellipsis"] {--mochi-slot-width:var(--mochi-icon-ellipsis-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-ellipsis-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-ellipsis-color,currentColor);}
+[data-mochi-icon-action="ellipsis"] > svg {stroke-width:var(--mochi-icon-ellipsis-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="more"] {--mochi-slot-width:var(--mochi-icon-more-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-more-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-more-color,currentColor);}
+[data-mochi-icon-action="more"] > svg {stroke-width:var(--mochi-icon-more-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="power"] {--mochi-slot-width:var(--mochi-icon-power-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-power-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-power-color,currentColor);}
+[data-mochi-icon-action="power"] > svg {stroke-width:var(--mochi-icon-power-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="home"] {--mochi-slot-width:var(--mochi-icon-home-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-home-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-home-color,currentColor);}
+[data-mochi-icon-action="home"] > svg {stroke-width:var(--mochi-icon-home-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="messages"] {--mochi-slot-width:var(--mochi-icon-messages-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-messages-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-messages-color,currentColor);}
+[data-mochi-icon-action="messages"] > svg {stroke-width:var(--mochi-icon-messages-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="contacts"] {--mochi-slot-width:var(--mochi-icon-contacts-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-contacts-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-contacts-color,currentColor);}
+[data-mochi-icon-action="contacts"] > svg {stroke-width:var(--mochi-icon-contacts-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="people"] {--mochi-slot-width:var(--mochi-icon-people-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-people-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-people-color,currentColor);}
+[data-mochi-icon-action="people"] > svg {stroke-width:var(--mochi-icon-people-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="camera"] {--mochi-slot-width:var(--mochi-icon-camera-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-camera-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-camera-color,currentColor);}
+[data-mochi-icon-action="camera"] > svg {stroke-width:var(--mochi-icon-camera-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="gallery"] {--mochi-slot-width:var(--mochi-icon-gallery-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-gallery-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-gallery-color,currentColor);}
+[data-mochi-icon-action="gallery"] > svg {stroke-width:var(--mochi-icon-gallery-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="notes"] {--mochi-slot-width:var(--mochi-icon-notes-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-notes-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-notes-color,currentColor);}
+[data-mochi-icon-action="notes"] > svg {stroke-width:var(--mochi-icon-notes-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="weather"] {--mochi-slot-width:var(--mochi-icon-weather-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-weather-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-weather-color,currentColor);}
+[data-mochi-icon-action="weather"] > svg {stroke-width:var(--mochi-icon-weather-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="calendar"] {--mochi-slot-width:var(--mochi-icon-calendar-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-calendar-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-calendar-color,currentColor);}
+[data-mochi-icon-action="calendar"] > svg {stroke-width:var(--mochi-icon-calendar-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="trackers"] {--mochi-slot-width:var(--mochi-icon-trackers-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-trackers-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-trackers-color,currentColor);}
+[data-mochi-icon-action="trackers"] > svg {stroke-width:var(--mochi-icon-trackers-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="notifications"] {--mochi-slot-width:var(--mochi-icon-notifications-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-notifications-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-notifications-color,currentColor);}
+[data-mochi-icon-action="notifications"] > svg {stroke-width:var(--mochi-icon-notifications-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="back"] {--mochi-slot-width:var(--mochi-icon-back-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-back-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-back-color,currentColor);}
+[data-mochi-icon-action="back"] > svg {stroke-width:var(--mochi-icon-back-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="send"] {--mochi-slot-width:var(--mochi-icon-send-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-send-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-send-color,currentColor);}
+[data-mochi-icon-action="send"] > svg {stroke-width:var(--mochi-icon-send-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="sparkle"] {--mochi-slot-width:var(--mochi-icon-sparkle-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-sparkle-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-sparkle-color,currentColor);}
+[data-mochi-icon-action="sparkle"] > svg {stroke-width:var(--mochi-icon-sparkle-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="trash"] {--mochi-slot-width:var(--mochi-icon-trash-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-trash-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-trash-color,currentColor);}
+[data-mochi-icon-action="trash"] > svg {stroke-width:var(--mochi-icon-trash-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="stop"] {--mochi-slot-width:var(--mochi-icon-stop-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-stop-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-stop-color,currentColor);}
+[data-mochi-icon-action="stop"] > svg {stroke-width:var(--mochi-icon-stop-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="copy"] {--mochi-slot-width:var(--mochi-icon-copy-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-copy-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-copy-color,currentColor);}
+[data-mochi-icon-action="copy"] > svg {stroke-width:var(--mochi-icon-copy-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="edit"] {--mochi-slot-width:var(--mochi-icon-edit-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-edit-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-edit-color,currentColor);}
+[data-mochi-icon-action="edit"] > svg {stroke-width:var(--mochi-icon-edit-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="close"] {--mochi-slot-width:var(--mochi-icon-close-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-close-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-close-color,currentColor);}
+[data-mochi-icon-action="close"] > svg {stroke-width:var(--mochi-icon-close-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="search"] {--mochi-slot-width:var(--mochi-icon-search-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-search-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-search-color,currentColor);}
+[data-mochi-icon-action="search"] > svg {stroke-width:var(--mochi-icon-search-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="refresh"] {--mochi-slot-width:var(--mochi-icon-refresh-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-refresh-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-refresh-color,currentColor);}
+[data-mochi-icon-action="refresh"] > svg {stroke-width:var(--mochi-icon-refresh-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="up"] {--mochi-slot-width:var(--mochi-icon-up-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-up-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-up-color,currentColor);}
+[data-mochi-icon-action="up"] > svg {stroke-width:var(--mochi-icon-up-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="down"] {--mochi-slot-width:var(--mochi-icon-down-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-down-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-down-color,currentColor);}
+[data-mochi-icon-action="down"] > svg {stroke-width:var(--mochi-icon-down-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="right"] {--mochi-slot-width:var(--mochi-icon-right-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-right-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-right-color,currentColor);}
+[data-mochi-icon-action="right"] > svg {stroke-width:var(--mochi-icon-right-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="drag"] {--mochi-slot-width:var(--mochi-icon-drag-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-drag-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-drag-color,currentColor);}
+[data-mochi-icon-action="drag"] > svg {stroke-width:var(--mochi-icon-drag-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="maximize"] {--mochi-slot-width:var(--mochi-icon-maximize-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-maximize-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-maximize-color,currentColor);}
+[data-mochi-icon-action="maximize"] > svg {stroke-width:var(--mochi-icon-maximize-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="restore"] {--mochi-slot-width:var(--mochi-icon-restore-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-restore-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-restore-color,currentColor);}
+[data-mochi-icon-action="restore"] > svg {stroke-width:var(--mochi-icon-restore-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="resize"] {--mochi-slot-width:var(--mochi-icon-resize-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-resize-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-resize-color,currentColor);}
+[data-mochi-icon-action="resize"] > svg {stroke-width:var(--mochi-icon-resize-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="reply"] {--mochi-slot-width:var(--mochi-icon-reply-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-reply-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-reply-color,currentColor);}
+[data-mochi-icon-action="reply"] > svg {stroke-width:var(--mochi-icon-reply-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="download"] {--mochi-slot-width:var(--mochi-icon-download-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-download-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-download-color,currentColor);}
+[data-mochi-icon-action="download"] > svg {stroke-width:var(--mochi-icon-download-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="upload"] {--mochi-slot-width:var(--mochi-icon-upload-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-upload-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-upload-color,currentColor);}
+[data-mochi-icon-action="upload"] > svg {stroke-width:var(--mochi-icon-upload-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="lock"] {--mochi-slot-width:var(--mochi-icon-lock-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-lock-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-lock-color,currentColor);}
+[data-mochi-icon-action="lock"] > svg {stroke-width:var(--mochi-icon-lock-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="unlock"] {--mochi-slot-width:var(--mochi-icon-unlock-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-unlock-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-unlock-color,currentColor);}
+[data-mochi-icon-action="unlock"] > svg {stroke-width:var(--mochi-icon-unlock-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="accessibility"] {--mochi-slot-width:var(--mochi-icon-accessibility-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-accessibility-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-accessibility-color,currentColor);}
+[data-mochi-icon-action="accessibility"] > svg {stroke-width:var(--mochi-icon-accessibility-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="palette"] {--mochi-slot-width:var(--mochi-icon-palette-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-palette-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-palette-color,currentColor);}
+[data-mochi-icon-action="palette"] > svg {stroke-width:var(--mochi-icon-palette-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="volume"] {--mochi-slot-width:var(--mochi-icon-volume-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-volume-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-volume-color,currentColor);}
+[data-mochi-icon-action="volume"] > svg {stroke-width:var(--mochi-icon-volume-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="info"] {--mochi-slot-width:var(--mochi-icon-info-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-info-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-info-color,currentColor);}
+[data-mochi-icon-action="info"] > svg {stroke-width:var(--mochi-icon-info-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="warning"] {--mochi-slot-width:var(--mochi-icon-warning-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-warning-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-warning-color,currentColor);}
+[data-mochi-icon-action="warning"] > svg {stroke-width:var(--mochi-icon-warning-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="save"] {--mochi-slot-width:var(--mochi-icon-save-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-save-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-save-color,currentColor);}
+[data-mochi-icon-action="save"] > svg {stroke-width:var(--mochi-icon-save-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="chevron"] {--mochi-slot-width:var(--mochi-icon-chevron-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-chevron-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-chevron-color,currentColor);}
+[data-mochi-icon-action="chevron"] > svg {stroke-width:var(--mochi-icon-chevron-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="toolbar-presets"] {--mochi-slot-width:var(--mochi-icon-toolbar-presets-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-toolbar-presets-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-toolbar-presets-color,currentColor);}
+[data-mochi-icon-action="toolbar-presets"] > svg {stroke-width:var(--mochi-icon-toolbar-presets-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="toolbar-memory"] {--mochi-slot-width:var(--mochi-icon-toolbar-memory-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-toolbar-memory-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-toolbar-memory-color,currentColor);}
+[data-mochi-icon-action="toolbar-memory"] > svg {stroke-width:var(--mochi-icon-toolbar-memory-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="toolbar-preview"] {--mochi-slot-width:var(--mochi-icon-toolbar-preview-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-toolbar-preview-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-toolbar-preview-color,currentColor);}
+[data-mochi-icon-action="toolbar-preview"] > svg {stroke-width:var(--mochi-icon-toolbar-preview-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="toolbar-notes"] {--mochi-slot-width:var(--mochi-icon-toolbar-notes-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-toolbar-notes-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-toolbar-notes-color,currentColor);}
+[data-mochi-icon-action="toolbar-notes"] > svg {stroke-width:var(--mochi-icon-toolbar-notes-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="toolbar-settings"] {--mochi-slot-width:var(--mochi-icon-toolbar-settings-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-toolbar-settings-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-toolbar-settings-color,currentColor);}
+[data-mochi-icon-action="toolbar-settings"] > svg {stroke-width:var(--mochi-icon-toolbar-settings-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="room-options"] {--mochi-slot-width:var(--mochi-icon-room-options-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-room-options-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-room-options-color,currentColor);}
+[data-mochi-icon-action="room-options"] > svg {stroke-width:var(--mochi-icon-room-options-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="responder-auto"] {--mochi-slot-width:var(--mochi-icon-responder-auto-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-responder-auto-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-responder-auto-color,currentColor);}
+[data-mochi-icon-action="responder-auto"] > svg {stroke-width:var(--mochi-icon-responder-auto-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="participants"] {--mochi-slot-width:var(--mochi-icon-participants-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-participants-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-participants-color,currentColor);}
+[data-mochi-icon-action="participants"] > svg {stroke-width:var(--mochi-icon-participants-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="selected"] {--mochi-slot-width:var(--mochi-icon-selected-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-selected-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-selected-color,currentColor);}
+[data-mochi-icon-action="selected"] > svg {stroke-width:var(--mochi-icon-selected-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="disclosure"] {--mochi-slot-width:var(--mochi-icon-disclosure-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-disclosure-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-disclosure-color,currentColor);}
+[data-mochi-icon-action="disclosure"] > svg {stroke-width:var(--mochi-icon-disclosure-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="participant-remove"] {--mochi-slot-width:var(--mochi-icon-participant-remove-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-participant-remove-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-participant-remove-color,currentColor);}
+[data-mochi-icon-action="participant-remove"] > svg {stroke-width:var(--mochi-icon-participant-remove-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="block-add"] {--mochi-slot-width:var(--mochi-icon-block-add-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-block-add-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-block-add-color,currentColor);}
+[data-mochi-icon-action="block-add"] > svg {stroke-width:var(--mochi-icon-block-add-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="block-drag"] {--mochi-slot-width:var(--mochi-icon-block-drag-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-block-drag-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-block-drag-color,currentColor);}
+[data-mochi-icon-action="block-drag"] > svg {stroke-width:var(--mochi-icon-block-drag-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="block-more"] {--mochi-slot-width:var(--mochi-icon-block-more-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-block-more-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-block-more-color,currentColor);}
+[data-mochi-icon-action="block-more"] > svg {stroke-width:var(--mochi-icon-block-more-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="window-close"] {--mochi-slot-width:var(--mochi-icon-window-close-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-window-close-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-window-close-color,currentColor);}
+[data-mochi-icon-action="window-close"] > svg {stroke-width:var(--mochi-icon-window-close-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="window-maximize"] {--mochi-slot-width:var(--mochi-icon-window-maximize-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-window-maximize-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-window-maximize-color,currentColor);}
+[data-mochi-icon-action="window-maximize"] > svg {stroke-width:var(--mochi-icon-window-maximize-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="window-resize"] {--mochi-slot-width:var(--mochi-icon-window-resize-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-window-resize-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-window-resize-color,currentColor);}
+[data-mochi-icon-action="window-resize"] > svg {stroke-width:var(--mochi-icon-window-resize-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="delete"] {--mochi-slot-width:var(--mochi-icon-delete-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-delete-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-delete-color,currentColor);}
+[data-mochi-icon-action="delete"] > svg {stroke-width:var(--mochi-icon-delete-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="add"] {--mochi-slot-width:var(--mochi-icon-add-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-add-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-add-color,currentColor);}
+[data-mochi-icon-action="add"] > svg {stroke-width:var(--mochi-icon-add-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="presets"] {--mochi-slot-width:var(--mochi-icon-presets-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-presets-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-presets-color,currentColor);}
+[data-mochi-icon-action="presets"] > svg {stroke-width:var(--mochi-icon-presets-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="preview"] {--mochi-slot-width:var(--mochi-icon-preview-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-preview-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-preview-color,currentColor);}
+[data-mochi-icon-action="preview"] > svg {stroke-width:var(--mochi-icon-preview-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="memory"] {--mochi-slot-width:var(--mochi-icon-memory-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-memory-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-memory-color,currentColor);}
+[data-mochi-icon-action="memory"] > svg {stroke-width:var(--mochi-icon-memory-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="appearance"] {--mochi-slot-width:var(--mochi-icon-appearance-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-appearance-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-appearance-color,currentColor);}
+[data-mochi-icon-action="appearance"] > svg {stroke-width:var(--mochi-icon-appearance-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="toolbar"] {--mochi-slot-width:var(--mochi-icon-toolbar-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-toolbar-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-toolbar-color,currentColor);}
+[data-mochi-icon-action="toolbar"] > svg {stroke-width:var(--mochi-icon-toolbar-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="availability"] {--mochi-slot-width:var(--mochi-icon-availability-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-availability-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-availability-color,currentColor);}
+[data-mochi-icon-action="availability"] > svg {stroke-width:var(--mochi-icon-availability-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="general"] {--mochi-slot-width:var(--mochi-icon-general-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-general-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-general-color,currentColor);}
+[data-mochi-icon-action="general"] > svg {stroke-width:var(--mochi-icon-general-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="export"] {--mochi-slot-width:var(--mochi-icon-export-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-export-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-export-color,currentColor);}
+[data-mochi-icon-action="export"] > svg {stroke-width:var(--mochi-icon-export-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="import"] {--mochi-slot-width:var(--mochi-icon-import-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-import-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-import-color,currentColor);}
+[data-mochi-icon-action="import"] > svg {stroke-width:var(--mochi-icon-import-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="account-plus"] {--mochi-slot-width:var(--mochi-icon-account-plus-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-account-plus-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-account-plus-color,currentColor);}
+[data-mochi-icon-action="account-plus"] > svg {stroke-width:var(--mochi-icon-account-plus-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="account-settings"] {--mochi-slot-width:var(--mochi-icon-account-settings-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-account-settings-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-account-settings-color,currentColor);}
+[data-mochi-icon-action="account-settings"] > svg {stroke-width:var(--mochi-icon-account-settings-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="account-logout"] {--mochi-slot-width:var(--mochi-icon-account-logout-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-account-logout-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-account-logout-color,currentColor);}
+[data-mochi-icon-action="account-logout"] > svg {stroke-width:var(--mochi-icon-account-logout-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="account-sort"] {--mochi-slot-width:var(--mochi-icon-account-sort-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-account-sort-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-account-sort-color,currentColor);}
+[data-mochi-icon-action="account-sort"] > svg {stroke-width:var(--mochi-icon-account-sort-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="account-grid"] {--mochi-slot-width:var(--mochi-icon-account-grid-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-account-grid-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-account-grid-color,currentColor);}
+[data-mochi-icon-action="account-grid"] > svg {stroke-width:var(--mochi-icon-account-grid-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="account-list"] {--mochi-slot-width:var(--mochi-icon-account-list-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-account-list-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-account-list-color,currentColor);}
+[data-mochi-icon-action="account-list"] > svg {stroke-width:var(--mochi-icon-account-list-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="account-check"] {--mochi-slot-width:var(--mochi-icon-account-check-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-account-check-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-account-check-color,currentColor);}
+[data-mochi-icon-action="account-check"] > svg {stroke-width:var(--mochi-icon-account-check-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="account-archive"] {--mochi-slot-width:var(--mochi-icon-account-archive-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-account-archive-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-account-archive-color,currentColor);}
+[data-mochi-icon-action="account-archive"] > svg {stroke-width:var(--mochi-icon-account-archive-stroke-width,var(--mochi-icon-stroke-width,1.7));}
+[data-mochi-icon-action="account-profile"] {--mochi-slot-width:var(--mochi-icon-account-profile-size,var(--mochi-icon-size,var(--mochi-icon-context-width,20px)));--mochi-slot-height:var(--mochi-icon-account-profile-size,var(--mochi-icon-size,var(--mochi-icon-context-height,20px)));--mochi-slot-color:var(--mochi-icon-account-profile-color,currentColor);}
+[data-mochi-icon-action="account-profile"] > svg {stroke-width:var(--mochi-icon-account-profile-stroke-width,var(--mochi-icon-stroke-width,1.7));}
 `;
 
 // src/mochi/ui/styles.ts
@@ -5069,7 +6756,8 @@ function mochiStyle(name) {
     throw Error("Missing Mochi CSS section: " + name);
   return (tokenSections.has(name) ? mochi_tokens_default + `
 ` : "") + css + `
-` + mochi_theme_default;
+` + (tokenSections.has(name) ? icons_default + `
+` : "") + mochi_theme_default;
 }
 
 // src/mochi/texting.ts
@@ -5216,7 +6904,7 @@ class CharacterEditor {
         root.append(l);
       }
     }
-    const actions = el("div", "mochi-actions"), save = button("Save character profile", "mochi-primary"), cancel = button("Cancel character changes");
+    const actions = el("div", "mochi-actions"), save = mochiButton("Save character profile", "mochi-primary"), cancel = mochiButton("Cancel character changes");
     save.onclick = () => send({ characterId: character.id, revision: saved.revision, about: value.about, texting: value.texting || null, availability: value.availability || null });
     cancel.onclick = () => {
       this.drafts.delete(character.id);
@@ -5266,29 +6954,6 @@ function chatPortrait(room, characters) {
   }
   return avatar;
 }
-
-// src/mochi/toolbar-icons.ts
-var paths = {
-  plus: '<path d="M12 5v14M5 12h14"/>',
-  settings: '<path d="m9 3-.5 2-2 1.2-2-.5-2 3.5 1.5 1.5v2.6L2.5 15l2 3.5 2-.5 2 1.2L9 21h4l.5-1.8 2-1.2 2 .5 2-3.5-1.5-1.7v-2.6L19.5 9l-2-3.5-2 .5-2-1.2L13 3Z"/><circle cx="11" cy="12" r="3"/>',
-  logout: '<path d="M9 4H4v16h5m6-13 5 5-5 5m-7-5h12"/>',
-  sort: '<path d="M7 4v16m-4-4 4 4 4-4M14 5h7m-7 5h5m-5 5h3"/>',
-  grid: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
-  list: '<path d="M8 5h13M8 12h13M8 19h13M3 5h.01M3 12h.01M3 19h.01"/>',
-  check: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="m7 12 3 3 7-7"/>',
-  archive: '<path d="M4 8v12h16V8M9 12h6"/><rect x="3" y="3" width="18" height="5" rx="1"/>',
-  brain: '<path d="M12 18V5a3 3 0 0 0-5.8-1A4 4 0 0 0 3 11a4 4 0 0 0 2 7.5A3.5 3.5 0 0 0 12 18Zm0 0V5a3 3 0 0 1 5.8-1A4 4 0 0 1 21 11a4 4 0 0 1-2 7.5A3.5 3.5 0 0 1 12 18ZM7 8c2 0 3 1 3 3m7-3c-2 0-3 1-3 3M6 14c2 0 3 1 3 3m9-3c-2 0-3 1-3 3"/>',
-  smile: '<circle cx="12" cy="12" r="9"/><path d="M8 14s1 3 4 3 4-3 4-3M8 9h.01M16 9h.01"/>',
-  sliders: '<path d="M4 7h9m4 0h3M4 17h3m4 0h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
-  profile: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',
-  panel: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M15 3v18M18 7h.01M18 11h.01"/>',
-  layers: '<path d="m12 3 9 5-9 5-9-5 9-5Zm-9 9 9 5 9-5M3 16l9 5 9-5"/>',
-  bookmark: '<path d="M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16l-6-4-6 4Z"/>',
-  eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
-  pin: '<path d="m16 3 5 5-4 2-3 5-5-5 5-3 2-4ZM9 10l-3 3 5 5 3-3M8.5 15.5 3 21"/>',
-  ellipsis: '<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>'
-};
-var MOCHI_TOOLBAR_ICONS = Object.fromEntries(Object.entries(paths).map(([key, path]) => [key, `<svg data-mochi-icon="${key}" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`]));
 
 // src/mochi/scheduling.ts
 var SCHEDULE_LABELS = { queued: "Scheduled", generating: "Generating", generated: "Waiting to deliver", delivered: "Delivered", cancelled: "Canceled", paused: "Needs attention", failed: "Failed", missed: "Expired" };
@@ -5423,7 +7088,7 @@ class PersonalSettings {
     const nav = el("nav", "mochi-settings-categories");
     nav.setAttribute("aria-label", "Personal settings categories");
     for (const name of PERSONAL_CATEGORIES) {
-      const tab = button(name);
+      const tab = mochiButton(name, "lp-button mochi-category-tab");
       tab.setAttribute("aria-label", name);
       tab.setAttribute("aria-pressed", String(this.category === name));
       tab.onclick = () => {
@@ -5434,7 +7099,7 @@ class PersonalSettings {
       };
       nav.append(tab);
     }
-    const body = el("div", "mochi-settings-scroll"), back = button("Back to Personal categories", "mochi-category-back");
+    const body = el("div", "mochi-settings-scroll"), back = mochiButton("Back to Personal categories", "mochi-category-back");
     back.onclick = () => {
       this.categoryOpen = false;
       this.focusCategory = true;
@@ -5445,7 +7110,7 @@ class PersonalSettings {
     status.setAttribute("role", "status");
     if (!this.saved || this.status.includes("Unable") || this.category === "General")
       body.append(status);
-    const refresh = button("Refresh presentation");
+    const refresh = mochiButton("Refresh presentation");
     refresh.onclick = () => {
       this.load(true);
       this.redraw();
@@ -5473,7 +7138,7 @@ class PersonalSettings {
       const setup = el("section", "mochi-shared-setup");
       setup.append(el("h4", "", "Choose your shared layout"), el("p", "mochi-muted", "Original account layouts remain saved. Choose one or start with new defaults."));
       for (const item of [...this.layouts, { name: "New defaults", record: { preferences: messengerUIPreferences(), accountId: "defaults", revision: 0 } }]) {
-        const id = item.record.accountId || "legacy", choice = button(item.name + " · " + item.record.preferences.presentation + " · " + item.record.preferences.dock);
+        const id = item.record.accountId || "legacy", choice = mochiButton(item.name + " · " + item.record.preferences.presentation + " · " + item.record.preferences.dock);
         choice.setAttribute("aria-pressed", String(this.source === id));
         choice.onclick = () => {
           this.source = id;
@@ -5484,13 +7149,13 @@ class PersonalSettings {
         preview.setAttribute("aria-label", "Layout preview for " + item.name);
         for (const key of item.record.preferences.order.filter((k) => !item.record.preferences.hidden.includes(k) && ["presets", "memory", "preview", "notes"].includes(k))) {
           const icon = el("span");
-          icon.innerHTML = MOCHI_TOOLBAR_ICONS[key === "notes" ? "pin" : key === "presets" ? "sliders" : key === "memory" ? "brain" : "eye"] || "";
+          icon.append(mochiIcon(key === "notes" ? "pin" : key === "presets" ? "sliders" : key === "memory" ? "brain" : key === "search" ? "search" : "eye", "toolbar-" + key));
           icon.title = TOOLBAR_LABELS[key];
           preview.append(icon);
         }
         setup.append(choice, preview, el("small", "mochi-muted", "Source: " + id), el("small", "mochi-muted", item.record.preferences.order.filter((k) => !item.record.preferences.hidden.includes(k)).map((k) => TOOLBAR_LABELS[k]).join(" · ")));
       }
-      const use = button("Use selected shared layout", "mochi-primary");
+      const use = mochiButton("Use selected shared layout", "mochi-primary");
       use.disabled = !this.source || !!this.ticket;
       use.onclick = () => {
         this.request("save");
@@ -5526,7 +7191,7 @@ class PersonalSettings {
       const movable = draft.order.filter((k) => !["search", "participants", "notifications", "settings"].includes(k));
       for (const key of movable.filter((k) => !draft.hidden.includes(k))) {
         const icon = el("span");
-        icon.innerHTML = MOCHI_TOOLBAR_ICONS[key === "notes" ? "pin" : key === "presets" ? "sliders" : key === "memory" ? "brain" : "eye"] || "";
+        icon.append(mochiIcon(key === "notes" ? "pin" : key === "presets" ? "sliders" : key === "memory" ? "brain" : key === "search" ? "search" : "eye", "toolbar-" + key));
         icon.title = TOOLBAR_LABELS[key];
         icon.setAttribute("aria-label", TOOLBAR_LABELS[key]);
         preview.append(icon);
@@ -5536,7 +7201,7 @@ class PersonalSettings {
         const group = el("section", "mochi-toolbar-choice-group");
         group.append(el("h5", "", visible ? "Visible shortcuts" : "Hidden shortcuts"));
         for (const key of movable.filter((k) => draft.hidden.includes(k) !== visible)) {
-          const row = el("div", "mochi-toolbar-preference"), toggle = button((visible ? "Hide " : "Show ") + TOOLBAR_LABELS[key]);
+          const row = el("div", "mochi-toolbar-preference"), toggle = mochiButton((visible ? "Hide " : "Show ") + TOOLBAR_LABELS[key]);
           toggle.setAttribute("aria-label", "Show " + TOOLBAR_LABELS[key]);
           toggle.setAttribute("aria-pressed", String(visible));
           toggle.onclick = () => {
@@ -5551,7 +7216,7 @@ class PersonalSettings {
             this.redraw();
             queueMicrotask(() => document.querySelector('[aria-label="Move ' + TOOLBAR_LABELS[key] + (delta < 0 ? " up" : " down") + '"]')?.focus());
           };
-          const up = button("↑"), down = button("↓");
+          const up = mochiButton("↑"), down = mochiButton("↓");
           up.setAttribute("aria-label", "Move " + TOOLBAR_LABELS[key] + " up");
           down.setAttribute("aria-label", "Move " + TOOLBAR_LABELS[key] + " down");
           up.disabled = index === 0;
@@ -5582,7 +7247,7 @@ class PersonalSettings {
           for (const node of [surface, ...Array.from(surface?.querySelectorAll(".mochi-view,.mochi-sheet") || [])])
             node?.style.setProperty(key === "interfaceScale" ? "--mochi-saved-interface-scale" : "--mochi-saved-message-scale", String(Number(range.value) / 100));
         };
-        const reset = button("Reset " + label.toLowerCase());
+        const reset = mochiButton("Reset " + label.toLowerCase());
         reset.onclick = () => {
           draft[key] = 100;
           this.redraw();
@@ -5591,13 +7256,13 @@ class PersonalSettings {
         body.append(wrap);
       }
       const preview = el("section", "mochi-accessibility-preview");
-      preview.append(el("h5", "", "Live preview"), el("p", "", "Navigation, settings and button labels"), button("Example control"), el("p", "mochi-scale-message", "A message bubble with independent text size."));
+      preview.append(el("h5", "", "Live preview"), el("p", "", "Navigation, settings and button labels"), mochiButton("Example control"), el("p", "mochi-scale-message", "A message bubble with independent text size."));
       body.append(preview, el("p", "mochi-muted", "Preview updates immediately. Save applies across fictional accounts. Browser zoom remains available."));
     } else if (this.category === "Notifications")
       body.append(el("p", "", "Mochi notification delivery follows the existing Lumiverse notification preference. Conversation read/unread controls remain in Notifications. Background messaging permission is user-wide; scheduled messages remain chat-specific."));
     else
       body.append(el("p", "", "Account management is in Lumiverse’s outer Mochi sidebar. Presentation changes never change identities, messages or reply behavior."));
-    const actions = el("div", "mochi-presentation-actions"), save = button("Save presentation", "mochi-primary"), cancel = button("Cancel changes"), reset = button("Restore defaults");
+    const actions = el("div", "mochi-presentation-actions"), save = mochiButton("Save presentation", "mochi-primary"), cancel = mochiButton("Cancel changes"), reset = mochiButton("Restore defaults");
     cancel.setAttribute("aria-label", "Cancel presentation changes");
     reset.setAttribute("aria-label", "Restore default presentation");
     save.disabled = !!this.ticket || !this.saved.revision && this.layouts.length > 0 && !this.source;
@@ -5705,7 +7370,7 @@ class ChatSettingsLayout {
         }
         const copy = el("div");
         copy.append(el("strong", "", name), el("small", "mochi-muted", `${statusFor(room, id)} · ${room.settings?.textingStyles?.[id]?.length || "Character default"} · character ${index + 1}`));
-        const edit = button("Edit");
+        const edit = mochiButton("Edit");
         edit.setAttribute("aria-label", `Edit character ${index + 1}: ${name}`);
         edit.dataset.characterId = id;
         edit.onclick = () => {
@@ -5726,7 +7391,7 @@ class ChatSettingsLayout {
     const advanced = categories.get("Advanced");
     advanced.append(el("p", "mochi-muted", "Advanced conversation tools · Presets publish reusable revisions; applying is separate. Preview is read-only. System Notes intentionally guide AI context."));
     for (const name of ["Presets", "Preview AI prompt", "Conversation Memory", "Pins & Notes"]) {
-      const b = button(name);
+      const b = mochiButton(name);
       b.onclick = () => tools(name, b);
       categories.get(name === "Presets" ? "AI & Replies" : name === "Pins & Notes" ? "Advanced" : "Memory & Context").append(b);
     }
@@ -5739,7 +7404,7 @@ class ChatSettingsLayout {
     const footer = form.querySelector(":scope>.mochi-actions");
     form.replaceChildren(nav, scroller, footer);
     for (const name of SETTINGS_CATEGORIES) {
-      const tab = button(name);
+      const tab = mochiButton(name, "lp-button mochi-category-tab");
       tab.setAttribute("aria-label", name);
       tab.setAttribute("aria-pressed", String(this.category === name));
       tab.onclick = () => {
@@ -5752,7 +7417,7 @@ class ChatSettingsLayout {
       };
       nav.append(tab);
     }
-    const categoryBack = button("Back to Chat categories", "mochi-category-back");
+    const categoryBack = mochiButton("Back to Chat categories", "mochi-category-back");
     categoryBack.onclick = () => {
       this.categoryOpen = false;
       this.focusCategory = true;
@@ -5780,7 +7445,7 @@ class ChatSettingsLayout {
           availability.append(defaults(this.character, "availability"));
         const detailNav = el("nav", "mochi-character-detail-nav");
         for (const [key, label] of [["texting", "Texting & nickname"], ["availability", "Availability"], ["profile", "Mochi Character Profile"]]) {
-          const tab = button(label);
+          const tab = mochiButton(label);
           tab.setAttribute("aria-label", "Character " + key + " settings");
           tab.setAttribute("aria-pressed", String(this.characterTab === key));
           tab.onclick = () => {
@@ -5791,7 +7456,7 @@ class ChatSettingsLayout {
           detailNav.append(tab);
         }
         detail.replaceChildren(heading, detailNav, this.characterTab === "texting" ? texting : this.characterTab === "profile" && defaults ? defaults(this.character, "about") : availability);
-        const back = button("Back to characters");
+        const back = mochiButton("Back to characters");
         back.onclick = () => {
           const id = this.character;
           this.character = "";
@@ -6115,7 +7780,7 @@ class MochiMemoryPanel {
     this.renderAgain();
   }
   confirm(anchor, label, action) {
-    const warning = el("span", "mochi-preview-warning", "This changes future AI context and may cancel active/pending replies. "), yes = button(label, "lp-button"), no = button("Keep current memory", "lp-button");
+    const warning = el("span", "mochi-preview-warning", "This changes future AI context and may cancel active/pending replies. "), yes = mochiButton(label, "lp-button"), no = mochiButton("Keep current memory", "lp-button");
     yes.onclick = action;
     no.onclick = () => this.renderAgain();
     warning.append(yes, no);
@@ -6134,10 +7799,10 @@ class MochiMemoryPanel {
     const status = el("p", "mochi-muted", this.status);
     status.setAttribute("role", "status");
     root.append(status);
-    const refresh = button("Refresh memory", "lp-button");
+    const refresh = mochiButton("Refresh memory", "lp-button");
     refresh.disabled = !!this.ticket;
     refresh.onclick = () => this.request({ action: "read" });
-    const close = button("Close memory", "lp-button");
+    const close = mochiButton("Close memory", "lp-button");
     const leave = () => {
       this.reset();
       this.renderAgain();
@@ -6148,7 +7813,7 @@ class MochiMemoryPanel {
         leave();
         return;
       }
-      const warning = el("span", "mochi-preview-warning", "A summary is still generating. Closing will cancel it. Saved memories stay intact. "), yes = button("Cancel summary & close", "lp-button"), no = button("Stay here", "lp-button");
+      const warning = el("span", "mochi-preview-warning", "A summary is still generating. Closing will cancel it. Saved memories stay intact. "), yes = mochiButton("Cancel summary & close", "lp-button"), no = mochiButton("Stay here", "lp-button");
       yes.onclick = leave;
       no.onclick = () => {
         this.renderAgain();
@@ -6206,19 +7871,19 @@ class MochiMemoryPanel {
     const referenceLabel = el("label", "", "Use verified current summary as optional reference");
     referenceLabel.prepend(reference);
     generation.append(referenceLabel);
-    const generate = button("Generate summary", "lp-button");
+    const generate = mochiButton("Generate summary", "lp-button");
     generate.setAttribute("aria-label", "Generate summary");
     generate.disabled = this.generating || !!this.ticket || this.unavailable() || !room.messages.length;
     generate.onclick = () => {
       if (this.suggestion) {
-        const yes = button("Confirm generate a replacement suggestion", "lp-button");
+        const yes = mochiButton("Confirm generate a replacement suggestion", "lp-button");
         yes.onclick = () => this.generate();
         generate.replaceWith(yes);
         yes.focus();
       } else
         this.generate();
     };
-    const stop = button("Stop summary", "lp-button");
+    const stop = mochiButton("Stop summary", "lp-button");
     stop.setAttribute("aria-label", "Stop summary");
     stop.hidden = !this.generating;
     stop.disabled = !this.generating;
@@ -6242,7 +7907,7 @@ class MochiMemoryPanel {
         suggestion.text = body.value;
       };
       preview.append(body);
-      const use = button("Use suggestion in summary editor", "lp-button");
+      const use = mochiButton("Use suggestion in summary editor", "lp-button");
       use.disabled = !!this.ticket || this.generating;
       const replace = () => {
         const value = { text: suggestion.text, enabled: current?.enabled ?? true, excludeCovered: current?.excludeCovered ?? false, boundaryId: suggestion.coverage.boundaryId, revision: room.revision };
@@ -6253,16 +7918,16 @@ class MochiMemoryPanel {
       };
       use.onclick = () => {
         if (this.draft) {
-          const yes = button("Confirm replace unsaved summary draft", "lp-button");
+          const yes = mochiButton("Confirm replace unsaved summary draft", "lp-button");
           yes.onclick = replace;
           use.replaceWith(yes);
           yes.focus();
         } else
           replace();
       };
-      const discard = button("Discard AI suggestion", "lp-button");
+      const discard = mochiButton("Discard AI suggestion", "lp-button");
       discard.onclick = () => {
-        const yes = button("Confirm discard AI suggestion", "lp-button");
+        const yes = mochiButton("Confirm discard AI suggestion", "lp-button");
         yes.onclick = () => {
           this.suggestionDrafts.delete(this.key);
           this.suggestion = undefined;
@@ -6275,7 +7940,7 @@ class MochiMemoryPanel {
       root.append(preview);
     }
     if (!this.draft) {
-      const edit = button(current ? "Edit current summary" : "Create summary", "lp-button");
+      const edit = mochiButton(current ? "Edit current summary" : "Create summary", "lp-button");
       edit.disabled = !!this.ticket || !room.messages.length;
       edit.onclick = () => {
         this.start(room);
@@ -6343,13 +8008,13 @@ class MochiMemoryPanel {
       form.append(el("small", "mochi-muted", "Exclusion is off by default and requires verified coverage plus a summary actually included in the prompt. Manual presets need a standalone {{mochi_summary}} row."));
       const dirty = el("p", "mochi-muted", "Draft — not applied. Save creates a new version.");
       dirty.setAttribute("role", "status");
-      const save = button(d.suggestionId ? "Apply summary as new version" : "Save summary version", "lp-button");
+      const save = mochiButton(d.suggestionId ? "Apply summary as new version" : "Save summary version", "lp-button");
       save.title = "Save reviewed memory to this conversation; generating or using a suggestion does not save it.";
       save.type = "submit";
       save.disabled = full || !!this.ticket || !d.suggestionId && d.revision !== room.revision;
       if (!d.suggestionId && d.revision !== room.revision) {
         form.append(el("p", "mochi-preview-warning", "Conversation changed. Review the saved messages and covered boundary before saving."));
-        const review = button("Use refreshed conversation revision", "lp-button");
+        const review = mochiButton("Use refreshed conversation revision", "lp-button");
         review.onclick = () => {
           d.revision = room.revision;
           this.renderAgain();
@@ -6367,10 +8032,10 @@ class MochiMemoryPanel {
       };
       if (d.suggestionId) {
         form.append(el("p", "mochi-muted", "AI-based draft. Apply revalidates the original source; changed coverage requires regeneration or explicit manual review."));
-        const manual = button("Review as a manual draft", "lp-button");
+        const manual = mochiButton("Review as a manual draft", "lp-button");
         manual.disabled = !!this.ticket;
         manual.onclick = () => {
-          const yes = button("Confirm manual review of text and covered messages", "lp-button");
+          const yes = mochiButton("Confirm manual review of text and covered messages", "lp-button");
           yes.onclick = () => {
             delete d.suggestionId;
             d.revision = room.revision;
@@ -6381,10 +8046,10 @@ class MochiMemoryPanel {
         };
         form.append(manual);
       }
-      const discard = button("Discard summary draft", "lp-button");
+      const discard = mochiButton("Discard summary draft", "lp-button");
       discard.disabled = !!this.ticket;
       discard.onclick = () => {
-        const yes = button("Confirm discard draft", "lp-button");
+        const yes = mochiButton("Confirm discard draft", "lp-button");
         yes.onclick = () => {
           this.drafts.delete(this.key);
           this.draft = undefined;
@@ -6398,7 +8063,7 @@ class MochiMemoryPanel {
     }
     if (current && !this.draft) {
       for (const [action, label] of [["disable", "Disable summary"], ["clear", "Clear current summary"]]) {
-        const b = button(label, "lp-button");
+        const b = mochiButton(label, "lp-button");
         b.disabled = !!this.ticket || action === "disable" && !current.enabled;
         b.onclick = () => this.confirm(b, "Confirm " + label.toLowerCase(), () => this.request({ action, confirmed: true }));
         root.append(b);
@@ -6410,7 +8075,7 @@ class MochiMemoryPanel {
       for (const [i, v] of this.memory.versions.entries()) {
         const row = el("section", "mochi-memory-version");
         row.append(el("h4", "", `Version ${i + 1} · ${new Date(v.savedAt).toLocaleString()}${v.id === this.memory.currentId ? " · Selected saved version" : ""}`), el("p", "mochi-muted", `${v.enabled ? "Enabled when saved" : "Disabled when saved"} · ${v.coverage ? "Messages 1–" + v.coverage.count : "Cleared"}${v.restoredFrom ? " · Restored copy" : ""}`), el("pre", "mochi-memory-text", v.text || "Cleared"));
-        const restore = button("Restore version " + (i + 1), "lp-button");
+        const restore = mochiButton("Restore version " + (i + 1), "lp-button");
         restore.disabled = full || !!this.ticket || !!this.draft;
         restore.onclick = () => this.confirm(restore, "Confirm restore as new version", () => this.request({ action: "restore", versionId: v.id, confirmed: true }));
         row.append(restore);
@@ -6437,7 +8102,7 @@ async function fetchMochiModels(connectionId, signal) {
   return { models: [...new Set(payload.models.filter((id) => typeof id === "string" && id.length > 0))], labels: payload.model_labels && typeof payload.model_labels === "object" ? payload.model_labels : {} };
 }
 function mochiModelPicker(connectionId, defaultModel, value, change, cache, controllers) {
-  const root = el("div", "mochi-model-picker"), label = el("label", "", "Model"), row = el("div", "mochi-model-picker-row"), select = el("select"), refresh = button("Refresh models", "lp-button"), status = el("p", "mochi-muted");
+  const root = el("div", "mochi-model-picker"), label = el("label", "", "Model"), row = el("div", "mochi-model-picker-row"), select = el("select"), refresh = mochiButton("Refresh models", "lp-button"), status = el("p", "mochi-muted");
   select.setAttribute("aria-label", "Generation model");
   refresh.setAttribute("aria-label", "Refresh models");
   status.setAttribute("role", "status");
@@ -6578,7 +8243,7 @@ function showPocketSheet(anchor, title, content, surfaceRoot, className = "") {
   const panel = el("div", "lp-sheet-panel");
   const heading = el("h2", "lp-title", title);
   dialog.setAttribute("aria-label", title);
-  const close = el("button", "lp-button lp-sheet-close", "Done");
+  const close = className.includes("mochi") || anchor.closest(".mochi-view,.mochi-sidebar,.mochi-window") ? mochiButton("Done", "lp-button lp-sheet-close") : el("button", "lp-button lp-sheet-close", "Done");
   close.type = "button";
   const home = content.parentNode;
   const marker = document.createComment("sheet content");
@@ -6643,7 +8308,7 @@ function reconcileMochiNotifications(shell, notices, rooms) {
   }
 }
 function showMochiNotification(shell, n, previews, open) {
-  const toast = button("", "lp-floating-notification mochi-notification-toast");
+  const toast = mochiButton("", "lp-floating-notification mochi-notification-toast");
   toast.setAttribute("role", "status");
   activeNotices.set(toast, { ...n });
   const portrait = el("span", "mochi-notification-avatar", n.title.slice(0, 1));
@@ -6717,13 +8382,13 @@ class MochiProfiles {
     if (this.confirmation) {
       const { kind, account } = this.confirmation;
       form.append(el("h3", "", kind === "archive" ? "Archive profile?" : "Restore profile?"), el("p", "mochi-muted", kind === "archive" ? `Archive ${account.displayName} and preserve every chat and schedule? Autonomous work will stop while archived.` : `Restore ${account.displayName}? Preserved schedules may resume subject to their expiry and limits.`));
-      const confirm = button(kind === "archive" ? "Confirm archive and preserve chats" : "Confirm restore profile", "lp-button " + (kind === "archive" ? "mochi-danger-action" : "mochi-primary"));
+      const confirm = mochiButton(kind === "archive" ? "Confirm archive and preserve chats" : "Confirm restore profile", "lp-button " + (kind === "archive" ? "mochi-danger-action" : "mochi-primary"));
       confirm.disabled = busy;
       confirm.onclick = () => {
         send("mochi:account_" + kind, { accountId: account.id, revision: account.revision, confirmed: true, ...kind === "archive" ? { roomPolicy: "preserve" } : {} });
         this.confirmation = undefined;
       };
-      const cancel = button("Cancel", "lp-button");
+      const cancel = mochiButton("Cancel", "lp-button");
       cancel.disabled = busy;
       cancel.onclick = () => {
         this.confirmation = undefined;
@@ -6734,7 +8399,7 @@ class MochiProfiles {
     }
     if (!this.draft) {
       form.append(el("h3", "", "Mochi profiles"), el("p", "mochi-muted", "Fictional identities owned by your Lumiverse account."));
-      const create = button("New profile", "lp-button mochi-primary");
+      const create = mochiButton("New profile", "lp-button mochi-primary");
       create.disabled = busy;
       create.onclick = () => {
         this.start();
@@ -6743,7 +8408,7 @@ class MochiProfiles {
       };
       form.append(create);
       for (const account of this.state.accounts.filter((a) => !a.archived)) {
-        const edit = button("", "mochi-card");
+        const edit = mochiButton("", "mochi-card");
         edit.disabled = busy;
         const avatar = el("span", "mochi-avatar", account.displayName.slice(0, 1));
         if (account.avatarUrl) {
@@ -6764,7 +8429,7 @@ class MochiProfiles {
         form.append(edit);
       }
       for (const account of this.state.accounts.filter((a) => a.archived)) {
-        const restore = button("Restore " + account.displayName, "lp-button");
+        const restore = mochiButton("Restore " + account.displayName, "lp-button");
         restore.disabled = busy;
         restore.onclick = () => {
           this.confirmation = { kind: "restore", account };
@@ -6772,7 +8437,7 @@ class MochiProfiles {
         };
         form.append(restore);
       }
-      const back = button("Back", "lp-button");
+      const back = mochiButton("Back", "lp-button");
       back.onclick = exit;
       form.append(back);
       return form;
@@ -6781,7 +8446,7 @@ class MochiProfiles {
     if (this.sync)
       return this.renderSync(busy, send, redraw, confirmDiscard);
     form.append(el("h3", "", draft.id ? "Edit Account" : "Create Account"), el("p", "mochi-muted", "Fictional account · Changes apply on Save."));
-    const back = button("Back to Accounts", "lp-button");
+    const back = mochiButton("Back to Accounts", "lp-button");
     back.onclick = () => confirmDiscard(exit, back);
     form.prepend(back);
     form.querySelector("h3").tabIndex = -1;
@@ -6876,7 +8541,7 @@ class MochiProfiles {
     const fill = () => {
       choices.replaceChildren();
       for (const p of this.state.personas.filter((p) => (p.name + " " + p.source).toLocaleLowerCase().includes(this.personaQuery.toLocaleLowerCase()))) {
-        const row = el("div", "mochi-persona-row"), pick = button("", "mochi-persona-choice"), avatar = el("span", "mochi-sidebar-avatar", p.name.slice(0, 1));
+        const row = el("div", "mochi-persona-row"), pick = mochiButton("", "mochi-persona-choice"), avatar = el("span", "mochi-sidebar-avatar", p.name.slice(0, 1));
         if (p.avatarUrl) {
           const img = el("img");
           img.src = p.avatarUrl;
@@ -6905,7 +8570,7 @@ class MochiProfiles {
     fill();
     importPicker.append(choices);
     ai.append(importPicker);
-    const independent = button(draft.id ? "Use independent AI identity" : "Independent Mochi Account", "lp-button");
+    const independent = mochiButton(draft.id ? "Use independent AI identity" : "Independent Mochi Account", "lp-button");
     independent.onclick = () => {
       draft.persona = "manual";
       draft.linked = false;
@@ -6914,7 +8579,7 @@ class MochiProfiles {
     };
     ai.append(independent);
     ai.append(el("small", "mochi-muted", chosen ? "Import: " + chosen.name + " · The source AI description and portrait are captured on Save." : saved ? "Saved identity: " + saved.persona.name : "Independent identity"));
-    const refresh = button("Refresh personas", "lp-button mochi-secondary-action");
+    const refresh = mochiButton("Refresh personas", "lp-button mochi-secondary-action");
     refresh.onclick = refreshSources;
     ai.append(refresh);
     if (draft.persona === "manual" || draft.persona === "keep") {
@@ -6945,7 +8610,7 @@ class MochiProfiles {
     } else
       linked.append(el("small", "mochi-muted", "Import a Lumiverse persona above to enable linking."));
     if (saved?.personaLink) {
-      const sync = button("Sync from Lumiverse", "lp-button");
+      const sync = mochiButton("Sync from Lumiverse", "lp-button");
       sync.disabled = busy || this.hasUnsavedChanges();
       sync.onclick = () => {
         if (this.hasUnsavedChanges()) {
@@ -7044,7 +8709,7 @@ class MochiProfiles {
     }
     form.append(el("p", "mochi-muted", "Name, identity and portrait changes apply to new chats. Add-on selections apply to future replies in matching-persona chats. Existing messages and authorship are preserved."));
     if (saved) {
-      const archive = button("Archive profile", "lp-button mochi-danger-action");
+      const archive = mochiButton("Archive profile", "lp-button mochi-danger-action");
       archive.disabled = busy;
       archive.onclick = () => {
         this.confirmation = { kind: "archive", account: saved };
@@ -7052,10 +8717,10 @@ class MochiProfiles {
       };
       form.append(archive);
     }
-    const save = button(busy ? "Saving…" : "Save profile", "lp-button mochi-primary");
+    const save = mochiButton(busy ? "Saving…" : "Save profile", "lp-button mochi-primary");
     save.type = "submit";
     save.disabled = busy;
-    const cancel = button("Cancel profile changes", "lp-button");
+    const cancel = mochiButton("Cancel profile changes", "lp-button");
     cancel.disabled = busy;
     cancel.onclick = () => confirmDiscard(() => {
       this.draft = null;
@@ -7077,7 +8742,7 @@ class MochiProfiles {
     const heading = el("h3", "", "Review Persona Sync");
     heading.tabIndex = -1;
     root.append(heading);
-    const back = button("Back to Edit Account", "lp-button");
+    const back = mochiButton("Back to Edit Account", "lp-button");
     back.onclick = () => confirmDiscard(() => {
       this.backSync();
       redraw();
@@ -7128,7 +8793,7 @@ class MochiProfiles {
     if (!review.addons.length)
       addons.append(el("p", "mochi-muted", "No compatible source add-ons. Saved selections are preserved."));
     root.append(addons);
-    const apply = button("Apply approved changes", "lp-button mochi-primary");
+    const apply = mochiButton("Apply approved changes", "lp-button mochi-primary");
     apply.disabled = busy;
     apply.onclick = () => send("mochi:account_sync", { accountId: review.accountId, revision: review.revision, signature: review.signature, fields: [...this.syncFields], addons: [...this.syncAddons].map(([id, enabled]) => ({ id, enabled })) });
     root.append(apply);
@@ -7147,7 +8812,7 @@ function accountPicker(state, busy, choose, create, legacy, startup, manage, ref
   const accounts = el("div", "mochi-account-list");
   page.append(accounts);
   for (const a of state.accounts.filter((a) => !a.archived)) {
-    const card = button("", "mochi-card");
+    const card = mochiButton("", "mochi-card");
     card.disabled = busy;
     card.setAttribute("aria-label", "Use Mochi account " + a.displayName);
     const avatar = el("span", "mochi-avatar", a.displayName.slice(0, 1));
@@ -7178,19 +8843,19 @@ function accountPicker(state, busy, choose, create, legacy, startup, manage, ref
   page.append(label);
   const actions = el("div", "mochi-account-actions");
   page.append(actions);
-  const add = button("Create Mochi account", "lp-button mochi-primary");
+  const add = mochiButton("Create Mochi account", "lp-button mochi-primary");
   add.disabled = busy;
   add.onclick = create;
   actions.append(add);
-  const settings = button("Manage Mochi profiles", "lp-button");
+  const settings = mochiButton("Manage Mochi profiles", "lp-button");
   settings.disabled = busy;
   settings.onclick = manage;
   actions.append(settings);
-  const reload = button("Refresh accounts", "lp-button mochi-secondary-action");
+  const reload = mochiButton("Refresh accounts", "lp-button mochi-secondary-action");
   reload.disabled = busy;
   reload.onclick = refresh;
   page.append(reload);
-  const old = button("Unassigned legacy chats", "lp-button mochi-secondary-action mochi-legacy-action");
+  const old = mochiButton("Unassigned legacy chats", "lp-button mochi-secondary-action mochi-legacy-action");
   old.disabled = busy;
   old.onclick = legacy;
   page.append(old);
@@ -7210,7 +8875,7 @@ function roomDetails(room, characters, close, settings, edit) {
   const direct = room.characterIds.length === 1;
   panel.dataset.kind = direct ? "direct" : "group";
   const heading = el("div", "mochi-profile-heading"), title = el("h3", "", direct ? "Profile" : "Group profile");
-  const back = button("Back", "lp-button");
+  const back = mochiButton("Back", "lp-button");
   back.setAttribute("aria-label", "Close character profile");
   back.title = "Back to conversation";
   back.onclick = close;
@@ -7256,7 +8921,7 @@ function roomDetails(room, characters, close, settings, edit) {
   }
   const chat = el("p", "mochi-profile-chat-name", "Chat name: " + room.title);
   panel.append(chat);
-  const configure = button(direct ? "Chat settings" : "Chat settings & group icon", "lp-button mochi-profile-settings");
+  const configure = mochiButton(direct ? "Chat settings" : "Chat settings & group icon", "lp-button mochi-profile-settings");
   configure.setAttribute("aria-label", "Open conversation settings");
   configure.onclick = settings;
   panel.append(configure);
@@ -7329,11 +8994,11 @@ function pinsPanel(room, owner) {
       const m = referencedMessage(room.messages, id);
       if (!m)
         continue;
-      const row = el("div", "mochi-pin-row"), jump = button(`${m.name}: ${quoteExcerpt(m.content)}`, "mochi-pin-jump");
+      const row = el("div", "mochi-pin-row"), jump = mochiButton(`${m.name}: ${quoteExcerpt(m.content)}`, "mochi-pin-jump");
       jump.title = `${m.name} · ${new Date(m.createdAt).toLocaleString()}`;
       jump.setAttribute("aria-label", `Go to pinned message by ${m.name}`);
       jump.onclick = () => owner.jump(id);
-      const remove = button("Unpin", "lp-button");
+      const remove = mochiButton("Unpin", "lp-button");
       remove.disabled = owner.unavailable;
       remove.setAttribute("aria-label", `Unpin message by ${m.name}`);
       remove.onclick = () => owner.mutate({ action: "pin", messageId: id, pinned: false });
@@ -7377,14 +9042,14 @@ function pinsPanel(room, owner) {
       };
       const active = el("label", "", "Enabled for future AI replies");
       active.prepend(enabled);
-      const save = button("Save system note", "lp-button");
+      const save = mochiButton("Save system note", "lp-button");
       save.type = "submit";
       save.disabled = owner.unavailable;
-      const cancel = button("Cancel editing", "lp-button");
+      const cancel = mochiButton("Cancel editing", "lp-button");
       cancel.type = "button";
       cancel.onclick = () => {
         if (JSON.stringify(draft.note) !== draft.baseline) {
-          const confirm = button("Discard note draft", "lp-button");
+          const confirm = mochiButton("Discard note draft", "lp-button");
           confirm.onclick = () => {
             owner.draft = undefined;
             owner.setDraft(undefined);
@@ -7405,7 +9070,7 @@ function pinsPanel(room, owner) {
       form.append(titleLabel, bodyLabel, active, el("small", "mochi-muted", "System role · after dialogue (depth 0) · always when enabled. Unsaved text stays in this session when this panel closes."), save, cancel);
       if (draft.revision !== room.revision) {
         save.disabled = true;
-        const retry = button("Apply draft to refreshed chat", "lp-button");
+        const retry = mochiButton("Apply draft to refreshed chat", "lp-button");
         retry.type = "button";
         retry.disabled = owner.unavailable;
         retry.onclick = () => {
@@ -7425,17 +9090,17 @@ function pinsPanel(room, owner) {
       for (const n of room.systemNotes || []) {
         const row = el("section", "mochi-note-row");
         row.append(el("strong", "", n.title), el("small", "mochi-muted", n.enabled ? "Enabled" : "Disabled"), el("p", "", quoteExcerpt(n.body, 300)));
-        const edit = button("Edit note", "lp-button");
+        const edit = mochiButton("Edit note", "lp-button");
         edit.disabled = owner.unavailable;
         edit.setAttribute("aria-label", `Edit system note ${n.title}`);
         edit.onclick = () => start(n);
-        const toggle = button(n.enabled ? "Disable note" : "Enable note", "lp-button");
+        const toggle = mochiButton(n.enabled ? "Disable note" : "Enable note", "lp-button");
         toggle.disabled = owner.unavailable;
         toggle.onclick = () => owner.mutate({ action: "note_save", noteId: n.id, title: n.title, body: n.body, enabled: !n.enabled });
-        const remove = button("Delete note", "lp-button");
+        const remove = mochiButton("Delete note", "lp-button");
         remove.disabled = owner.unavailable;
         remove.onclick = () => {
-          const confirm = button("Confirm delete note", "lp-button");
+          const confirm = mochiButton("Confirm delete note", "lp-button");
           confirm.onclick = () => owner.mutate({ action: "note_delete", noteId: n.id, confirmed: true });
           remove.replaceWith(confirm);
           confirm.focus();
@@ -7443,7 +9108,7 @@ function pinsPanel(room, owner) {
         row.append(edit, toggle, remove);
         root.append(row);
       }
-      const add = button("New system note", "lp-button");
+      const add = mochiButton("New system note", "lp-button");
       add.disabled = owner.unavailable || (room.systemNotes || []).length >= 8;
       add.onclick = () => start();
       root.append(add);
@@ -7650,9 +9315,9 @@ class MochiSearch {
       this.sender = filter.value;
       this.run();
     };
-    const search = button("Search", "lp-button");
+    const search = mochiButton("Search", "lp-button");
     search.type = "submit";
-    const clear = button("Clear", "lp-button mochi-search-secondary");
+    const clear = mochiButton("Clear", "lp-button mochi-search-secondary");
     clear.setAttribute("aria-label", "Clear search");
     clear.title = "Clear search";
     clear.onclick = () => {
@@ -7663,7 +9328,7 @@ class MochiSearch {
       this.status = "Enter text to search this conversation.";
       this.redraw();
     };
-    const close = button("×", "lp-button mochi-search-secondary");
+    const close = mochiButton("×", "lp-button mochi-search-secondary");
     close.setAttribute("aria-label", "Close search");
     close.title = "Close search";
     close.onclick = () => {
@@ -7686,7 +9351,7 @@ class MochiSearch {
     root.append(status);
     const results = el("div", "mochi-search-results");
     for (const result of this.page?.results || []) {
-      const entry = button("", "mochi-search-result");
+      const entry = mochiButton("", "mochi-search-result");
       entry.setAttribute("aria-label", `Go to message ${result.position} by ${result.name}`);
       entry.append(el("strong", "", result.name), el("small", "", `${new Date(result.createdAt).toLocaleString()} · Message ${result.position}`), el("span", "", result.excerpt));
       entry.onclick = () => this.run(0, result.id);
@@ -7695,12 +9360,12 @@ class MochiSearch {
     if (this.page) {
       const paging = el("div", "mochi-search-paging");
       if (this.page.offset) {
-        const prev = button("Previous results", "lp-button");
+        const prev = mochiButton("Previous results", "lp-button");
         prev.onclick = () => this.run(Math.max(0, this.page.offset - 30));
         paging.append(prev);
       }
       if (this.page.nextOffset !== undefined) {
-        const next = button("Next results", "lp-button");
+        const next = mochiButton("Next results", "lp-button");
         next.onclick = () => this.run(this.page.nextOffset);
         paging.append(next);
       }
@@ -7987,9 +9652,9 @@ class MochiPreview {
       this.responder = responder.value;
       this.refresh();
     };
-    const refresh = button("Refresh preview", "lp-button");
+    const refresh = mochiButton("Refresh preview", "lp-button");
     refresh.onclick = () => this.refresh();
-    const close = button(this.draftBlocks ? "Back to preset draft" : "Close preview", "lp-button");
+    const close = mochiButton(this.draftBlocks ? "Back to preset draft" : "Close preview", "lp-button");
     close.onclick = () => {
       this.cancel();
       this.open = false;
@@ -8028,6 +9693,7 @@ class MochiPreview {
             this.expanded.delete(key);
         };
         details.append(summary);
+        mochiDisclosureIcon(details);
         return details;
       };
       const groups = [];
@@ -8095,7 +9761,7 @@ class PromptBlockEditor {
     const root = el("section", "mochi-block-editor");
     root.setAttribute("aria-label", "Prompt block workspace");
     const category = doc.categories.find((c) => c.blocks.some((b) => b.id === this.selected)), selected = category?.blocks.find((b) => b.id === this.selected);
-    const toolbar = el("div", "mochi-block-toolbar"), add = button("+ Add category", "lp-button");
+    const toolbar = el("div", "mochi-block-toolbar"), add = mochiButton("+ Add category", "lp-button");
     add.disabled = doc.categories.length >= 12;
     add.onclick = () => {
       this.revealCategory = blockId("category");
@@ -8115,7 +9781,7 @@ class PromptBlockEditor {
     workspace.append(list);
     root.append(workspace);
     const action = (label, run, disabled = false) => {
-      const b = button(label, "mochi-block-action");
+      const b = mochiButton(label, "mochi-block-action");
       b.disabled = disabled;
       b.onclick = run;
       return b;
@@ -8238,9 +9904,10 @@ class PromptBlockEditor {
           });
           edit.classList.add("mochi-block-name");
           edit.setAttribute("aria-label", "Edit block " + b.name);
-          head.append(el("span", "mochi-block-drag", "⠿"), toggle, el("strong", "mochi-block-title", b.name), el("small", "mochi-muted", b.role + " · " + b.position + (b.audience === "all" ? "" : " · " + b.audience) + (b.locked ? " · locked" : "")));
+          head.append(Object.assign(mochiIcon("drag", "block-drag"), { className: "mochi-icon-slot mochi-block-drag" }), toggle, el("strong", "mochi-block-title", b.name), el("small", "mochi-muted", b.role + " · " + b.position + (b.audience === "all" ? "" : " · " + b.audience) + (b.locked ? " · locked" : "")));
           head.append(edit);
-          const overflow = el("details", "mochi-block-overflow"), overflowTitle = el("summary", "", "⋯");
+          const overflow = el("details", "mochi-block-overflow"), overflowTitle = el("summary");
+          overflowTitle.append(mochiIcon("ellipsis", "block-more"));
           overflowTitle.setAttribute("aria-label", "More actions for " + b.name);
           const actions = el("div", "mochi-block-row-actions");
           overflow.append(overflowTitle, actions);
@@ -8267,7 +9934,12 @@ class PromptBlockEditor {
         if (!c.blocks.length)
           category.append(el("p", "mochi-muted", "No blocks. Add a template or write your own."));
         const picker = el("details", "mochi-block-picker");
-        picker.append(el("summary", "", "+ Add Block"));
+        {
+          const addSummary = el("summary", "", "Add Block");
+          addSummary.setAttribute("aria-label", "+ Add Block");
+          addSummary.prepend(mochiIcon("plus", "block-add"));
+          picker.append(addSummary);
+        }
         const search = el("input");
         search.type = "search";
         search.placeholder = "Search templates";
@@ -8670,9 +10342,9 @@ class MochiPresetPanel {
     const status = el("div", "mochi-muted", this.status);
     status.setAttribute("role", "status");
     root.append(status);
-    const refresh = button("Refresh preset library", "lp-button");
+    const refresh = mochiButton("Refresh preset library", "lp-button");
     refresh.onclick = () => this.load();
-    const close = button("Return to conversation", "lp-button");
+    const close = mochiButton("Return to conversation", "lp-button");
     close.onclick = () => {
       clearTimeout(this.timer);
       this.ticket = "";
@@ -8684,9 +10356,9 @@ class MochiPresetPanel {
     heading.append(root.querySelector("h3"), close);
     root.prepend(heading);
     controls.append(refresh);
-    const restore = button("Restore Mochi Default", "lp-button");
+    const restore = mochiButton("Restore Mochi Default", "lp-button");
     restore.onclick = () => {
-      const confirm = button("Confirm restore default", "lp-button");
+      const confirm = mochiButton("Confirm restore default", "lp-button");
       confirm.onclick = () => this.bind(DEFAULT_PRESET_ID, 1);
       restore.replaceWith(confirm);
       confirm.focus();
@@ -8722,11 +10394,11 @@ class MochiPresetPanel {
       };
       revisionOptions();
       select.onchange = revisionOptions;
-      const apply = button("Apply selected preset", "lp-button");
+      const apply = mochiButton("Apply selected preset", "lp-button");
       apply.disabled = Boolean(this.ticket);
       apply.onclick = () => {
         const id = select.value, p = this.bank.presets.find((p) => p.id === id);
-        const confirm = button("Confirm apply preset", "lp-button");
+        const confirm = mochiButton("Confirm apply preset", "lp-button");
         confirm.onclick = () => this.bind(id, Number(revisionSelect.value));
         apply.replaceWith(confirm);
         confirm.focus();
@@ -8734,25 +10406,25 @@ class MochiPresetPanel {
       controls.append(select, revisionSelect, apply);
       const bound = this.bank.presets.find((p) => p.id === room.preset?.id);
       if (bound && bound.revisions.length > room.preset.revision) {
-        const update = button("Update to latest", "lp-button");
+        const update = mochiButton("Update to latest", "lp-button");
         update.onclick = () => {
-          const confirm = button("Confirm update to latest", "lp-button");
+          const confirm = mochiButton("Confirm update to latest", "lp-button");
           confirm.onclick = () => this.bind(bound.id, bound.revisions.length);
           update.replaceWith(confirm);
           confirm.focus();
         };
         controls.append(update);
       }
-      const create = button("Create preset", "lp-button");
+      const create = mochiButton("Create preset", "lp-button");
       create.disabled = Boolean(this.ticket) || Boolean(this.draft);
       create.onclick = () => this.edit("create");
-      const duplicate = button("Duplicate Mochi Default", "lp-button");
+      const duplicate = mochiButton("Duplicate Mochi Default", "lp-button");
       duplicate.disabled = Boolean(this.ticket) || Boolean(this.draft);
       duplicate.onclick = () => this.request({ action: "duplicate", id: DEFAULT_PRESET_ID, name: "Mochi Default copy", revision: this.bank.revision });
       if (!this.draft)
         heading.append(create);
       controls.append(duplicate);
-      const customize = button("Customize Mochi Default v2", "lp-button");
+      const customize = mochiButton("Customize Mochi Default v2", "lp-button");
       customize.disabled = Boolean(this.ticket) || Boolean(this.draft);
       customize.onclick = () => {
         this.customizing = true;
@@ -8771,7 +10443,7 @@ class MochiPresetPanel {
       const inspectable = [...builtInPresets().map((p) => ({ id: p.id, name: p.name, archived: false, revisions: [p] })), ...this.bank.presets];
       const selected = this.selectedId || room.preset?.id || DEFAULT_PRESET_ID;
       for (const p of inspectable) {
-        const item = button(`${p.name} · r${p.revisions.length}${isBuiltInPreset(p.id) ? " · built-in" : p.archived ? " · archived" : ""}`, "mochi-preset-library-item");
+        const item = mochiButton(`${p.name} · r${p.revisions.length}${isBuiltInPreset(p.id) ? " · built-in" : p.archived ? " · archived" : ""}`, "mochi-preset-library-item");
         item.setAttribute("aria-pressed", String(selected === p.id));
         item.onclick = () => {
           const choose = () => {
@@ -8782,7 +10454,7 @@ class MochiPresetPanel {
             this.redraw();
           };
           if (this.draft) {
-            const confirm = button("Discard draft and open preset", "lp-button");
+            const confirm = mochiButton("Discard draft and open preset", "lp-button");
             confirm.onclick = choose;
             item.replaceWith(confirm);
             confirm.focus();
@@ -8814,7 +10486,7 @@ class MochiPresetPanel {
           if (d.layout !== "blocks-v1") {
             const compatibility = el("details");
             compatibility.append(el("summary", "", "Original published content · unchanged"), el("pre", "", JSON.stringify({ layout: d.layout, dmInstructions: d.dmInstructions, groupInstructions: d.groupInstructions, placement: d.placement }, null, 2)));
-            const convert = button("Create block draft from this revision", "lp-button");
+            const convert = mochiButton("Create block draft from this revision", "lp-button");
             convert.onclick = () => {
               d.blocks = convertLegacy(d);
               d.layout = "blocks-v1";
@@ -8827,7 +10499,7 @@ class MochiPresetPanel {
           } else {
             d.blocks ||= starterBlocks();
             form.append(this.blockEditor.render(d.blocks, () => this.redraw()));
-            const preview = button("Preview draft prompt", "lp-button");
+            const preview = mochiButton("Preview draft prompt", "lp-button");
             preview.disabled = !this.previewDraft;
             preview.onclick = () => {
               try {
@@ -8840,12 +10512,12 @@ class MochiPresetPanel {
             form.append(preview);
           }
         }
-        const publish = button(d.action === "rename" ? "Save preset name" : "Publish preset revision", "lp-button");
+        const publish = mochiButton(d.action === "rename" ? "Save preset name" : "Publish preset revision", "lp-button");
         publish.type = "submit";
         publish.disabled = Boolean(this.ticket) || d.action !== "rename" && d.layout !== "blocks-v1";
-        const cancel = button("Cancel preset editing", "lp-button");
+        const cancel = mochiButton("Cancel preset editing", "lp-button");
         cancel.onclick = () => {
-          const confirm = button("Discard preset draft", "lp-button");
+          const confirm = mochiButton("Discard preset draft", "lp-button");
           confirm.onclick = () => {
             this.drafts.delete(this.key);
             this.draft = undefined;
@@ -8861,7 +10533,7 @@ class MochiPresetPanel {
         };
         if (d.revision !== this.bank.revision) {
           publish.disabled = true;
-          const review = button("Use refreshed library revision", "lp-button");
+          const review = mochiButton("Use refreshed library revision", "lp-button");
           review.onclick = () => {
             d.revision = this.bank.revision;
             this.redraw();
@@ -8903,19 +10575,19 @@ class MochiPresetPanel {
             this.redraw();
           };
           row.append(revisions);
-          const edit = button("Edit / publish", "lp-button");
+          const edit = mochiButton("Edit / publish", "lp-button");
           edit.disabled = p.archived || Boolean(this.ticket);
           edit.onclick = () => this.edit("publish", p, published.revision);
-          const rename = button("Rename", "lp-button");
+          const rename = mochiButton("Rename", "lp-button");
           rename.disabled = Boolean(this.ticket);
           rename.onclick = () => this.edit("rename", p);
-          const copy = button(isBuiltInPreset(p.id) ? "Duplicate / customize" : "Duplicate", "lp-button");
+          const copy = mochiButton(isBuiltInPreset(p.id) ? "Duplicate / customize" : "Duplicate", "lp-button");
           copy.disabled = Boolean(this.ticket);
           copy.onclick = () => {
             this.customizing = isBuiltInPreset(p.id);
             this.request({ action: "duplicate", id: p.id, sourceRevision: published.revision, name: (p.name + " copy").slice(0, 80), revision: this.bank.revision });
           };
-          const archive = button(p.archived ? "Restore archived preset" : "Archive", "lp-button");
+          const archive = mochiButton(p.archived ? "Restore archived preset" : "Archive", "lp-button");
           archive.disabled = Boolean(this.ticket);
           archive.onclick = () => this.request({ action: p.archived ? "restore" : "archive", id: p.id, revision: this.bank.revision });
           if (published.layout === "blocks-v1") {
@@ -8954,6 +10626,7 @@ class MochiPresetPanel {
         continue;
       const key = details.querySelector("summary")?.textContent || "";
       details.classList.add("mochi-disclosure");
+      mochiDisclosureIcon(details);
       details.querySelector("summary")?.setAttribute("title", key);
       details.open = this.disclosures.has(key);
       details.ontoggle = () => {
@@ -8976,17 +10649,14 @@ var MOCHI_PRESET_CHROME_STYLES = mochiStyle("mochi-preset-chrome-styles");
 var MOCHI_PRESET_WORKSPACE_STYLES = MOCHI_PRESET_WORKSPACE_BASE + MOCHI_PRESET_DEDICATED_STYLES + MOCHI_PRESET_CHROME_STYLES + mochiStyle("preset-workspace-final");
 
 // src/mochi/view.ts
+var ACTION_SLOTS = { "Search conversation": "search", "Mochi notifications": "notifications", Participants: "participants", Presets: "toolbar-presets", "Conversation Memory": "toolbar-memory", "Preview AI prompt": "toolbar-preview", "Pins & Notes": "toolbar-notes", "Chat Settings": "toolbar-settings", "Back to conversations": "back", "Account Settings": "account-settings", "Log out of fictional account": "account-logout" };
 function action(label, icon, compact = false) {
-  const node = button("", `lp-button${compact ? " mochi-icon-button" : ""}`);
+  const node = mochiButton("", `lp-button${compact ? " mochi-icon-button" : ""}`);
   node.setAttribute("aria-label", label);
   node.title = label;
-  const glyph = el("span", "mochi-icon-slot");
-  glyph.dataset.mochiIconSlot = icon;
-  glyph.setAttribute("aria-hidden", "true");
-  const extra = { stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>', copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4H4v12h4"/>', edit: '<path d="m15 4 5 5-11 11H4v-5L15 4Z M12 7l5 5"/>', more: '<path d="M5 12h.01M12 12h.01M19 12h.01"/>', people: '<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6M18 15a5 5 0 0 1 3 5"/>' };
-  extra.close = '<path d="m6 6 12 12M18 6 6 18"/>';
-  extra.search = '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/>';
-  glyph.innerHTML = MOCHI_TOOLBAR_ICONS[icon] || POCKET_ICONS[icon] || `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${extra[icon] || '<path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-2l2 2M4 17l2 2a7 7 0 0 0 12-2"/>'}</svg>`;
+  const slot = ACTION_SLOTS[label] || icon;
+  const glyph = mochiIcon(icon, slot);
+  node.dataset.mochiAction = slot;
   node.append(glyph);
   if (!compact)
     node.append(el("span", "", label));
@@ -9330,7 +11000,7 @@ class MochiView {
   }
   quoteNode(room, id, navigate = false) {
     const candidate = room.accountId === this.state?.accountId ? referencedMessage(room.messages, id) : undefined, original = candidate && isDisplayMessage(candidate) ? candidate : undefined, label = original ? `Reply to ${original.name}: ${quoteExcerpt(original.content)}` : "Reply to unavailable message";
-    const node = navigate && original ? button("", "mochi-quote") : el("div", "mochi-quote");
+    const node = navigate && original ? mochiButton("", "mochi-quote") : el("div", "mochi-quote");
     node.setAttribute("aria-label", label);
     node.append(el("strong", "", original ? original.name : "Message unavailable"), el("span", "", original ? quoteExcerpt(original.content) : "The original message is no longer available."));
     if (navigate && original) {
@@ -10060,7 +11730,7 @@ class MochiView {
       }
       create.setAttribute("aria-label", "New Chat");
       create.title = "New Chat";
-      create.textContent = "+ New Chat";
+      create.replaceChildren(mochiIcon("plus", "add"), el("span", "", "New Chat"));
       newChat = create;
       noticesButton = notices;
     } else
@@ -10077,7 +11747,7 @@ class MochiView {
     views.setAttribute("aria-label", "Conversation filters");
     const viewButtons = new Map;
     for (const [key, label] of [["all", "All"], ["groups", "Groups"]]) {
-      const control = button(label, "lp-button");
+      const control = mochiButton(label, "lp-button");
       control.setAttribute("aria-pressed", String(this.conversationView === key));
       control.onclick = () => {
         this.conversationView = key;
@@ -10097,7 +11767,7 @@ class MochiView {
       if (!notice.read)
         unread.set(notice.roomId, (unread.get(notice.roomId) || 0) + 1);
     for (const room of this.state?.rooms || []) {
-      const row = button("", "mochi-desktop-room");
+      const row = mochiButton("", "mochi-desktop-room");
       row.setAttribute("aria-label", `Open conversation: ${room.title}`);
       if (room.id === this.roomId)
         row.setAttribute("aria-current", "true");
@@ -10160,7 +11830,7 @@ class MochiView {
     this.applyPresentation(page);
     const main = el("section", "mochi-desktop-main");
     main.setAttribute("aria-label", "Conversation and settings");
-    const back = el("div", "mochi-desktop-back"), backButton = button("← Conversations");
+    const back = el("div", "mochi-desktop-back"), backButton = mochiButton("← Conversations");
     backButton.setAttribute("aria-label", "Back to conversations");
     back.hidden = this.pickerOpen || !this.state;
     backButton.onclick = () => this.exitPortal(() => {
@@ -10396,7 +12066,7 @@ class MochiView {
     }
     if (room && surface !== "choices") {
       const roomHeader = el("div", "mochi-room-header");
-      const info = surface === "desktop" ? button("", "mochi-room-info mochi-identity-button") : el("div", "mochi-room-info"), selector = el("select", "mochi-room-selector");
+      const info = surface === "desktop" ? mochiButton("", "mochi-room-info mochi-identity-button") : el("div", "mochi-room-info"), selector = el("select", "mochi-room-selector");
       selector.setAttribute("aria-label", "Select chat");
       for (const r of this.state.rooms) {
         const option = el("option", "", r.title);
@@ -10413,7 +12083,7 @@ class MochiView {
       const roomSelector = el("div", "mochi-room-select");
       const groupIcon = el("span", "mochi-room-select-icon");
       groupIcon.setAttribute("aria-hidden", "true");
-      groupIcon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6M18 15a5 5 0 0 1 3 5"/></svg>';
+      groupIcon.append(mochiIcon("people", "participants"));
       roomSelector.append(groupIcon, selector);
       const statuses = room.characterIds.map((id) => statusFor(room, id)), online = statuses.filter((s) => s === "online").length;
       info.setAttribute("aria-label", "Character profile");
@@ -10440,13 +12110,11 @@ class MochiView {
       const menu = el("details", "lp-conversation-menu"), more = el("summary", "lp-nav-action");
       more.setAttribute("aria-label", "Room options");
       more.title = "Room options";
-      const moreIcon = el("span");
-      moreIcon.setAttribute("aria-hidden", "true");
-      moreIcon.innerHTML = MOCHI_TOOLBAR_ICONS.ellipsis;
-      more.append(moreIcon);
+      more.dataset.mochiAction = "room-options";
+      more.append(mochiIcon("ellipsis", "room-options"));
       const menuSheet = el("div", "lp-conversation-menu-sheet");
       const menuAction = (label, callback) => {
-        const item = button(label, "lp-conversation-menu-action");
+        const item = mochiButton(label, "lp-conversation-menu-action");
         item.setAttribute("aria-label", label);
         item.addEventListener("click", () => {
           menu.open = false;
@@ -10632,7 +12300,7 @@ class MochiView {
     if (!this.state.rooms.length)
       page.append(el("p", "mochi-card", "No rooms yet. Choose your characters and the identity you want to use."));
     for (const room of this.state.rooms) {
-      const row = button("", "mochi-card");
+      const row = mochiButton("", "mochi-card");
       const avatars = el("div", "mochi-room-avatars");
       avatars.dataset.single = String(room.characterIds.length === 1);
       for (const id of room.characterIds.slice(0, 4)) {
@@ -10689,7 +12357,7 @@ class MochiView {
   renderSettings(room) {
     const root = el("section", "mochi-settings-workspace");
     root.setAttribute("aria-label", "Mochi Settings");
-    const head = el("div", "mochi-settings-heading"), close = button(room ? "Return to conversation" : "Return to conversations");
+    const head = el("div", "mochi-settings-heading"), close = mochiButton(room ? "Return to conversation" : "Return to conversations");
     head.append(el("h3", "", "Mochi Settings"), close);
     close.onclick = () => this.confirmNavigation(() => {
       this.settingsPage = "";
@@ -10704,7 +12372,7 @@ class MochiView {
     const tabs = el("nav", "mochi-settings-tabs");
     tabs.setAttribute("aria-label", "Settings workspace");
     for (const [key, label] of [["chat", "Chat"], ["personal", "Personal"]]) {
-      const tab = button(label);
+      const tab = mochiButton(label);
       tab.setAttribute("aria-pressed", String(this.settingsPage === key));
       tab.disabled = key === "chat" && !room;
       tab.onclick = () => {
@@ -10832,7 +12500,8 @@ class MochiView {
     const refreshChips = () => {
       selected.replaceChildren();
       for (const id of draft.characterIds) {
-        const c = state.characters.find((c) => c.id === id), chip = button((c?.name || "Unavailable character") + " ×", "mochi-participant-chip");
+        const c = state.characters.find((c) => c.id === id), chip = mochiButton(c?.name || "Unavailable character", "mochi-participant-chip");
+        chip.append(mochiIcon("close", "participant-remove"));
         chip.setAttribute("aria-label", "Remove participant " + (c?.name || id));
         chip.onclick = () => {
           draft.characterIds = draft.characterIds.filter((x) => x !== id);
@@ -10845,7 +12514,7 @@ class MochiView {
       updateGroupIcon();
     };
     for (const character of state.characters) {
-      const choice = button("", "mochi-choice");
+      const choice = mochiButton("", "mochi-choice");
       choice.dataset.characterId = character.id;
       choice.append(portrait(character.name, character.avatarUrl));
       choice.append(el("span", "", character.name));
@@ -10944,7 +12613,7 @@ class MochiView {
         this.redraw();
       };
       field("Generation connection", connection);
-      const refresh = button("Refresh connections & personas", "lp-button mochi-secondary-action");
+      const refresh = mochiButton("Refresh connections & personas", "lp-button mochi-secondary-action");
       refresh.onclick = () => this.refreshChoices();
       group.append(refresh);
       const effectiveConnection = settings.connectionId ? state.connections?.find((c) => c.id === settings.connectionId) : fallback;
@@ -10993,7 +12662,11 @@ class MochiView {
       nextResponder.setAttribute("aria-description", "This conversation · Next reply selection applies now in this frontend session; it does not change saved response mode.");
       auto.disabled = !!settings.responseMode;
       group.append(el("p", "mochi-muted", "This conversation · Requires Save. Natural may choose silence or delayed replies; Instant requests an eligible reply; Manual disables automatic replies, while Continue still works. A selected mode controls automatic replies; Existing behavior uses the automatic-reply checkbox. Ordinary replies do not require idle/background autonomy."));
-      section("Background messaging", true).classList.add("mochi-disclosure");
+      {
+        const background = section("Background messaging", true);
+        background.classList.add("mochi-disclosure");
+        mochiDisclosureIcon(background);
+      }
       group.append(el("p", "mochi-muted", "Permission, presence and schedule actions apply now. AI timing/status suggestions require Save. Background autonomy is separate from ordinary replies to your messages."));
       const accountBackground = el("input");
       accountBackground.type = "checkbox";
@@ -11134,7 +12807,7 @@ class MochiView {
         const inherited = !settings.textingStyles?.[id];
         const chatTexting = el("div", "mochi-texting-chat");
         chatTexting.append(el("small", "mochi-muted", inherited ? "Inherited character texting defaults" : "Explicit chat texting override"));
-        const useDefaults = button("Use character texting defaults");
+        const useDefaults = mochiButton("Use character texting defaults");
         useDefaults.onclick = () => {
           if (settings.textingStyles)
             delete settings.textingStyles[id];
@@ -11142,7 +12815,7 @@ class MochiView {
         };
         chatTexting.append(useDefaults, textingControls(settings, id, name));
         group.append(chatTexting);
-        const presenceDefaults = button("Use character availability defaults (applies now)");
+        const presenceDefaults = mochiButton("Use character availability defaults (applies now)");
         presenceDefaults.disabled = this.busy;
         presenceDefaults.onclick = () => this.dispatch("mochi:presence", { roomId: room.id, revision: room.revision, characterId: id, useDefault: true });
         group.append(el("small", "mochi-muted", room.background?.presence?.[id] ? "Explicit chat availability override" : "Inherited character availability defaults"), presenceDefaults);
@@ -11259,7 +12932,7 @@ class MochiView {
       const first = visible[0];
       thread.dataset.firstMessageId = isDisplayMessage(first) ? first.id : "";
       if (room.messages.length > limit) {
-        const earlier = button("Show earlier messages", "lp-button");
+        const earlier = mochiButton("Show earlier messages", "lp-button");
         earlier.onclick = () => {
           this.desktopHistory.set(room.id, limit + 100);
           this.redraw();
@@ -11342,7 +13015,7 @@ class MochiView {
           const actors = reactions.filter((r) => r.emoji === emoji);
           if (!actors.length)
             continue;
-          const selected = actors.some((r) => r.actor === "user" && r.actorId === (room.accountId || "legacy")), chip = button(`${emoji} ${actors.length}`, "mochi-reaction");
+          const selected = actors.some((r) => r.actor === "user" && r.actorId === (room.accountId || "legacy")), chip = mochiButton(`${emoji} ${actors.length}`, "mochi-reaction");
           chip.type = "button";
           chip.title = actors.map((r) => r.name + (r.actor === "character" ? " (character)" : " (profile)")).join(", ");
           chip.setAttribute("aria-label", `${selected ? "Remove your" : "Add your"} ${REACTION_NAMES[emoji]} reaction. ${chip.title}`);
@@ -11547,7 +13220,7 @@ class MochiView {
       };
       content.replaceChildren(el("p", "", "Delete this saved message? Only this message and its prior versions will be removed. Later messages stay unchanged. This cannot be undone."), confirm);
     };
-    const reply = action("Reply", "back");
+    const reply = action("Reply", "reply");
     reply.onclick = () => {
       this.replyTargets.set(this.replyKey(room), message.id);
       sheet?.dismiss();
@@ -11555,7 +13228,7 @@ class MochiView {
       const root = this.presenceRoot;
       root?.querySelector('[aria-label="Message"]')?.focus({ preventScroll: true });
     };
-    const react = action("React", "more");
+    const react = action("React", "smile");
     react.disabled = this.busy || Boolean(this.state?.jobs?.[room.id]);
     react.onclick = () => {
       const palette = el("div", "mochi-reaction-palette");
@@ -11565,7 +13238,7 @@ class MochiView {
         selected = readReactions("reactions" in message ? message.reactions : undefined, room).filter((r) => r.actor === "user" && r.actorId === (room.accountId || "legacy")).map((r) => r.emoji);
       } catch {}
       for (const emoji of REACTION_EMOJI) {
-        const choice = button(emoji, "mochi-reaction");
+        const choice = mochiButton(emoji, "mochi-reaction");
         choice.type = "button";
         choice.setAttribute("aria-label", `Toggle ${REACTION_NAMES[emoji]} reaction`);
         choice.setAttribute("aria-pressed", String(selected.includes(emoji)));
@@ -11578,7 +13251,7 @@ class MochiView {
       content.replaceChildren(palette);
       palette.querySelector("button")?.focus();
     };
-    const pinned = room.chatPins?.includes(message.id) || false, pin = button(pinned ? "Unpin" : "Pin", "lp-button");
+    const pinned = room.chatPins?.includes(message.id) || false, pin = mochiButton(pinned ? "Unpin" : "Pin", "lp-button");
     pin.disabled = this.busy || Boolean(this.state?.jobs?.[room.id]);
     pin.onclick = () => {
       this.pendingNoteSave = undefined;
@@ -11650,7 +13323,7 @@ class MochiView {
     for (const n of entries) {
       const entry = el("div", "mochi-notification-entry");
       entry.dataset.notificationId = n.id;
-      const row = button("", "mochi-card");
+      const row = mochiButton("", "mochi-card");
       const copy = el("div", "mochi-card-copy");
       copy.append(el("strong", "", `${n.title} · ${n.roomTitle}`), el("span", "mochi-preview", notificationBody(n, this.notificationPolicy().previews)), el("small", "mochi-muted", n.read ? "Read" : "New"));
       row.append(portrait(n.title, n.avatarUrl), copy);
@@ -11700,7 +13373,7 @@ class MochiView {
       const name = responder.value === "auto" ? "Automatic" : room.settings?.characterNames[responder.value] || character?.name || responder.value;
       const avatar = portrait(name, character?.avatarUrl);
       if (responder.value === "auto")
-        avatar.innerHTML = POCKET_ICONS.contacts;
+        avatar.replaceChildren(mochiIcon("contacts", "responder-auto"));
       identity.replaceChildren(avatar);
       responderField.title = `Next responder: ${name}`;
     };
@@ -11713,7 +13386,7 @@ class MochiView {
     const responderChoices = el("div", "mochi-responder-choices");
     responderChoices.setAttribute("aria-label", "Eligible next responders");
     for (const option of Array.from(responder.options)) {
-      const choose = button(option.textContent || "", "mochi-responder-choice");
+      const choose = mochiButton(option.textContent || "", "mochi-responder-choice");
       choose.setAttribute("aria-label", option.value === "auto" ? "Automatic responder" : "Respond as " + option.textContent);
       choose.setAttribute("aria-pressed", String(option.value === responder.value));
       choose.onclick = () => {
@@ -12202,7 +13875,7 @@ function createMochiWindow(ui, session, notificationPolicy, onOpen) {
   const close = document.createElement("button");
   close.className = "mochi-window-close";
   close.type = "button";
-  close.textContent = "×";
+  close.append(mochiIcon("close", "window-close"));
   close.setAttribute("aria-label", "Hide Mochi window");
   close.title = "Hide Mochi window";
   bar.tabIndex = 0;
@@ -12211,7 +13884,7 @@ function createMochiWindow(ui, session, notificationPolicy, onOpen) {
   const maximize = document.createElement("button");
   maximize.type = "button";
   maximize.className = "mochi-window-close";
-  maximize.textContent = "□";
+  maximize.append(mochiIcon("maximize", "window-maximize"));
   const canMaximize = typeof widget.setFullscreen === "function" && typeof widget.isFullscreen === "function";
   const syncControls = () => {
     const full = maximized();
@@ -12227,7 +13900,7 @@ function createMochiWindow(ui, session, notificationPolicy, onOpen) {
   const grip = document.createElement("button");
   grip.className = "mochi-window-resize";
   grip.type = "button";
-  grip.textContent = "◢";
+  grip.append(mochiIcon("resize", "window-resize"));
   grip.dataset.resizeHandle = "se";
   grip.setAttribute("data-spindle-float-resize-handle", "");
   grip.setAttribute("aria-label", "Resize Mochi window");
@@ -12604,9 +14277,7 @@ function createMochiSidebar(ctx, session, policy, activateSidebar = () => {}, di
   let mobileSurface;
   const visibility = new Set;
   const button = (label, click) => {
-    const node = document.createElement("button");
-    node.type = "button";
-    node.textContent = label;
+    const node = mochiButton(label, "");
     node.onclick = () => click(node);
     return node;
   };
@@ -12694,7 +14365,8 @@ function createMochiSidebar(ctx, session, policy, activateSidebar = () => {}, di
     node.className = "mochi-account-icon";
     node.title = label;
     node.setAttribute("aria-label", label);
-    node.innerHTML = MOCHI_TOOLBAR_ICONS[icon] || MOCHI_TOOLBAR_ICONS.profile;
+    node.dataset.mochiAction = "account-" + icon;
+    node.append(mochiIcon(icon, "account-" + icon));
     return node;
   };
   const portrait = (name, url) => {
@@ -13087,7 +14759,7 @@ class PocketPortal {
         exit();
     };
     if (this.destination !== "home") {
-      const back = button("← Back", "pocket-portal-back");
+      const back = (this.destination === "mochi" ? mochiButton : button)("← Back", "pocket-portal-back");
       back.setAttribute("aria-label", this.destination === "mochi" ? "Back in Mochi" : "Back to portal");
       back.onclick = () => {
         const exit = () => this.show("home");

@@ -1,5 +1,6 @@
+import {mochiButton as button} from './ui/icon-slots.js'
 import {mochiStyle} from './ui/styles.js'
-import {button,el,requestId} from '../frontend/shared.js'
+import {el,requestId} from '../frontend/shared.js'
 import type {MochiRoom} from './types.js'
 import {messageSender,SEARCH_QUERY_MAX,searchQuery,type SearchPage} from './search.js'
 

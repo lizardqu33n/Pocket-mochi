@@ -1,4 +1,13 @@
 import {mochiStyle} from '../src/mochi/ui/styles.js'
+import {MOCHI_ICON_ASSETS} from '../src/mochi/ui/icon-assets.js'
+import {iconAssetData} from '../src/mochi/ui/icon-slots.js'
+import {JSDOM} from 'jsdom'
+
+// Build-time diagnostics for optional owner artwork; runtime retains Lucide too.
+if(Object.keys(MOCHI_ICON_ASSETS).length){
+ const dom=new JSDOM('');Object.assign(globalThis,{DOMParser:dom.window.DOMParser,XMLSerializer:dom.window.XMLSerializer})
+ try{for(const [slot,asset]of Object.entries(MOCHI_ICON_ASSETS))if(!/^[a-z][a-z0-9-]*$/.test(slot)||!iconAssetData(asset))throw Error('Invalid local Mochi icon asset: '+slot)}finally{dom.window.close()}
+}
 
 // Run before the normal frontend build so accidental marker edits fail locally,
 // rather than producing an extension that discovers a missing section at load.

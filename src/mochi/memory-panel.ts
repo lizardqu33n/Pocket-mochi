@@ -1,6 +1,7 @@
+import {mochiButton as button} from './ui/icon-slots.js'
 import {mochiStyle} from './ui/styles.js'
 import type {SummarySuggestion} from './summarization.js'
-import {el,button,requestId} from '../frontend/shared.js'
+import {el,requestId} from '../frontend/shared.js'
 import type {MochiRoom} from './types.js'
 import {MAX_SUMMARY_TEXT,MAX_SUMMARY_VERSIONS,currentSummary,type ConversationMemory} from './memory.js'
 const scope=(r:MochiRoom)=>JSON.stringify([r.accountId||'',r.id,r.associationRevision||0])

@@ -1,3 +1,4 @@
+import {mochiButton} from '../../mochi/ui/icon-slots.js'
 import { button, el } from '../shared.js'
 
 type Destination = 'home' | 'phones' | 'mochi'
@@ -30,7 +31,7 @@ export class PocketPortal {
     const selection = active && ['INPUT', 'TEXTAREA'].includes(active.tagName) ? [active.selectionStart, active.selectionEnd] : undefined
     const nav = el('nav', 'pocket-portal-nav'); nav.setAttribute('aria-label', 'Portal navigation')
     const home = button('Pocket /', 'pocket-portal-home'); home.title='Return to Pocket portal';home.onclick = () => {const exit=()=>this.show('home');if(this.destination==='mochi'&&this.mochiNavigation)this.mochiNavigation.home(exit,home);else exit()}
-    if(this.destination!=='home'){const back=button('← Back','pocket-portal-back');back.setAttribute('aria-label',this.destination==='mochi'?'Back in Mochi':'Back to portal');back.onclick=()=>{const exit=()=>this.show('home');if(this.destination==='mochi'&&this.mochiNavigation)this.mochiNavigation.back(exit,back);else exit()};nav.append(back)}
+    if(this.destination!=='home'){const back=(this.destination==='mochi'?mochiButton:button)('← Back','pocket-portal-back');back.setAttribute('aria-label',this.destination==='mochi'?'Back in Mochi':'Back to portal');back.onclick=()=>{const exit=()=>this.show('home');if(this.destination==='mochi'&&this.mochiNavigation)this.mochiNavigation.back(exit,back);else exit()};nav.append(back)}
     nav.append(home, el('span', '', this.destination === 'home' ? 'online' : this.destination === 'phones' ? 'devices' : 'mochi'))
     if(this.mochiNavigation?.window){const windowButton=button('Mochi window','pocket-portal-back');windowButton.setAttribute('aria-label','Open Mochi window');windowButton.onclick=this.mochiNavigation.window;nav.append(windowButton)}
     const body = el('div', 'pocket-portal-body')

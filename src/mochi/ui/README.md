@@ -1,5 +1,9 @@
 # Editing Mochi's appearance
 
+CSS-01 Phase 3: [Icon theming, verified Lucide assets, optional local SVG/images,
+safe fallback and accessibility](ICON-THEMING.md). The [named slot reference](reference/icons.md)
+and [rendering inventory](icon-inventory.json) cover Mochi surfaces and retained artwork.
+
 **Whole-interface CSS customization is documented in contract v2.** Start with
 [THEME-CONTRACT.md](THEME-CONTRACT.md) for the current public selectors, theme
 entry point, exact Custom CSS scopes and structural boundaries. Edit

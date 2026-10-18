@@ -1,5 +1,7 @@
+import {mochiIcon} from './ui/icon-slots.js'
+import {mochiButton as button} from './ui/icon-slots.js'
 import {mochiStyle} from './ui/styles.js'
-import {el,button} from '../frontend/shared.js'
+import {el} from '../frontend/shared.js'
 import {BLOCK_TEMPLATES,MACRO_REFERENCE,blockId,fromTemplate,validateBlocks,type BlockDocument,type PromptBlock,type PromptCategory} from './prompt-blocks.js'
 
 export class PromptBlockEditor {
@@ -39,15 +41,15 @@ export class PromptBlockEditor {
     row.ondragend=()=>{this.dragging=''};row.ondragover=e=>e.preventDefault();row.ondrop=e=>{e.preventDefault();e.stopPropagation();drop(c,b)}
     const head=el('div','mochi-block-row'),toggle=el('input');toggle.type='checkbox';toggle.checked=b.enabled;toggle.disabled=b.locked;toggle.setAttribute('aria-label','Enable block '+b.name);toggle.onchange=()=>{b.enabled=toggle.checked;redraw()}
     const edit=action('Edit',()=>{this.selected=b.id;this.focusSelected=true;this.detailScroll=0;this.macroOpen=false;this.cursor={start:b.content.length,end:b.content.length};redraw()});edit.classList.add('mochi-block-name');edit.setAttribute('aria-label','Edit block '+b.name)
-    head.append(el('span','mochi-block-drag','⠿'),toggle,el('strong','mochi-block-title',b.name),el('small','mochi-muted',b.role+' · '+b.position+(b.audience==='all'?'':' · '+b.audience)+(b.locked?' · locked':'')))
-    head.append(edit);const overflow=el('details','mochi-block-overflow'),overflowTitle=el('summary','','⋯');overflowTitle.setAttribute('aria-label','More actions for '+b.name);const actions=el('div','mochi-block-row-actions');overflow.append(overflowTitle,actions);head.append(overflow)
+    head.append(Object.assign(mochiIcon('drag','block-drag'),{className:'mochi-icon-slot mochi-block-drag'}),toggle,el('strong','mochi-block-title',b.name),el('small','mochi-muted',b.role+' · '+b.position+(b.audience==='all'?'':' · '+b.audience)+(b.locked?' · locked':'')))
+    head.append(edit);const overflow=el('details','mochi-block-overflow'),overflowTitle=el('summary');overflowTitle.append(mochiIcon('ellipsis','block-more'));overflowTitle.setAttribute('aria-label','More actions for '+b.name);const actions=el('div','mochi-block-row-actions');overflow.append(overflowTitle,actions);head.append(overflow)
     const duplicate=()=>{c.blocks.splice(i+1,0,{...b,id:blockId(),name:(b.name+' copy').slice(0,80),locked:false});redraw()}
     actions.append(action('↑',()=>moveBlock(c,i,-1),i===0||b.locked),action('↓',()=>moveBlock(c,i,1),i===c.blocks.length-1||b.locked),action('Duplicate',duplicate,count>=60),action('Delete',()=>{const confirm=action('Confirm delete '+b.name,()=>{c.blocks.splice(i,1);if(this.selected===b.id)this.selected='';redraw()});actions.lastElementChild!.replaceWith(confirm);confirm.focus()},b.locked))
     actions.children[0].setAttribute('aria-label','Move '+b.name+' up');actions.children[1].setAttribute('aria-label','Move '+b.name+' down')
     row.append(head);category.append(row)
    }
    if(!c.blocks.length)category.append(el('p','mochi-muted','No blocks. Add a template or write your own.'))
-   const picker=el('details','mochi-block-picker');picker.append(el('summary','','+ Add Block'))
+   const picker=el('details','mochi-block-picker');{const addSummary=el('summary','','Add Block');addSummary.setAttribute('aria-label','+ Add Block');addSummary.prepend(mochiIcon('plus','block-add'));picker.append(addSummary)}
    const search=el('input');search.type='search';search.placeholder='Search templates';search.setAttribute('aria-label','Search block templates in '+c.name)
    const select=el('select');select.setAttribute('aria-label','Block template in '+c.name)
    const description=el('p','mochi-muted')

@@ -1,5 +1,7 @@
+import {mochiDisclosureIcon} from './ui/icon-slots.js'
+import {mochiButton as button} from './ui/icon-slots.js'
 import {mochiStyle} from './ui/styles.js'
-import {el,button,requestId} from '../frontend/shared.js'
+import {el,requestId} from '../frontend/shared.js'
 import {DEFAULT_PRESET_ID,DEFAULT_V2_PRESET_ID,builtInPresets,isBuiltInPreset,type PresetBank,type ResolvedPreset,type MochiPreset} from './presets.js'
 import type {MochiRoom} from './types.js'
 import {PromptBlockEditor,PROMPT_BLOCK_STYLES} from './block-editor.js'
@@ -97,7 +99,7 @@ export class MochiPresetPanel {
   if(editingBlock){controls.remove();libraryRemove(root);refresh.remove();root.querySelector('.mochi-preset-edit-pane>h4')?.remove()}
   else{const navigation=el('div','mochi-preset-navigation');navigation.append(controls);const library=root.querySelector('.mochi-preset-library');if(library)navigation.append(library);root.insertBefore(navigation,status)}
   status.hidden=this.status==='Library loaded.'
-  for(const details of root.querySelectorAll<HTMLDetailsElement>('details')){if(details.closest('.mochi-block-editor'))continue;const key=details.querySelector('summary')?.textContent||'';details.classList.add('mochi-disclosure');details.querySelector('summary')?.setAttribute('title',key);details.open=this.disclosures.has(key);details.ontoggle=()=>{if(details.open)this.disclosures.add(key);else this.disclosures.delete(key)}}
+  for(const details of root.querySelectorAll<HTMLDetailsElement>('details')){if(details.closest('.mochi-block-editor'))continue;const key=details.querySelector('summary')?.textContent||'';details.classList.add('mochi-disclosure');mochiDisclosureIcon(details);details.querySelector('summary')?.setAttribute('title',key);details.open=this.disclosures.has(key);details.ontoggle=()=>{if(details.open)this.disclosures.add(key);else this.disclosures.delete(key)}}
   return root
  }
 }

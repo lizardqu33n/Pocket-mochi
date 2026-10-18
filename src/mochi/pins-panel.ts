@@ -1,5 +1,6 @@
+import {mochiButton as button} from './ui/icon-slots.js'
 import {mochiStyle} from './ui/styles.js'
-import { el, button } from '../frontend/shared.js'
+import { el} from '../frontend/shared.js'
 import type {MochiRoom,MochiSystemNote} from './types.js'
 import {referencedMessage,quoteExcerpt} from './replies.js'
 import {MAX_NOTE_BODY} from './pins.js'

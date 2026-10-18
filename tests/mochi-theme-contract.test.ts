@@ -13,7 +13,7 @@ test('every original CSS declaration retains its default, selector, condition an
 test('visual extraction is idempotent and the customization map covers all component sections',()=>{
  expect(migrate(components)).toBe(components)
  const map=JSON.parse(readFileSync(new URL('../src/mochi/ui/theme-inventory.json',import.meta.url),'utf8'))
- expect(new Set(map.rules.map((r:any)=>r.section)).size).toBe(25)
+ expect(new Set(map.rules.map((r:any)=>r.section)).size).toBe(26)
  expect(map.rules.every((r:any)=>r.selector&&r.file&&r.line&&r.declarations.length)).toBe(true)
  expect(map.rules.some((r:any)=>r.conditions.some((c:string)=>c.includes('prefers-reduced-motion')))).toBe(true)
  for(const keyword of ['settings','profile','preset','notification','composer','sheet'])expect(map.rules.some((r:any)=>r.selector.includes(keyword))).toBe(true)

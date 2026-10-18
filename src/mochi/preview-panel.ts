@@ -1,6 +1,8 @@
+import {mochiDisclosureIcon} from './ui/icon-slots.js'
+import {mochiButton as button} from './ui/icon-slots.js'
 import {mochiStyle} from './ui/styles.js'
 import type {BlockDocument} from './prompt-blocks.js'
-import {el,button,requestId} from '../frontend/shared.js'
+import {el,requestId} from '../frontend/shared.js'
 import type {MochiRoom} from './types.js'
 import type {previewContext} from './preview.js'
 type Preview=Awaited<ReturnType<typeof previewContext>>['preview']
@@ -51,7 +53,7 @@ export class MochiPreview {
    for(const assumption of data.assumptions.filter(a=>a.startsWith('Automatic replies are disabled')||a.startsWith('Current presence delays')))root.append(el('p','mochi-preview-warning',assumption))
    const informational=(data.warnings||[]).filter(w=>w==='Chat memory is absent, disabled or requires review; omitted.'&&!data.memory?.enabled)
    for(const warning of (data.warnings||[]).filter(w=>!informational.includes(w)))root.append(el('p','mochi-preview-warning',warning))
-   const disclosure=(label:string,key=label)=>{const details=el('details','mochi-disclosure'),summary=el('summary','',label);summary.title=label;details.open=this.expanded.has(key);details.ontoggle=()=>{if(details.open)this.expanded.add(key);else this.expanded.delete(key)};details.append(summary);return details}
+   const disclosure=(label:string,key=label)=>{const details=el('details','mochi-disclosure'),summary=el('summary','',label);summary.title=label;details.open=this.expanded.has(key);details.ontoggle=()=>{if(details.open)this.expanded.add(key);else this.expanded.delete(key)};details.append(summary);mochiDisclosureIcon(details);return details}
    // Group the actual resolved messages, exactly once. Legacy logical sections can
    // share message indexes, so they remain diagnostic mappings rather than copies.
    const groups:Array<{name:string;messages:Array<{index:number;role:string;content:string;section:string}>}>=[]

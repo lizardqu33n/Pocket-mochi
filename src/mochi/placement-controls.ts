@@ -1,4 +1,5 @@
-import {el,button} from '../frontend/shared.js'
+import {mochiButton as button} from './ui/icon-slots.js'
+import {el} from '../frontend/shared.js'
 import {CONTEXT_MACROS,expandPlacement,type Placement} from './macros.js'
 export interface PlacementDraft {layout:'legacy-v1'|'manual-v1';placement?:Placement}
 export function placementControls(draft:PlacementDraft,redraw:()=>void):HTMLElement {

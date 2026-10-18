@@ -1,5 +1,6 @@
+import {mochiButton as button} from './ui/icon-slots.js'
 import {mochiStyle} from './ui/styles.js'
-import { button, el } from '../frontend/shared.js'
+import { el } from '../frontend/shared.js'
 import type { MochiNotification } from './types.js'
 
 export interface MochiNotificationPolicy { enabled: boolean; previews: boolean; visible: boolean }

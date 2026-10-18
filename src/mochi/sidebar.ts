@@ -1,10 +1,11 @@
+import {mochiButton} from './ui/icon-slots.js'
 import type { SpindleFrontendContext } from 'lumiverse-spindle-types'
 import type { MochiSession } from './session.js'
 import { createMochiWindow, type MochiWindowUI } from './window.js'
 import { createMochiWorkspace, type MochiWorkspace } from './workspace.js'
 import type { MochiNotificationPolicy } from './notifications.js'
 import { MOCHI_SIDEBAR_STYLES } from './sidebar-styles.js'
-import {MOCHI_TOOLBAR_ICONS} from './toolbar-icons.js'
+import {mochiIcon} from './ui/icon-slots.js'
 import {MOCHI_STYLES} from './styles.js'
 import {createMochiMobileSurface} from './mobile-surface.js'
 
@@ -26,7 +27,7 @@ export function createMochiSidebar(ctx: Pick<SpindleFrontendContext,'ui'>, sessi
   let ownedWindow:ReturnType<typeof createMochiWindow>|undefined, offWindow:(()=>void)|undefined
   let mobileSurface:ReturnType<typeof createMochiMobileSurface>|undefined
   const visibility=new Set<(visible:boolean)=>void>()
-  const button=(label:string,click:(node:HTMLButtonElement)=>void)=>{const node=document.createElement('button');node.type='button';node.textContent=label;node.onclick=()=>click(node);return node}
+  const button=(label:string,click:(node:HTMLButtonElement)=>void)=>{const node=mochiButton(label,'');node.onclick=()=>click(node);return node}
   const showPicker=()=>{pickerRequested=true;picker.hidden=false;body.hidden=true;if(workspace?.isOpen&&!ownedWindow?.isOpen)for(const fn of visibility)fn(false);session.prepareNavigation();render()}
   const present=()=>{
     const wasFullscreen=mobileSurface?.isOpen===true
@@ -57,7 +58,7 @@ export function createMochiSidebar(ctx: Pick<SpindleFrontendContext,'ui'>, sessi
   const close=button('Close',anchor=>session.view.confirmGenerationExit(()=>{workspace?.close();mobileSurface?.hide();showPicker()},anchor))
   close.setAttribute('aria-label','Close Mochi messenger');close.hidden=true
   nav.append(accounts,open,close)
-  const glyph=(label:string,icon:string,click:(node:HTMLButtonElement)=>void)=>{const node=button('',click);node.className='mochi-account-icon';node.title=label;node.setAttribute('aria-label',label);node.innerHTML=MOCHI_TOOLBAR_ICONS[icon]||MOCHI_TOOLBAR_ICONS.profile;return node}
+  const glyph=(label:string,icon:string,click:(node:HTMLButtonElement)=>void)=>{const node=button('',click);node.className='mochi-account-icon';node.title=label;node.setAttribute('aria-label',label);node.dataset.mochiAction='account-'+icon;node.append(mochiIcon(icon,'account-'+icon));return node}
   const portrait=(name:string,url:string)=>{const node=document.createElement('span');node.className='mochi-sidebar-avatar';node.textContent=name.slice(0,1);node.setAttribute('aria-hidden','true');if(url){const img=document.createElement('img');img.src=url;img.alt='';node.replaceChildren(img)}return node}
   const edit=(anchor:HTMLElement,create=false,id?:string)=>session.view.editSidebarProfile(anchor,()=>{showPicker();queueMicrotask(()=>picker.querySelector<HTMLElement>(id?'[data-account-id="'+id+'"]':'[aria-label="New account"]')?.focus())},create,id)
   function render():void {
