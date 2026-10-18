@@ -6394,7 +6394,7 @@ class MochiProfiles {
     };
     fill();
     ai.append(search, choices);
-    const independent = button(draft.id ? "Edit saved AI description" : "Independent Mochi Account", "lp-button");
+    const independent = button(draft.id ? "Use independent AI identity" : "Independent Mochi Account", "lp-button");
     independent.onclick = () => {
       draft.persona = "manual";
       draft.linked = false;
