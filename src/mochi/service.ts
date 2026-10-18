@@ -1,3 +1,4 @@
+import {MochiCharacterPreferences} from './character-preferences.js'
 import {groupIcon} from './group-icons.js'
 import {MochiUIPreferences} from './ui-preferences.js'
 import {SummaryError,prepareSummary,requestSummary,summaryInput,summarySources,summaryConfiguration,hashSummaryInput,type SummarySuggestion} from './summarization.js'
@@ -203,6 +204,8 @@ export class MochiService {
       if(ids.some(id=>!room.characterIds.includes(id))||new Set(ids).size!==ids.length) throw new Error('Invalid saved deferred membership; room data was preserved.')
     }
     room.settings = this.settings(room.settings, room.characterIds)
+    room.characterDefaults={}
+    for(const id of room.characterIds)room.characterDefaults[id]=await new MochiCharacterPreferences(this.host,this.fictionalAccounts).read(user,id,false)
     room.receipts ||= []
     if (!Array.isArray(room.receipts) || room.receipts.some(id => typeof id !== 'string')) throw new Error('Invalid saved send receipts.')
     room.notifications ||= []
@@ -220,7 +223,8 @@ export class MochiService {
   }
   private async persist(user: string, room: MochiRoom, signal?: AbortSignal): Promise<void> {
     const path = pathFor(room.id)
-    await this.host.userStorage.setJson(`${path}.pending`, room, { userId: user })
+    const {characterDefaults,...stored}=room
+    await this.host.userStorage.setJson(`${path}.pending`, stored, { userId: user })
     signal?.throwIfAborted()
     await this.host.userStorage.move(`${path}.pending`, path, user)
     if (room.runtime) {
@@ -459,7 +463,9 @@ export class MochiService {
     const connections = this.host.permissions.has('generation') && this.host.connections ? (await this.host.connections.list(user)).map(c => ({ id: c.id, name: c.name || c.model, model: c.model, isDefault: c.is_default === true })) : []
     const jobs: Record<string, string> = {}
     for (const room of rooms) { const job = this.jobs.get(this.jobKey(user, room.id)); if (job && !job.requestId.startsWith('server_')) jobs[room.id] = job.requestId }
-    return { accountId: accountId as string | undefined, backgroundEnabled: await this.backgroundEnabled(user), rooms: rooms.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).map(({ runtime, ...room }) => room), characters: characters.map(c => ({ id: c.id, name: c.name, ...(typeof c.description==='string'?{about:c.description.slice(0,12000)}:{}), avatarUrl: c.image_id ? `/api/v1/images/${c.image_id}` : '' })), personas: choices, warnings, connections, jobs, notifications: rooms.flatMap(r => r.notifications || []).sort((a, b) => b.createdAt.localeCompare(a.createdAt)) }
+    const characterPreferences=new Map<string,any>()
+    for(const c of characters)characterPreferences.set(c.id,await new MochiCharacterPreferences(this.host,this.fictionalAccounts).read(user,c.id))
+    return { accountId: accountId as string | undefined, backgroundEnabled: await this.backgroundEnabled(user), rooms: rooms.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).map(({ runtime, ...room }) => room), characters: characters.map(c => ({ id: c.id, name: c.name, about:characterPreferences.get(c.id)?.about||'',preferences:characterPreferences.get(c.id), avatarUrl: c.image_id ? `/api/v1/images/${c.image_id}` : '' })), personas: choices, warnings, connections, jobs, notifications: rooms.flatMap(r => r.notifications || []).sort((a, b) => b.createdAt.localeCompare(a.createdAt)) }
   }
   async cancel(userId: string, id: string, requestId: string, accountId?: unknown): Promise<void> {
     const user = this.account(userId)
@@ -603,14 +609,14 @@ export class MochiService {
     return rooms
   }
   async configurePresence(userId: string, input: any): Promise<void> {
-    const user = identifier(userId), id = roomId(input.roomId), character = entityId(input.characterId), presence = validatePresence(input.presence)
+    const user = identifier(userId), id = roomId(input.roomId), character = entityId(input.characterId), presence = input.useDefault===true?undefined:validatePresence(input.presence)
     this.abortScoped(user,id,input.accountId)
     await this.locked(user,id,async()=>{
       const room = await this.read(user,id,input.accountId)
       if (!room.characterIds.includes(character)) throw new Error('This character is not in the room.')
       if (room.revision !== input.revision) throw new Error('Refresh before changing presence.')
       room.runtime ||= { version:1,enabled:false,jobs:[] }
-      room.runtime.presence ||= {}; room.runtime.presence[character] = presence
+      room.runtime.presence ||= {}; if(presence)room.runtime.presence[character] = presence;else {if(room.runtime.presence[character]?.transitions.length)throw Error('Clear this conversation status schedule before using character defaults.');delete room.runtime.presence[character]}
       await this.persist(user,room)
     })
   }
@@ -962,7 +968,7 @@ export class MochiService {
         const current=await this.locked(user,id,()=>this.read(user,id,payload.accountId))
         const sources=await resolveGenerationSources(this.host,current,user,payload.responder??'auto',eligibleResponders(current,payload.responder??'auto',this.now()))
         const allowedNow=await this.backgroundEnabled(user),finalRoom=await this.locked(user,id,()=>this.read(user,id,payload.accountId))
-        if(finalRoom.revision!==room.revision||(finalRoom.associationRevision||0)!==(room.associationRevision||0)||sourceSignature(sources)!==sourceSignature(result.sources)||JSON.stringify(finalRoom.runtime?.presence)!==JSON.stringify(room.runtime?.presence)||backgroundAllowed!==allowedNow||Boolean(finalRoom.runtime?.enabled)!==Boolean(room.runtime?.enabled))throw Error('Preview context changed. Refresh the preview.')
+        if(JSON.stringify(finalRoom.characterDefaults)!==JSON.stringify(room.characterDefaults)||finalRoom.revision!==room.revision||(finalRoom.associationRevision||0)!==(room.associationRevision||0)||sourceSignature(sources)!==sourceSignature(result.sources)||JSON.stringify(finalRoom.runtime?.presence)!==JSON.stringify(room.runtime?.presence)||backgroundAllowed!==allowedNow||Boolean(finalRoom.runtime?.enabled)!==Boolean(room.runtime?.enabled))throw Error('Preview context changed. Refresh the preview.')
         this.host.sendToFrontend({type:'mochi:preview',requestId:payload.requestId,roomId:id,accountId:room.accountId,revision:room.revision,associationRevision:room.associationRevision||0,preview:result.preview},user)
         return
       }
@@ -1000,11 +1006,16 @@ export class MochiService {
         this.host.sendToFrontend({ type: 'mochi:accounts', requestId: payload.requestId, createdAccountId, uploadedAvatarId, state: await this.accountsState(userId,payload.phone) }, userId)
         return
       }
+      if(payload.type==='mochi:character_preferences'){
+        if(payload.accountId!==undefined)await this.fictionalAccounts.get(userId,payload.accountId)
+        await new MochiCharacterPreferences(this.host,this.fictionalAccounts).save(userId,payload,()=>{if([...this.jobs.keys(),...this.pending.keys()].some(k=>JSON.parse(k)[0]===userId))throw Error('Wait for active replies before editing character defaults.')})
+      }
       if(payload.type==='mochi:ui_preferences'){
         const preferences=new MochiUIPreferences(this.host,this.fictionalAccounts)
-        if(!['get','save'].includes(payload.action))throw Error('Unsupported presentation action.')
-        const record=payload.action==='save'?await preferences.save(userId,payload):await preferences.read(userId,payload.accountId)
-        this.host.sendToFrontend({type:'mochi:ui_preferences',requestId:payload.requestId,record},userId);return
+        if(!['get','save','shared_get','shared_save'].includes(payload.action))throw Error('Unsupported presentation action.')
+        const record=payload.action==='shared_save'?await preferences.saveShared(userId,payload):payload.action==='shared_get'?await preferences.shared(userId):payload.action==='save'?await preferences.save(userId,payload):await preferences.read(userId,payload.accountId)
+        const layouts=payload.action.startsWith('shared_')&&!record.revision?await preferences.layouts(userId):[]
+        this.host.sendToFrontend({type:'mochi:ui_preferences',requestId:payload.requestId,record,layouts},userId);return
       }
       if (payload.type === 'mochi:choices') {
         const state=await this.state(userId,payload.accountId)
@@ -1028,9 +1039,10 @@ export class MochiService {
       else if (payload.type==='mochi:reaction')await this.react(userId,payload)
       else if (payload.type==='mochi:pinned_content')await this.pinnedContent(userId,payload)
       else if (payload.type==='mochi:preset_bind')await this.bindPreset(userId,payload)
-      else if (payload.type !== 'mochi:list' && payload.type !== 'mochi:message_action' && payload.type !== 'mochi:notification_clear' && payload.type !== 'mochi:room_assign') throw new Error('Unsupported Mochi action.')
+      else if (payload.type !== 'mochi:character_preferences' && payload.type !== 'mochi:list' && payload.type !== 'mochi:message_action' && payload.type !== 'mochi:notification_clear' && payload.type !== 'mochi:room_assign') throw new Error('Unsupported Mochi action.')
       this.host.sendToFrontend({ type: 'mochi:state', requestId: payload.requestId, selectedRoomId, state: await this.state(userId, payload.accountId) }, userId)
     } catch (error) {
+      if(payload.type==='mochi:character_preferences'){this.host.sendToFrontend({type:'mochi:error',requestId:payload.requestId,message:'Character preferences could not be saved. Wait for replies to finish, refresh and review before retrying.'},userId);return}
       if(payload.type==='mochi:ui_preferences'){this.host.sendToFrontend({type:'mochi:error',requestId:payload.requestId,message:'Messenger presentation could not be loaded or saved. Refresh and review before retrying.'},userId);return}
       if (payload.type === 'mochi:send' || payload.type === 'mochi:regenerate') {
         let scope: { roomId?: string; accountId?: string; roomRevision?: number } = {}

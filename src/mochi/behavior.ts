@@ -13,7 +13,7 @@ export function parseBehavior(value: unknown): Behavior {
 export function applyDeliveredStatus(room: MochiRoom, characterId: string, status: PresenceStatus | undefined, now: number): void {
   if (!status || !room.characterIds.includes(characterId)) return
   room.runtime ||= {version:1,enabled:false,jobs:[]};room.runtime.presence ||= {}
-  const p = room.runtime.presence[characterId] || defaultPresence()
+  const p = room.runtime.presence[characterId] || structuredClone(room.characterDefaults?.[characterId]?.availability || defaultPresence())
   if (p.manual !== null) return
   // AI suggestion applies after delivery; future user-configured transitions still take precedence later.
   p.automatic = status; p.transitions = p.transitions.filter(t=>t.at > now)

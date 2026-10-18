@@ -6,7 +6,7 @@ export interface MochiPersona {
   description: string
   avatarUrl: string
 }
-export interface MochiCharacter { id: string; name: string; avatarUrl: string; about?: string }
+export interface MochiCharacter { id: string; name: string; avatarUrl: string; about?: string;preferences?:import('./character-preferences.js').CharacterPreferences }
 export interface MochiReaction {emoji:string;actor:'user'|'character';actorId:string;name:string}
 export interface MochiSystemNote {id:string;title:string;body:string;enabled:boolean}
 export interface MochiMessage {
@@ -28,6 +28,9 @@ export interface MochiSettings {
 }
 export const defaultMochiSettings = (): MochiSettings => ({ autoReply: true, connectionId: '', contextTokens: 8192, outputTokens: 1200, instructions: '', characterNames: {} })
 export interface MochiRoom {
+  /** Resolved read-only metadata; excluded from durable room writes. */
+  characterDefaults?:Record<string,import('./character-preferences.js').CharacterPreferences>
+
   memory?: import('./memory.js').ConversationMemory
   preset?: import('./presets.js').PresetBinding
   version: 1

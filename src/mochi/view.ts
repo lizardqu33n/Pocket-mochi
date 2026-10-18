@@ -1,3 +1,4 @@
+import {CharacterEditor} from './character-editor.js'
 import {GROUP_ICONS,chatIdentity,chatPortrait} from './chat-identity.js'
 import {MOCHI_TOOLBAR_ICONS} from './toolbar-icons.js'
 import {PersonalSettings} from './personal-settings.js'
@@ -110,7 +111,7 @@ export class MochiView {
     this.exitPortal(()=>{this.sidebarProfile=true;this.profileReturn=complete;this.profiles.draft=null;this.redraw()},anchor,true)
   }
   renderSidebarProfile():HTMLElement {
-    const root=el('section','mochi-view');const style=el('style');style.textContent=MOCHI_STYLES;root.append(style)
+    const root=el('section','mochi-view');this.applyPresentation(root);const style=el('style');style.textContent=MOCHI_STYLES;root.append(style)
     if(this.error){const error=el('p','mochi-error',this.error);error.setAttribute('role','alert');root.append(error)}
     const finish=()=>{this.sidebarProfile=false;this.profiles.draft=null;const done=this.profileReturn;this.profileReturn=undefined;this.redraw();done?.()}
     root.append(this.profiles.render(this.busy,(type,input)=>this.dispatch(type,input),()=>{if(!this.profiles.draft)finish();else this.redraw()},finish,(next,anchor)=>this.confirmNavigation(next,anchor),()=>this.refreshChoices()))
@@ -164,7 +165,7 @@ export class MochiView {
     this.leave();this.resetScope();this.phone=phone;this.pickerOpen=true;this.startupOpen=true;this.profilesOpen=false;this.profiles.state=null;this.dispatch('mochi:accounts')
   }
   private resetScope():void{
-    this.settingsPage='';this.settingsLayout.reset();this.personalSettings.reset();this.personalScroll=0
+    this.settingsPage='';this.settingsLayout.reset();this.personalSettings.reset();this.characterEditor.discard();this.personalScroll=0
     this.desktopDetails=undefined;this.mobileProfileOpen=false;this.profilePreferenceOwner='';this.conversationFilter='';this.conversationView='all'
     this.memoryPanel.reset()
     this.presetPanel.reset()
@@ -245,6 +246,7 @@ export class MochiView {
   }
   private settingsPage:''|'chat'|'personal'=''
   private settingsLayout=new ChatSettingsLayout()
+  private characterEditor=new CharacterEditor()
   private personalSettings=new PersonalSettings(p=>this.send(p),()=>this.state?.accountId,()=>this.profiles.state?.ownerId,()=>this.redraw())
   private settingsReturnFocus=false
   private personalScroll=0
@@ -264,7 +266,7 @@ export class MochiView {
     private notify: (n: MochiNotification) => void = () => {},
     private notificationsChanged: (notices: MochiNotification[], rooms: Set<string>) => void = () => {}) {}
   hasUnsavedChanges(): boolean {
-    if(this.personalSettings.dirty)return true
+    if(this.personalSettings.dirty||this.characterEditor.dirty)return true
     if(this.sidebarProfile)return this.profiles.hasUnsavedChanges()
     if (this.profilesOpen) return this.profiles.hasUnsavedChanges()
     return !!(this.creating || this.editing) && !!this.draft && JSON.stringify([this.draft,this.settingsDraft]) !== this.formBaseline
@@ -296,13 +298,14 @@ export class MochiView {
     discard.onclick=()=>{sheet?.dismiss();next()}
   }
   exitPortal(next: () => void, anchor: HTMLElement,stopsGeneration=false): void {
-    this.confirmNavigation(()=>{this.creating=false;this.editing=false;this.draft=null;this.settingsDraft=null;this.profiles.draft=null;this.profilesOpen=false;this.sidebarProfile=false;this.profileReturn=undefined;this.personalSettings.discard();next()},anchor,stopsGeneration)
+    this.confirmNavigation(()=>{this.creating=false;this.editing=false;this.draft=null;this.settingsDraft=null;this.profiles.draft=null;this.profilesOpen=false;this.sidebarProfile=false;this.profileReturn=undefined;this.personalSettings.discard();this.characterEditor.discard();next()},anchor,stopsGeneration)
   }
   back(exit: () => void, anchor: HTMLElement): void {
     if (this.busy&&!this.ownGenerations.has(this.roomId)) return
+    if(this.settingsPage&&this.settingsCategoryBack()){this.redraw();return}
     const next=()=>{
       if(this.sidebarProfile){if(this.profiles.syncOpen){this.profiles.backSync()}else{this.sidebarProfile=false;this.profiles.draft=null;const done=this.profileReturn;this.profileReturn=undefined;done?.()}}
-      else if(this.settingsPage){this.settingsPage='';this.editing=false;this.draft=null;this.settingsDraft=null;this.personalSettings.discard()}
+      else if(this.settingsPage){this.settingsPage='';this.editing=false;this.draft=null;this.settingsDraft=null;this.personalSettings.discard();this.characterEditor.discard()}
       else if(this.profilesOpen){if(this.profiles.draft)this.profiles.draft=null;else this.profilesOpen=false}
       else if(this.creating||this.editing){this.creating=false;this.editing=false;this.draft=null;this.settingsDraft=null}
       else if(this.notificationsOpen)this.notificationsOpen=false
@@ -593,6 +596,7 @@ export class MochiView {
       const logout=action('Log out of fictional account','logout',true);logout.onclick=()=>{if(this.accountNavigation?.logout)this.accountNavigation.logout(logout);else this.logoutNavigationAccount(logout,()=>this.redraw())}
       dock.append(portrait(account.displayName,account.avatarUrl),copy,settings,logout);sidebar.append(dock)
     }
+    this.applyPresentation(page)
     const main=el('section','mochi-desktop-main');main.setAttribute('aria-label','Conversation and settings')
     const back=el('div','mochi-desktop-back'),backButton=button('← Conversations');backButton.setAttribute('aria-label','Back to conversations')
     back.hidden=this.pickerOpen||!this.state
@@ -608,7 +612,7 @@ export class MochiView {
       const setDetails=(open:boolean)=>{if(page.getBoundingClientRect().width>=1000){this.desktopDetails=open;page.dataset.desktopDetails=open?'open':'closed';if(this.profilePreferenceOwner)try{window.sessionStorage.setItem('mochi:profile-panel:'+this.profilePreferenceOwner,open?'open':'closed')}catch{}}else{this.mobileProfileOpen=open;page.dataset.details=String(open)}toggle?.setAttribute('aria-expanded',String(open));if(open)page.querySelector<HTMLButtonElement>('[aria-label="Close character profile"]')?.focus();else toggle?.focus({preventScroll:true})}
       if(toggle){toggle.setAttribute('aria-controls',`mochi-room-details-${selected.id}`);toggle.setAttribute('aria-expanded',String(isOpen()));toggle.onclick=()=>setDetails(true);globalThis.requestAnimationFrame?.(()=>{if(toggle.isConnected)toggle.setAttribute('aria-expanded',String(isOpen()))})}
       if(typeof ResizeObserver==='function'){this.profileResize=new ResizeObserver(()=>toggle?.setAttribute('aria-expanded',String(isOpen())));this.profileResize.observe(page)}
-      page.append(roomDetails(selected,this.state!.characters,()=>setDetails(false),()=>{setDetails(false);main.querySelector<HTMLButtonElement>('[aria-label="Settings"]')?.click()}))
+      page.append(roomDetails(selected,this.state!.characters,()=>setDetails(false),()=>{setDetails(false);main.querySelector<HTMLButtonElement>('[aria-label="Settings"]')?.click()},character=>this.characterEditor.render(character,p=>this.dispatch('mochi:character_preferences',p),()=>this.redraw(),'about')))
     }
     return page
   }
@@ -624,7 +628,7 @@ export class MochiView {
   render(surface: 'all' | 'choices' | 'chat' | 'desktop' = 'all', configure: () => void = () => {}): HTMLDivElement {
     if (this.destroyed) return el('div', 'mochi-view')
     // Refresh only status attributes/text between renders, preserving composer focus and drafts.
-    const page = el('div', 'mochi-view')
+    const page = el('div', 'mochi-view');this.applyPresentation(page)
     page.dataset.surface = surface
     if (surface !== 'choices') this.presenceRoot=page
     if(this.settingsReturnFocus){this.settingsReturnFocus=false;queueMicrotask(()=>{const target=Array.from(page.querySelectorAll<HTMLElement>('[aria-label]')).find(n=>n.getAttribute('aria-label')===this.settingsInvoker&&!n.closest('[hidden]'));(target||page.querySelector<HTMLElement>('[aria-label="Room options"]'))?.focus({preventScroll:true})})}
@@ -752,26 +756,32 @@ export class MochiView {
   }
   private openSettings(page:'chat'|'personal',anchor:HTMLElement):void {
     if(!this.settingsPage)this.settingsInvoker=anchor.getAttribute('aria-label')||'Room options'
-    const open=()=>{if(!this.settingsPage){this.preview.reset();this.search.reset();this.presetPanel.reset();this.memoryPanel.reset();this.settingsLayout.reset();this.draft=null;this.settingsDraft=null}this.settingsPage=page;this.editing=Boolean(this.roomId);this.creating=false;this.personalSettings.load();this.refreshChoices();this.redraw()}
+    const open=()=>{if(!this.settingsPage){this.preview.reset();this.search.reset();this.presetPanel.reset();this.memoryPanel.reset();this.settingsLayout.enter();this.draft=null;this.settingsDraft=null}this.settingsPage=page;this.editing=Boolean(this.roomId);this.creating=false;this.personalSettings.load();this.refreshChoices();this.redraw()}
     if(this.settingsPage)open();else this.confirmGenerationExit(open,anchor,true)
+  }
+  private settingsCategoryBack():boolean{
+    const width=this.presenceRoot?.getBoundingClientRect().width||window.innerWidth
+    return width<=650&&(this.settingsPage==='chat'?this.settingsLayout.back():this.personalSettings.back())
+  }
+  applyPresentation(root:HTMLElement):void{
+    const p=this.personalSettings.scales
+    root.style.setProperty('--mochi-saved-interface-scale',String((p.interfaceScale||100)/100))
+    root.style.setProperty('--mochi-saved-message-scale',String((p.messageScale||100)/100))
+    root.dataset.density=p.dock
   }
   private renderSettings(room?:MochiRoom):HTMLElement {
     const root=el('section','mochi-settings-workspace');root.setAttribute('aria-label','Mochi Settings')
     const head=el('div','mochi-settings-heading'),close=button(room?'Return to conversation':'Return to conversations');head.append(el('h3','','Mochi Settings'),close)
-    close.onclick=()=>this.confirmNavigation(()=>{this.settingsPage='';this.editing=false;this.draft=null;this.settingsDraft=null;this.personalSettings.discard();this.settingsReturnFocus=true;this.redraw()},close)
+    close.onclick=()=>this.confirmNavigation(()=>{this.settingsPage='';this.editing=false;this.draft=null;this.settingsDraft=null;this.personalSettings.discard();this.characterEditor.discard();this.settingsReturnFocus=true;this.redraw()},close)
     const tabs=el('nav','mochi-settings-tabs');tabs.setAttribute('aria-label','Settings workspace')
     for(const [key,label]of [['chat','Chat'],['personal','Personal']] as const){const tab=button(label);tab.setAttribute('aria-pressed',String(this.settingsPage===key));tab.disabled=key==='chat'&&!room;tab.onclick=()=>{this.settingsPage=key;this.personalSettings.load();this.redraw()};tabs.append(tab)}
-    root.append(head,tabs,el('p','mochi-muted',this.settingsPage==='chat'?'This conversation · Save settings applies staged edits and may stop pending replies. Actions marked “applies now” are immediate.':'This fictional profile · Profile edits and presentation each have their own explicit Save. Your Lumiverse login stays unchanged.'))
+    root.append(head,tabs,el('p','mochi-muted',this.settingsPage==='chat'?'This conversation · Save settings applies staged edits and may stop pending replies. Actions marked “applies now” are immediate.':'Presentation shared across your Mochi accounts.'))
     if(this.error){const error=el('p','mochi-error',this.error);error.setAttribute('role','alert');root.append(error)}
     if(this.settingsPage==='chat'&&room)root.append(this.form(room))
     else{
-      const body=el('div','mochi-personal-scroll'),account=this.profiles.state?.accounts.find(a=>a.id===this.state?.accountId)
-      const savedScroll=this.personalScroll;body.onscroll=()=>{this.personalScroll=body.scrollTop};queueMicrotask(()=>{if(body.isConnected)body.scrollTop=savedScroll})
-      body.append(el('h4','',account?.displayName||'Legacy conversation identity'),el('p','mochi-muted','Fictional profile · Persona, avatar, username and native add-on selections are managed in the existing profile editor. Native Lumiverse theme and real-login preferences stay in Lumiverse.'))
-      const manage=button('Manage fictional profile & persona add-ons');manage.onclick=()=>{if(this.accountNavigation)this.accountNavigation.settings(manage);else this.exitPortal(()=>{this.profilesOpen=true;this.profiles.start(account);this.dispatch('mochi:accounts')},manage)}
-      const choose=button('Switch fictional profile');choose.onclick=()=>{if(this.accountNavigation)this.accountNavigation.picker();else this.showPicker()};const presentation=this.personalSettings.render(),actions=presentation.querySelector('.mochi-presentation-actions');body.append(manage,choose,presentation);root.append(body);if(actions)root.append(actions)
+      root.append(this.personalSettings.render())
     }
-    root.addEventListener('keydown',event=>{if(event.key==='Escape'&&!root.querySelector('dialog[open]')){event.stopPropagation();close.click()}})
+    root.addEventListener('keydown',event=>{if(event.key==='Escape'&&!root.querySelector('dialog[open]')){event.stopPropagation();if(this.settingsCategoryBack())this.redraw();else close.click()}})
     return root
   }
   private restoreToolFocus():void{if(!this.settingsPage){this.presenceRoot?.querySelector<HTMLElement>('[aria-label="Room options"]')?.focus();return}queueMicrotask(()=>{const root=this.presenceRoot;if(this.settingsPage&&this.toolFocus)Array.from(root?.querySelectorAll<HTMLButtonElement>('button')||[]).find(b=>b.textContent===this.toolFocus)?.focus({preventScroll:true});else root?.querySelector<HTMLElement>('[aria-label="Room options"]')?.focus()})}
@@ -801,16 +811,19 @@ export class MochiView {
     title.oninput = () => { draft.title = title.value }; field('Chat name', title)
     if(!room){const preset=el('select');for(const [id,name]of [[DEFAULT_V2_PRESET_ID,'Mochi Default v2'],[DEFAULT_PRESET_ID,'Mochi Default (legacy)']]){const option=el('option','',name);option.value=id;preset.append(option)}preset.value=draft.presetId||DEFAULT_V2_PRESET_ID;preset.onchange=()=>{draft.presetId=preset.value};field('Initial preset',preset)}
     const picker = el('div', 'mochi-picker'); picker.setAttribute('role', 'group'); picker.setAttribute('aria-label', 'Chat characters')
+    let updateGroupIcon=()=>{}
+    const selected=el('div','mochi-participant-chips'),choose=el('details','mochi-character-picker'),summary=el('summary','','Choose participants'),search=el('input');search.type='search';search.placeholder='Search characters';search.setAttribute('aria-label','Search chat characters');choose.append(summary,search,picker)
+    const refreshChips=()=>{selected.replaceChildren();for(const id of draft.characterIds){const c=state.characters.find(c=>c.id===id),chip=button((c?.name||'Unavailable character')+' ×','mochi-participant-chip');chip.setAttribute('aria-label','Remove participant '+(c?.name||id));chip.onclick=()=>{draft.characterIds=draft.characterIds.filter(x=>x!==id);refreshChips();for(const b of picker.querySelectorAll<HTMLElement>('[data-character-id]'))b.setAttribute('aria-pressed',String(draft.characterIds.includes(b.dataset.characterId!)))};selected.append(chip)}updateGroupIcon()}
     for (const character of state.characters) {
       const choice = button('', 'mochi-choice')
-      choice.append(portrait(character.name, character.avatarUrl))
+      choice.dataset.characterId=character.id;choice.append(portrait(character.name, character.avatarUrl))
       choice.append(el('span', '', character.name)); choice.setAttribute('aria-pressed', String(draft.characterIds.includes(character.id)))
-      choice.onclick = () => { draft.characterIds = draft.characterIds.includes(character.id) ? draft.characterIds.filter(id => id !== character.id) : [...draft.characterIds, character.id]; choice.setAttribute('aria-pressed', String(draft.characterIds.includes(character.id))) }
+      choice.onclick = () => { draft.characterIds = draft.characterIds.includes(character.id) ? draft.characterIds.filter(id => id !== character.id) : [...draft.characterIds, character.id]; choice.setAttribute('aria-pressed', String(draft.characterIds.includes(character.id)));refreshChips() }
       picker.append(choice)
     }
-    group.append(el('p', 'mochi-muted', 'Choose 1–12 characters'), picker)
+    refreshChips();search.oninput=()=>{for(const b of picker.querySelectorAll<HTMLElement>('.mochi-choice'))b.hidden=!b.textContent?.toLocaleLowerCase().includes(search.value.toLocaleLowerCase())};group.append(el('p', 'mochi-muted', 'Choose 1–12 characters'),selected,choose)
     const groupIconField=el('select');for(const value of ['',...GROUP_ICONS]){const option=el('option','',value||'Automatic member portraits');option.value=value;groupIconField.append(option)}groupIconField.value=draft.groupIcon||'';groupIconField.onchange=()=>{draft.groupIcon=groupIconField.value};field('Group icon',groupIconField)
-    const groupIconLabel=groupIconField.closest('label')!;groupIconLabel.hidden=draft.characterIds.length<2
+    const groupIconLabel=groupIconField.closest('label')!;updateGroupIcon=()=>{groupIconLabel.hidden=draft.characterIds.length<2};updateGroupIcon()
     picker.addEventListener('click',()=>{groupIconLabel.hidden=draft.characterIds.length<2})
 
     const persona = el('select')
@@ -870,7 +883,7 @@ export class MochiView {
       for (const id of room.characterIds) {
         const characterSection=section((state.characters.find(c=>c.id===id)?.name||id)+' · presence & room name',true);characterSection.dataset.characterId=id
         group.append(el('p','mochi-muted','Presence and schedule changes apply immediately.'))
-        const presence = structuredClone(room.background?.presence?.[id] || defaultPresence()), baseName=state.characters.find(c=>c.id===id)?.name||id,name=baseName+(room.characterIds.filter(cid=>state.characters.find(c=>c.id===cid)?.name===baseName).length>1?' · character '+(room.characterIds.indexOf(id)+1):'')
+        const presence = structuredClone(room.background?.presence?.[id] || room.characterDefaults?.[id]?.availability || defaultPresence()), baseName=state.characters.find(c=>c.id===id)?.name||id,name=baseName+(room.characterIds.filter(cid=>state.characters.find(c=>c.id===cid)?.name===baseName).length>1?' · character '+(room.characterIds.indexOf(id)+1):'')
         const setPresence = () => this.dispatch('mochi:presence',{roomId:room.id,revision:room.revision,characterId:id,presence})
         const status = el('select'); for (const s of STATUSES) { const option=el('option','',s==='dnd'?'DND':s[0].toUpperCase()+s.slice(1));option.value=s;status.append(option) }
         status.value=statusFor(room,id);status.disabled=this.busy;status.onchange=()=>{presence.manual=status.value as typeof presence.manual;setPresence()};field(`Status for ${name}`,status)
@@ -881,19 +894,19 @@ export class MochiView {
         const plan=action(`Schedule status change for ${name}`,'plus');plan.type='button';plan.disabled=this.busy;plan.onclick=()=>{presence.transitions.push({at:new Date(when.value).getTime(),status:next.value as typeof presence.automatic});setPresence()};group.append(plan)
         if(presence.transitions.length){const clear=action(`Clear status schedule for ${name}`,'trash');clear.type='button';clear.disabled=this.busy;clear.onclick=()=>{presence.transitions=[];setPresence()};group.append(clear)}
         const input = el('input'); input.maxLength = 120; input.value = settings.characterNames[id] || ''; input.oninput = () => { settings.characterNames[id] = input.value }; field(`Display name for ${name}`, input)
-        group.append(textingControls(settings,id,name))
+        const inherited=!settings.textingStyles?.[id];const chatTexting=el('div','mochi-texting-chat');chatTexting.append(el('small','mochi-muted',inherited?'Inherited character texting defaults':'Explicit chat texting override'));const useDefaults=button('Use character texting defaults');useDefaults.onclick=()=>{if(settings.textingStyles)delete settings.textingStyles[id];this.redraw()};chatTexting.append(useDefaults,textingControls(settings,id,name));group.append(chatTexting);const presenceDefaults=button('Use character availability defaults (applies now)');presenceDefaults.disabled=this.busy;presenceDefaults.onclick=()=>this.dispatch('mochi:presence',{roomId:room.id,revision:room.revision,characterId:id,useDefault:true});group.append(el('small','mochi-muted',room.background?.presence?.[id]?'Explicit chat availability override':'Inherited character availability defaults'),presenceDefaults)
       }
     }
     if(room){section('Chat ownership',true);group.append(this.assignmentControls(room))}
     const save = action(this.busy ? 'Saving…' : room ? 'Save settings' : 'Create chat', room ? 'settings' : 'plus'); save.classList.add('mochi-primary'); save.type = 'submit'; save.disabled = this.busy
-    const cancel = action('Cancel', 'back'); cancel.disabled = this.busy; cancel.onclick = () => this.confirmNavigation(() => { this.creating = false; this.editing = false; this.draft = null; this.settingsDraft = null;this.settingsPage='';this.personalSettings.discard();this.settingsReturnFocus=true; this.redraw() },cancel)
+    const cancel = action('Cancel', 'back'); cancel.disabled = this.busy; cancel.onclick = () => this.confirmNavigation(() => { this.creating = false; this.editing = false; this.draft = null; this.settingsDraft = null;this.settingsPage='';this.personalSettings.discard();this.characterEditor.discard();this.settingsReturnFocus=true; this.redraw() },cancel)
     const actions = el('div', 'mochi-actions'); actions.append(save, cancel); form.append(actions)
     form.onsubmit = event => {
       event.preventDefault()
       const selected = state.accountId ? undefined : draft.persona === 'keep' ? undefined : draft.persona === 'manual' ? { source: 'manual', name: draft.name, description: draft.description } : state.personas.find(p=>p.source+':'+p.sourceId===draft.persona)
       this.dispatch(room ? 'mochi:update' : 'mochi:create', { roomId: room?.id, revision: room ? this.draftRevision : undefined, title: draft.title, groupIcon:draft.characterIds.length>1?draft.groupIcon||'':'', characterIds: draft.characterIds, persona: selected, ...(room ? { settings } : {preset:{id:draft.presetId,revision:1,...(state.accountId?{accountId:state.accountId}:{})}}) })
     }
-    return room&&this.settingsPage==='chat'?this.settingsLayout.adapt(form,room,state,()=>this.redraw(),(name,anchor)=>this.openSettingsTool(name,anchor,room)):form
+    return room&&this.settingsPage==='chat'?this.settingsLayout.adapt(form,room,state,()=>this.redraw(),(name,anchor)=>this.openSettingsTool(name,anchor,room),(id,mode)=>{const character=state.characters.find(c=>c.id===id);return character?this.characterEditor.render(character,p=>this.dispatch('mochi:character_preferences',p),()=>this.redraw(),mode):el('p','','Character unavailable')}):form
   }
   private scheduleList(room: MochiRoom): HTMLElement {
     const list = el('section'); list.setAttribute('aria-label', 'Scheduled opportunities'); list.setAttribute('aria-live', 'polite')
@@ -985,7 +998,7 @@ export class MochiView {
   private sheet(anchor: HTMLElement, title: string, content: HTMLElement): ReturnType<typeof showPocketSheet> {
     // Keep confirmations alive when metadata refresh replaces the inner view.
     const sheet = showPocketSheet(anchor, title, content, anchor.closest<HTMLElement>('.mochi-sidebar') || anchor.closest<HTMLElement>('.mochi-workspace') || this.presenceRoot?.closest<HTMLElement>('.mochi-workspace') || anchor.closest<HTMLElement>('.lumiphone-shell') || this.presenceRoot?.closest<HTMLElement>('.mochi-desktop') || this.presenceRoot || undefined)
-    if (sheet) { this.sheets.add(sheet.dismiss); content.closest('dialog')?.classList.add('mochi-sheet'); content.closest('dialog')?.addEventListener('close', () => {this.sheets.delete(sheet.dismiss);if(!anchor.isConnected)Array.from(this.presenceRoot?.querySelectorAll<HTMLButtonElement>('button')||[]).find(b=>anchor.getAttribute('aria-label')?b.getAttribute('aria-label')===anchor.getAttribute('aria-label'):b.textContent===anchor.textContent)?.focus({preventScroll:true})}, { once: true }) }
+    if (sheet) { const dialog=content.closest('dialog');if(dialog)this.applyPresentation(dialog);this.sheets.add(sheet.dismiss); content.closest('dialog')?.classList.add('mochi-sheet'); content.closest('dialog')?.addEventListener('close', () => {this.sheets.delete(sheet.dismiss);if(!anchor.isConnected)Array.from(this.presenceRoot?.querySelectorAll<HTMLButtonElement>('button')||[]).find(b=>anchor.getAttribute('aria-label')?b.getAttribute('aria-label')===anchor.getAttribute('aria-label'):b.textContent===anchor.textContent)?.focus({preventScroll:true})}, { once: true }) }
     return sheet
   }
   private openPins(anchor:HTMLElement,room:MochiRoom):void {

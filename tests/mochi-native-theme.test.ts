@@ -15,11 +15,11 @@ function fixture(){
  render()
  return {profiles,sent,dom,content,cleanup:()=>{dom.window.close();Object.assign(globalThis,previous)}}
 }
-test('Mochi semantic aliases prioritize verified native roles without fixed accent blending',()=>{
+test('Mochi structural aliases inherit native roles with independently editable brand accent',()=>{
  expect(tokens).toContain('--mochi-drawer-bg: var(--lumiverse-bg-deep,')
  expect(tokens).toContain('--mochi-input-bg: var(--lumiverse-bg,')
- expect(tokens).toContain('--mochi-on-accent: var(--lumiverse-bg-deep,')
- expect(tokens).toContain('--mochi-accent:var(--lumiverse-primary,')
+ expect(tokens).toContain('--mochi-on-accent: var(--mochi-brand-contrast,')
+ expect(tokens).toContain('--mochi-accent:var(--mochi-brand-accent)')
  expect(tokens).not.toContain('35%,#b7a0e8')
 })
 test('compact add-on rows group native/global definitions and keep full text collapsed without changing persistence',()=>{

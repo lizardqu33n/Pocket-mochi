@@ -1,3 +1,4 @@
+import {DEFAULT_PRESET_ID} from '../src/mochi/presets.js'
 import {test,expect} from 'bun:test'
 import {JSDOM} from 'jsdom'
 import {MochiService,type MochiHost} from '../src/mochi/service.js'
@@ -13,7 +14,7 @@ function fixture(){
  const service=new MochiService(host)
  const create=async(fictional=false)=>{
   const accountId=fictional?(await service.fictionalAccounts.create('alice',{displayName:'Synthetic profile',username:'',persona:{source:'manual',name:'Synthetic',description:''}})).id:undefined
-  const input={accountId,title:'Synthetic',characterIds:['alice_character'],persona:fictional?undefined:{source:'manual',name:'Me',description:''}}
+  const input={preset:{id:DEFAULT_PRESET_ID,revision:1,accountId},accountId,title:'Synthetic',characterIds:['alice_character'],persona:fictional?undefined:{source:'manual',name:'Me',description:''}}
   let room=await service.create('alice',input);room=await service.update('alice',{...input,roomId:room.id,revision:room.revision,settings:{...defaultMochiSettings(),autoReply:false,responseMode:'manual',connectionId:'alice_connection'}})
   await service.message('alice',{accountId,roomId:room.id,revision:room.revision,requestId:'seed',content:'Original message'})
   return{room:await service.read('alice',room.id,accountId),accountId,input}

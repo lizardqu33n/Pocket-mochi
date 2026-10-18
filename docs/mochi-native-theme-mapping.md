@@ -43,3 +43,25 @@ The comparison fixture namespaces unchanged installed Personas/Form/Add-On CSS;
 it does not claim to mount the complete native React panel or the live host.
 
 The native outer navigation rail has its own 6% accent/deep-surface mix. Mochi does not restyle that host-owned rail. Its conversation-list column uses the native main/secondary background role; its account editor uses the actual deep drawer backdrop.
+
+## Part 2B refinement (supersedes the accent rows above)
+
+Structural backgrounds, elevation, inputs, text, borders and native warning,
+success and danger roles remain inherited from Lumiverse. Mochi now has a
+separate editable brand accent, defined by scoped HSL tokens (263 / 55% / 60%).
+`--mochi-accent` points to `--mochi-brand-accent`; it no longer adopts a custom
+host's primary color. Selected accounts/conversations, checked actions, focused
+controls and primary actions use this accent. Native host controls are unchanged.
+Selected category navigation also uses a checkmark and thicker leading border.
+
+Essential settings input boundaries use `--mochi-input-border`, blending 55%
+native text into the inherited input surface. Fields, navigation, elevated
+previews and action footers use different surface/radius roles. Brand foreground
+uses CSS contrast-color when supported, with black as the default-accent fallback.
+Custom accent authors should supply a matching brand-contrast fallback as needed.
+
+Shared saved text scales write only backing variables. Public interface/message
+scale aliases and other CSS variables remain overridable with scoped, doubled
+class selectors. See the UI README for the full precedence and examples.
+The four tested palettes include a synthetic muted-brown approximation based on
+the owner's screenshot; it is not the owner's saved theme configuration.

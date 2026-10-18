@@ -3,6 +3,19 @@
 .mochi-sheet,
 .mochi-sidebar,
 .mochi-workspace {
+  /* Saved preferences set only backing variables; Custom CSS may override these public aliases. */
+  --mochi-interface-scale: var(--mochi-saved-interface-scale,1);
+  --mochi-message-scale: var(--mochi-saved-message-scale,1);
+  --mochi-brand-hue: 263;
+  --mochi-brand-saturation: 55%;
+  --mochi-brand-lightness: 60%;
+  --mochi-brand-accent: hsl(var(--mochi-brand-hue) var(--mochi-brand-saturation) var(--mochi-brand-lightness));
+  --mochi-input-border: color-mix(in srgb,var(--mochi-text) 55%,var(--mochi-input-bg));
+  --mochi-radius-panel: 12px;
+  --mochi-radius-button: 6px;
+  --mochi-mobile-control-size: 44px;
+  --mochi-success: var(--lumiverse-success,#319c70);
+  --mochi-warning: var(--lumiverse-warning,#c28730);
   /* Semantic roles verified against Lumiverse 1.2.5 native component CSS. */
   --mochi-drawer-bg: var(--lumiverse-bg-deep,var(--lp-bg,#111017));
   --mochi-sidebar-bg: var(--lumiverse-bg,var(--lp-bg,#17151d));
@@ -11,13 +24,13 @@
   --mochi-input-bg: var(--lumiverse-bg,var(--lp-bg,#17151d));
   --mochi-control-bg: transparent;
   --mochi-hover-bg: var(--lumiverse-fill-hover,#80808020);
-  --mochi-selected-bg: var(--lumiverse-primary-015,#a99bff26);
-  --mochi-account-accent: var(--lumiverse-primary,var(--lp-accent,#b6a0ed));
+  --mochi-selected-bg: color-mix(in srgb,var(--mochi-accent) 15%,var(--mochi-surface));
+  --mochi-account-accent: var(--mochi-accent);
   --mochi-muted: color-mix(in srgb,var(--lumiverse-text-muted,var(--lp-muted,#aaa4b9)) 85%,var(--mochi-text));
-  --mochi-on-accent: var(--lumiverse-bg-deep,var(--lumiverse-primary-contrast,#21182e));
-  --mochi-accent-hover: var(--lumiverse-primary-hover,var(--mochi-accent));
+  --mochi-on-accent: var(--mochi-brand-contrast,#000);
+  --mochi-accent-hover: color-mix(in srgb,var(--mochi-accent) 90%,var(--mochi-text));
   --mochi-border-hover: var(--lumiverse-border-hover,var(--mochi-border));
-  --mochi-focus: var(--lumiverse-primary,var(--mochi-accent));
+  --mochi-focus: var(--mochi-accent);
   --mochi-focus-bg: var(--lumiverse-primary-010,#a99bff1a);
   --mochi-danger: var(--lumiverse-danger,#e35b68);
   --mochi-danger-hover: var(--lumiverse-danger-hover,#d44354);
@@ -31,7 +44,7 @@
   --mochi-sidebar-details-min-width: 190px;
   --mochi-sidebar-details-width: 320px;
   --mochi-profile-panel-width: 300px;
-  --mochi-chat-font-size: 15px;
+  --mochi-chat-font-size: calc(15px * var(--mochi-message-scale));
   --mochi-bubble-radius: 22px;
   --mochi-bubble-corner-radius: 6px;
   --mochi-bubble-padding-y: 8px;
@@ -39,8 +52,8 @@
   --mochi-bubble-max-width: 80%;
   --mochi-avatar-size: 44px;
   --mochi-wordmark-width: 96px;
-  --mochi-control-font-size: 14px;
-  --mochi-heading-font-size: 18px;
+  --mochi-control-font-size: calc(14px * var(--mochi-interface-scale));
+  --mochi-heading-font-size: calc(18px * var(--mochi-interface-scale));
   --mochi-radius-field: 10px;
   --mochi-radius-card: 14px;
   --mochi-space-xs: 6px;
@@ -67,7 +80,7 @@
   --mochi-action-lift: -2px;
   /* These defaults retain Lumiverse/Pocket Light, Dark and custom colors. */
   --mochi-text: var(--lumiverse-text,var(--lp-text,#f7f5ff));
-  --mochi-accent:var(--lumiverse-primary,var(--lp-accent,#b7a0e8));
+  --mochi-accent:var(--mochi-brand-accent);
   --mochi-surface:var(--lumiverse-bg,var(--lp-bg,#17151d));
   --mochi-border:var(--lumiverse-border,var(--lp-border,#ffffff18));
 }

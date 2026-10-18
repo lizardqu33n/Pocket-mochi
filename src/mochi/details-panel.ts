@@ -4,7 +4,7 @@ import {chatIdentity,chatPortrait} from './chat-identity.js'
 import type {MochiRoom,MochiCharacter} from './types.js'
 
 /** Read-only projection of authorized character choices; no extra fetch or profile store. */
-export function roomDetails(room:MochiRoom,characters:MochiCharacter[],close:()=>void,settings:()=>void):HTMLElement{
+export function roomDetails(room:MochiRoom,characters:MochiCharacter[],close:()=>void,settings:()=>void,edit?:(character:MochiCharacter)=>HTMLElement):HTMLElement{
  const panel=el('aside','mochi-profile-panel');panel.id=`mochi-room-details-${room.id}`;panel.setAttribute('aria-label','Character profile')
  const direct=room.characterIds.length===1
  panel.dataset.kind=direct?'direct':'group'
@@ -22,7 +22,7 @@ export function roomDetails(room:MochiRoom,characters:MochiCharacter[],close:()=
   card.append(avatar,label)
   if(character&&character.name!==name)card.append(el('small','mochi-muted',character.name))
   card.append(status)
-  const about=el('div','mochi-profile-about');about.append(el('h5','','About'),el('p','','No Mochi bio saved yet.'));card.append(about);panel.append(card)
+  const about=el('div','mochi-profile-about');about.append(el('h5','','About'),el('p','',character?.about||'No Mochi bio saved yet.'));if(character&&edit){const details=el('details'),summary=el('summary','','Edit Mochi About Me');details.append(summary,edit(character));about.append(details)}card.append(about);panel.append(card)
  }
  const chat=el('p','mochi-profile-chat-name','Chat name: '+room.title);panel.append(chat)
  const configure=button(direct?'Chat settings':'Chat settings & group icon','lp-button mochi-profile-settings');configure.setAttribute('aria-label','Open conversation settings');configure.onclick=settings;panel.append(configure)

@@ -21,7 +21,7 @@ test('ordinary CSS text imports retain the existing cascade section boundaries',
 test('all Mochi component variables have scoped editable defaults and preserve host color inheritance',()=>{
  const definitions=new Set([...tokens.matchAll(/(--mochi-[\w-]+)\s*:/g)].map(m=>m[1]))
  for(const [,name]of components.matchAll(/var\((--mochi-[\w-]+)/g))expect(definitions.has(name)).toBe(true)
- expect(tokens).toMatch(/--mochi-sidebar-width: \d+px/);expect(tokens).toMatch(/--mochi-chat-font-size: \d+px/)
+ expect(tokens).toMatch(/--mochi-sidebar-width: \d+px/);expect(tokens).toMatch(/--mochi-chat-font-size: calc\(15px \* var\(--mochi-message-scale\)\)/)
  expect(tokens).toMatch(/--mochi-bubble-radius: \d+px/);expect(tokens).toMatch(/--mochi-avatar-size: \d+px/)
  expect(tokens).toContain('var(--lumiverse-bg,var(--lp-bg,#17151d))')
  expect(tokens).toContain('var(--lumiverse-border,var(--lp-border,#ffffff18))')

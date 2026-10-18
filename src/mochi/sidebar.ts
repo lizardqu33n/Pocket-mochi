@@ -62,6 +62,7 @@ export function createMochiSidebar(ctx: Pick<SpindleFrontendContext,'ui'>, sessi
   const edit=(anchor:HTMLElement,create=false,id?:string)=>session.view.editSidebarProfile(anchor,()=>{showPicker();queueMicrotask(()=>picker.querySelector<HTMLElement>(id?'[data-account-id="'+id+'"]':'[aria-label="New account"]')?.focus())},create,id)
   function render():void {
     if(disposed)return
+    session.view.applyPresentation(root)
     fallbackStatus.hidden=!fallback;fallbackStatus.textContent=fallback
     const editing=session.view.isSidebarProfileOpen
     close.hidden=!mobileSurface?.isOpen;open.hidden=editing||!!mobileSurface?.isOpen&&!pickerRequested;accounts.hidden=editing

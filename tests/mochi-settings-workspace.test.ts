@@ -38,13 +38,13 @@ for(const width of [320,390,900,1280])test(`${width}px Chat/Personal workspace k
   h.click('Chat Settings');expect(h.root.querySelector('.mochi-composer')).toBeNull();expect(h.root.querySelector('[aria-label="Chat Settings"]')).not.toBeNull()
   const changes=h.sent.filter(p=>p.type!=='mochi:choices'&&p.type!=='mochi:accounts'&&p.type!=='mochi:ui_preferences').length
   const name=h.root.querySelector<HTMLInputElement>('[aria-label="Chat name"]')!;name.value='Retained title';name.dispatchEvent(new window.Event('input'))
-  for(const category of ['Texting Behavior','Availability & Schedules','Advanced','General'])h.click(category)
+  for(const category of ['AI & Replies','Availability & Schedules','Characters & Texting','Advanced','General'])h.click(category)
   expect(h.sent.filter(p=>p.type!=='mochi:choices'&&p.type!=='mochi:accounts'&&p.type!=='mochi:ui_preferences')).toHaveLength(changes)
   expect(h.root.querySelector<HTMLInputElement>('[aria-label="Chat name"]')!.value).toBe('Retained title')
-  h.click('Edit character 1: Same name');await Promise.resolve();const first=h.root.querySelector<HTMLInputElement>('[aria-label="Display name for Same name · character 1"]')!;first.value='Only first';first.dispatchEvent(new window.Event('input'));h.click('Back to characters');await Promise.resolve()
+  h.click('Characters & Texting');h.click('Edit character 1: Same name');await Promise.resolve();const first=h.root.querySelector<HTMLInputElement>('[aria-label="Display name for Same name · character 1"]')!;first.value='Only first';first.dispatchEvent(new window.Event('input'));h.click('Back to characters');await Promise.resolve()
   expect(document.activeElement?.getAttribute('aria-label')).toBe('Edit character 1: Same name')
   h.click('Edit character 2: Same name');expect(h.root.querySelector<HTMLInputElement>('[aria-label="Display name for Same name · character 2"]')!.value).toBe('');h.click('Back to characters')
-  h.click('Personal');await h.preferences();h.click('Chat');expect(h.root.querySelector<HTMLInputElement>('[aria-label="Chat name"]')!.value).toBe('Retained title')
+  h.click('Personal');await h.preferences();h.click('Chat');h.click('General');expect(h.root.querySelector<HTMLInputElement>('[aria-label="Chat name"]')!.value).toBe('Retained title')
   h.click('Save settings');const save=h.sent.findLast(p=>p.type==='mochi:update');expect(save.settings.characterNames.alice_character).toBe('Only first');expect(save.settings.characterNames.alice_other).toBeUndefined();expect(save.title).toBe('Retained title')
  }finally{h.close()}
 })
@@ -52,18 +52,18 @@ for(const width of [320,390,900,1280])test(`${width}px Chat/Personal workspace k
 test('toolbar customization persists, preserves overflow access and restores defaults without changing profile selection',async()=>{
  const h=await ui(900)
  try{
-  h.click('Personal Settings');await h.preferences();const scope=h.view.state!.accountId
-  for(const box of h.root.querySelectorAll<HTMLInputElement>('[aria-label^="Show "]')){box.checked=false;box.dispatchEvent(new window.Event('change'))}
+  h.click('Personal Settings');await h.preferences();h.click('Toolbar');const scope=h.view.state!.accountId
+  for(const label of ['Presets','Pins & Notes','Conversation Memory','Preview AI prompt'])h.click('Show '+label)
   h.click('Move Presets up');h.click('Save presentation');await h.preferences();h.click('Return to conversation')
   expect(h.view.state!.accountId).toBe(scope);expect(Boolean(h.root.querySelector('.mochi-bottom-toolbar>[aria-label="Chat Settings"]'))).toBe(true);expect(h.root.querySelector('[aria-label="Room options"]')).not.toBeNull();expect(h.root.querySelector('[aria-label="Settings"]')).not.toBeNull();expect(h.root.querySelector('[aria-label="Personal Settings"]')).not.toBeNull();expect(h.root.querySelector('[aria-label="Message"]')).not.toBeNull()
-  h.click('Personal Settings');h.click('Restore default presentation');expect(h.sent.filter(p=>p.type==='mochi:ui_preferences'&&p.action==='save')).toHaveLength(1);h.click('Save presentation');await h.preferences();h.click('Return to conversation');expect(h.root.querySelector('.mochi-custom-toolbar [aria-label="Chat Settings"]')).not.toBeNull()
+  h.click('Personal Settings');h.click('Restore default presentation');expect(h.sent.filter(p=>p.type==='mochi:ui_preferences'&&p.action==='shared_save')).toHaveLength(1);h.click('Save presentation');await h.preferences();h.click('Return to conversation');expect(h.root.querySelector('.mochi-custom-toolbar [aria-label="Chat Settings"]')).not.toBeNull()
  }finally{h.close()}
 })
 
 test('dirty navigation requires confirmation and preset tools return to intact advanced settings',async()=>{
  const h=await ui(900)
  try{
-  h.click('Chat Settings');h.click('Advanced');h.click('Presets');expect(h.root.querySelector('[aria-label="Mochi presets"]')).not.toBeNull();expect(h.root.querySelector('.mochi-composer')).toBeNull();h.click('Return to conversation');expect(h.root.querySelector('[aria-label="Advanced settings"]')).not.toBeNull()
+  h.click('Chat Settings');h.click('AI & Replies');h.click('Presets');expect(h.root.querySelector('[aria-label="Mochi presets"]')).not.toBeNull();expect(h.root.querySelector('.mochi-composer')).toBeNull();h.click('Return to conversation');expect(h.root.querySelector('[aria-label="AI & Replies settings"]')).not.toBeNull()
   h.click('General');const input=h.root.querySelector<HTMLInputElement>('[aria-label="Chat name"]')!;input.value='Dirty';input.dispatchEvent(new window.Event('input'));h.click('Return to conversation');expect(h.root.querySelector('dialog[open]')).not.toBeNull();h.click('Keep editing');expect(h.root.querySelector<HTMLInputElement>('[aria-label="Chat name"]')!.value).toBe('Dirty')
  }finally{h.close()}
 })
@@ -80,7 +80,7 @@ test('opening settings and saving visual preferences do not cancel a running rep
  const h=await ui(900)
  try{
   (h.view as any).ownGenerations.set(h.room.id,'running_fixture');h.view.state!.jobs={[h.room.id]:'running_fixture'}
-  h.click('Personal Settings');await h.preferences();h.click('Save presentation');await h.preferences();h.click('Chat');h.click('Texting Behavior');h.click('Availability & Schedules')
+  h.click('Personal Settings');await h.preferences();h.click('Save presentation');await h.preferences();h.click('Chat');h.click('AI & Replies');h.click('Availability & Schedules')
   expect(h.sent.some(p=>p.type==='mochi:cancel')).toBe(false);expect((h.view as any).ownGenerations.get(h.room.id)).toBe('running_fixture');expect(h.f.calls).toHaveLength(0)
  }finally{h.close()}
 })
@@ -97,23 +97,22 @@ test('presentation transport failures remain private and are sent only to the au
 })
 
 
-test('profile management during a busy running reply reaches confirmation instead of silently ignoring the click',async()=>{
+test('Personal settings excludes fictional account management',async()=>{
  const h=await ui(900)
+ try{h.click('Personal Settings');await h.preferences();expect(h.root.textContent?.includes('Switch fictional profile')).toBe(false);expect(h.root.textContent?.includes('Manage fictional profile & persona')).toBe(false)}finally{h.close()}
+})
+
+test('accessibility scales preview independently, cancel restores, and explicit shared Save survives account reload',async()=>{
+ const h=await ui(390)
  try{
-  h.click('Personal Settings');const choices=h.sent.findLast(p=>p.type==='mochi:choices')
-  const view=h.view as any;view.busy=true;view.ownGenerations.set(h.room.id,'active_reply');h.view.state!.jobs={[h.room.id]:'active_reply'}
-  const anchor=Array.from(h.root.querySelectorAll<HTMLButtonElement>('button')).find(b=>b.textContent==='Manage fictional profile & persona add-ons')!
-  // Activating the real host drawer refreshes the view before opening the editor.
-  h.view.receive({type:'mochi:choices',requestId:choices.requestId,characters:h.view.state!.characters,personas:[],connections:[]});expect(anchor.isConnected).toBe(false)
-  h.view.editSidebarProfile(anchor,()=>{})
-  expect(h.root.textContent).toContain('A reply is still generating. Leaving will stop this reply.')
-  expect(h.view.isSidebarProfileOpen).toBe(false);expect(h.sent.some(p=>p.type==='mochi:cancel')).toBe(false)
-  h.view.loadNavigationAccounts();const navigation=h.sent.findLast(p=>p.type==='mochi:accounts')
-  h.view.receive({type:'mochi:accounts',requestId:navigation.requestId,state:await h.f.service.accountsState('alice')})
-  expect(h.root.querySelector('dialog[open]')?.textContent).toContain('A reply is still generating')
-  h.click('Stay here');expect(h.view.isSidebarProfileOpen).toBe(false);expect(view.ownGenerations.get(h.room.id)).toBe('active_reply')
-  expect(document.activeElement?.textContent).toBe('Manage fictional profile & persona add-ons')
-  const refreshed=Array.from(h.root.querySelectorAll<HTMLButtonElement>('button')).find(b=>b.textContent==='Manage fictional profile & persona add-ons')!
-  h.view.editSidebarProfile(refreshed,()=>{});h.click('Cancel generation & leave');expect(h.view.isSidebarProfileOpen).toBe(true)
+ h.click('Personal Settings');await h.preferences();h.click('Accessibility')
+ const change=(label:string,value:string)=>{const input=h.root.querySelector<HTMLInputElement>('[aria-label="'+label+'"]')!;input.value=value;input.dispatchEvent(new window.Event('input'))}
+ change('Interface text size','150');change('Chat message text size','170')
+ expect((h.view as any).personalSettings.draft.interfaceScale).toBe(150);expect((h.view as any).personalSettings.draft.messageScale).toBe(170)
+ h.click('Reset interface text size');expect((h.view as any).personalSettings.draft.interfaceScale).toBe(100);expect((h.view as any).personalSettings.draft.messageScale).toBe(170)
+ h.click('Cancel presentation changes');expect((h.view as any).personalSettings.draft.messageScale).toBe(100)
+ change('Chat message text size','140');h.click('Save presentation');await h.preferences();expect((h.view as any).personalSettings.value.messageScale).toBe(140)
+ h.click('Back to Personal categories');h.click('Accessibility');change('Interface text size','130');h.root.querySelector('.mochi-settings-workspace')!.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));expect((h.view as any).personalSettings.draft.interfaceScale).toBe(130);expect(Boolean(h.root.querySelector('dialog[open]'))).toBe(false)
+ h.click('Accessibility');h.click('Return to conversation');expect(Boolean(h.root.querySelector('dialog[open]'))).toBe(true)
  }finally{h.close()}
 })

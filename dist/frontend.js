@@ -86,275 +86,25 @@ function requestId(prefix = "req") {
   return `${prefix}_${globalThis.crypto?.randomUUID?.() || `${Date.now()}_${Math.random().toString(36).slice(2)}`}`;
 }
 
-// src/mochi/group-icons.ts
-var GROUP_ICONS = ["\uD83D\uDCAC", "\uD83C\uDF19", "⭐", "\uD83C\uDF38", "\uD83C\uDF61", "\uD83C\uDFAE", "\uD83D\uDCDA", "\uD83C\uDFB5", "\uD83C\uDF3F", "❤️"];
-
-// src/mochi/chat-identity.ts
-function chatIdentity(room, characters) {
-  const direct = room.characterIds.length === 1, c = characters.find((c) => c.id === room.characterIds[0]);
-  return { name: direct ? room.settings?.characterNames[room.characterIds[0]] || c?.name || "Unavailable character" : room.title, avatarUrl: direct ? c?.avatarUrl || "" : "", direct };
-}
-function chatPortrait(room, characters) {
-  const identity = chatIdentity(room, characters), avatar = el("span", "mochi-avatar mochi-chat-avatar", identity.direct ? identity.name.slice(0, 1) : room.groupIcon || "\uD83D\uDC65");
-  avatar.setAttribute("aria-hidden", "true");
-  if (identity.avatarUrl) {
-    const img = el("img");
-    img.src = identity.avatarUrl;
-    img.alt = "";
-    avatar.replaceChildren(img);
-  } else if (!identity.direct && !room.groupIcon) {
-    avatar.classList.add("mochi-group-portraits");
-    avatar.replaceChildren();
-    for (const id of room.characterIds.slice(0, 2)) {
-      const c = characters.find((c) => c.id === id), part = el("span", "", c?.name.slice(0, 1) || "?");
-      if (c?.avatarUrl) {
-        const img = el("img");
-        img.src = c.avatarUrl;
-        img.alt = "";
-        part.replaceChildren(img);
-      }
-      avatar.append(part);
-    }
-  }
-  return avatar;
-}
-
-// src/mochi/toolbar-icons.ts
-var paths = {
-  plus: '<path d="M12 5v14M5 12h14"/>',
-  settings: '<path d="m9 3-.5 2-2 1.2-2-.5-2 3.5 1.5 1.5v2.6L2.5 15l2 3.5 2-.5 2 1.2L9 21h4l.5-1.8 2-1.2 2 .5 2-3.5-1.5-1.7v-2.6L19.5 9l-2-3.5-2 .5-2-1.2L13 3Z"/><circle cx="11" cy="12" r="3"/>',
-  logout: '<path d="M9 4H4v16h5m6-13 5 5-5 5m-7-5h12"/>',
-  sort: '<path d="M7 4v16m-4-4 4 4 4-4M14 5h7m-7 5h5m-5 5h3"/>',
-  grid: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
-  list: '<path d="M8 5h13M8 12h13M8 19h13M3 5h.01M3 12h.01M3 19h.01"/>',
-  check: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="m7 12 3 3 7-7"/>',
-  archive: '<path d="M4 8v12h16V8M9 12h6"/><rect x="3" y="3" width="18" height="5" rx="1"/>',
-  brain: '<path d="M12 18V5a3 3 0 0 0-5.8-1A4 4 0 0 0 3 11a4 4 0 0 0 2 7.5A3.5 3.5 0 0 0 12 18Zm0 0V5a3 3 0 0 1 5.8-1A4 4 0 0 1 21 11a4 4 0 0 1-2 7.5A3.5 3.5 0 0 1 12 18ZM7 8c2 0 3 1 3 3m7-3c-2 0-3 1-3 3M6 14c2 0 3 1 3 3m9-3c-2 0-3 1-3 3"/>',
-  smile: '<circle cx="12" cy="12" r="9"/><path d="M8 14s1 3 4 3 4-3 4-3M8 9h.01M16 9h.01"/>',
-  sliders: '<path d="M4 7h9m4 0h3M4 17h3m4 0h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
-  profile: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',
-  panel: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M15 3v18M18 7h.01M18 11h.01"/>',
-  layers: '<path d="m12 3 9 5-9 5-9-5 9-5Zm-9 9 9 5 9-5M3 16l9 5 9-5"/>',
-  bookmark: '<path d="M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16l-6-4-6 4Z"/>',
-  eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
-  pin: '<path d="m16 3 5 5-4 2-3 5-5-5 5-3 2-4ZM9 10l-3 3 5 5 3-3M8.5 15.5 3 21"/>',
-  ellipsis: '<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>'
-};
-var MOCHI_TOOLBAR_ICONS = Object.fromEntries(Object.entries(paths).map(([key, path]) => [key, `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`]));
-
-// src/mochi/types.ts
-var defaultMochiSettings = () => ({ autoReply: true, connectionId: "", contextTokens: 8192, outputTokens: 1200, instructions: "", characterNames: {} });
-var MOCHI_ROOM_ID = /^room_[a-f0-9]{32}$/;
-
-// src/mochi/presence.ts
-var STATUSES = ["online", "away", "dnd", "offline"];
-function defaultPresence() {
-  return { automatic: "online", manual: null, awayMs: 300000, dndMs: 900000, transitions: [] };
-}
-function statusFor(room, id, now = Date.now()) {
-  const p = room.runtime?.presence?.[id] || room.background?.presence?.[id] || defaultPresence();
-  if (p.manual)
-    return p.manual;
-  return p.transitions.filter((t) => t.at <= now).sort((a, b) => a.at - b.at).at(-1)?.status || p.automatic;
-}
-
-// src/mochi/scheduling.ts
-var SCHEDULE_LABELS = { queued: "Scheduled", generating: "Generating", generated: "Waiting to deliver", delivered: "Delivered", cancelled: "Canceled", paused: "Needs attention", failed: "Failed", missed: "Expired" };
-var TERMINAL = new Set(["delivered", "cancelled", "failed", "missed"]);
-
-// src/mochi/ui-preferences.ts
-var TOOLBAR_ACTIONS = ["search", "participants", "notifications", "settings", "presets", "memory", "preview", "notes"];
-var TOOLBAR_LABELS = { search: "Search conversation", participants: "Participants", notifications: "Mochi notifications", settings: "Chat Settings", presets: "Presets", memory: "Conversation Memory", preview: "Preview AI prompt", notes: "Pins & Notes" };
-var defaultUIPreferences = () => ({ order: [...TOOLBAR_ACTIONS], hidden: ["presets", "memory", "preview", "notes"], presentation: "icons", dock: "comfortable" });
-function validateUIPreferences(value) {
-  if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).some((k) => !["order", "hidden", "presentation", "dock"].includes(k)))
-    throw Error("Invalid messenger presentation preferences.");
-  const valid = (items) => Array.isArray(items) && items.length <= TOOLBAR_ACTIONS.length && new Set(items).size === items.length && items.every((k) => TOOLBAR_ACTIONS.includes(k));
-  if (!valid(value.order) || value.order.length !== TOOLBAR_ACTIONS.length || !valid(value.hidden) || !["icons", "labels"].includes(value.presentation) || !["compact", "comfortable"].includes(value.dock))
-    throw Error("Invalid messenger presentation preferences.");
-  return structuredClone(value);
-}
-
-// src/mochi/personal-settings.ts
-var messengerUIPreferences = () => ({ ...defaultUIPreferences(), order: ["presets", "notes", "memory", "preview", "settings", "search", "notifications", "participants"], hidden: [] });
-
-class PersonalSettings {
-  send;
-  current;
-  owner;
-  redraw;
-  saved;
-  draft;
-  status = "";
-  ticket = "";
-  scope = "";
-  timer;
-  constructor(send, current, owner, redraw) {
-    this.send = send;
-    this.current = current;
-    this.owner = owner;
-    this.redraw = redraw;
-  }
-  get value() {
-    return this.saved?.preferences || messengerUIPreferences();
-  }
-  get dirty() {
-    return !!this.draft && JSON.stringify(this.draft) !== JSON.stringify(this.value);
-  }
-  reset() {
-    clearTimeout(this.timer);
-    this.ticket = "";
-    this.scope = "";
-    this.saved = undefined;
-    this.draft = undefined;
-    this.status = "";
-  }
-  discard() {
-    this.draft = this.saved ? structuredClone(this.saved.preferences) : undefined;
-  }
-  load(force = false) {
-    const scope = this.current() || "legacy";
-    if (!force && (this.scope === scope && (this.ticket || this.saved)))
-      return;
-    this.scope = scope;
-    this.request("get");
-  }
-  request(action) {
-    const accountId = this.current();
-    this.ticket = requestId("mochi_ui");
-    const ticket = this.ticket;
-    this.status = action === "save" ? "Saving presentation…" : "Loading presentation…";
-    clearTimeout(this.timer);
-    this.timer = setTimeout(() => {
-      if (this.ticket === ticket) {
-        this.ticket = "";
-        this.status = "Presentation unavailable. Refresh to retry.";
-        this.redraw();
-      }
-    }, 20000);
-    this.send({ type: "mochi:ui_preferences", requestId: ticket, action, accountId, ...action === "save" ? { revision: this.saved?.revision, preferences: this.draft } : {} });
-  }
-  receive(p) {
-    if (!this.ticket || p?.requestId !== this.ticket || !["mochi:ui_preferences", "mochi:error"].includes(p.type))
-      return p?.type === "mochi:ui_preferences";
-    this.ticket = "";
-    clearTimeout(this.timer);
-    if ((this.current() || "legacy") !== this.scope)
-      return true;
-    if (p.type === "mochi:error") {
-      this.status = "Unable to save or load presentation. Refresh and review before retrying.";
-      this.redraw();
-      return true;
-    }
-    const record = p.record;
-    if (!record || record.version !== 1 || !Number.isSafeInteger(record.revision) || record.revision < 0 || record.accountId !== this.current() || this.owner() && record.ownerId !== this.owner())
-      return true;
-    try {
-      record.preferences = validateUIPreferences(record.preferences);
-    } catch {
-      return true;
-    }
-    const dirty = this.dirty;
-    if (record.revision === 0)
-      record.preferences = messengerUIPreferences();
-    this.saved = record;
-    if (!dirty)
-      this.draft = structuredClone(record.preferences);
-    this.status = "Presentation saved for this fictional profile; legacy preferences belong to this Lumiverse login.";
-    this.redraw();
-    return true;
-  }
-  render() {
-    const root = el("section", "mochi-personal-presentation");
-    root.setAttribute("aria-label", "Messenger presentation");
-    root.append(el("h4", "", "Messenger presentation"), el("p", "mochi-muted", (this.current() ? "This fictional profile" : "This Lumiverse login · Legacy view") + " · Save presentation applies toolbar and dock changes only. It never switches profiles or changes conversation behavior. Lumiverse theme and login settings remain native."));
-    const status = el("p", "mochi-muted", this.status);
-    status.setAttribute("role", "status");
-    root.append(status);
-    const refresh = button("Refresh presentation");
-    refresh.onclick = () => {
-      this.load(true);
-      this.redraw();
-    };
-    root.append(refresh);
-    if (!this.saved)
-      return root;
-    this.draft ||= structuredClone(this.value);
-    const draft = this.draft;
-    const choice = (label, key, values) => {
-      const wrap = el("label", "", label), select = el("select");
-      select.setAttribute("aria-label", label);
-      for (const [value, name] of values) {
-        const o = el("option", "", name);
-        o.value = value;
-        select.append(o);
-      }
-      select.value = draft[key];
-      select.onchange = () => {
-        draft[key] = select.value;
-      };
-      wrap.append(select);
-      root.append(wrap);
-    };
-    choice("Toolbar presentation", "presentation", [["icons", "Compact icons"], ["labels", "Icons and labels"]]);
-    choice("Profile dock appearance", "dock", [["comfortable", "Avatar, name and username"], ["compact", "Compact avatar and profile selector"]]);
-    root.append(el("h4", "", "Toolbar actions"), el("p", "mochi-muted", "Hidden tools stay in Room options. Search, Notifications and Participants stay in the header; Chat Settings stays at the bottom right. Profile switching remains available."));
-    const movable = draft.order.filter((key) => !["search", "participants", "notifications", "settings"].includes(key));
-    for (const [index, key] of movable.entries()) {
-      const row = el("div", "mochi-toolbar-preference"), label = el("label", "", TOOLBAR_LABELS[key]), shown = el("input");
-      shown.type = "checkbox";
-      shown.checked = !draft.hidden.includes(key);
-      shown.setAttribute("aria-label", "Show " + TOOLBAR_LABELS[key]);
-      shown.onchange = () => {
-        draft.hidden = draft.hidden.filter((k) => k !== key);
-        if (!shown.checked)
-          draft.hidden.push(key);
-      };
-      label.append(shown);
-      const move = (delta) => {
-        const from = draft.order.indexOf(key), to = draft.order.indexOf(movable[index + delta]);
-        [draft.order[from], draft.order[to]] = [draft.order[to], key];
-        this.redraw();
-      };
-      const up = button("↑"), down = button("↓");
-      up.setAttribute("aria-label", "Move " + TOOLBAR_LABELS[key] + " up");
-      down.setAttribute("aria-label", "Move " + TOOLBAR_LABELS[key] + " down");
-      up.disabled = index === 0;
-      down.disabled = index === movable.length - 1;
-      up.onclick = () => move(-1);
-      down.onclick = () => move(1);
-      row.append(label, up, down);
-      root.append(row);
-    }
-    const save = button("Save presentation"), cancel = button("Cancel changes"), reset = button("Reset to defaults");
-    cancel.setAttribute("aria-label", "Cancel presentation changes");
-    reset.setAttribute("aria-label", "Restore default presentation");
-    const actions = el("div", "mochi-presentation-actions");
-    save.disabled = !!this.ticket;
-    save.onclick = () => {
-      this.request("save");
-      this.redraw();
-    };
-    cancel.onclick = () => {
-      this.discard();
-      this.redraw();
-    };
-    reset.onclick = () => {
-      this.draft = messengerUIPreferences();
-      this.redraw();
-    };
-    actions.append(save, cancel, reset);
-    root.append(actions);
-    return root;
-  }
-}
-
 // src/mochi/ui/mochi-tokens.css
 var mochi_tokens_default = `/* Mochi-only defaults. Inherit host colors; never move these to :root. */
 .mochi-view,
 .mochi-sheet,
 .mochi-sidebar,
 .mochi-workspace {
+  /* Saved preferences set only backing variables; Custom CSS may override these public aliases. */
+  --mochi-interface-scale: var(--mochi-saved-interface-scale,1);
+  --mochi-message-scale: var(--mochi-saved-message-scale,1);
+  --mochi-brand-hue: 263;
+  --mochi-brand-saturation: 55%;
+  --mochi-brand-lightness: 60%;
+  --mochi-brand-accent: hsl(var(--mochi-brand-hue) var(--mochi-brand-saturation) var(--mochi-brand-lightness));
+  --mochi-input-border: color-mix(in srgb,var(--mochi-text) 55%,var(--mochi-input-bg));
+  --mochi-radius-panel: 12px;
+  --mochi-radius-button: 6px;
+  --mochi-mobile-control-size: 44px;
+  --mochi-success: var(--lumiverse-success,#319c70);
+  --mochi-warning: var(--lumiverse-warning,#c28730);
   /* Semantic roles verified against Lumiverse 1.2.5 native component CSS. */
   --mochi-drawer-bg: var(--lumiverse-bg-deep,var(--lp-bg,#111017));
   --mochi-sidebar-bg: var(--lumiverse-bg,var(--lp-bg,#17151d));
@@ -363,13 +113,13 @@ var mochi_tokens_default = `/* Mochi-only defaults. Inherit host colors; never m
   --mochi-input-bg: var(--lumiverse-bg,var(--lp-bg,#17151d));
   --mochi-control-bg: transparent;
   --mochi-hover-bg: var(--lumiverse-fill-hover,#80808020);
-  --mochi-selected-bg: var(--lumiverse-primary-015,#a99bff26);
-  --mochi-account-accent: var(--lumiverse-primary,var(--lp-accent,#b6a0ed));
+  --mochi-selected-bg: color-mix(in srgb,var(--mochi-accent) 15%,var(--mochi-surface));
+  --mochi-account-accent: var(--mochi-accent);
   --mochi-muted: color-mix(in srgb,var(--lumiverse-text-muted,var(--lp-muted,#aaa4b9)) 85%,var(--mochi-text));
-  --mochi-on-accent: var(--lumiverse-bg-deep,var(--lumiverse-primary-contrast,#21182e));
-  --mochi-accent-hover: var(--lumiverse-primary-hover,var(--mochi-accent));
+  --mochi-on-accent: var(--mochi-brand-contrast,#000);
+  --mochi-accent-hover: color-mix(in srgb,var(--mochi-accent) 90%,var(--mochi-text));
   --mochi-border-hover: var(--lumiverse-border-hover,var(--mochi-border));
-  --mochi-focus: var(--lumiverse-primary,var(--mochi-accent));
+  --mochi-focus: var(--mochi-accent);
   --mochi-focus-bg: var(--lumiverse-primary-010,#a99bff1a);
   --mochi-danger: var(--lumiverse-danger,#e35b68);
   --mochi-danger-hover: var(--lumiverse-danger-hover,#d44354);
@@ -383,7 +133,7 @@ var mochi_tokens_default = `/* Mochi-only defaults. Inherit host colors; never m
   --mochi-sidebar-details-min-width: 190px;
   --mochi-sidebar-details-width: 320px;
   --mochi-profile-panel-width: 300px;
-  --mochi-chat-font-size: 15px;
+  --mochi-chat-font-size: calc(15px * var(--mochi-message-scale));
   --mochi-bubble-radius: 22px;
   --mochi-bubble-corner-radius: 6px;
   --mochi-bubble-padding-y: 8px;
@@ -391,8 +141,8 @@ var mochi_tokens_default = `/* Mochi-only defaults. Inherit host colors; never m
   --mochi-bubble-max-width: 80%;
   --mochi-avatar-size: 44px;
   --mochi-wordmark-width: 96px;
-  --mochi-control-font-size: 14px;
-  --mochi-heading-font-size: 18px;
+  --mochi-control-font-size: calc(14px * var(--mochi-interface-scale));
+  --mochi-heading-font-size: calc(18px * var(--mochi-interface-scale));
   --mochi-radius-field: 10px;
   --mochi-radius-card: 14px;
   --mochi-space-xs: 6px;
@@ -419,7 +169,7 @@ var mochi_tokens_default = `/* Mochi-only defaults. Inherit host colors; never m
   --mochi-action-lift: -2px;
   /* These defaults retain Lumiverse/Pocket Light, Dark and custom colors. */
   --mochi-text: var(--lumiverse-text,var(--lp-text,#f7f5ff));
-  --mochi-accent:var(--lumiverse-primary,var(--lp-accent,#b7a0e8));
+  --mochi-accent:var(--mochi-brand-accent);
   --mochi-surface:var(--lumiverse-bg,var(--lp-bg,#17151d));
   --mochi-border:var(--lumiverse-border,var(--lp-border,#ffffff18));
 }
@@ -459,7 +209,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   grid-template-columns:minmax(0,1fr) 96px
 }
 .mochi-standalone {
-  font-size:10px;
+  font-size:calc(10px * var(--mochi-interface-scale,1));
   font-weight:600;
   border:1px solid color-mix(in srgb,var(--mochi-accent) 45%,transparent);
   border-radius:99px;
@@ -473,7 +223,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   color:inherit;
   background:color-mix(in srgb,var(--mochi-accent) 7%,var(--mochi-surface));
   padding:9px 10px;
-  font-size:14px
+  font-size:calc(14px * var(--mochi-interface-scale,1))
 }
 .mochi-brand {
   gap:6px!important
@@ -570,7 +320,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   margin:0
 }
 .mochi-view h2 {
-  font-size:23px;
+  font-size:calc(23px * var(--mochi-interface-scale,1));
   letter-spacing:-.04em
 }
 .mochi-view h3 {
@@ -639,11 +389,11 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 .mochi-muted {
   color:var(--lp-muted,var(--lumiverse-text-muted,#a9a3b5));
-  font-size:12px
+  font-size:calc(12px * var(--mochi-interface-scale,1))
 }
 .mochi-error {
   color:var(--lp-destructive,#ed7c8c);
-  font-size:13px;
+  font-size:calc(13px * var(--mochi-interface-scale,1));
   overflow-wrap:anywhere
 }
 .mochi-room-header {
@@ -672,7 +422,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   align-items:center;
   gap:6px;
   min-width:0;
-  font-size:11px;
+  font-size:calc(11px * var(--mochi-interface-scale,1));
   max-width:100%
 }
 .mochi-member>span:last-child {
@@ -681,7 +431,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 .mochi-member .mochi-avatar {
   width:26px;
   height:26px;
-  font-size:11px;
+  font-size:calc(11px * var(--mochi-interface-scale,1));
   flex:none
 }
 .mochi-card {
@@ -703,10 +453,10 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 .mochi-card-copy strong {
   overflow-wrap:anywhere;
-  font-size:14px
+  font-size:calc(14px * var(--mochi-interface-scale,1))
 }
 .mochi-preview {
-  font-size:12px;
+  font-size:calc(12px * var(--mochi-interface-scale,1));
   color:var(--lp-muted,#a9a3b5);
   overflow:hidden;
   display:-webkit-box;
@@ -724,12 +474,12 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 .mochi-room-avatars .mochi-avatar {
   width:23px;
   height:23px;
-  font-size:10px
+  font-size:calc(10px * var(--mochi-interface-scale,1))
 }
 .mochi-room-avatars[data-single=true] .mochi-avatar {
   width:44px;
   height:44px;
-  font-size:18px
+  font-size:calc(18px * var(--mochi-interface-scale,1))
 }
 .mochi-form {
   display:flex;
@@ -741,7 +491,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   display:flex;
   flex-direction:column;
   gap:7px;
-  font-size:12px;
+  font-size:calc(12px * var(--mochi-interface-scale,1));
   font-weight:600;
   min-width:0
 }
@@ -756,7 +506,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   background:color-mix(in srgb,var(--lp-text,#fff) 3%,var(--mochi-surface));
   color:inherit;
   font:inherit;
-  font-size:14px;
+  font-size:calc(14px * var(--mochi-interface-scale,1));
   line-height:1.4
 }
 .mochi-view textarea {
@@ -802,7 +552,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   border:1px solid transparent;
   border-radius:14px;
   background:transparent;
-  font-size:12px!important;
+  font-size:calc(12px * var(--mochi-interface-scale,1))!important;
   line-height:1.35;
   overflow-wrap:anywhere;
   text-align:center
@@ -825,7 +575,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   height:18px;
   background:var(--mochi-accent);
   color:#21182e;
-  font-size:12px
+  font-size:calc(12px * var(--mochi-interface-scale,1))
 }
 .mochi-avatar,.mochi-message-avatar {
   display:flex;
@@ -868,7 +618,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 .mochi-message-avatar {
   width:32px;
   height:32px;
-  font-size:12px;
+  font-size:calc(12px * var(--mochi-interface-scale,1));
   margin-top:2px
 }
 .mochi-message-body {
@@ -883,7 +633,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   align-items:flex-end
 }
 .mochi-message-name {
-  font-size:12px;
+  font-size:calc(12px * var(--mochi-interface-scale,1));
   font-weight:650;
   overflow-wrap:anywhere
 }
@@ -904,7 +654,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   border-color:color-mix(in srgb,var(--mochi-accent) 28%,var(--mochi-border))
 }
 .mochi-message time {
-  font-size:10px;
+  font-size:calc(10px * var(--mochi-interface-scale,1));
   color:var(--lp-muted,#a9a3b5)
 }
 .mochi-composer {
@@ -932,12 +682,12 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   padding:11px 13px
 }
 .mochi-composer select {
-  font-size:12px;
+  font-size:calc(12px * var(--mochi-interface-scale,1));
   min-height:36px;
   padding:7px 10px
 }
 .mochi-composer-hint {
-  font-size:10px;
+  font-size:calc(10px * var(--mochi-interface-scale,1));
   color:var(--lp-muted,#a9a3b5)
 }
 .mochi-view>header,.mochi-room-header,.mochi-member-strip {
@@ -970,7 +720,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   border-bottom:1px solid var(--mochi-border)
 }
 .mochi-view h2 {
-  font-size:28px;
+  font-size:calc(28px * var(--mochi-interface-scale,1));
   font-weight:800;
   letter-spacing:-.045em
 }
@@ -996,7 +746,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   border-radius:99px;
   background:var(--mochi-accent);
   color:#21182e;
-  font-size:10px;
+  font-size:calc(10px * var(--mochi-interface-scale,1));
   line-height:15px
 }
 .mochi-view .mochi-room-selector {
@@ -1004,7 +754,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   padding:10px 14px;
   border-color:color-mix(in srgb,var(--mochi-accent) 30%,var(--mochi-border));
   background:color-mix(in srgb,var(--mochi-accent) 9%,var(--mochi-surface));
-  font-size:15px
+  font-size:calc(15px * var(--mochi-interface-scale,1))
 }
 .mochi-room-header {
   border:0;
@@ -1060,11 +810,11 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   padding-right:34px
 }
 .mochi-message-name {
-  font-size:13px
+  font-size:calc(13px * var(--mochi-interface-scale,1))
 }
 .mochi-message time {
   white-space:nowrap;
-  font-size:10px;
+  font-size:calc(10px * var(--mochi-interface-scale,1));
   flex:none
 }
 .mochi-message[data-role=user] .mochi-message-meta {
@@ -1198,7 +948,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   margin-left:-10px
 }
 .mochi-participant-count {
-  font-size:12px;
+  font-size:calc(12px * var(--mochi-interface-scale,1));
   color:var(--lp-muted,#a9a3b5)
 }
 .mochi-thread {
@@ -1222,7 +972,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
-  font-size:13px;
+  font-size:calc(13px * var(--mochi-interface-scale,1));
   line-height:20px;
   overflow-wrap:normal
 }
@@ -1241,7 +991,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 .mochi-message-meta small {
   white-space:nowrap;
-  font-size:10px
+  font-size:calc(10px * var(--mochi-interface-scale,1))
 }
 .mochi-view .mochi-message-actions {
   top:-10px;
@@ -1307,7 +1057,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
-  font-size:12px
+  font-size:calc(12px * var(--mochi-interface-scale,1))
 }
 .mochi-composer .mochi-responder select {
   position:absolute;
@@ -1348,7 +1098,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   top:-2px;
   left:50%;
   transform:translateX(-50%) rotate(-12deg);
-  font-size:10px;
+  font-size:calc(10px * var(--mochi-interface-scale,1));
   line-height:1;
   color:#e89dbd;
   letter-spacing:0
@@ -1364,12 +1114,12 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 .mochi-message-name {
   flex:1;
   width:auto;
-  font-size:12px;
+  font-size:calc(12px * var(--mochi-interface-scale,1));
   line-height:18px
 }
 .mochi-message-heading time {
   flex:none;
-  font-size:10px;
+  font-size:calc(10px * var(--mochi-interface-scale,1));
   line-height:18px
 }
 .mochi-message-avatar {
@@ -1393,7 +1143,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   justify-content:flex-start
 }
 .mochi-message-meta small {
-  font-size:10px;
+  font-size:calc(10px * var(--mochi-interface-scale,1));
   line-height:16px
 }
 .mochi-view .mochi-message-actions {
@@ -1412,7 +1162,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 /* Final messenger composition; temporary presence visuals carry no state. */
 .mochi-wordmark-i::before {
-  font-size:14px;
+  font-size:calc(14px * var(--mochi-interface-scale,1));
   top:-5px
 }
 .mochi-view .mochi-room-header {
@@ -1438,7 +1188,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   height:20px
 }
 .mochi-view .mochi-room-selector {
-  font-size:14px;
+  font-size:calc(14px * var(--mochi-interface-scale,1));
   font-weight:500;
   padding-left:40px;
   padding-right:24px;
@@ -1451,7 +1201,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   display:flex;
   align-items:center;
   gap:7px;
-  font-size:11px;
+  font-size:calc(11px * var(--mochi-interface-scale,1));
   color:var(--lp-muted,#a9a3b5);
   min-height:18px;
   white-space:nowrap
@@ -1491,7 +1241,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   gap:4px
 }
 .mochi-message-name {
-  font-size:11px;
+  font-size:calc(11px * var(--mochi-interface-scale,1));
   font-weight:600
 }
 .mochi-message-heading {
@@ -1542,7 +1292,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   gap:5px
 }
 .mochi-action-context {
-  font-size:11px;
+  font-size:calc(11px * var(--mochi-interface-scale,1));
   line-height:1.5;
   color:var(--lp-muted);
   overflow-wrap:anywhere;
@@ -1555,7 +1305,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   border:0;
   border-radius:var(--mochi-radius-card);
   background:color-mix(in srgb,var(--lp-text) 4%,var(--lp-bg));
-  font-size:13px
+  font-size:calc(13px * var(--mochi-interface-scale,1))
 }
 .mochi-sheet .mochi-action-panel>.lp-button:hover {
   background:color-mix(in srgb,var(--lp-accent) 12%,var(--lp-bg))
@@ -1578,14 +1328,14 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 .mochi-action-author {
   color:var(--lp-text);
-  font-size:12px;
+  font-size:calc(12px * var(--mochi-interface-scale,1));
   font-weight:600;
   overflow:hidden;
   white-space:nowrap;
   text-overflow:ellipsis
 }
 .mochi-action-context small {
-  font-size:11px;
+  font-size:calc(11px * var(--mochi-interface-scale,1));
   font-weight:400
 }
 .mochi-account-list {
@@ -1614,7 +1364,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   border:0;
   background:transparent;
   color:var(--lp-muted);
-  font-size:11px;
+  font-size:calc(11px * var(--mochi-interface-scale,1));
   font-weight:500
 }
 .mochi-view .mochi-legacy-action {
@@ -1624,7 +1374,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   border-radius:0
 }
 .mochi-inbox-actions>.lp-button {
-  font-size:11px;
+  font-size:calc(11px * var(--mochi-interface-scale,1));
   padding:8px 10px
 }
 .mochi-profile-preview {
@@ -1651,10 +1401,10 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   width:64px;
   height:64px;
   border:4px solid var(--mochi-surface);
-  font-size:24px
+  font-size:calc(24px * var(--mochi-interface-scale,1))
 }
 .mochi-profile-preview-name {
-  font-size:20px;
+  font-size:calc(20px * var(--mochi-interface-scale,1));
   line-height:1.3;
   overflow-wrap:anywhere
 }
@@ -1669,17 +1419,17 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 .mochi-profile-fields legend {
   padding:0 6px;
-  font-size:11px;
+  font-size:calc(11px * var(--mochi-interface-scale,1));
   font-weight:650;
   color:var(--lp-muted);
   letter-spacing:.04em
 }
 .mochi-profile-fields input[type=file] {
-  font-size:11px
+  font-size:calc(11px * var(--mochi-interface-scale,1))
 }
 .mochi-room-connection {
   color:var(--lp-muted);
-  font-size:10px;
+  font-size:calc(10px * var(--mochi-interface-scale,1));
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap
@@ -1696,7 +1446,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   border:0;
   background:transparent;
   color:var(--mochi-accent);
-  font-size:10px;
+  font-size:calc(10px * var(--mochi-interface-scale,1));
   text-align:left
 }
 .mochi-connection-indicator:hover {
@@ -1712,11 +1462,11 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 .mochi-view[data-surface=chat] .mochi-room-selector {
   min-height:28px;
   padding-block:2px;
-  font-size:14px
+  font-size:calc(14px * var(--mochi-interface-scale,1))
 }
 .mochi-view[data-surface=chat] .mochi-room-meta {
   margin:1px 0;
-  font-size:10px;
+  font-size:calc(10px * var(--mochi-interface-scale,1));
   line-height:16px;
   min-height:16px
 }
@@ -1731,7 +1481,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   text-overflow:ellipsis;
   white-space:nowrap;
   color:var(--lp-muted);
-  font-size:10px;
+  font-size:calc(10px * var(--mochi-interface-scale,1));
   line-height:16px
 }
 .mochi-view[data-surface=chat] .mochi-room-header {
@@ -1760,7 +1510,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   border-radius:12px
 }
 .mochi-settings-section>legend {
-  font-size:11px;
+  font-size:calc(11px * var(--mochi-interface-scale,1));
   font-weight:650;
   color:var(--lp-muted);
   padding:0 5px
@@ -1778,7 +1528,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 .mochi-settings-section>summary {
   padding:14px;
   cursor:pointer;
-  font-size:12px;
+  font-size:calc(12px * var(--mochi-interface-scale,1));
   font-weight:600;
   min-height:44px;
   box-sizing:border-box
@@ -1802,7 +1552,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   border-radius:0;
   padding:4px 0;
   min-height:36px;
-  font-size:11px;
+  font-size:calc(11px * var(--mochi-interface-scale,1));
   font-weight:500
 }
 .mochi-settings-section .mochi-picker {
@@ -1810,7 +1560,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   gap:8px
 }
 .mochi-settings-section .mochi-choice {
-  font-size:11px;
+  font-size:calc(11px * var(--mochi-interface-scale,1));
   padding:8px 4px
 }
 .mochi-settings-section .mochi-assignment {
@@ -1829,11 +1579,11 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   background:transparent;
   border:0;
   border-radius:50%;
-  font-size:22px
+  font-size:calc(22px * var(--mochi-interface-scale,1))
 }
 .mochi-room-header .lp-conversation-menu-action {
   min-height:40px;
-  font-size:12px
+  font-size:calc(12px * var(--mochi-interface-scale,1))
 }
 .mochi-room-header .lp-conversation-menu>summary:focus-visible {
   outline:2px solid var(--mochi-accent);
@@ -1853,12 +1603,12 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 .mochi-model-picker-row>button {
   min-height:44px;
-  font-size:11px;
+  font-size:calc(11px * var(--mochi-interface-scale,1));
   padding:8px 10px
 }
 .mochi-model-picker>p {
   margin:6px 0 0;
-  font-size:11px;
+  font-size:calc(11px * var(--mochi-interface-scale,1));
   font-weight:400
 }
 @container(max-width:600px) {
@@ -1936,7 +1686,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 
 .mochi-view .mochi-room-header .mochi-custom-toolbar .mochi-toolbar-label {
   display:inline;
-  font-size:12px;
+  font-size:calc(12px * var(--mochi-interface-scale,1));
   white-space:nowrap
 }
 
@@ -2040,7 +1790,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 .mochi-view .mochi-bottom-toolbar .mochi-toolbar-label {
   display: inline;
   white-space: nowrap;
-  font-size: 12px;
+  font-size:calc(12px * var(--mochi-interface-scale,1));
 }
 
 .mochi-view .mochi-bottom-toolbar :is(button,summary):is(:hover,:focus-visible) {
@@ -2206,7 +1956,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 
 .mochi-edited-label {
-  font-size: 10px;
+  font-size:calc(10px * var(--mochi-interface-scale,1));
   opacity: .7;
   white-space: nowrap;
 }
@@ -2350,11 +2100,11 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   overflow:hidden
 }
 .mochi-quote strong {
-  font-size:11px;
+  font-size:calc(11px * var(--mochi-interface-scale,1));
   overflow-wrap:anywhere
 }
 .mochi-quote span {
-  font-size:12px;
+  font-size:calc(12px * var(--mochi-interface-scale,1));
   white-space:normal;
   overflow-wrap:anywhere;
   display:-webkit-box;
@@ -2397,7 +2147,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 .mochi-view .mochi-reaction {
   font:inherit;
-  font-size:12px;
+  font-size:calc(12px * var(--mochi-interface-scale,1));
   color:inherit;
   min-height:32px;
   padding:4px 8px;
@@ -2410,7 +2160,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 .mochi-view .mochi-reaction-palette .mochi-reaction {
   min-width:44px;
   min-height:44px;
-  font-size:20px
+  font-size:calc(20px * var(--mochi-interface-scale,1))
 }
 .mochi-view .mochi-reaction[aria-pressed=true] {
   border-color:var(--mochi-accent);
@@ -2423,7 +2173,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 .mochi-sheet .mochi-reaction {
   min-width:44px;
   min-height:44px;
-  font-size:20px;
+  font-size:calc(20px * var(--mochi-interface-scale,1));
   border-radius:var(--mochi-radius-card);
   border:1px solid var(--mochi-border);
   background:var(--lp-surface-2,#ffffff0c);
@@ -2506,7 +2256,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   outline-offset:2px
 }
 .mochi-view .mochi-pin-indicator {
-  font-size:11px;
+  font-size:calc(11px * var(--mochi-interface-scale,1));
   color:var(--lp-text-secondary);
   margin-left:6px
 }
@@ -2571,7 +2321,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   white-space:nowrap
 }
 .mochi-view .mochi-search-result small {
-  font-size:11px
+  font-size:calc(11px * var(--mochi-interface-scale,1))
 }
 .mochi-view .mochi-search-paging {
   display:flex;
@@ -2725,7 +2475,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   min-height:44px;
   padding:0 12px;
   line-height:44px;
-  font-size:13px
+  font-size:calc(13px * var(--mochi-interface-scale,1))
 }
 .mochi-view .mochi-block-category>summary>button {
   float:right;
@@ -2735,7 +2485,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 .mochi-view .mochi-block-count {
   margin-left:10px;
-  font-size:11px;
+  font-size:calc(11px * var(--mochi-interface-scale,1));
   opacity:.65
 }
 .mochi-view .mochi-category-tools {
@@ -2768,13 +2518,13 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 .mochi-view .mochi-block-title {
   flex:1;
   min-width:0;
-  font-size:13px;
+  font-size:calc(13px * var(--mochi-interface-scale,1));
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap
 }
 .mochi-view .mochi-block-row small {
-  font-size:11px;
+  font-size:calc(11px * var(--mochi-interface-scale,1));
   opacity:.65
 }
 .mochi-view .mochi-block-drag {
@@ -2790,7 +2540,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   color:inherit;
   background:transparent;
   cursor:pointer;
-  font-size:12px
+  font-size:calc(12px * var(--mochi-interface-scale,1))
 }
 .mochi-view .mochi-block-action:disabled {
   opacity:.45;
@@ -2846,7 +2596,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   display:flex;
   align-items:center;
   gap:10px;
-  font-size:12px
+  font-size:calc(12px * var(--mochi-interface-scale,1))
 }
 .mochi-view .mochi-block-detail textarea {
   min-height:clamp(280px,45vh,650px);
@@ -2880,7 +2630,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   display:flex;
   align-items:center;
   cursor:pointer;
-  font-size:12px
+  font-size:calc(12px * var(--mochi-interface-scale,1))
 }
 .mochi-view .mochi-block-picker[open] {
   display:grid;
@@ -3097,11 +2847,11 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   container-type:inline-size
 }
 .mochi-view .mochi-preset-panel>h3 {
-  font-size:19px;
+  font-size:calc(19px * var(--mochi-interface-scale,1));
   margin:0 0 6px
 }
 .mochi-view .mochi-preset-panel>.mochi-muted {
-  font-size:12px;
+  font-size:calc(12px * var(--mochi-interface-scale,1));
   margin:6px 0
 }
 .mochi-view .mochi-preset-workspace {
@@ -3121,12 +2871,12 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 .mochi-view .mochi-preset-library>summary {
   cursor:pointer;
   min-height:44px;
-  font-size:13px;
+  font-size:calc(13px * var(--mochi-interface-scale,1));
   line-height:44px
 }
 .mochi-view .mochi-preset-library-item {
   margin:4px;
-  font-size:12px
+  font-size:calc(12px * var(--mochi-interface-scale,1))
 }
 .mochi-view .mochi-preset-edit-pane {
   border:0;
@@ -3154,7 +2904,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   background:transparent
 }
 .mochi-view .mochi-preset-binding>summary {
-  font-size:12px
+  font-size:calc(12px * var(--mochi-interface-scale,1))
 }
 .mochi-view .mochi-preset-binding[open] {
   padding-bottom:12px
@@ -3187,7 +2937,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
     white-space:normal
   }
   .mochi-view .mochi-preset-panel>h3 {
-    font-size:17px
+    font-size:calc(17px * var(--mochi-interface-scale,1))
   }
 }
 
@@ -3202,10 +2952,10 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 .mochi-view .mochi-preset-heading h3 {
   flex:1;
   margin:0;
-  font-size:18px
+  font-size:calc(18px * var(--mochi-interface-scale,1))
 }
 .mochi-view .mochi-preset-heading button {
-  font-size:12px
+  font-size:calc(12px * var(--mochi-interface-scale,1))
 }
 .mochi-view .mochi-preset-panel>.mochi-preset-heading+p {
   margin:0 0 8px
@@ -3227,7 +2977,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   display:none
 }
 .mochi-view .mochi-preset-panel[data-block-editing=true] .mochi-block-detail>h4 {
-  font-size:20px
+  font-size:calc(20px * var(--mochi-interface-scale,1))
 }
 .mochi-view .mochi-preset-panel[data-block-editing=true] .mochi-block-detail>p {
   margin:0
@@ -3384,7 +3134,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 .mochi-settings-heading h3 {
   margin:0;
-  font-size:17px
+  font-size:calc(17px * var(--mochi-interface-scale,1))
 }
 .mochi-settings-tabs,.mochi-settings-categories {
   display:flex;
@@ -3402,7 +3152,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   min-height:44px;
   font:inherit;
   color:inherit;
-  font-size:13px
+  font-size:calc(13px * var(--mochi-interface-scale,1))
 }
 .mochi-settings-workspace button[aria-pressed=true] {
   border-color:var(--mochi-accent);
@@ -3411,7 +3161,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 .mochi-settings-workspace>.mochi-muted {
   margin:0;
   padding:10px 20px;
-  font-size:12px;
+  font-size:calc(12px * var(--mochi-interface-scale,1));
   line-height:1.5
 }
 .mochi-view .mochi-organized-settings {
@@ -3479,10 +3229,10 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 .mochi-character-settings-row strong {
   overflow-wrap:anywhere;
-  font-size:13px
+  font-size:calc(13px * var(--mochi-interface-scale,1))
 }
 .mochi-character-settings-row small {
-  font-size:11px
+  font-size:calc(11px * var(--mochi-interface-scale,1))
 }
 .mochi-character-settings-row>.mochi-avatar {
   width:36px;
@@ -3537,10 +3287,10 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 .mochi-profile-dock select {
   max-width:100%;
   min-width:0;
-  font-size:12px
+  font-size:calc(12px * var(--mochi-interface-scale,1))
 }
 .mochi-profile-dock small {
-  font-size:10px;
+  font-size:calc(10px * var(--mochi-interface-scale,1));
   overflow:hidden;
   text-overflow:ellipsis
 }
@@ -3548,7 +3298,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   display:none
 }
 .mochi-toolbar-label {
-  font-size:11px
+  font-size:calc(11px * var(--mochi-interface-scale,1))
 }
 .mochi-view .mochi-custom-toolbar {
   flex-wrap:wrap;
@@ -3636,7 +3386,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
     padding:10px 12px
   }
   .mochi-settings-heading h3 {
-    font-size:15px
+    font-size:calc(15px * var(--mochi-interface-scale,1))
   }
   .mochi-settings-tabs,.mochi-settings-categories {
     padding:6px 12px;
@@ -3660,6 +3410,68 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   }
 }
 
+
+/* Part 2B: two scopes, focused category workspace and native structural surfaces. */
+.mochi-view .mochi-category-workspace {display:grid;grid-template-columns:200px minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;flex:1;min-height:0;overflow:hidden;gap:0;padding:0}
+.mochi-category-workspace>.mochi-settings-categories {grid-column:1;grid-row:1;display:flex;flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:4px;padding:12px;background:var(--mochi-drawer-bg);border-right:1px solid var(--mochi-border);border-bottom:0;overflow:auto}
+.mochi-category-workspace>.mochi-settings-scroll {grid-column:2;grid-row:1;min-width:0;padding:20px clamp(12px,3vw,32px);background:var(--mochi-surface)}
+.mochi-category-workspace>.mochi-actions,.mochi-category-workspace>.mochi-presentation-actions {grid-column:1/-1;grid-row:2;display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px;border-top:1px solid var(--mochi-border);background:var(--mochi-elevated-bg);margin:0}
+.mochi-view .mochi-settings-workspace {background:var(--mochi-surface)}
+.mochi-view .mochi-settings-workspace button {background:var(--mochi-control-bg);color:var(--mochi-text);border:1px solid var(--mochi-border);padding:8px 10px;min-height:36px;height:auto;border-radius:var(--mochi-radius-button);font-size:calc(13px * var(--mochi-interface-scale));white-space:normal;overflow-wrap:anywhere}
+.mochi-view .mochi-settings-categories button {text-align:left;justify-content:flex-start;background:transparent;border:1px solid transparent;padding:9px 10px}
+.mochi-view .mochi-settings-categories button[aria-pressed=true] {background:var(--mochi-selected-bg);border-color:var(--mochi-accent);border-inline-start-width:4px;font-weight:700;box-shadow:none}
+.mochi-view .mochi-settings-categories button[aria-pressed=true]::after {content:'✓';margin-inline-start:auto;padding-inline-start:6px}
+.mochi-view .mochi-category-back {display:none}
+.mochi-settings-scroll>h4 {font-size:calc(18px * var(--mochi-interface-scale));margin:0 0 16px}
+.mochi-settings-scroll>.mochi-settings-category,.mochi-settings-scroll>label,.mochi-settings-scroll>.mochi-character-defaults {max-width:760px}
+.mochi-view .mochi-settings-workspace label {display:flex;flex-direction:column;align-items:stretch;gap:6px;font-size:calc(13px * var(--mochi-interface-scale));margin:12px 0}
+.mochi-view .mochi-settings-workspace label.mochi-toggle {flex-direction:row;align-items:center;flex-wrap:wrap}
+.mochi-view .mochi-settings-workspace input:not([type=checkbox]):not([type=range]),.mochi-view .mochi-settings-workspace select,.mochi-view .mochi-settings-workspace textarea,.mochi-character-defaults textarea {background:var(--mochi-input-bg);color:var(--mochi-text);border:1px solid var(--mochi-input-border);border-radius:var(--mochi-radius-field);padding:8px 10px;width:100%;max-width:100%;min-width:0;font:inherit;box-sizing:border-box}
+.mochi-view .mochi-settings-workspace button:not(.mochi-primary):hover {background:var(--mochi-hover-bg);border-color:var(--mochi-border-hover)}
+.mochi-view .mochi-settings-workspace .mochi-primary,.mochi-view .mochi-character-defaults .mochi-primary {background:var(--mochi-accent);color:var(--mochi-on-accent);border:1px solid var(--mochi-accent)}
+.mochi-view :is(button,input,select,textarea,summary):focus-visible {outline:2px solid var(--mochi-focus);outline-offset:3px}
+.mochi-participant-chips {display:flex;flex-wrap:wrap;gap:6px}
+.mochi-character-picker {border:1px solid var(--mochi-border);border-radius:var(--mochi-radius-panel);padding:10px;background:var(--mochi-section-bg)}
+.mochi-character-picker summary {cursor:pointer;padding:6px;font-weight:600}
+.mochi-character-picker .mochi-picker {display:flex;flex-direction:column;max-height:280px;overflow:auto;margin-top:8px}
+.mochi-character-picker .mochi-choice {display:flex;align-items:center;gap:8px;justify-content:flex-start;padding:6px;width:100%}
+.mochi-character-picker .mochi-choice .mochi-avatar {width:28px;height:28px}
+.mochi-character-picker .mochi-choice[aria-pressed=true]::after {content:'✓';margin-left:auto}
+.mochi-toolbar-choice-group {padding:8px 0;border-bottom:1px solid var(--mochi-border);max-width:650px}
+.mochi-toolbar-choice-group h5 {font-size:inherit;margin:8px 0}
+.mochi-view .mochi-toolbar-preference {display:grid;grid-template-columns:minmax(0,1fr) 36px 36px;gap:6px;padding:5px 0;background:transparent;border:0}
+.mochi-toolbar-live-preview {display:flex;flex-wrap:wrap;gap:12px;padding:12px;border:1px solid var(--mochi-border);background:var(--mochi-elevated-bg);border-radius:var(--mochi-radius-panel);max-width:650px}
+.mochi-toolbar-live-preview span {width:24px;height:24px;display:inline-flex}
+.mochi-toolbar-live-preview svg {width:100%;height:100%}
+.mochi-scale-control {max-width:550px}
+.mochi-scale-control output {font-weight:700}
+.mochi-scale-control input[type=range] {accent-color:var(--mochi-accent);width:100%;min-height:36px}
+.mochi-accessibility-preview {border:1px solid var(--mochi-input-border);border-radius:var(--mochi-radius-panel);padding:16px;background:var(--mochi-elevated-bg);max-width:650px}
+.mochi-scale-message {font-size:var(--mochi-chat-font-size);background:var(--mochi-selected-bg);padding:12px;border-radius:var(--mochi-bubble-radius);overflow-wrap:anywhere}
+.mochi-character-defaults {border-top:1px solid var(--mochi-border);padding:12px 0;min-width:0}
+.mochi-character-defaults label {display:grid;gap:6px;margin:10px 0}
+.mochi-character-defaults textarea {min-height:90px;resize:vertical}
+.mochi-character-defaults .mochi-actions {display:flex;flex-wrap:wrap;gap:6px}
+.mochi-character-defaults button {max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.mochi-view .mochi-profile-panel .mochi-character-defaults {font-size:calc(13px * var(--mochi-interface-scale));overflow-wrap:anywhere}
+.mochi-profile-about p {white-space:pre-wrap;overflow-wrap:anywhere}
+.mochi-shared-setup {border:1px solid var(--mochi-input-border);background:var(--mochi-elevated-bg);border-radius:var(--mochi-radius-panel);padding:12px;display:grid;gap:8px;margin-bottom:16px}
+.mochi-view[data-density=compact] .mochi-desktop-room {padding-block:5px;min-height:48px}
+@container(max-width:650px) {
+ .mochi-view .mochi-category-workspace {grid-template-columns:minmax(0,1fr)}
+ .mochi-category-workspace>.mochi-settings-categories {grid-column:1;border-right:0;padding:12px}
+ .mochi-category-workspace>.mochi-settings-scroll {grid-column:1;padding:14px}
+ .mochi-category-workspace[data-category-open=false]>.mochi-settings-scroll,.mochi-category-workspace[data-category-open=false]>.mochi-actions,.mochi-category-workspace[data-category-open=false]>.mochi-presentation-actions,.mochi-category-workspace[data-category-open=true]>.mochi-settings-categories {display:none}
+ .mochi-view .mochi-category-back {display:block;margin-bottom:14px}
+ .mochi-settings-categories>button {flex:0 0 auto;min-height:44px}
+ .mochi-view .mochi-settings-workspace button {min-height:var(--mochi-mobile-control-size)}
+ .mochi-settings-heading {padding:10px;gap:8px;flex-wrap:wrap}
+ .mochi-settings-tabs {padding:8px 12px}
+ .mochi-settings-workspace>.mochi-muted {padding:8px 12px}
+ .mochi-view .mochi-toolbar-preference {grid-template-columns:minmax(0,1fr) 44px 44px}
+ .mochi-category-workspace>.mochi-actions,.mochi-category-workspace>.mochi-presentation-actions {padding:8px;gap:6px;max-height:none;overflow:visible}
+}
+
 /* @mochi-section mochi-disclosure-styles */
 .mochi-view details.mochi-disclosure,.mochi-view .mochi-preset-navigation>details.mochi-disclosure,.mochi-view .mochi-settings-scroll details.mochi-disclosure {
   min-width:0;
@@ -3681,7 +3493,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   padding:12px 36px 12px 12px;
   margin:0;
   line-height:20px;
-  font-size:13px;
+  font-size:calc(13px * var(--mochi-interface-scale,1));
   font-weight:600;
   white-space:nowrap;
   overflow:hidden;
@@ -3747,7 +3559,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   padding:10px 0
 }
 .mochi-view .mochi-preview-overview>span {
-  font-size:12px
+  font-size:calc(12px * var(--mochi-interface-scale,1))
 }
 .mochi-view .mochi-preview-group {
   min-width:0
@@ -3764,7 +3576,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   font:inherit
 }
 .mochi-view .mochi-preview-identity {
-  font-size:13px;
+  font-size:calc(13px * var(--mochi-interface-scale,1));
   margin:6px 0
 }
 .mochi-view .mochi-preset-entry {
@@ -3820,10 +3632,10 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 .mochi-desktop-list-head h3 {
   margin:0;
-  font-size:14px
+  font-size:calc(14px * var(--mochi-interface-scale,1))
 }
 .mochi-desktop-account {
-  font-size:12px;
+  font-size:calc(12px * var(--mochi-interface-scale,1));
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap
@@ -3858,7 +3670,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 .mochi-shell-tools>button:first-child {
   flex:1;
   justify-content:center;
-  font-size:12px;
+  font-size:calc(12px * var(--mochi-interface-scale,1));
   min-width:0;
   padding:8px;
   min-height:40px;
@@ -3882,7 +3694,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   min-width:0;
   min-height:40px;
   padding:6px 10px;
-  font-size:12px;
+  font-size:calc(12px * var(--mochi-interface-scale,1));
   line-height:1.2;
   border:0;
   border-radius:var(--mochi-radius-field);
@@ -3905,7 +3717,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   border-top:1px solid var(--mochi-border)
 }
 .mochi-activity-snapshot h4 {
-  font-size:12px;
+  font-size:calc(12px * var(--mochi-interface-scale,1));
   font-weight:600;
   margin:0 0 6px
 }
@@ -3950,10 +3762,10 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   white-space:nowrap
 }
 .mochi-desktop-room-copy strong {
-  font-size:14px
+  font-size:calc(14px * var(--mochi-interface-scale,1))
 }
 .mochi-desktop-room-copy small {
-  font-size:12px;
+  font-size:calc(12px * var(--mochi-interface-scale,1));
   opacity:.75
 }
 .mochi-desktop-room .mochi-room-avatars {
@@ -3967,7 +3779,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 .mochi-desktop-unread {
   flex:none;
-  font-size:11px;
+  font-size:calc(11px * var(--mochi-interface-scale,1));
   border-radius:99px;
   padding:2px 6px;
   background:var(--mochi-accent);
@@ -4039,7 +3851,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   align-items:center;
   margin:0;
   line-height:0;
-  font-size:27px;
+  font-size:calc(27px * var(--mochi-interface-scale,1));
   font-weight:800;
   letter-spacing:-1px
 }
@@ -4061,7 +3873,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 .mochi-conversation-filter {
   font:inherit;
-  font-size:12px;
+  font-size:calc(12px * var(--mochi-interface-scale,1));
   padding:10px 12px;
   min-width:0;
   width:100%;
@@ -4075,7 +3887,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   display:none!important
 }
 .mochi-desktop .mochi-conversation-title {
-  font-size:16px;
+  font-size:calc(16px * var(--mochi-interface-scale,1));
   font-weight:600;
   overflow:hidden;
   text-overflow:ellipsis;
@@ -4111,7 +3923,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   margin-bottom:24px
 }
 .mochi-profile-heading h3 {
-  font-size:12px;
+  font-size:calc(12px * var(--mochi-interface-scale,1));
   font-weight:500;
   color:var(--lp-muted,inherit)
 }
@@ -4120,7 +3932,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   padding:6px 10px;
   background:transparent;
   border-color:transparent;
-  font-size:12px
+  font-size:calc(12px * var(--mochi-interface-scale,1))
 }
 .mochi-profile-person {
   display:grid;
@@ -4129,7 +3941,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   margin-bottom:20px
 }
 .mochi-profile-person h4 {
-  font-size:18px;
+  font-size:calc(18px * var(--mochi-interface-scale,1));
   margin:0;
   overflow-wrap:anywhere
 }
@@ -4155,10 +3967,10 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   grid-row:span 2
 }
 .mochi-profile-panel[data-kind=group] h4 {
-  font-size:13px
+  font-size:calc(13px * var(--mochi-interface-scale,1))
 }
 .mochi-profile-panel p {
-  font-size:12px;
+  font-size:calc(12px * var(--mochi-interface-scale,1));
   line-height:1.5;
   margin:0;
   overflow-wrap:anywhere;
@@ -4174,7 +3986,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   border-width:1px 0 0;
   border-radius:0;
   background:transparent;
-  font-size:12px;
+  font-size:calc(12px * var(--mochi-interface-scale,1));
   color:var(--lp-muted,inherit)
 }
 .mochi-desktop-main .mochi-search-panel {
@@ -4192,13 +4004,13 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   width:100%;
   min-height:40px;
   padding:7px;
-  font-size:12px
+  font-size:calc(12px * var(--mochi-interface-scale,1))
 }
 .mochi-desktop-main .mochi-search-controls button {
   width:auto;
   padding:7px 9px;
   min-height:40px;
-  font-size:12px
+  font-size:calc(12px * var(--mochi-interface-scale,1))
 }
 .mochi-desktop-main .mochi-search-secondary {
   background:transparent;
@@ -4206,7 +4018,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   color:var(--lp-muted,inherit)
 }
 .mochi-desktop-main .mochi-search-panel>[role=status] {
-  font-size:11px;
+  font-size:calc(11px * var(--mochi-interface-scale,1));
   margin-top:4px
 }
 .mochi-desktop-main .mochi-search-results {
@@ -4272,7 +4084,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   color:inherit;
   background:transparent;
   font:inherit;
-  font-size:12px;
+  font-size:calc(12px * var(--mochi-interface-scale,1));
   min-height:44px;
   cursor:pointer
 }
@@ -4365,7 +4177,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
     grid-column:3;
     grid-row:2;
     padding:4px;
-    font-size:11px
+    font-size:calc(11px * var(--mochi-interface-scale,1))
   }
 }
 
@@ -4395,7 +4207,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   height: 30px;
 }
 .mochi-desktop .mochi-desktop-account select {
-  font-size: 12px;
+  font-size:calc(12px * var(--mochi-interface-scale,1));
   min-height: 36px;
   padding: 4px 22px 4px 6px;
 }
@@ -4420,7 +4232,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 .mochi-desktop .mochi-conversation-filters>.lp-button {
   min-height: 36px;
   padding: 5px 8px;
-  font-size: 12px;
+  font-size:calc(12px * var(--mochi-interface-scale,1));
   border-radius: 8px;
 }
 .mochi-desktop .mochi-desktop-rooms {
@@ -4443,10 +4255,10 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   height: var(--mochi-list-avatar-size);
 }
 .mochi-desktop .mochi-desktop-room-copy strong {
-  font-size: 13px;
+  font-size:calc(13px * var(--mochi-interface-scale,1));
 }
 .mochi-desktop .mochi-desktop-room-copy small {
-  font-size: 11px;
+  font-size:calc(11px * var(--mochi-interface-scale,1));
 }
 .mochi-group-portraits {
   display: grid;
@@ -4484,16 +4296,16 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 .mochi-desktop .mochi-conversation-title {
   margin: 0;
-  font-size: 15px;
+  font-size:calc(15px * var(--mochi-interface-scale,1));
   font-weight: 650;
 }
 .mochi-desktop .mochi-room-meta {
-  font-size: 11px;
+  font-size:calc(11px * var(--mochi-interface-scale,1));
   margin: 3px 0 0;
 }
 .mochi-chat-name {
   display: block;
-  font-size: 10px;
+  font-size:calc(10px * var(--mochi-interface-scale,1));
   color: var(--lp-muted,inherit);
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -4547,7 +4359,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   margin-bottom: 10px;
 }
 .mochi-desktop .mochi-profile-heading h3 {
-  font-size: 13px;
+  font-size:calc(13px * var(--mochi-interface-scale,1));
 }
 .mochi-desktop .mochi-profile-heading button,.mochi-desktop .mochi-profile-panel button {
   min-height: 40px;
@@ -4571,12 +4383,12 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   border: 3px solid var(--mochi-surface);
 }
 .mochi-desktop .mochi-profile-person h4,.mochi-profile-group h4 {
-  font-size: 17px;
+  font-size:calc(17px * var(--mochi-interface-scale,1));
   margin: 6px 0;
   overflow-wrap: anywhere;
 }
 .mochi-desktop .mochi-profile-panel p {
-  font-size: 12px;
+  font-size:calc(12px * var(--mochi-interface-scale,1));
   line-height: 1.5;
 }
 .mochi-profile-about {
@@ -4588,7 +4400,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 .mochi-profile-about h5 {
   margin: 0 0 6px;
-  font-size: 12px;
+  font-size:calc(12px * var(--mochi-interface-scale,1));
 }
 .mochi-profile-about p {
   white-space: pre-wrap;
@@ -4606,7 +4418,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   width: var(--mochi-profile-avatar-size);
   height: var(--mochi-profile-avatar-size);
   margin: 0 auto;
-  font-size: 30px;
+  font-size:calc(30px * var(--mochi-interface-scale,1));
 }
 .mochi-desktop .mochi-profile-panel[data-kind=group] .mochi-profile-person {
   margin-top: 12px;
@@ -4658,7 +4470,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 
 .mochi-desktop .mochi-room-header>.mochi-chat-name {
   text-align: center;
-  font-size: 13px;
+  font-size:calc(13px * var(--mochi-interface-scale,1));
   font-weight: 600;
   margin: 0;
 }
@@ -4715,7 +4527,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 
 .mochi-desktop .mochi-profile-person h4 {
-  font-size: 19px;
+  font-size:calc(19px * var(--mochi-interface-scale,1));
 }
 
 @container (min-width:1000px) {
@@ -4749,7 +4561,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   grid-column: 1;
   text-align: left;
   margin-left: 48px;
-  font-size: 11px;
+  font-size:calc(11px * var(--mochi-interface-scale,1));
 }
 
  .mochi-header-controls {
@@ -4764,7 +4576,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 
  .mochi-desktop .mochi-conversation-title {
-  font-size: 14px;
+  font-size:calc(14px * var(--mochi-interface-scale,1));
 }
 
  .mochi-view .mochi-header-controls .mochi-icon-button {
@@ -4795,15 +4607,15 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 .mochi-account-dock { display:flex; align-items:center; gap:7px; flex-shrink:0; padding:8px; border-top:1px solid var(--mochi-border); background:var(--mochi-elevated-bg); color:var(--mochi-text); }
 .mochi-account-dock>div { display:grid; flex:1; min-width:0; gap:2px; }
 .mochi-account-dock :is(strong,small) { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.mochi-account-dock small { color:var(--mochi-muted); font-size:11px; }
-.mochi-messenger-dock>.mochi-avatar { width:34px; height:34px; flex:0 0 34px; font-size:14px; }
+.mochi-account-dock small { color:var(--mochi-muted); font-size:calc(11px * var(--mochi-interface-scale,1)); }
+.mochi-messenger-dock>.mochi-avatar { width:34px; height:34px; flex:0 0 34px; font-size:calc(14px * var(--mochi-interface-scale,1)); }
 .mochi-view .mochi-messenger-dock .mochi-icon-button { display:grid; place-items:center; width:36px; min-width:36px; height:36px; min-height:36px; padding:8px; border:0; border-radius:6px; background:transparent; color:var(--mochi-muted); }
 .mochi-messenger-dock svg { width:17px; height:17px; }
 .mochi-view .mochi-messenger-dock button:hover { color:var(--mochi-text); background:var(--mochi-hover-bg); }
 .mochi-view .mochi-messenger-dock button:focus-visible { outline:2px solid var(--mochi-focus); outline-offset:-2px; }
 @container(max-width:639px) { .mochi-view .mochi-messenger-dock .mochi-icon-button { width:40px; min-width:40px; height:40px; min-height:40px; } }
 /* @mochi-section mochi-sidebar-styles */
-.mochi-sidebar { height:100%; min-height:0; display:flex; flex-direction:column; color:var(--mochi-text); background:var(--mochi-drawer-bg); font:inherit; font-size:13px; }
+.mochi-sidebar { height:100%; min-height:0; display:flex; flex-direction:column; color:var(--mochi-text); background:var(--mochi-drawer-bg); font:inherit; font-size:calc(13px * var(--mochi-interface-scale,1)); }
 .mochi-sidebar * { box-sizing:border-box; }
 .mochi-sidebar-nav { display:flex; flex-wrap:wrap; gap:6px; padding:8px; flex-shrink:0; }
 .mochi-sidebar-picker { flex:1; min-height:0; overflow:auto; padding:0 8px 12px; scrollbar-width:thin; }
@@ -4816,7 +4628,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 .mochi-sidebar-label { min-width:0; display:flex; flex-direction:column; gap:3px; }
 .mochi-sidebar-label :is(strong,small) { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%; }
 .mochi-sidebar-label small,.mochi-sidebar-message { color:var(--mochi-muted); }
-.mochi-sidebar-message { margin:10px 0; font-size:12px; }
+.mochi-sidebar-message { margin:10px 0; font-size:calc(12px * var(--mochi-interface-scale,1)); }
 .mochi-sidebar-body { flex:1; min-height:0; overflow:hidden; display:flex; flex-direction:column; }
 .mochi-sidebar [hidden] { display:none!important; }
 .mochi-mobile-surface .mochi-sidebar-nav {
@@ -4910,7 +4722,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 .mochi-sidebar[data-mobile-messenger] .mochi-composer textarea {
   min-width:0;
   max-height:min(112px,25dvh);
-  font-size:16px
+  font-size:calc(16px * var(--mochi-interface-scale,1))
 }
 .mochi-sidebar[data-mobile-messenger] .mochi-composer .mochi-icon-button {
   flex:none;
@@ -4929,7 +4741,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 
 
 /* Native semantic roles: drawer backdrop, quiet sections, distinct fields/actions. */
-.mochi-sidebar-picker h3 { margin:8px 0; font-size:16px; }
+.mochi-sidebar-picker h3 { margin:8px 0; font-size:calc(16px * var(--mochi-interface-scale,1)); }
 .mochi-sidebar .mochi-view { background:transparent; padding:0; gap:var(--mochi-editor-gap); height:auto; }
 .mochi-sidebar .mochi-muted { color:var(--mochi-muted); }
 .mochi-sidebar-picker :is(input:not([type=checkbox]),textarea,select) { min-width:0; width:100%; color:var(--mochi-text); background:var(--mochi-input-bg); border:1px solid var(--mochi-border); border-radius:var(--mochi-editor-radius); min-height:var(--mochi-editor-control-height); padding:6px 9px; font:inherit; }
@@ -4943,7 +4755,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 .mochi-sidebar .mochi-account-icon:hover { background:var(--mochi-hover-bg); color:var(--mochi-text); }
 .mochi-sidebar .mochi-account-icon[aria-pressed=true] { color:var(--mochi-text); border-color:var(--mochi-account-accent); background:var(--mochi-selected-bg); }
 .mochi-account-list { display:grid; gap:3px; }
-.mochi-account-startup { display:grid; gap:5px; font-size:12px; color:var(--mochi-muted); margin-top:14px; }
+.mochi-account-startup { display:grid; gap:5px; font-size:calc(12px * var(--mochi-interface-scale,1)); color:var(--mochi-muted); margin-top:14px; }
 .mochi-account-row { display:flex; align-items:center; min-width:0; gap:2px; }
 .mochi-account-row>input { accent-color:var(--mochi-account-accent); width:18px; height:18px; }
 .mochi-sidebar .mochi-sidebar-account { display:flex; align-items:center; text-align:left; width:100%; margin:0; min-width:0; border:1px solid transparent; border-radius:8px; background:transparent; padding:7px; gap:8px; }
@@ -4956,10 +4768,10 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 .mochi-account-list[data-layout=grid] .mochi-sidebar-avatar { width:48px; height:48px; flex-basis:48px; }
 .mochi-sidebar .mochi-profile-screen { display:flex; flex-direction:column; width:100%; gap:var(--mochi-editor-gap); padding:0; }
 .mochi-sidebar .mochi-profile-screen fieldset { min-width:0; padding:8px 0; margin:0; border:0; border-top:1px solid var(--mochi-border); border-radius:0; background:transparent; gap:6px; }
-.mochi-sidebar .mochi-profile-screen legend { padding:0 6px 0 0; font-size:12px; font-weight:650; color:var(--mochi-text); }
+.mochi-sidebar .mochi-profile-screen legend { padding:0 6px 0 0; font-size:calc(12px * var(--mochi-interface-scale,1)); font-weight:650; color:var(--mochi-text); }
 .mochi-sidebar .mochi-profile-screen :is(label,textarea,pre) { min-width:0; max-width:100%; }
-.mochi-sidebar .mochi-profile-screen label { gap:4px; font-size:12px; color:var(--mochi-muted); }
-.mochi-sidebar .mochi-profile-screen :is(input:not([type=checkbox]),textarea,select) { min-height:var(--mochi-editor-control-height); border-radius:var(--mochi-editor-radius); background:var(--mochi-input-bg); color:var(--mochi-text); padding:6px 9px; }
+.mochi-sidebar .mochi-profile-screen label { gap:4px; font-size:calc(12px * var(--mochi-interface-scale,1)); color:var(--mochi-muted); }
+.mochi-sidebar .mochi-profile-screen :is(input:not([type=checkbox]),textarea,select) { min-height:var(--mochi-editor-control-height); border-radius:var(--mochi-editor-radius); border:1px solid var(--mochi-input-border); background:var(--mochi-input-bg); color:var(--mochi-text); padding:6px 9px; }
 .mochi-sidebar .mochi-profile-screen button { min-height:var(--mochi-editor-control-height); border-radius:var(--mochi-editor-radius); padding:6px 10px; background:var(--mochi-control-bg); color:var(--mochi-text); }
 .mochi-sidebar .mochi-profile-screen button:hover { background:var(--mochi-hover-bg); }
 .mochi-sidebar .mochi-profile-screen .mochi-primary { background:var(--mochi-accent); color:var(--mochi-on-accent); border-color:var(--mochi-accent); font-weight:650; }
@@ -4970,8 +4782,8 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 .mochi-sidebar .mochi-profile-preview { background:var(--mochi-elevated-bg); border:1px solid var(--mochi-border); border-radius:10px; }
 .mochi-sidebar .mochi-profile-banner { display:none; }
 .mochi-sidebar .mochi-profile-preview-body { display:grid; grid-template-columns:42px minmax(0,1fr); align-items:center; gap:2px 10px; padding:10px; }
-.mochi-sidebar .mochi-profile-preview .mochi-profile-portrait { grid-row:1/3; position:static; margin:0; width:42px; height:42px; font-size:18px; border:1px solid var(--mochi-border); }
-.mochi-sidebar .mochi-profile-preview-name { font-size:15px; overflow-wrap:anywhere; }
+.mochi-sidebar .mochi-profile-preview .mochi-profile-portrait { grid-row:1/3; position:static; margin:0; width:42px; height:42px; font-size:calc(18px * var(--mochi-interface-scale,1)); border:1px solid var(--mochi-border); }
+.mochi-sidebar .mochi-profile-preview-name { font-size:calc(15px * var(--mochi-interface-scale,1)); overflow-wrap:anywhere; }
 .mochi-sidebar .mochi-profile-actions { gap:6px; }
 .mochi-sidebar .mochi-profile-fields label:has(input[type=checkbox]) { display:flex; flex-direction:row; align-items:center; gap:8px; min-height:32px; color:var(--mochi-text); }
 .mochi-sidebar .mochi-profile-fields input[type=checkbox] { accent-color:var(--mochi-account-accent); width:18px; height:18px; min-height:18px; }
@@ -4983,16 +4795,16 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 .mochi-persona-choice :is(strong,small) { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .mochi-persona-choice .mochi-sidebar-avatar { width:28px; height:28px; flex-basis:28px; }
 .mochi-sidebar .mochi-persona-choice[aria-pressed=true] { background:var(--mochi-selected-bg); border-color:var(--mochi-account-accent); }
-.mochi-source-details { font-size:11px; overflow-wrap:anywhere; }
+.mochi-source-details { font-size:calc(11px * var(--mochi-interface-scale,1)); overflow-wrap:anywhere; }
 .mochi-source-details>summary { color:var(--mochi-muted); }
 .mochi-addon-group { display:grid; gap:4px; }
-.mochi-addon-group h4 { margin:5px 0; font-size:11px; color:var(--mochi-muted); text-transform:uppercase; letter-spacing:.04em; }
+.mochi-addon-group h4 { margin:5px 0; font-size:calc(11px * var(--mochi-interface-scale,1)); color:var(--mochi-muted); text-transform:uppercase; letter-spacing:.04em; }
 .mochi-addon-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:0 6px; padding:5px 7px; background:var(--mochi-section-bg); border:1px solid var(--mochi-border); border-radius:8px; }
 .mochi-addon-row[data-selected=true] { border-color:var(--mochi-account-accent); background:var(--mochi-selected-bg); }
 .mochi-addon-name { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.mochi-addon-status { align-self:center; color:var(--mochi-muted); font-size:10px; }
+.mochi-addon-status { align-self:center; color:var(--mochi-muted); font-size:calc(10px * var(--mochi-interface-scale,1)); }
 .mochi-addon-details { grid-column:1/-1; min-width:0; }
-.mochi-addon-content,.mochi-sync-value { white-space:pre-wrap; overflow-wrap:anywhere; font:inherit; font-size:12px; max-height:220px; overflow:auto; padding:8px; color:var(--mochi-text); background:var(--mochi-input-bg); border-radius:6px; }
+.mochi-addon-content,.mochi-sync-value { white-space:pre-wrap; overflow-wrap:anywhere; font:inherit; font-size:calc(12px * var(--mochi-interface-scale,1)); max-height:220px; overflow:auto; padding:8px; color:var(--mochi-text); background:var(--mochi-input-bg); border-radius:6px; }
 @media(max-width:600px),(pointer:coarse) { .mochi-sidebar,.mochi-sidebar .mochi-view { --mochi-editor-control-height:40px; }.mochi-sidebar .mochi-account-icon { width:40px; min-width:40px; height:40px; min-height:40px; }.mochi-sidebar .mochi-profile-fields label:has(input[type=checkbox]),.mochi-sidebar details>summary { min-height:40px; } }
 /* @mochi-section launcher */
 .mochi-launcher-root {
@@ -5165,25 +4977,586 @@ function mochiStyle(name) {
 ` : "") + css;
 }
 
+// src/mochi/texting.ts
+var TEXTING_OPTIONS = { length: ["short", "balanced", "detailed"], capitalization: ["lowercase", "natural", "formal"], punctuation: ["minimal", "natural", "expressive"], emoji: ["rare", "occasional", "frequent"] };
+
+// src/mochi/texting-controls.ts
+function textingControls(settings, id, name) {
+  const group = el("fieldset", "mochi-texting-controls");
+  group.append(el("legend", "", "Texting style in this chat"), el("small", "mochi-muted", "Optional tendencies. Character default keeps existing behavior. Save settings applies changes and may cancel pending replies."));
+  const change = (key, value) => {
+    const styles = { ...settings.textingStyles }, style = { ...styles[id] };
+    if (value)
+      Object.assign(style, { [key]: value });
+    else
+      delete style[key];
+    if (Object.keys(style).length)
+      styles[id] = style;
+    else
+      delete styles[id];
+    if (Object.keys(styles).length)
+      settings.textingStyles = styles;
+    else
+      delete settings.textingStyles;
+  };
+  const labels = { length: "Message length", capitalization: "Capitalization", punctuation: "Punctuation", emoji: "Emoji use" };
+  for (const key of Object.keys(TEXTING_OPTIONS)) {
+    const label = el("label", "", labels[key]), select = el("select"), defaultOption = el("option", "", "Character default");
+    defaultOption.value = "";
+    select.append(defaultOption);
+    select.setAttribute("aria-label", `${labels[key]} for ${name}`);
+    for (const value of TEXTING_OPTIONS[key]) {
+      const option = el("option", "", value === "lowercase" ? "Casual lowercase" : value[0].toUpperCase() + value.slice(1));
+      option.value = value;
+      select.append(option);
+    }
+    select.value = settings.textingStyles?.[id]?.[key] || "";
+    select.onchange = () => change(key, select.value);
+    label.append(select);
+    group.append(label);
+  }
+  const label = el("label", "", "Texting habits"), tone = el("textarea");
+  tone.rows = 2;
+  tone.maxLength = 400;
+  tone.value = settings.textingStyles?.[id]?.tone || "";
+  tone.placeholder = "Optional: casual abbreviations, complete sentences, dry humor…";
+  tone.setAttribute("aria-label", `Texting habits for ${name}`);
+  tone.oninput = () => change("tone", tone.value);
+  label.append(tone);
+  group.append(label);
+  return group;
+}
+var MOCHI_TEXTING_STYLES = mochiStyle("mochi-texting-styles");
+
+// src/mochi/types.ts
+var defaultMochiSettings = () => ({ autoReply: true, connectionId: "", contextTokens: 8192, outputTokens: 1200, instructions: "", characterNames: {} });
+var MOCHI_ROOM_ID = /^room_[a-f0-9]{32}$/;
+
+// src/mochi/presence.ts
+var STATUSES = ["online", "away", "dnd", "offline"];
+function defaultPresence() {
+  return { automatic: "online", manual: null, awayMs: 300000, dndMs: 900000, transitions: [] };
+}
+function statusFor(room, id, now = Date.now()) {
+  const p = room.runtime?.presence?.[id] || room.background?.presence?.[id] || room.characterDefaults?.[id]?.availability || defaultPresence();
+  if (p.manual)
+    return p.manual;
+  return p.transitions.filter((t) => t.at <= now).sort((a, b) => a.at - b.at).at(-1)?.status || p.automatic;
+}
+
+// src/mochi/character-editor.ts
+class CharacterEditor {
+  drafts = new Map;
+  get dirty() {
+    return [...this.drafts.values()].some((d) => JSON.stringify(d.value) !== d.baseline);
+  }
+  discard() {
+    this.drafts.clear();
+  }
+  render(character, send, redraw, mode = "texting") {
+    const root = el("section", "mochi-character-defaults"), saved = character.preferences;
+    if (!saved) {
+      root.append(el("p", "mochi-muted", "Refresh character choices to edit Mochi defaults."));
+      return root;
+    }
+    let draft = this.drafts.get(character.id);
+    if (!draft || draft.revision !== saved.revision) {
+      const value = structuredClone(saved);
+      draft = { revision: saved.revision, value, baseline: JSON.stringify(value) };
+      this.drafts.set(character.id, draft);
+    }
+    const value = draft.value;
+    root.append(el("h4", "", mode === "about" ? "Mochi About Me" : "Character-wide Mochi defaults"), el("p", "mochi-muted", "Shared across your fictional accounts and chats. Native character instructions stay unchanged."));
+    if (mode === "about") {
+      const label = el("label", "", "About Me"), bio = el("textarea");
+      bio.maxLength = 2000;
+      bio.rows = 3;
+      bio.value = value.about;
+      bio.setAttribute("aria-label", "Mochi About Me for " + character.name);
+      bio.oninput = () => {
+        value.about = bio.value;
+      };
+      label.append(bio);
+      root.append(label);
+    }
+    if (mode === "texting") {
+      const settings = defaultMochiSettings();
+      settings.textingStyles = { [character.id]: value.texting || {} };
+      const texting = textingControls(settings, character.id, "character default " + character.name);
+      texting.querySelector("legend").textContent = "Texting defaults";
+      texting.querySelector("small").textContent = "Used when a chat has no explicit texting override.";
+      texting.addEventListener("input", () => {
+        value.texting = settings.textingStyles?.[character.id];
+      });
+      texting.addEventListener("change", () => {
+        value.texting = settings.textingStyles?.[character.id];
+      });
+      root.append(texting);
+    }
+    if (mode === "availability") {
+      const presence = value.availability || defaultPresence(), wrap = el("label", "", "Default availability"), status = el("select");
+      status.setAttribute("aria-label", "Default availability for " + character.name);
+      for (const id of STATUSES) {
+        const o = el("option", "", id);
+        o.value = id;
+        status.append(o);
+      }
+      status.value = presence.manual || presence.automatic;
+      status.onchange = () => {
+        value.availability = { ...value.availability || presence, automatic: status.value, manual: null, transitions: [] };
+      };
+      wrap.append(status);
+      root.append(wrap);
+      for (const [key, name] of [["awayMs", "Away delay"], ["dndMs", "DND delay"]]) {
+        const l = el("label", "", name + " (minutes)"), i = el("input");
+        i.type = "number";
+        i.min = "0";
+        i.max = "1440";
+        i.value = String(presence[key] / 60000);
+        i.setAttribute("aria-label", "Default " + name + " for " + character.name);
+        i.oninput = () => {
+          value.availability = { ...value.availability || presence, [key]: Number(i.value) * 60000, transitions: [] };
+        };
+        l.append(i);
+        root.append(l);
+      }
+    }
+    const actions = el("div", "mochi-actions"), save = button("Save character profile", "mochi-primary"), cancel = button("Cancel character changes");
+    save.onclick = () => send({ characterId: character.id, revision: saved.revision, about: value.about, texting: value.texting || null, availability: value.availability || null });
+    cancel.onclick = () => {
+      this.drafts.delete(character.id);
+      redraw();
+    };
+    actions.append(save, cancel);
+    root.append(actions);
+    return root;
+  }
+}
+
+// src/mochi/group-icons.ts
+var GROUP_ICONS = ["\uD83D\uDCAC", "\uD83C\uDF19", "⭐", "\uD83C\uDF38", "\uD83C\uDF61", "\uD83C\uDFAE", "\uD83D\uDCDA", "\uD83C\uDFB5", "\uD83C\uDF3F", "❤️"];
+
+// src/mochi/chat-identity.ts
+function chatIdentity(room, characters) {
+  const direct = room.characterIds.length === 1, c = characters.find((c) => c.id === room.characterIds[0]);
+  return { name: direct ? room.settings?.characterNames[room.characterIds[0]] || c?.name || "Unavailable character" : room.title, avatarUrl: direct ? c?.avatarUrl || "" : "", direct };
+}
+function chatPortrait(room, characters) {
+  const identity = chatIdentity(room, characters), avatar = el("span", "mochi-avatar mochi-chat-avatar", identity.direct ? identity.name.slice(0, 1) : room.groupIcon || "\uD83D\uDC65");
+  avatar.setAttribute("aria-hidden", "true");
+  if (identity.avatarUrl) {
+    const img = el("img");
+    img.src = identity.avatarUrl;
+    img.alt = "";
+    avatar.replaceChildren(img);
+  } else if (!identity.direct && !room.groupIcon) {
+    avatar.classList.add("mochi-group-portraits");
+    avatar.replaceChildren();
+    for (const id of room.characterIds.slice(0, 2)) {
+      const c = characters.find((c) => c.id === id), part = el("span", "", c?.name.slice(0, 1) || "?");
+      if (c?.avatarUrl) {
+        const img = el("img");
+        img.src = c.avatarUrl;
+        img.alt = "";
+        part.replaceChildren(img);
+      }
+      avatar.append(part);
+    }
+  }
+  return avatar;
+}
+
+// src/mochi/toolbar-icons.ts
+var paths = {
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  settings: '<path d="m9 3-.5 2-2 1.2-2-.5-2 3.5 1.5 1.5v2.6L2.5 15l2 3.5 2-.5 2 1.2L9 21h4l.5-1.8 2-1.2 2 .5 2-3.5-1.5-1.7v-2.6L19.5 9l-2-3.5-2 .5-2-1.2L13 3Z"/><circle cx="11" cy="12" r="3"/>',
+  logout: '<path d="M9 4H4v16h5m6-13 5 5-5 5m-7-5h12"/>',
+  sort: '<path d="M7 4v16m-4-4 4 4 4-4M14 5h7m-7 5h5m-5 5h3"/>',
+  grid: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+  list: '<path d="M8 5h13M8 12h13M8 19h13M3 5h.01M3 12h.01M3 19h.01"/>',
+  check: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="m7 12 3 3 7-7"/>',
+  archive: '<path d="M4 8v12h16V8M9 12h6"/><rect x="3" y="3" width="18" height="5" rx="1"/>',
+  brain: '<path d="M12 18V5a3 3 0 0 0-5.8-1A4 4 0 0 0 3 11a4 4 0 0 0 2 7.5A3.5 3.5 0 0 0 12 18Zm0 0V5a3 3 0 0 1 5.8-1A4 4 0 0 1 21 11a4 4 0 0 1-2 7.5A3.5 3.5 0 0 1 12 18ZM7 8c2 0 3 1 3 3m7-3c-2 0-3 1-3 3M6 14c2 0 3 1 3 3m9-3c-2 0-3 1-3 3"/>',
+  smile: '<circle cx="12" cy="12" r="9"/><path d="M8 14s1 3 4 3 4-3 4-3M8 9h.01M16 9h.01"/>',
+  sliders: '<path d="M4 7h9m4 0h3M4 17h3m4 0h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
+  profile: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',
+  panel: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M15 3v18M18 7h.01M18 11h.01"/>',
+  layers: '<path d="m12 3 9 5-9 5-9-5 9-5Zm-9 9 9 5 9-5M3 16l9 5 9-5"/>',
+  bookmark: '<path d="M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16l-6-4-6 4Z"/>',
+  eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
+  pin: '<path d="m16 3 5 5-4 2-3 5-5-5 5-3 2-4ZM9 10l-3 3 5 5 3-3M8.5 15.5 3 21"/>',
+  ellipsis: '<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>'
+};
+var MOCHI_TOOLBAR_ICONS = Object.fromEntries(Object.entries(paths).map(([key, path]) => [key, `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`]));
+
+// src/mochi/scheduling.ts
+var SCHEDULE_LABELS = { queued: "Scheduled", generating: "Generating", generated: "Waiting to deliver", delivered: "Delivered", cancelled: "Canceled", paused: "Needs attention", failed: "Failed", missed: "Expired" };
+var TERMINAL = new Set(["delivered", "cancelled", "failed", "missed"]);
+
+// src/mochi/ui-preferences.ts
+var TOOLBAR_ACTIONS = ["search", "participants", "notifications", "settings", "presets", "memory", "preview", "notes"];
+var TOOLBAR_LABELS = { search: "Search conversation", participants: "Participants", notifications: "Mochi notifications", settings: "Chat Settings", presets: "Presets", memory: "Conversation Memory", preview: "Preview AI prompt", notes: "Pins & Notes" };
+var defaultUIPreferences = () => ({ order: [...TOOLBAR_ACTIONS], hidden: ["presets", "memory", "preview", "notes"], presentation: "icons", dock: "comfortable" });
+function validateUIPreferences(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).some((k) => !["order", "hidden", "presentation", "dock", "interfaceScale", "messageScale"].includes(k)))
+    throw Error("Invalid messenger presentation preferences.");
+  const valid = (items) => Array.isArray(items) && items.length <= TOOLBAR_ACTIONS.length && new Set(items).size === items.length && items.every((k) => TOOLBAR_ACTIONS.includes(k));
+  if (!valid(value.order) || value.order.length !== TOOLBAR_ACTIONS.length || !valid(value.hidden) || !["icons", "labels"].includes(value.presentation) || !["compact", "comfortable"].includes(value.dock))
+    throw Error("Invalid messenger presentation preferences.");
+  for (const [key, max] of [["interfaceScale", 150], ["messageScale", 170]])
+    if (value[key] !== undefined && (!Number.isInteger(value[key]) || value[key] < 85 || value[key] > max))
+      throw Error("Invalid text scale.");
+  return structuredClone(value);
+}
+var sharedUIDefaults = () => ({ ...defaultUIPreferences(), order: ["presets", "notes", "memory", "preview", "settings", "search", "notifications", "participants"], hidden: [], interfaceScale: 100, messageScale: 100 });
+
+// src/mochi/personal-settings.ts
+var messengerUIPreferences = sharedUIDefaults;
+var PERSONAL_CATEGORIES = ["Appearance", "Toolbar", "Notifications", "Accessibility", "General"];
+
+class PersonalSettings {
+  send;
+  current;
+  owner;
+  redraw;
+  saved;
+  draft;
+  status = "";
+  category = "Appearance";
+  categoryOpen = false;
+  focusCategory = false;
+  ticket = "";
+  scope = "";
+  timer;
+  layouts = [];
+  source;
+  constructor(send, current, owner, redraw) {
+    this.send = send;
+    this.current = current;
+    this.owner = owner;
+    this.redraw = redraw;
+  }
+  get value() {
+    return this.saved?.preferences || messengerUIPreferences();
+  }
+  get scales() {
+    return this.draft || this.value;
+  }
+  get dirty() {
+    return !!this.draft && JSON.stringify(this.draft) !== JSON.stringify(this.value);
+  }
+  back() {
+    if (this.categoryOpen) {
+      this.categoryOpen = false;
+      return true;
+    }
+    return false;
+  }
+  reset() {
+    clearTimeout(this.timer);
+    this.ticket = "";
+    this.scope = "";
+    this.saved = undefined;
+    this.draft = undefined;
+    this.layouts = [];
+    this.source = undefined;
+    this.status = "";
+    this.category = "Appearance";
+    this.categoryOpen = false;
+  }
+  discard() {
+    this.draft = this.saved ? structuredClone(this.saved.preferences) : undefined;
+  }
+  load(force = false) {
+    const scope = this.owner() || "loading";
+    if (!force && this.scope === scope && (this.ticket || this.saved))
+      return;
+    this.scope = scope;
+    this.request("get");
+  }
+  request(action) {
+    this.ticket = requestId("mochi_ui");
+    const ticket = this.ticket;
+    this.status = action === "save" ? "Saving presentation…" : "Loading presentation…";
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => {
+      if (this.ticket === ticket) {
+        this.ticket = "";
+        this.status = "Presentation unavailable. Refresh to retry.";
+        this.redraw();
+      }
+    }, 20000);
+    const source = this.layouts.find((l) => (l.record.accountId || "legacy") === this.source);
+    this.send({ type: "mochi:ui_preferences", requestId: ticket, action: action === "get" ? "shared_get" : "shared_save", ...action === "save" ? { revision: this.saved?.revision, preferences: this.draft, setupSource: this.source, sourceRevision: source?.record.revision } : {} });
+  }
+  receive(p) {
+    if (!this.ticket || p?.requestId !== this.ticket || !["mochi:ui_preferences", "mochi:error"].includes(p.type))
+      return p?.type === "mochi:ui_preferences";
+    this.ticket = "";
+    clearTimeout(this.timer);
+    if (p.type === "mochi:error") {
+      this.status = "Unable to save or load presentation. Refresh and review before retrying.";
+      this.redraw();
+      return true;
+    }
+    const r = p.record;
+    if (!r || r.shared !== true || r.version !== 1 || !Number.isSafeInteger(r.revision) || r.revision < 0 || r.accountId !== undefined || this.owner() && r.ownerId !== this.owner())
+      return true;
+    try {
+      r.preferences = validateUIPreferences(r.preferences);
+    } catch {
+      return true;
+    }
+    const dirty = this.dirty;
+    this.saved = r;
+    this.layouts = p.layouts || [];
+    if (!dirty)
+      this.draft = structuredClone(r.preferences);
+    this.status = r.revision ? "Shared across your fictional Mochi accounts." : "Save to create your shared presentation.";
+    this.redraw();
+    return true;
+  }
+  render() {
+    const root = el("section", "mochi-personal-presentation mochi-category-workspace");
+    root.dataset.categoryOpen = String(this.categoryOpen);
+    const nav = el("nav", "mochi-settings-categories");
+    nav.setAttribute("aria-label", "Personal settings categories");
+    for (const name of PERSONAL_CATEGORIES) {
+      const tab = button(name);
+      tab.setAttribute("aria-label", name);
+      tab.setAttribute("aria-pressed", String(this.category === name));
+      tab.onclick = () => {
+        this.category = name;
+        this.focusCategory = true;
+        this.categoryOpen = true;
+        this.redraw();
+      };
+      nav.append(tab);
+    }
+    const body = el("div", "mochi-settings-scroll"), back = button("Back to Personal categories", "mochi-category-back");
+    back.onclick = () => {
+      this.categoryOpen = false;
+      this.focusCategory = true;
+      this.redraw();
+    };
+    body.append(back, el("h4", "", this.category));
+    const status = el("p", "mochi-muted", this.status);
+    status.setAttribute("role", "status");
+    if (!this.saved || this.status.includes("Unable") || this.category === "General")
+      body.append(status);
+    const refresh = button("Refresh presentation");
+    refresh.onclick = () => {
+      this.load(true);
+      this.redraw();
+    };
+    if (this.category === "General" || !this.saved)
+      body.append(refresh);
+    root.append(nav, body);
+    if (this.focusCategory) {
+      this.focusCategory = false;
+      queueMicrotask(() => {
+        const target = this.categoryOpen ? body.querySelector("h4") : nav.querySelector("[aria-pressed=true]");
+        if (target) {
+          target.tabIndex = -1;
+          target.focus({ preventScroll: true });
+          if (target.tagName === "BUTTON")
+            target.tabIndex = 0;
+        }
+      });
+    }
+    if (!this.saved)
+      return root;
+    this.draft ||= structuredClone(this.value);
+    const draft = this.draft;
+    if (!this.saved.revision && this.layouts.length) {
+      const setup = el("section", "mochi-shared-setup");
+      setup.append(el("h4", "", "Choose your shared layout"), el("p", "mochi-muted", "Original account layouts remain saved. Choose one or start with new defaults."));
+      for (const item of [...this.layouts, { name: "New defaults", record: { preferences: messengerUIPreferences(), accountId: "defaults", revision: 0 } }]) {
+        const id = item.record.accountId || "legacy", choice = button(item.name + " · " + item.record.preferences.presentation + " · " + item.record.preferences.dock);
+        choice.setAttribute("aria-pressed", String(this.source === id));
+        choice.onclick = () => {
+          this.source = id;
+          this.draft = structuredClone(item.record.preferences);
+          this.redraw();
+        };
+        const preview = el("div", "mochi-toolbar-live-preview");
+        preview.setAttribute("aria-label", "Layout preview for " + item.name);
+        for (const key of item.record.preferences.order.filter((k) => !item.record.preferences.hidden.includes(k) && ["presets", "memory", "preview", "notes"].includes(k))) {
+          const icon = el("span");
+          icon.innerHTML = MOCHI_TOOLBAR_ICONS[key === "notes" ? "pin" : key === "presets" ? "sliders" : key === "memory" ? "brain" : "eye"] || "";
+          icon.title = TOOLBAR_LABELS[key];
+          preview.append(icon);
+        }
+        setup.append(choice, preview, el("small", "mochi-muted", "Source: " + id), el("small", "mochi-muted", item.record.preferences.order.filter((k) => !item.record.preferences.hidden.includes(k)).map((k) => TOOLBAR_LABELS[k]).join(" · ")));
+      }
+      const use = button("Use selected shared layout", "mochi-primary");
+      use.disabled = !this.source || !!this.ticket;
+      use.onclick = () => {
+        this.request("save");
+        this.redraw();
+      };
+      setup.append(use);
+      body.append(setup);
+      return root;
+    }
+    const choice = (label, key, values) => {
+      const wrap = el("label", "", label), select = el("select");
+      select.setAttribute("aria-label", label);
+      for (const [value, name] of values) {
+        const o = el("option", "", name);
+        o.value = value;
+        select.append(o);
+      }
+      select.value = draft[key];
+      select.onchange = () => {
+        draft[key] = select.value;
+        this.redraw();
+      };
+      wrap.append(select);
+      body.append(wrap);
+    };
+    if (this.category === "Appearance") {
+      body.append(el("p", "mochi-muted", "Colors inherit Lumiverse. Mochi Custom CSS can override presentation variables."));
+      choice("Interface density", "dock", [["comfortable", "Comfortable"], ["compact", "Compact"]]);
+    } else if (this.category === "Toolbar") {
+      choice("Toolbar presentation", "presentation", [["icons", "Compact icons"], ["labels", "Icons and labels"]]);
+      const preview = el("div", "mochi-toolbar-live-preview");
+      preview.setAttribute("aria-label", "Toolbar preview");
+      const movable = draft.order.filter((k) => !["search", "participants", "notifications", "settings"].includes(k));
+      for (const key of movable.filter((k) => !draft.hidden.includes(k))) {
+        const icon = el("span");
+        icon.innerHTML = MOCHI_TOOLBAR_ICONS[key === "notes" ? "pin" : key === "presets" ? "sliders" : key === "memory" ? "brain" : "eye"] || "";
+        icon.title = TOOLBAR_LABELS[key];
+        icon.setAttribute("aria-label", TOOLBAR_LABELS[key]);
+        preview.append(icon);
+      }
+      body.append(preview);
+      for (const visible of [true, false]) {
+        const group = el("section", "mochi-toolbar-choice-group");
+        group.append(el("h5", "", visible ? "Visible shortcuts" : "Hidden shortcuts"));
+        for (const key of movable.filter((k) => draft.hidden.includes(k) !== visible)) {
+          const row = el("div", "mochi-toolbar-preference"), toggle = button((visible ? "Hide " : "Show ") + TOOLBAR_LABELS[key]);
+          toggle.setAttribute("aria-label", "Show " + TOOLBAR_LABELS[key]);
+          toggle.setAttribute("aria-pressed", String(visible));
+          toggle.onclick = () => {
+            draft.hidden = draft.hidden.filter((k) => k !== key);
+            if (visible)
+              draft.hidden.push(key);
+            this.redraw();
+          };
+          const index = movable.indexOf(key), move = (delta) => {
+            const from = draft.order.indexOf(key), to = draft.order.indexOf(movable[index + delta]);
+            [draft.order[from], draft.order[to]] = [draft.order[to], key];
+            this.redraw();
+            queueMicrotask(() => document.querySelector('[aria-label="Move ' + TOOLBAR_LABELS[key] + (delta < 0 ? " up" : " down") + '"]')?.focus());
+          };
+          const up = button("↑"), down = button("↓");
+          up.setAttribute("aria-label", "Move " + TOOLBAR_LABELS[key] + " up");
+          down.setAttribute("aria-label", "Move " + TOOLBAR_LABELS[key] + " down");
+          up.disabled = index === 0;
+          down.disabled = index === movable.length - 1;
+          up.onclick = () => move(-1);
+          down.onclick = () => move(1);
+          row.append(toggle, up, down);
+          group.append(row);
+        }
+        body.append(group);
+      }
+      body.append(el("p", "mochi-muted", "Search, Notifications and Participants stay in the header. Chat Settings stays at the bottom right. Hidden tools remain in Room options."));
+    } else if (this.category === "Accessibility") {
+      for (const [key, label, max] of [["interfaceScale", "Interface text size", 150], ["messageScale", "Chat message text size", 170]]) {
+        const wrap = el("label", "mochi-scale-control", label), range = el("input"), output = el("output", "", String(draft[key] || 100) + "%");
+        range.type = "range";
+        range.min = "85";
+        range.max = String(max);
+        range.step = "5";
+        range.value = String(draft[key] || 100);
+        range.setAttribute("aria-label", label);
+        range.setAttribute("aria-valuetext", range.value + "%");
+        range.oninput = () => {
+          draft[key] = Number(range.value);
+          output.value = range.value + "%";
+          range.setAttribute("aria-valuetext", range.value + "%");
+          const surface = root.closest(".mochi-desktop") || root.closest(".mochi-view");
+          for (const node of [surface, ...Array.from(surface?.querySelectorAll(".mochi-view,.mochi-sheet") || [])])
+            node?.style.setProperty(key === "interfaceScale" ? "--mochi-saved-interface-scale" : "--mochi-saved-message-scale", String(Number(range.value) / 100));
+        };
+        const reset = button("Reset " + label.toLowerCase());
+        reset.onclick = () => {
+          draft[key] = 100;
+          this.redraw();
+        };
+        wrap.append(output, range, reset);
+        body.append(wrap);
+      }
+      const preview = el("section", "mochi-accessibility-preview");
+      preview.append(el("h5", "", "Live preview"), el("p", "", "Navigation, settings and button labels"), button("Example control"), el("p", "mochi-scale-message", "A message bubble with independent text size."));
+      body.append(preview, el("p", "mochi-muted", "Preview updates immediately. Save applies across fictional accounts. Browser zoom remains available."));
+    } else if (this.category === "Notifications")
+      body.append(el("p", "", "Mochi notification delivery follows the existing Lumiverse notification preference. Conversation read/unread controls remain in Notifications. Background messaging permission is user-wide; scheduled messages remain chat-specific."));
+    else
+      body.append(el("p", "", "Account management is in Lumiverse’s outer Mochi sidebar. Presentation changes never change identities, messages or reply behavior."));
+    const actions = el("div", "mochi-presentation-actions"), save = button("Save presentation", "mochi-primary"), cancel = button("Cancel changes"), reset = button("Restore defaults");
+    cancel.setAttribute("aria-label", "Cancel presentation changes");
+    reset.setAttribute("aria-label", "Restore default presentation");
+    save.disabled = !!this.ticket || !this.saved.revision && this.layouts.length > 0 && !this.source;
+    save.onclick = () => {
+      this.request("save");
+      this.redraw();
+    };
+    cancel.onclick = () => {
+      this.discard();
+      this.redraw();
+    };
+    reset.onclick = () => {
+      this.draft = messengerUIPreferences();
+      this.redraw();
+    };
+    actions.append(save, cancel, reset);
+    root.append(actions);
+    return root;
+  }
+}
+
 // src/mochi/settings-workspace.ts
-var SETTINGS_CATEGORIES = ["General", "Texting Behavior", "Availability & Schedules", "Advanced"];
+var SETTINGS_CATEGORIES = ["General", "AI & Replies", "Characters & Texting", "Availability & Schedules", "Memory & Context", "Advanced"];
 
 class ChatSettingsLayout {
   category = "General";
+  categoryOpen = false;
+  focusCategory = false;
   character = "";
   characterTab = "texting";
   scroll = 0;
   overviewScroll = 0;
   focus = "";
+  enter() {
+    this.character = "";
+    this.categoryOpen = false;
+    this.scroll = 0;
+  }
+  back() {
+    if (this.character) {
+      this.character = "";
+      return true;
+    }
+    if (this.categoryOpen) {
+      this.categoryOpen = false;
+      return true;
+    }
+    return false;
+  }
   reset() {
     this.category = "General";
     this.character = "";
+    this.categoryOpen = false;
     this.scroll = 0;
     this.overviewScroll = 0;
     this.focus = "";
   }
-  adapt(form, room, state, redraw, tools) {
-    form.classList.add("mochi-organized-settings");
+  adapt(form, room, state, redraw, tools, defaults) {
+    form.classList.add("mochi-organized-settings", "mochi-category-workspace");
+    form.dataset.categoryOpen = String(this.categoryOpen);
     form.setAttribute("aria-label", "Chat Settings");
     form.querySelector("h3")?.remove();
     const sections = Array.from(form.querySelectorAll(":scope>.mochi-settings-section"));
@@ -5198,9 +5571,9 @@ class ChatSettingsLayout {
       if (node.dataset.characterId)
         continue;
       const name = title(node);
-      let target = name === "Conversation" || name === "Chat ownership" ? "General" : name === "Background messaging" ? "Availability & Schedules" : "Advanced";
+      let target = name === "Conversation" ? "General" : name === "Connection & replies" ? "AI & Replies" : name === "Background messaging" ? "Availability & Schedules" : name === "Context & token limits" ? "Memory & Context" : "Advanced";
       if (name === "Connection & replies") {
-        const texting = categories.get("Texting Behavior");
+        const texting = categories.get("AI & Replies");
         for (const label of ["Reply automatically after sending", "Response mode", "Next responder"]) {
           const field = node.querySelector(`[aria-label="${label}"]`)?.closest("label");
           if (field)
@@ -5247,14 +5620,14 @@ class ChatSettingsLayout {
       }
       return list;
     };
-    for (const name of ["General", "Texting Behavior", "Availability & Schedules"])
+    for (const name of ["Characters & Texting", "Availability & Schedules"])
       categories.get(name).append(el("h4", "", "Characters in this conversation"), overview());
     const advanced = categories.get("Advanced");
     advanced.append(el("p", "mochi-muted", "Advanced conversation tools · Presets publish reusable revisions; applying is separate. Preview is read-only. System Notes intentionally guide AI context."));
     for (const name of ["Presets", "Preview AI prompt", "Conversation Memory", "Pins & Notes"]) {
       const b = button(name);
       b.onclick = () => tools(name, b);
-      advanced.append(b);
+      categories.get(name === "Presets" ? "AI & Replies" : name === "Pins & Notes" ? "Advanced" : "Memory & Context").append(b);
     }
     const nav = el("nav", "mochi-settings-categories");
     nav.setAttribute("aria-label", "Chat settings categories");
@@ -5266,15 +5639,25 @@ class ChatSettingsLayout {
     form.replaceChildren(nav, scroller, footer);
     for (const name of SETTINGS_CATEGORIES) {
       const tab = button(name);
+      tab.setAttribute("aria-label", name);
       tab.setAttribute("aria-pressed", String(this.category === name));
       tab.onclick = () => {
         this.category = name;
+        this.focusCategory = true;
+        this.categoryOpen = true;
         this.character = "";
         this.scroll = 0;
         redraw();
       };
       nav.append(tab);
     }
+    const categoryBack = button("Back to Chat categories", "mochi-category-back");
+    categoryBack.onclick = () => {
+      this.categoryOpen = false;
+      this.focusCategory = true;
+      redraw();
+    };
+    scroller.append(categoryBack);
     if (this.character) {
       const detail = characters.find((s) => s.dataset.characterId === this.character);
       if (detail) {
@@ -5282,16 +5665,20 @@ class ChatSettingsLayout {
           detail.open = true;
         const heading = detail.querySelector("summary,legend");
         heading.textContent = heading.textContent.replace("presence & room name", "character settings");
-        const texting = el("div", "mochi-character-fields"), availability = el("div", "mochi-character-fields"), nickname = detail.querySelector('[aria-label^="Display name for "]')?.closest("label"), style = detail.querySelector(".mochi-texting-controls");
+        const texting = el("div", "mochi-character-fields"), availability = el("div", "mochi-character-fields"), nickname = detail.querySelector('[aria-label^="Display name for "]')?.closest("label"), style = detail.querySelector(".mochi-texting-chat");
         if (nickname)
           texting.append(nickname);
         if (style)
           texting.append(style);
+        if (defaults)
+          texting.append(defaults(this.character, "texting"));
         for (const node of Array.from(detail.children))
           if (node !== heading)
             availability.append(node);
+        if (defaults)
+          availability.append(defaults(this.character, "availability"));
         const detailNav = el("nav", "mochi-character-detail-nav");
-        for (const [key, label] of [["texting", "Texting & nickname"], ["availability", "Availability"]]) {
+        for (const [key, label] of [["texting", "Texting & nickname"], ["availability", "Availability"], ["profile", "Mochi Character Profile"]]) {
           const tab = button(label);
           tab.setAttribute("aria-label", "Character " + key + " settings");
           tab.setAttribute("aria-pressed", String(this.characterTab === key));
@@ -5302,7 +5689,7 @@ class ChatSettingsLayout {
           };
           detailNav.append(tab);
         }
-        detail.replaceChildren(heading, detailNav, this.characterTab === "texting" ? texting : availability);
+        detail.replaceChildren(heading, detailNav, this.characterTab === "texting" ? texting : this.characterTab === "profile" && defaults ? defaults(this.character, "about") : availability);
         const back = button("Back to characters");
         back.onclick = () => {
           const id = this.character;
@@ -5316,7 +5703,19 @@ class ChatSettingsLayout {
         this.character = "";
     }
     if (!this.character)
-      scroller.append(categories.get(this.category));
+      scroller.append(el("h4", "", this.category), categories.get(this.category));
+    if (this.focusCategory) {
+      this.focusCategory = false;
+      queueMicrotask(() => {
+        const target = this.categoryOpen ? scroller.querySelector("h4") : nav.querySelector("[aria-pressed=true]");
+        if (target) {
+          target.tabIndex = -1;
+          target.focus({ preventScroll: true });
+          if (target.tagName === "BUTTON")
+            target.tabIndex = 0;
+        }
+      });
+    }
     const saved = this.scroll, focus = this.focus;
     this.focus = "";
     queueMicrotask(() => {
@@ -6704,7 +7103,7 @@ function accountPicker(state, busy, choose, create, legacy, startup, manage, ref
 var MOCHI_DESKTOP_STYLES = mochiStyle("desktop");
 
 // src/mochi/details-panel.ts
-function roomDetails(room, characters, close, settings) {
+function roomDetails(room, characters, close, settings, edit) {
   const panel = el("aside", "mochi-profile-panel");
   panel.id = `mochi-room-details-${room.id}`;
   panel.setAttribute("aria-label", "Character profile");
@@ -6746,7 +7145,12 @@ function roomDetails(room, characters, close, settings) {
       card.append(el("small", "mochi-muted", character.name));
     card.append(status);
     const about = el("div", "mochi-profile-about");
-    about.append(el("h5", "", "About"), el("p", "", "No Mochi bio saved yet."));
+    about.append(el("h5", "", "About"), el("p", "", character?.about || "No Mochi bio saved yet."));
+    if (character && edit) {
+      const details = el("details"), summary = el("summary", "", "Edit Mochi About Me");
+      details.append(summary, edit(character));
+      about.append(details);
+    }
     card.append(about);
     panel.append(card);
   }
@@ -7207,57 +7611,6 @@ class MochiSearch {
   }
 }
 var MOCHI_SEARCH_STYLES = mochiStyle("mochi-search-styles");
-
-// src/mochi/texting.ts
-var TEXTING_OPTIONS = { length: ["short", "balanced", "detailed"], capitalization: ["lowercase", "natural", "formal"], punctuation: ["minimal", "natural", "expressive"], emoji: ["rare", "occasional", "frequent"] };
-
-// src/mochi/texting-controls.ts
-function textingControls(settings, id, name) {
-  const group = el("fieldset", "mochi-texting-controls");
-  group.append(el("legend", "", "Texting style in this chat"), el("small", "mochi-muted", "Optional tendencies. Character default keeps existing behavior. Save settings applies changes and may cancel pending replies."));
-  const change = (key, value) => {
-    const styles = { ...settings.textingStyles }, style = { ...styles[id] };
-    if (value)
-      Object.assign(style, { [key]: value });
-    else
-      delete style[key];
-    if (Object.keys(style).length)
-      styles[id] = style;
-    else
-      delete styles[id];
-    if (Object.keys(styles).length)
-      settings.textingStyles = styles;
-    else
-      delete settings.textingStyles;
-  };
-  const labels = { length: "Message length", capitalization: "Capitalization", punctuation: "Punctuation", emoji: "Emoji use" };
-  for (const key of Object.keys(TEXTING_OPTIONS)) {
-    const label = el("label", "", labels[key]), select = el("select"), defaultOption = el("option", "", "Character default");
-    defaultOption.value = "";
-    select.append(defaultOption);
-    select.setAttribute("aria-label", `${labels[key]} for ${name}`);
-    for (const value of TEXTING_OPTIONS[key]) {
-      const option = el("option", "", value === "lowercase" ? "Casual lowercase" : value[0].toUpperCase() + value.slice(1));
-      option.value = value;
-      select.append(option);
-    }
-    select.value = settings.textingStyles?.[id]?.[key] || "";
-    select.onchange = () => change(key, select.value);
-    label.append(select);
-    group.append(label);
-  }
-  const label = el("label", "", "Texting habits"), tone = el("textarea");
-  tone.rows = 2;
-  tone.maxLength = 400;
-  tone.value = settings.textingStyles?.[id]?.tone || "";
-  tone.placeholder = "Optional: casual abbreviations, complete sentences, dry humor…";
-  tone.setAttribute("aria-label", `Texting habits for ${name}`);
-  tone.oninput = () => change("tone", tone.value);
-  label.append(tone);
-  group.append(label);
-  return group;
-}
-var MOCHI_TEXTING_STYLES = mochiStyle("mochi-texting-styles");
 
 // src/mochi/disclosure.ts
 var MOCHI_DISCLOSURE_STYLES = mochiStyle("mochi-disclosure-styles");
@@ -8662,6 +9015,7 @@ class MochiView {
   }
   renderSidebarProfile() {
     const root = el("section", "mochi-view");
+    this.applyPresentation(root);
     const style = el("style");
     style.textContent = MOCHI_STYLES;
     root.append(style);
@@ -8789,6 +9143,7 @@ class MochiView {
     this.settingsPage = "";
     this.settingsLayout.reset();
     this.personalSettings.reset();
+    this.characterEditor.discard();
     this.personalScroll = 0;
     this.desktopDetails = undefined;
     this.mobileProfileOpen = false;
@@ -8978,6 +9333,7 @@ class MochiView {
   }
   settingsPage = "";
   settingsLayout = new ChatSettingsLayout;
+  characterEditor = new CharacterEditor;
   personalSettings = new PersonalSettings((p) => this.send(p), () => this.state?.accountId, () => this.profiles.state?.ownerId, () => this.redraw());
   settingsReturnFocus = false;
   personalScroll = 0;
@@ -9001,7 +9357,7 @@ class MochiView {
     this.notificationsChanged = notificationsChanged;
   }
   hasUnsavedChanges() {
-    if (this.personalSettings.dirty)
+    if (this.personalSettings.dirty || this.characterEditor.dirty)
       return true;
     if (this.sidebarProfile)
       return this.profiles.hasUnsavedChanges();
@@ -9066,12 +9422,17 @@ class MochiView {
       this.sidebarProfile = false;
       this.profileReturn = undefined;
       this.personalSettings.discard();
+      this.characterEditor.discard();
       next();
     }, anchor, stopsGeneration);
   }
   back(exit, anchor) {
     if (this.busy && !this.ownGenerations.has(this.roomId))
       return;
+    if (this.settingsPage && this.settingsCategoryBack()) {
+      this.redraw();
+      return;
+    }
     const next = () => {
       if (this.sidebarProfile) {
         if (this.profiles.syncOpen) {
@@ -9089,6 +9450,7 @@ class MochiView {
         this.draft = null;
         this.settingsDraft = null;
         this.personalSettings.discard();
+        this.characterEditor.discard();
       } else if (this.profilesOpen) {
         if (this.profiles.draft)
           this.profiles.draft = null;
@@ -9694,6 +10056,7 @@ class MochiView {
       dock.append(portrait(account.displayName, account.avatarUrl), copy, settings, logout);
       sidebar.append(dock);
     }
+    this.applyPresentation(page);
     const main = el("section", "mochi-desktop-main");
     main.setAttribute("aria-label", "Conversation and settings");
     const back = el("div", "mochi-desktop-back"), backButton = button("← Conversations");
@@ -9761,7 +10124,7 @@ class MochiView {
       page.append(roomDetails(selected, this.state.characters, () => setDetails(false), () => {
         setDetails(false);
         main.querySelector('[aria-label="Settings"]')?.click();
-      }));
+      }, (character) => this.characterEditor.render(character, (p) => this.dispatch("mochi:character_preferences", p), () => this.redraw(), "about")));
     }
     return page;
   }
@@ -9807,6 +10170,7 @@ class MochiView {
     if (this.destroyed)
       return el("div", "mochi-view");
     const page = el("div", "mochi-view");
+    this.applyPresentation(page);
     page.dataset.surface = surface;
     if (surface !== "choices")
       this.presenceRoot = page;
@@ -10193,7 +10557,7 @@ class MochiView {
         this.search.reset();
         this.presetPanel.reset();
         this.memoryPanel.reset();
-        this.settingsLayout.reset();
+        this.settingsLayout.enter();
         this.draft = null;
         this.settingsDraft = null;
       }
@@ -10209,6 +10573,16 @@ class MochiView {
     else
       this.confirmGenerationExit(open, anchor, true);
   }
+  settingsCategoryBack() {
+    const width = this.presenceRoot?.getBoundingClientRect().width || window.innerWidth;
+    return width <= 650 && (this.settingsPage === "chat" ? this.settingsLayout.back() : this.personalSettings.back());
+  }
+  applyPresentation(root) {
+    const p = this.personalSettings.scales;
+    root.style.setProperty("--mochi-saved-interface-scale", String((p.interfaceScale || 100) / 100));
+    root.style.setProperty("--mochi-saved-message-scale", String((p.messageScale || 100) / 100));
+    root.dataset.density = p.dock;
+  }
   renderSettings(room) {
     const root = el("section", "mochi-settings-workspace");
     root.setAttribute("aria-label", "Mochi Settings");
@@ -10220,6 +10594,7 @@ class MochiView {
       this.draft = null;
       this.settingsDraft = null;
       this.personalSettings.discard();
+      this.characterEditor.discard();
       this.settingsReturnFocus = true;
       this.redraw();
     }, close);
@@ -10236,7 +10611,7 @@ class MochiView {
       };
       tabs.append(tab);
     }
-    root.append(head, tabs, el("p", "mochi-muted", this.settingsPage === "chat" ? "This conversation · Save settings applies staged edits and may stop pending replies. Actions marked “applies now” are immediate." : "This fictional profile · Profile edits and presentation each have their own explicit Save. Your Lumiverse login stays unchanged."));
+    root.append(head, tabs, el("p", "mochi-muted", this.settingsPage === "chat" ? "This conversation · Save settings applies staged edits and may stop pending replies. Actions marked “applies now” are immediate." : "Presentation shared across your Mochi accounts."));
     if (this.error) {
       const error = el("p", "mochi-error", this.error);
       error.setAttribute("role", "alert");
@@ -10245,44 +10620,15 @@ class MochiView {
     if (this.settingsPage === "chat" && room)
       root.append(this.form(room));
     else {
-      const body = el("div", "mochi-personal-scroll"), account = this.profiles.state?.accounts.find((a) => a.id === this.state?.accountId);
-      const savedScroll = this.personalScroll;
-      body.onscroll = () => {
-        this.personalScroll = body.scrollTop;
-      };
-      queueMicrotask(() => {
-        if (body.isConnected)
-          body.scrollTop = savedScroll;
-      });
-      body.append(el("h4", "", account?.displayName || "Legacy conversation identity"), el("p", "mochi-muted", "Fictional profile · Persona, avatar, username and native add-on selections are managed in the existing profile editor. Native Lumiverse theme and real-login preferences stay in Lumiverse."));
-      const manage = button("Manage fictional profile & persona add-ons");
-      manage.onclick = () => {
-        if (this.accountNavigation)
-          this.accountNavigation.settings(manage);
-        else
-          this.exitPortal(() => {
-            this.profilesOpen = true;
-            this.profiles.start(account);
-            this.dispatch("mochi:accounts");
-          }, manage);
-      };
-      const choose = button("Switch fictional profile");
-      choose.onclick = () => {
-        if (this.accountNavigation)
-          this.accountNavigation.picker();
-        else
-          this.showPicker();
-      };
-      const presentation = this.personalSettings.render(), actions = presentation.querySelector(".mochi-presentation-actions");
-      body.append(manage, choose, presentation);
-      root.append(body);
-      if (actions)
-        root.append(actions);
+      root.append(this.personalSettings.render());
     }
     root.addEventListener("keydown", (event) => {
       if (event.key === "Escape" && !root.querySelector("dialog[open]")) {
         event.stopPropagation();
-        close.click();
+        if (this.settingsCategoryBack())
+          this.redraw();
+        else
+          close.click();
       }
     });
     return root;
@@ -10374,18 +10720,46 @@ class MochiView {
     const picker = el("div", "mochi-picker");
     picker.setAttribute("role", "group");
     picker.setAttribute("aria-label", "Chat characters");
+    let updateGroupIcon = () => {};
+    const selected = el("div", "mochi-participant-chips"), choose = el("details", "mochi-character-picker"), summary = el("summary", "", "Choose participants"), search = el("input");
+    search.type = "search";
+    search.placeholder = "Search characters";
+    search.setAttribute("aria-label", "Search chat characters");
+    choose.append(summary, search, picker);
+    const refreshChips = () => {
+      selected.replaceChildren();
+      for (const id of draft.characterIds) {
+        const c = state.characters.find((c) => c.id === id), chip = button((c?.name || "Unavailable character") + " ×", "mochi-participant-chip");
+        chip.setAttribute("aria-label", "Remove participant " + (c?.name || id));
+        chip.onclick = () => {
+          draft.characterIds = draft.characterIds.filter((x) => x !== id);
+          refreshChips();
+          for (const b of picker.querySelectorAll("[data-character-id]"))
+            b.setAttribute("aria-pressed", String(draft.characterIds.includes(b.dataset.characterId)));
+        };
+        selected.append(chip);
+      }
+      updateGroupIcon();
+    };
     for (const character of state.characters) {
       const choice = button("", "mochi-choice");
+      choice.dataset.characterId = character.id;
       choice.append(portrait(character.name, character.avatarUrl));
       choice.append(el("span", "", character.name));
       choice.setAttribute("aria-pressed", String(draft.characterIds.includes(character.id)));
       choice.onclick = () => {
         draft.characterIds = draft.characterIds.includes(character.id) ? draft.characterIds.filter((id) => id !== character.id) : [...draft.characterIds, character.id];
         choice.setAttribute("aria-pressed", String(draft.characterIds.includes(character.id)));
+        refreshChips();
       };
       picker.append(choice);
     }
-    group.append(el("p", "mochi-muted", "Choose 1–12 characters"), picker);
+    refreshChips();
+    search.oninput = () => {
+      for (const b of picker.querySelectorAll(".mochi-choice"))
+        b.hidden = !b.textContent?.toLocaleLowerCase().includes(search.value.toLocaleLowerCase());
+    };
+    group.append(el("p", "mochi-muted", "Choose 1–12 characters"), selected, choose);
     const groupIconField = el("select");
     for (const value of ["", ...GROUP_ICONS]) {
       const option = el("option", "", value || "Automatic member portraits");
@@ -10398,7 +10772,10 @@ class MochiView {
     };
     field("Group icon", groupIconField);
     const groupIconLabel = groupIconField.closest("label");
-    groupIconLabel.hidden = draft.characterIds.length < 2;
+    updateGroupIcon = () => {
+      groupIconLabel.hidden = draft.characterIds.length < 2;
+    };
+    updateGroupIcon();
     picker.addEventListener("click", () => {
       groupIconLabel.hidden = draft.characterIds.length < 2;
     });
@@ -10579,7 +10956,7 @@ class MochiView {
         const characterSection = section((state.characters.find((c) => c.id === id)?.name || id) + " · presence & room name", true);
         characterSection.dataset.characterId = id;
         group.append(el("p", "mochi-muted", "Presence and schedule changes apply immediately."));
-        const presence = structuredClone(room.background?.presence?.[id] || defaultPresence()), baseName = state.characters.find((c) => c.id === id)?.name || id, name = baseName + (room.characterIds.filter((cid) => state.characters.find((c) => c.id === cid)?.name === baseName).length > 1 ? " · character " + (room.characterIds.indexOf(id) + 1) : "");
+        const presence = structuredClone(room.background?.presence?.[id] || room.characterDefaults?.[id]?.availability || defaultPresence()), baseName = state.characters.find((c) => c.id === id)?.name || id, name = baseName + (room.characterIds.filter((cid) => state.characters.find((c) => c.id === cid)?.name === baseName).length > 1 ? " · character " + (room.characterIds.indexOf(id) + 1) : "");
         const setPresence = () => this.dispatch("mochi:presence", { roomId: room.id, revision: room.revision, characterId: id, presence });
         const status = el("select");
         for (const s of STATUSES) {
@@ -10651,7 +11028,21 @@ class MochiView {
           settings.characterNames[id] = input.value;
         };
         field(`Display name for ${name}`, input);
-        group.append(textingControls(settings, id, name));
+        const inherited = !settings.textingStyles?.[id];
+        const chatTexting = el("div", "mochi-texting-chat");
+        chatTexting.append(el("small", "mochi-muted", inherited ? "Inherited character texting defaults" : "Explicit chat texting override"));
+        const useDefaults = button("Use character texting defaults");
+        useDefaults.onclick = () => {
+          if (settings.textingStyles)
+            delete settings.textingStyles[id];
+          this.redraw();
+        };
+        chatTexting.append(useDefaults, textingControls(settings, id, name));
+        group.append(chatTexting);
+        const presenceDefaults = button("Use character availability defaults (applies now)");
+        presenceDefaults.disabled = this.busy;
+        presenceDefaults.onclick = () => this.dispatch("mochi:presence", { roomId: room.id, revision: room.revision, characterId: id, useDefault: true });
+        group.append(el("small", "mochi-muted", room.background?.presence?.[id] ? "Explicit chat availability override" : "Inherited character availability defaults"), presenceDefaults);
       }
     }
     if (room) {
@@ -10671,6 +11062,7 @@ class MochiView {
       this.settingsDraft = null;
       this.settingsPage = "";
       this.personalSettings.discard();
+      this.characterEditor.discard();
       this.settingsReturnFocus = true;
       this.redraw();
     }, cancel);
@@ -10682,7 +11074,10 @@ class MochiView {
       const selected = state.accountId ? undefined : draft.persona === "keep" ? undefined : draft.persona === "manual" ? { source: "manual", name: draft.name, description: draft.description } : state.personas.find((p) => p.source + ":" + p.sourceId === draft.persona);
       this.dispatch(room ? "mochi:update" : "mochi:create", { roomId: room?.id, revision: room ? this.draftRevision : undefined, title: draft.title, groupIcon: draft.characterIds.length > 1 ? draft.groupIcon || "" : "", characterIds: draft.characterIds, persona: selected, ...room ? { settings } : { preset: { id: draft.presetId, revision: 1, ...state.accountId ? { accountId: state.accountId } : {} } } });
     };
-    return room && this.settingsPage === "chat" ? this.settingsLayout.adapt(form, room, state, () => this.redraw(), (name, anchor) => this.openSettingsTool(name, anchor, room)) : form;
+    return room && this.settingsPage === "chat" ? this.settingsLayout.adapt(form, room, state, () => this.redraw(), (name, anchor) => this.openSettingsTool(name, anchor, room), (id, mode) => {
+      const character = state.characters.find((c) => c.id === id);
+      return character ? this.characterEditor.render(character, (p) => this.dispatch("mochi:character_preferences", p), () => this.redraw(), mode) : el("p", "", "Character unavailable");
+    }) : form;
   }
   scheduleList(room) {
     const list = el("section");
@@ -10953,6 +11348,9 @@ class MochiView {
   sheet(anchor, title, content) {
     const sheet = showPocketSheet(anchor, title, content, anchor.closest(".mochi-sidebar") || anchor.closest(".mochi-workspace") || this.presenceRoot?.closest(".mochi-workspace") || anchor.closest(".lumiphone-shell") || this.presenceRoot?.closest(".mochi-desktop") || this.presenceRoot || undefined);
     if (sheet) {
+      const dialog = content.closest("dialog");
+      if (dialog)
+        this.applyPresentation(dialog);
       this.sheets.add(sheet.dismiss);
       content.closest("dialog")?.classList.add("mochi-sheet");
       content.closest("dialog")?.addEventListener("close", () => {
@@ -12219,6 +12617,7 @@ function createMochiSidebar(ctx, session, policy, activateSidebar = () => {}, di
   function render() {
     if (disposed)
       return;
+    session.view.applyPresentation(root);
     fallbackStatus.hidden = !fallback;
     fallbackStatus.textContent = fallback;
     const editing = session.view.isSidebarProfileOpen;

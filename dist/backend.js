@@ -6,80 +6,6 @@ function galleryOffset(value) {
   return Number.isFinite(offset) ? Math.max(0, Math.min(1e6, Math.floor(offset))) : 0;
 }
 
-// src/mochi/group-icons.ts
-var GROUP_ICONS = ["\uD83D\uDCAC", "\uD83C\uDF19", "\u2B50", "\uD83C\uDF38", "\uD83C\uDF61", "\uD83C\uDFAE", "\uD83D\uDCDA", "\uD83C\uDFB5", "\uD83C\uDF3F", "\u2764\uFE0F"];
-function groupIcon(value) {
-  if (value === undefined || value === "")
-    return;
-  if (typeof value !== "string" || !GROUP_ICONS.includes(value))
-    throw Error("Choose a supported group icon.");
-  return value;
-}
-
-// src/mochi/persona-addons.ts
-function validateAddonSelection(value) {
-  const v = value;
-  if (!v || typeof v.personaId !== "string" || !v.personaId || v.personaId.length > 180 || !Array.isArray(v.enabledIds) || v.enabledIds.length > 200 || v.enabledIds.some((id) => typeof id !== "string" || !id || id.length > 180) || new Set(v.enabledIds).size !== v.enabledIds.length)
-    throw Error("Invalid persona add-on selections; saved data was preserved.");
-  return { personaId: v.personaId, enabledIds: [...v.enabledIds] };
-}
-async function discoverPersonaAddons(host, persona, user) {
-  if (!host.permissions.has("personas"))
-    return [];
-  const metadata = persona?.metadata || {}, result = [], seen = new Set;
-  const append = (a, global = false, enabled = a?.enabled, available = true) => {
-    if (!a || typeof a.id !== "string" || !a.id || a.id.length > 180 || seen.has(a.id))
-      return;
-    seen.add(a.id);
-    const content = typeof a.content === "string" ? a.content : "", outlet = a.outlet_name ?? a.outletName;
-    result.push({ id: a.id, label: typeof a.label === "string" ? a.label.slice(0, 200) : "Unnamed add-on", content: content.length <= 12000 ? content : "", enabled: enabled === true, available: available && typeof a.content === "string" && content.length <= 12000, sortOrder: Number.isFinite(a.sort_order) ? a.sort_order : 0, ...!global && typeof outlet === "string" && outlet.trim() ? { outletName: outlet.trim().toLowerCase() } : {}, ...global ? { global: true } : {} });
-  };
-  const local = Array.isArray(metadata.addons) ? metadata.addons : [], refs = Array.isArray(metadata.attached_global_addons) ? metadata.attached_global_addons : [];
-  if (local.length + refs.length > 200)
-    throw Error("This persona has too many add-ons to load safely.");
-  for (const a of local)
-    append(a);
-  for (const ref of refs) {
-    if (!ref || typeof ref.id !== "string" || seen.has(ref.id))
-      continue;
-    let a;
-    try {
-      a = await host.global_addons?.get(ref.id, user);
-    } catch {}
-    append(a?.id === ref.id ? a : { id: ref.id, label: "Unavailable attached add-on" }, true, ref.enabled, !!a && a.id === ref.id);
-  }
-  return result.sort((a, b) => Number(!!a.global) - Number(!!b.global) || a.sortOrder - b.sortOrder);
-}
-async function saveAddonSelection(host, user, persona, value) {
-  const selected = validateAddonSelection(value);
-  if (persona.source !== "lumiverse" || selected.personaId !== persona.sourceId || !host.permissions.has("personas"))
-    throw Error("Choose an available Lumiverse persona for these add-ons.");
-  const native = await host.personas.get(persona.sourceId, user);
-  if (!native || native.id !== persona.sourceId)
-    throw Error("This persona is not available to your account.");
-  const choices = await discoverPersonaAddons(host, native, user);
-  return { personaId: selected.personaId, enabledIds: selected.enabledIds.filter((id) => choices.some((a) => a.id === id && a.available)) };
-}
-function addonContext(description, choices, selection, signature = "") {
-  const append = [], outlets = new Map;
-  for (const a of choices) {
-    if (!a.available || !selection.enabledIds.includes(a.id) || !a.content.trim())
-      continue;
-    const content = a.content.trim();
-    if (a.outletName)
-      outlets.set(a.outletName, outlets.has(a.outletName) ? outlets.get(a.outletName) + `
-
-` + content : content);
-    else
-      append.push(content);
-  }
-  return { description: [description, ...append].filter(Boolean).join(`
-`), outlets: Object.fromEntries(outlets), signature };
-}
-function expandPersonaOutlets(template, outlets) {
-  return template.replace(/\{\{\s*(?:persona_outlet|personaOutlet)::([^{}]*?)\s*\}\}/gi, (_literal, name) => Object.hasOwn(outlets, name.trim().toLowerCase()) ? outlets[name.trim().toLowerCase()] : "");
-}
-
 // src/mochi/types.ts
 var defaultMochiSettings = () => ({ autoReply: true, connectionId: "", contextTokens: 8192, outputTokens: 1200, instructions: "", characterNames: {} });
 var MOCHI_ROOM_ID = /^room_[a-f0-9]{32}$/;
@@ -101,13 +27,13 @@ function validatePresence(value) {
   return { ...p, transitions: p.transitions.slice().sort((a, b) => a.at - b.at) };
 }
 function statusFor(room, id, now = Date.now()) {
-  const p = room.runtime?.presence?.[id] || room.background?.presence?.[id] || defaultPresence();
+  const p = room.runtime?.presence?.[id] || room.background?.presence?.[id] || room.characterDefaults?.[id]?.availability || defaultPresence();
   if (p.manual)
     return p.manual;
   return p.transitions.filter((t) => t.at <= now).sort((a, b) => a.at - b.at).at(-1)?.status || p.automatic;
 }
 function delayFor(room, id, now = Date.now()) {
-  const p = room.runtime?.presence?.[id] || room.background?.presence?.[id] || defaultPresence(), s = statusFor(room, id, now);
+  const p = room.runtime?.presence?.[id] || room.background?.presence?.[id] || room.characterDefaults?.[id]?.availability || defaultPresence(), s = statusFor(room, id, now);
   return s === "offline" ? Infinity : s === "away" ? p.awayMs : s === "dnd" ? p.dndMs : 0;
 }
 function eligibleResponders(room, responder, now) {
@@ -210,6 +136,166 @@ function dispatchReady(room, j, now) {
     return (j.deliverAt || 0) <= now && [j.draft, ...j.additional || []].every((d) => statusFor(room, d.characterId, now) !== "offline" && now >= (j.createdAt ?? j.dueAt) + delayFor(room, d.characterId, now));
   const delay = minimumDelay(room, j.responder, now);
   return Number.isFinite(delay) && now >= (j.createdAt ?? j.dueAt) + delay;
+}
+
+// src/mochi/texting.ts
+var TEXTING_OPTIONS = { length: ["short", "balanced", "detailed"], capitalization: ["lowercase", "natural", "formal"], punctuation: ["minimal", "natural", "expressive"], emoji: ["rare", "occasional", "frequent"] };
+function validateTextingStyles(value) {
+  if (value === undefined)
+    return;
+  if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).length > 100)
+    throw Error("Invalid character texting preferences; saved settings were preserved.");
+  const result = {};
+  for (const [id, raw] of Object.entries(value)) {
+    if (!/^[A-Za-z0-9_.:-]{1,180}$/.test(id) || ["__proto__", "constructor", "prototype"].includes(id) || !raw || typeof raw !== "object" || Array.isArray(raw))
+      throw Error("Invalid texting character identifier or style.");
+    const style = {};
+    for (const [key, v] of Object.entries(raw)) {
+      if (key === "tone") {
+        if (typeof v !== "string" || v.length > 400)
+          throw Error("Texting habits must be at most 400 characters.");
+        if (v.trim())
+          style.tone = v.trim();
+      } else {
+        const choices = Object.hasOwn(TEXTING_OPTIONS, key) ? TEXTING_OPTIONS[key] : undefined;
+        if (!choices || typeof v !== "string" || !choices.includes(v))
+          throw Error("Invalid character texting option.");
+        style[key] = v;
+      }
+    }
+    if (Object.keys(style).length)
+      result[id] = style;
+  }
+  return Object.keys(result).length ? result : undefined;
+}
+function resolveTextingStyles(value, characters) {
+  const styles = validateTextingStyles(value), rows = characters.flatMap((c) => styles?.[c.id] ? [{ characterId: c.id, name: c.name, ...styles[c.id] }] : []);
+  return rows.length ? `
+CHARACTER TEXTING TENDENCIES: ` + JSON.stringify(rows) + `
+Apply only the matching character's optional style tendencies. Character identity, conversation meaning and server-enforced reply rules take precedence. These are prose preferences, not delivery commands; do not add extra speakers, calls or independently delivered bubbles.` : "";
+}
+
+// src/mochi/character-preferences.ts
+class MochiCharacterPreferences {
+  host;
+  accounts;
+  constructor(host, accounts) {
+    this.host = host;
+    this.accounts = accounts;
+  }
+  id(value) {
+    if (typeof value !== "string" || !/^[A-Za-z0-9_-]{1,180}$/.test(value) || ["__proto__", "constructor", "prototype"].includes(value))
+      throw Error("Invalid character.");
+    return value;
+  }
+  async read(userId, characterId, verifySource = true) {
+    const user = identifier(userId), id = this.id(characterId);
+    if (verifySource && (!this.host.permissions.has("characters") || !await this.host.characters.get(id, user)))
+      throw Error("Character unavailable.");
+    const path = `mochi/v1/character-preferences/${id}.json`;
+    if (!await this.host.userStorage.exists(path, user))
+      return { version: 1, ownerId: user, characterId: id, revision: 0, about: "" };
+    const r = await this.host.userStorage.getJson(path, { userId: user });
+    if (!r || r.version !== 1 || r.ownerId !== user || r.characterId !== id || !Number.isSafeInteger(r.revision) || r.revision < 1)
+      throw Error("Character preferences damaged; preserved.");
+    return this.validate(r);
+  }
+  validate(r) {
+    if (typeof r.about !== "string" || r.about.length > 2000)
+      throw Error("About Me must be at most 2000 characters.");
+    const texting = validateTextingStyles(r.texting === undefined ? undefined : { [r.characterId]: r.texting })?.[r.characterId];
+    const availability = r.availability === undefined ? undefined : validatePresence(r.availability);
+    if (availability?.transitions.length)
+      throw Error("Schedules are conversation-specific.");
+    return { ...r, about: r.about.trim(), texting, availability };
+  }
+  async save(userId, input, canSave = () => {}) {
+    return this.accounts.guard(userId, async () => {
+      canSave();
+      const saved = await this.read(userId, input.characterId);
+      if (input.revision !== saved.revision)
+        throw Error("Character defaults changed. Refresh before saving.");
+      const record = this.validate({ ...saved, ...input.about !== undefined ? { about: input.about } : {}, ...input.texting !== undefined ? { texting: input.texting === null ? undefined : input.texting } : {}, ...input.availability !== undefined ? { availability: input.availability === null ? undefined : input.availability } : {}, revision: saved.revision + 1 });
+      const path = `mochi/v1/character-preferences/${record.characterId}.json`;
+      await this.host.userStorage.setJson(path + ".pending", record, { userId });
+      await this.host.userStorage.move(path + ".pending", path, userId);
+      return record;
+    });
+  }
+}
+
+// src/mochi/group-icons.ts
+var GROUP_ICONS = ["\uD83D\uDCAC", "\uD83C\uDF19", "\u2B50", "\uD83C\uDF38", "\uD83C\uDF61", "\uD83C\uDFAE", "\uD83D\uDCDA", "\uD83C\uDFB5", "\uD83C\uDF3F", "\u2764\uFE0F"];
+function groupIcon(value) {
+  if (value === undefined || value === "")
+    return;
+  if (typeof value !== "string" || !GROUP_ICONS.includes(value))
+    throw Error("Choose a supported group icon.");
+  return value;
+}
+
+// src/mochi/persona-addons.ts
+function validateAddonSelection(value) {
+  const v = value;
+  if (!v || typeof v.personaId !== "string" || !v.personaId || v.personaId.length > 180 || !Array.isArray(v.enabledIds) || v.enabledIds.length > 200 || v.enabledIds.some((id) => typeof id !== "string" || !id || id.length > 180) || new Set(v.enabledIds).size !== v.enabledIds.length)
+    throw Error("Invalid persona add-on selections; saved data was preserved.");
+  return { personaId: v.personaId, enabledIds: [...v.enabledIds] };
+}
+async function discoverPersonaAddons(host, persona, user) {
+  if (!host.permissions.has("personas"))
+    return [];
+  const metadata = persona?.metadata || {}, result = [], seen = new Set;
+  const append = (a, global = false, enabled = a?.enabled, available = true) => {
+    if (!a || typeof a.id !== "string" || !a.id || a.id.length > 180 || seen.has(a.id))
+      return;
+    seen.add(a.id);
+    const content = typeof a.content === "string" ? a.content : "", outlet = a.outlet_name ?? a.outletName;
+    result.push({ id: a.id, label: typeof a.label === "string" ? a.label.slice(0, 200) : "Unnamed add-on", content: content.length <= 12000 ? content : "", enabled: enabled === true, available: available && typeof a.content === "string" && content.length <= 12000, sortOrder: Number.isFinite(a.sort_order) ? a.sort_order : 0, ...!global && typeof outlet === "string" && outlet.trim() ? { outletName: outlet.trim().toLowerCase() } : {}, ...global ? { global: true } : {} });
+  };
+  const local = Array.isArray(metadata.addons) ? metadata.addons : [], refs = Array.isArray(metadata.attached_global_addons) ? metadata.attached_global_addons : [];
+  if (local.length + refs.length > 200)
+    throw Error("This persona has too many add-ons to load safely.");
+  for (const a of local)
+    append(a);
+  for (const ref of refs) {
+    if (!ref || typeof ref.id !== "string" || seen.has(ref.id))
+      continue;
+    let a;
+    try {
+      a = await host.global_addons?.get(ref.id, user);
+    } catch {}
+    append(a?.id === ref.id ? a : { id: ref.id, label: "Unavailable attached add-on" }, true, ref.enabled, !!a && a.id === ref.id);
+  }
+  return result.sort((a, b) => Number(!!a.global) - Number(!!b.global) || a.sortOrder - b.sortOrder);
+}
+async function saveAddonSelection(host, user, persona, value) {
+  const selected = validateAddonSelection(value);
+  if (persona.source !== "lumiverse" || selected.personaId !== persona.sourceId || !host.permissions.has("personas"))
+    throw Error("Choose an available Lumiverse persona for these add-ons.");
+  const native = await host.personas.get(persona.sourceId, user);
+  if (!native || native.id !== persona.sourceId)
+    throw Error("This persona is not available to your account.");
+  const choices = await discoverPersonaAddons(host, native, user);
+  return { personaId: selected.personaId, enabledIds: selected.enabledIds.filter((id) => choices.some((a) => a.id === id && a.available)) };
+}
+function addonContext(description, choices, selection, signature = "") {
+  const append = [], outlets = new Map;
+  for (const a of choices) {
+    if (!a.available || !selection.enabledIds.includes(a.id) || !a.content.trim())
+      continue;
+    const content = a.content.trim();
+    if (a.outletName)
+      outlets.set(a.outletName, outlets.has(a.outletName) ? outlets.get(a.outletName) + `
+
+` + content : content);
+    else
+      append.push(content);
+  }
+  return { description: [description, ...append].filter(Boolean).join(`
+`), outlets: Object.fromEntries(outlets), signature };
+}
+function expandPersonaOutlets(template, outlets) {
+  return template.replace(/\{\{\s*(?:persona_outlet|personaOutlet)::([^{}]*?)\s*\}\}/gi, (_literal, name) => Object.hasOwn(outlets, name.trim().toLowerCase()) ? outlets[name.trim().toLowerCase()] : "");
 }
 
 // src/mochi/accounts.ts
@@ -575,11 +661,14 @@ class MochiAccounts {
 var TOOLBAR_ACTIONS = ["search", "participants", "notifications", "settings", "presets", "memory", "preview", "notes"];
 var defaultUIPreferences = () => ({ order: [...TOOLBAR_ACTIONS], hidden: ["presets", "memory", "preview", "notes"], presentation: "icons", dock: "comfortable" });
 function validateUIPreferences(value) {
-  if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).some((k) => !["order", "hidden", "presentation", "dock"].includes(k)))
+  if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).some((k) => !["order", "hidden", "presentation", "dock", "interfaceScale", "messageScale"].includes(k)))
     throw Error("Invalid messenger presentation preferences.");
   const valid = (items) => Array.isArray(items) && items.length <= TOOLBAR_ACTIONS.length && new Set(items).size === items.length && items.every((k) => TOOLBAR_ACTIONS.includes(k));
   if (!valid(value.order) || value.order.length !== TOOLBAR_ACTIONS.length || !valid(value.hidden) || !["icons", "labels"].includes(value.presentation) || !["compact", "comfortable"].includes(value.dock))
     throw Error("Invalid messenger presentation preferences.");
+  for (const [key, max] of [["interfaceScale", 150], ["messageScale", 170]])
+    if (value[key] !== undefined && (!Number.isInteger(value[key]) || value[key] < 85 || value[key] > max))
+      throw Error("Invalid text scale.");
   return structuredClone(value);
 }
 
@@ -589,6 +678,51 @@ class MochiUIPreferences {
   constructor(host, accounts) {
     this.host = host;
     this.accounts = accounts;
+  }
+  async shared(userId) {
+    const user = identifier(userId), path = "mochi/v1/shared-presentation.json";
+    if (!await this.host.userStorage.exists(path, user))
+      return { version: 1, ownerId: user, shared: true, revision: 0, preferences: sharedUIDefaults() };
+    const r = await this.host.userStorage.getJson(path, { userId: user });
+    if (!r || r.ownerId !== user || r.version !== 1 || r.shared !== true || r.accountId !== undefined || !Number.isSafeInteger(r.revision) || r.revision < 1)
+      throw Error("Shared preferences are damaged; preserved for recovery.");
+    return { ...r, preferences: validateUIPreferences(r.preferences) };
+  }
+  async layouts(userId) {
+    const bank = await this.accounts.bank(userId), layouts = [];
+    for (const account of bank.accounts) {
+      const record = await this.read(userId, account.id);
+      if (record.revision)
+        layouts.push({ name: account.displayName, record });
+    }
+    const legacy = await this.read(userId);
+    if (legacy.revision)
+      layouts.push({ name: "Legacy layout", record: legacy });
+    return layouts;
+  }
+  async saveShared(userId, input) {
+    const user = identifier(userId);
+    return this.accounts.guard(user, async () => {
+      const saved = await this.shared(user);
+      if (input.revision !== saved.revision)
+        throw Error("Shared presentation changed. Refresh before saving.");
+      let preferences = validateUIPreferences(input.preferences);
+      if (!saved.revision) {
+        const layouts = await this.layouts(user);
+        if (layouts.length && input.setupSource === undefined)
+          throw Error("Choose a saved layout or new defaults explicitly.");
+        if (input.setupSource !== undefined && input.setupSource !== "defaults") {
+          const source = layouts.find((l) => (l.record.accountId || "legacy") === input.setupSource);
+          if (!source || source.record.revision !== input.sourceRevision)
+            throw Error("Source layout changed. Review it again.");
+          preferences = source.record.preferences;
+        }
+      }
+      const record = { version: 1, ownerId: user, shared: true, revision: saved.revision + 1, preferences }, path = "mochi/v1/shared-presentation.json";
+      await this.host.userStorage.setJson(path + ".pending", record, { userId: user });
+      await this.host.userStorage.move(path + ".pending", path, user);
+      return record;
+    });
   }
   async read(userId, accountId) {
     const user = identifier(userId), account = accountId === undefined ? undefined : fictionalAccountId(accountId);
@@ -614,6 +748,7 @@ class MochiUIPreferences {
     });
   }
 }
+var sharedUIDefaults = () => ({ ...defaultUIPreferences(), order: ["presets", "notes", "memory", "preview", "settings", "search", "notifications", "participants"], hidden: [], interfaceScale: 100, messageScale: 100 });
 
 // src/domain/samplers.ts
 var SAMPLER_FIELDS = [
@@ -787,7 +922,7 @@ function applyDeliveredStatus(room, characterId, status, now) {
     return;
   room.runtime ||= { version: 1, enabled: false, jobs: [] };
   room.runtime.presence ||= {};
-  const p = room.runtime.presence[characterId] || defaultPresence();
+  const p = room.runtime.presence[characterId] || structuredClone(room.characterDefaults?.[characterId]?.availability || defaultPresence());
   if (p.manual !== null)
     return;
   p.automatic = status;
@@ -1192,43 +1327,6 @@ function resolveSystemNotes(room) {
 ${n.body}` }));
 }
 
-// src/mochi/texting.ts
-var TEXTING_OPTIONS = { length: ["short", "balanced", "detailed"], capitalization: ["lowercase", "natural", "formal"], punctuation: ["minimal", "natural", "expressive"], emoji: ["rare", "occasional", "frequent"] };
-function validateTextingStyles(value) {
-  if (value === undefined)
-    return;
-  if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).length > 100)
-    throw Error("Invalid character texting preferences; saved settings were preserved.");
-  const result = {};
-  for (const [id, raw] of Object.entries(value)) {
-    if (!/^[A-Za-z0-9_.:-]{1,180}$/.test(id) || ["__proto__", "constructor", "prototype"].includes(id) || !raw || typeof raw !== "object" || Array.isArray(raw))
-      throw Error("Invalid texting character identifier or style.");
-    const style = {};
-    for (const [key, v] of Object.entries(raw)) {
-      if (key === "tone") {
-        if (typeof v !== "string" || v.length > 400)
-          throw Error("Texting habits must be at most 400 characters.");
-        if (v.trim())
-          style.tone = v.trim();
-      } else {
-        const choices = Object.hasOwn(TEXTING_OPTIONS, key) ? TEXTING_OPTIONS[key] : undefined;
-        if (!choices || typeof v !== "string" || !choices.includes(v))
-          throw Error("Invalid character texting option.");
-        style[key] = v;
-      }
-    }
-    if (Object.keys(style).length)
-      result[id] = style;
-  }
-  return Object.keys(result).length ? result : undefined;
-}
-function resolveTextingStyles(value, characters) {
-  const styles = validateTextingStyles(value), rows = characters.flatMap((c) => styles?.[c.id] ? [{ characterId: c.id, name: c.name, ...styles[c.id] }] : []);
-  return rows.length ? `
-CHARACTER TEXTING TENDENCIES: ` + JSON.stringify(rows) + `
-Apply only the matching character's optional style tendencies. Character identity, conversation meaning and server-enforced reply rules take precedence. These are prose preferences, not delivery commands; do not add extra speakers, calls or independently delivered bubbles.` : "";
-}
-
 // src/mochi/default-preset.ts
 var DEFAULT_V2_PRESET_ID = "mochi_default_v2";
 function defaultV2Blocks() {
@@ -1498,6 +1596,8 @@ function describeContext(room, roster, messages, history, tokens, natural, timin
 async function resolveMochiContext(room, characters, responder, count, signal, natural = false, preset, personaContext) {
   if (room.preset && room.preset.id !== DEFAULT_PRESET_ID && !preset)
     throw Error("Custom preset requires authorized resolution.");
+  const defaults = Object.fromEntries(Object.entries(room.characterDefaults || {}).filter(([, p]) => p.texting).map(([id, p]) => [id, p.texting]));
+  room = { ...room, settings: { ...room.settings || defaultMochiSettings(), textingStyles: Object.fromEntries([...new Set([...Object.keys(defaults), ...Object.keys(room.settings?.textingStyles || {})])].map((id) => [id, { ...defaults[id], ...room.settings?.textingStyles?.[id] }])) } };
   const outlets = personaContext?.outlets || {};
   if (personaContext) {
     const { addons, ...identity } = room.persona;
@@ -2145,6 +2245,9 @@ class MochiService {
         throw new Error("Invalid saved deferred membership; room data was preserved.");
     }
     room.settings = this.settings(room.settings, room.characterIds);
+    room.characterDefaults = {};
+    for (const id of room.characterIds)
+      room.characterDefaults[id] = await new MochiCharacterPreferences(this.host, this.fictionalAccounts).read(user, id, false);
     room.receipts ||= [];
     if (!Array.isArray(room.receipts) || room.receipts.some((id) => typeof id !== "string"))
       throw new Error("Invalid saved send receipts.");
@@ -2172,7 +2275,8 @@ class MochiService {
   }
   async persist(user, room, signal) {
     const path = pathFor(room.id);
-    await this.host.userStorage.setJson(`${path}.pending`, room, { userId: user });
+    const { characterDefaults, ...stored } = room;
+    await this.host.userStorage.setJson(`${path}.pending`, stored, { userId: user });
     signal?.throwIfAborted();
     await this.host.userStorage.move(`${path}.pending`, path, user);
     if (room.runtime) {
@@ -2553,7 +2657,10 @@ class MochiService {
       if (job && !job.requestId.startsWith("server_"))
         jobs[room.id] = job.requestId;
     }
-    return { accountId, backgroundEnabled: await this.backgroundEnabled(user), rooms: rooms.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).map(({ runtime, ...room }) => room), characters: characters.map((c) => ({ id: c.id, name: c.name, ...typeof c.description === "string" ? { about: c.description.slice(0, 12000) } : {}, avatarUrl: c.image_id ? `/api/v1/images/${c.image_id}` : "" })), personas: choices, warnings, connections, jobs, notifications: rooms.flatMap((r) => r.notifications || []).sort((a, b) => b.createdAt.localeCompare(a.createdAt)) };
+    const characterPreferences = new Map;
+    for (const c of characters)
+      characterPreferences.set(c.id, await new MochiCharacterPreferences(this.host, this.fictionalAccounts).read(user, c.id));
+    return { accountId, backgroundEnabled: await this.backgroundEnabled(user), rooms: rooms.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).map(({ runtime, ...room }) => room), characters: characters.map((c) => ({ id: c.id, name: c.name, about: characterPreferences.get(c.id)?.about || "", preferences: characterPreferences.get(c.id), avatarUrl: c.image_id ? `/api/v1/images/${c.image_id}` : "" })), personas: choices, warnings, connections, jobs, notifications: rooms.flatMap((r) => r.notifications || []).sort((a, b) => b.createdAt.localeCompare(a.createdAt)) };
   }
   async cancel(userId, id, requestId, accountId) {
     const user = this.account(userId);
@@ -2765,7 +2872,7 @@ class MochiService {
     return rooms;
   }
   async configurePresence(userId, input) {
-    const user = identifier(userId), id = roomId(input.roomId), character = entityId(input.characterId), presence = validatePresence(input.presence);
+    const user = identifier(userId), id = roomId(input.roomId), character = entityId(input.characterId), presence = input.useDefault === true ? undefined : validatePresence(input.presence);
     this.abortScoped(user, id, input.accountId);
     await this.locked(user, id, async () => {
       const room = await this.read(user, id, input.accountId);
@@ -2775,7 +2882,13 @@ class MochiService {
         throw new Error("Refresh before changing presence.");
       room.runtime ||= { version: 1, enabled: false, jobs: [] };
       room.runtime.presence ||= {};
-      room.runtime.presence[character] = presence;
+      if (presence)
+        room.runtime.presence[character] = presence;
+      else {
+        if (room.runtime.presence[character]?.transitions.length)
+          throw Error("Clear this conversation status schedule before using character defaults.");
+        delete room.runtime.presence[character];
+      }
       await this.persist(user, room);
     });
   }
@@ -3355,7 +3468,7 @@ class MochiService {
         const current = await this.locked(user, id, () => this.read(user, id, payload.accountId));
         const sources = await resolveGenerationSources(this.host, current, user, payload.responder ?? "auto", eligibleResponders(current, payload.responder ?? "auto", this.now()));
         const allowedNow = await this.backgroundEnabled(user), finalRoom = await this.locked(user, id, () => this.read(user, id, payload.accountId));
-        if (finalRoom.revision !== room.revision || (finalRoom.associationRevision || 0) !== (room.associationRevision || 0) || sourceSignature(sources) !== sourceSignature(result.sources) || JSON.stringify(finalRoom.runtime?.presence) !== JSON.stringify(room.runtime?.presence) || backgroundAllowed !== allowedNow || Boolean(finalRoom.runtime?.enabled) !== Boolean(room.runtime?.enabled))
+        if (JSON.stringify(finalRoom.characterDefaults) !== JSON.stringify(room.characterDefaults) || finalRoom.revision !== room.revision || (finalRoom.associationRevision || 0) !== (room.associationRevision || 0) || sourceSignature(sources) !== sourceSignature(result.sources) || JSON.stringify(finalRoom.runtime?.presence) !== JSON.stringify(room.runtime?.presence) || backgroundAllowed !== allowedNow || Boolean(finalRoom.runtime?.enabled) !== Boolean(room.runtime?.enabled))
           throw Error("Preview context changed. Refresh the preview.");
         this.host.sendToFrontend({ type: "mochi:preview", requestId: payload.requestId, roomId: id, accountId: room.accountId, revision: room.revision, associationRevision: room.associationRevision || 0, preview: result.preview }, user);
         return;
@@ -3411,12 +3524,21 @@ class MochiService {
         this.host.sendToFrontend({ type: "mochi:accounts", requestId: payload.requestId, createdAccountId, uploadedAvatarId, state: await this.accountsState(userId, payload.phone) }, userId);
         return;
       }
+      if (payload.type === "mochi:character_preferences") {
+        if (payload.accountId !== undefined)
+          await this.fictionalAccounts.get(userId, payload.accountId);
+        await new MochiCharacterPreferences(this.host, this.fictionalAccounts).save(userId, payload, () => {
+          if ([...this.jobs.keys(), ...this.pending.keys()].some((k) => JSON.parse(k)[0] === userId))
+            throw Error("Wait for active replies before editing character defaults.");
+        });
+      }
       if (payload.type === "mochi:ui_preferences") {
         const preferences = new MochiUIPreferences(this.host, this.fictionalAccounts);
-        if (!["get", "save"].includes(payload.action))
+        if (!["get", "save", "shared_get", "shared_save"].includes(payload.action))
           throw Error("Unsupported presentation action.");
-        const record = payload.action === "save" ? await preferences.save(userId, payload) : await preferences.read(userId, payload.accountId);
-        this.host.sendToFrontend({ type: "mochi:ui_preferences", requestId: payload.requestId, record }, userId);
+        const record = payload.action === "shared_save" ? await preferences.saveShared(userId, payload) : payload.action === "shared_get" ? await preferences.shared(userId) : payload.action === "save" ? await preferences.save(userId, payload) : await preferences.read(userId, payload.accountId);
+        const layouts = payload.action.startsWith("shared_") && !record.revision ? await preferences.layouts(userId) : [];
+        this.host.sendToFrontend({ type: "mochi:ui_preferences", requestId: payload.requestId, record, layouts }, userId);
         return;
       }
       if (payload.type === "mochi:choices") {
@@ -3457,10 +3579,14 @@ class MochiService {
         await this.pinnedContent(userId, payload);
       else if (payload.type === "mochi:preset_bind")
         await this.bindPreset(userId, payload);
-      else if (payload.type !== "mochi:list" && payload.type !== "mochi:message_action" && payload.type !== "mochi:notification_clear" && payload.type !== "mochi:room_assign")
+      else if (payload.type !== "mochi:character_preferences" && payload.type !== "mochi:list" && payload.type !== "mochi:message_action" && payload.type !== "mochi:notification_clear" && payload.type !== "mochi:room_assign")
         throw new Error("Unsupported Mochi action.");
       this.host.sendToFrontend({ type: "mochi:state", requestId: payload.requestId, selectedRoomId, state: await this.state(userId, payload.accountId) }, userId);
     } catch (error) {
+      if (payload.type === "mochi:character_preferences") {
+        this.host.sendToFrontend({ type: "mochi:error", requestId: payload.requestId, message: "Character preferences could not be saved. Wait for replies to finish, refresh and review before retrying." }, userId);
+        return;
+      }
       if (payload.type === "mochi:ui_preferences") {
         this.host.sendToFrontend({ type: "mochi:error", requestId: payload.requestId, message: "Messenger presentation could not be loaded or saved. Refresh and review before retrying." }, userId);
         return;

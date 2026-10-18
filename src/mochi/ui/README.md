@@ -171,22 +171,25 @@ You can override these Mochi-only variables with the same higher-specificity
 | `--mochi-sidebar-bg`, `--mochi-input-bg` | `--lumiverse-bg` |
 | `--mochi-elevated-bg` | `--lumiverse-bg-elevated` |
 | `--mochi-section-bg` | `--lumiverse-fill-subtle` |
-| `--mochi-accent`, `--mochi-account-accent` | `--lumiverse-primary` |
+| `--mochi-accent`, `--mochi-account-accent` | separately editable Mochi brand accent |
 | `--mochi-selected-bg` | `--lumiverse-primary-015` |
 | `--mochi-hover-bg` | `--lumiverse-fill-hover` |
 | `--mochi-text` | `--lumiverse-text` |
 | `--mochi-muted` | native muted text mixed slightly toward normal text for contrast |
 | `--mochi-border`, `--mochi-border-hover` | native border / border-hover |
-| `--mochi-focus`, `--mochi-focus-bg` | native primary / primary-010 |
+| `--mochi-focus`, `--mochi-focus-bg` | Mochi accent outline / native primary-010 supporting ring |
 | `--mochi-danger`, `--mochi-danger-hover`, `--mochi-danger-bg` | native danger / danger-hover / danger-015 |
 
-`--mochi-on-accent` uses native CSS `contrast-color()` where supported. The
-classic light/dark fallback uses the host's opposite drawer foreground role;
-Mochi's tested fallback pair is recorded in the verification report. This corrects
-a low-contrast text pairing in the native default purple primary token pair,
-without changing the host's accent. Browsers without this CSS feature keep the
-primary background stable on hover and show a border/ring instead. Arbitrary
-custom CSS can still create low contrast: check your own chosen palette.
+`--mochi-accent` now uses the separately editable `--mochi-brand-accent`.
+Its HSL defaults are set by `--mochi-brand-hue`, `--mochi-brand-saturation`, and
+`--mochi-brand-lightness`. Structural backgrounds and text still inherit the
+Lumiverse theme. Selected navigation also has a checkmark and a thicker leading
+border. The host's own controls keep their native accent.
+
+`--mochi-on-accent` uses `contrast-color()` where available. Older browsers use
+`--mochi-brand-contrast` (black by default), verified against the default brand
+accent. If you choose a substantially darker custom accent, also set its readable
+foreground. Test your own palette. Arbitrary custom CSS can reduce contrast.
 
 Compact editor dimensions are exposed as `--mochi-editor-control-height`,
 `--mochi-editor-gap`, and `--mochi-editor-radius`. Desktop controls default to
@@ -197,3 +200,82 @@ The identity dock is at the bottom of the messenger conversation-list sidebar.
 Accounts and editing remain in the outer Pocket/Mochi sidebar, reached with each
 account row's cog or the messenger dock's cog. The outer Accounts page has no
 duplicate identity dock.
+
+## Part 2B: shared settings and safe Custom CSS overrides
+
+Personal → Appearance changes density. Personal → Toolbar previews, hides and
+reorders the optional bottom shortcuts. Permanent header actions and the fixed
+Chat Settings cog remain available. Personal → Accessibility has independent
+interface (85–150%) and message (85–170%) sliders. They preview immediately;
+Save presentation stores them for this Lumiverse login across its fictional
+Mochi accounts. Cancel restores saved settings. Each text slider has its own reset.
+
+On first setup, any previously saved account layouts are offered by name and
+source ID with a toolbar preview. Choose one, or New defaults, then Use selected
+shared layout. Original layout files stay intact. Setup is retried safely after
+an interrupted write. Subsequent edits use the shared record; they do not edit
+account identities or chat contents. Native login switching has not been accepted.
+
+### Stable styling variables
+
+| Purpose | Variables |
+| --- | --- |
+| Accent and its text | `--mochi-accent`, `--mochi-brand-accent`, `--mochi-brand-contrast`, `--mochi-on-accent` |
+| Surfaces | `--mochi-drawer-bg`, `--mochi-surface`, `--mochi-sidebar-bg`, `--mochi-section-bg`, `--mochi-elevated-bg` |
+| Text and boundaries | `--mochi-text`, `--mochi-muted`, `--mochi-border`, `--mochi-input-border` |
+| Selected and focus states | `--mochi-selected-bg`, `--mochi-focus`, `--mochi-focus-bg`, `--mochi-hover-bg` |
+| Button/input styles | `--mochi-control-bg`, `--mochi-input-bg`, `--mochi-accent-hover`, `--mochi-danger`, `--mochi-success`, `--mochi-warning` |
+| Sizes | `--mochi-editor-control-height`, `--mochi-messenger-control-size`, `--mochi-header-icon-size`, `--mochi-mobile-control-size` |
+| Radii | `--mochi-radius-panel`, `--mochi-radius-card`, `--mochi-radius-field`, `--mochi-radius-button`, `--mochi-bubble-radius` |
+| Text enlargement | `--mochi-interface-scale`, `--mochi-message-scale`, `--mochi-chat-font-size` |
+| Layout | `--mochi-bubble-max-width`, `--mochi-bubble-line-length`, `--mochi-sidebar-width`, `--mochi-profile-panel-width` |
+
+The layering is: native theme → scoped Mochi defaults → saved settings' backing
+variables → your explicit public-variable override. Saved runtime settings only
+write `--mochi-saved-interface-scale` and `--mochi-saved-message-scale`; they do
+not write the public aliases inline. Override the public aliases, not those
+backing variables. Nested Mochi surfaces define their own defaults, so target all
+listed roots with the repeated class names below. This also wins when native
+Custom CSS was inserted before extension styles. No `!important` is needed.
+
+Paste this in Lumiverse's existing Custom CSS editor for a local preview:
+
+```css
+.mochi-view.mochi-view,
+.mochi-sheet.mochi-sheet,
+.mochi-sidebar.mochi-sidebar,
+.mochi-workspace.mochi-workspace {
+  --mochi-sidebar-width: 340px;
+  --mochi-interface-scale: 1.05;
+  --mochi-chat-font-size: 17px;
+  --mochi-bubble-radius: 14px;
+  --mochi-message-avatar-size: 42px;
+  --mochi-radius-field: 8px;
+}
+```
+
+Custom CSS changes are immediate and local to Mochi. For a source CSS edit,
+rebuild the frontend and commit the matching `dist/frontend.js` as described
+above. A CSS-only edit does not require backend changes. Publication to GitHub
+does not authorize reloading a hosted extension with active users.
+
+## Character defaults and About Me
+
+Chat → Characters & Texting → Edit opens chat overrides, character-wide texting
+defaults, Availability, and Mochi Character Profile. Chat → Availability &
+Schedules opens the same character availability editor plus conversation jobs.
+Character defaults have their own Save character profile button. Chat overrides
+use Save settings; existing presence and schedule actions explicitly apply now.
+About Me is optional public-facing Mochi metadata, never native AI instructions.
+The original character card is unchanged. Defaults are per authenticated owner
+and stable character ID, shared across that owner's fictional accounts.
+
+Explicit chat values win, then character defaults, then existing fallbacks.
+Texting fields merge by key. Use character texting defaults removes the chat
+style after Save settings. Use character availability defaults applies now;
+clear any scheduled status transitions in that chat first. Message schedules
+stay in their original conversation. Character defaults never contain schedules.
+Defaults are resolved when rooms are read and excluded from saved room files;
+changing defaults does not rewrite histories or explicit overrides. Active reply
+or summary jobs block character-default saves until they finish. Refresh after
+a stale or failed save, review your values, then retry explicitly.

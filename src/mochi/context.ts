@@ -27,6 +27,8 @@ function describeContext(room:MochiRoom,roster:any[],messages:PromptMessage[],hi
 }
 export async function resolveMochiContext(room: MochiRoom, characters: any[], responder: string, count: (messages: PromptMessage[]) => Promise<number>, signal: AbortSignal, natural = false,preset?:ResolvedPreset,personaContext?:PersonaAddonContext): Promise<MochiContextPlan> {
   if(room.preset&&room.preset.id!==DEFAULT_PRESET_ID&&!preset)throw Error('Custom preset requires authorized resolution.')
+  const defaults=Object.fromEntries(Object.entries(room.characterDefaults||{}).filter(([,p])=>p.texting).map(([id,p])=>[id,p.texting!]))
+  room={...room,settings:{...(room.settings||defaultMochiSettings()),textingStyles:Object.fromEntries([...new Set([...Object.keys(defaults),...Object.keys(room.settings?.textingStyles||{})])].map(id=>[id,{...defaults[id],...room.settings?.textingStyles?.[id]}]))}}
   const outlets=personaContext?.outlets||{}
   if(personaContext){const {addons,...identity}=room.persona;room={...room,persona:{...identity,description:personaContext.description}}}
   const expand=(value:string)=>expandPersonaOutlets(value,outlets)

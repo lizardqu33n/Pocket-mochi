@@ -14,12 +14,12 @@ export function validatePresence(value: unknown): CharacterPresence {
   return { ...p, transitions: p.transitions.slice().sort((a,b) => a.at-b.at) }
 }
 export function statusFor(room: MochiRoom, id: string, now = Date.now()): PresenceStatus {
-  const p = room.runtime?.presence?.[id] || room.background?.presence?.[id] || defaultPresence()
+  const p = room.runtime?.presence?.[id] || room.background?.presence?.[id] || room.characterDefaults?.[id]?.availability || defaultPresence()
   if (p.manual) return p.manual
   return p.transitions.filter(t => t.at <= now).sort((a,b) => a.at-b.at).at(-1)?.status || p.automatic
 }
 export function delayFor(room: MochiRoom, id: string, now = Date.now()): number {
-  const p = room.runtime?.presence?.[id] || room.background?.presence?.[id] || defaultPresence(), s = statusFor(room,id,now)
+  const p = room.runtime?.presence?.[id] || room.background?.presence?.[id] || room.characterDefaults?.[id]?.availability || defaultPresence(), s = statusFor(room,id,now)
   return s === 'offline' ? Infinity : s === 'away' ? p.awayMs : s === 'dnd' ? p.dndMs : 0
 }
 export function eligibleResponders(room: MochiRoom, responder: string, now: number): string[] {
