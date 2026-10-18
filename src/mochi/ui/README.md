@@ -158,3 +158,42 @@ There is no additional Mochi stylesheet loader or CSS editor.
 For distributable changes, continue editing the ordinary CSS files and rebuilding
 the frontend as described below. Live Custom CSS is a local host setting, not a
 replacement for committing a matching compiled extension.
+
+## Native semantic roles (Lumiverse 1.2.5)
+
+Mochi now reads verified host theme roles before Pocket compatibility aliases.
+You can override these Mochi-only variables with the same higher-specificity
+`.mochi-sidebar.mochi-sidebar` or `.mochi-view.mochi-view` selectors:
+
+| Mochi variable | Default host role |
+|---|---|
+| `--mochi-drawer-bg` | `--lumiverse-bg-deep` (actual outer drawer backdrop) |
+| `--mochi-sidebar-bg`, `--mochi-input-bg` | `--lumiverse-bg` |
+| `--mochi-elevated-bg` | `--lumiverse-bg-elevated` |
+| `--mochi-section-bg` | `--lumiverse-fill-subtle` |
+| `--mochi-accent`, `--mochi-account-accent` | `--lumiverse-primary` |
+| `--mochi-selected-bg` | `--lumiverse-primary-015` |
+| `--mochi-hover-bg` | `--lumiverse-fill-hover` |
+| `--mochi-text` | `--lumiverse-text` |
+| `--mochi-muted` | native muted text mixed slightly toward normal text for contrast |
+| `--mochi-border`, `--mochi-border-hover` | native border / border-hover |
+| `--mochi-focus`, `--mochi-focus-bg` | native primary / primary-010 |
+| `--mochi-danger`, `--mochi-danger-hover`, `--mochi-danger-bg` | native danger / danger-hover / danger-015 |
+
+`--mochi-on-accent` uses native CSS `contrast-color()` where supported. The
+classic light/dark fallback uses the host's opposite drawer foreground role;
+Mochi's tested fallback pair is recorded in the verification report. This corrects
+a low-contrast text pairing in the native default purple primary token pair,
+without changing the host's accent. Browsers without this CSS feature keep the
+primary background stable on hover and show a border/ring instead. Arbitrary
+custom CSS can still create low contrast: check your own chosen palette.
+
+Compact editor dimensions are exposed as `--mochi-editor-control-height`,
+`--mochi-editor-gap`, and `--mochi-editor-radius`. Desktop controls default to
+34px; mobile/coarse-pointer targets are at least 40px. Full add-on text remains
+in expandable details, with scrolling rather than data truncation.
+
+The identity dock is at the bottom of the messenger conversation-list sidebar.
+Accounts and editing remain in the outer Pocket/Mochi sidebar, reached with each
+account row's cog or the messenger dock's cog. The outer Accounts page has no
+duplicate identity dock.

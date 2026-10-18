@@ -117,7 +117,7 @@ test('account editor stays in the outer sidebar; cancel/save return to Accounts 
   h.tabs[0].activate();h.accounts();h.select(h.a);h.session.view.select('room_'+h.a)
   const view=h.session.view as any;view.drafts.set(view.roomId,'Unsent draft')
   expect(document.querySelector('.mochi-window [aria-label="Switch fictional profile"]')===null).toBe(true)
-  h.navigation.root.querySelector<HTMLButtonElement>('[aria-label="Account Settings"]')!.click()
+  document.querySelector<HTMLButtonElement>('.mochi-messenger-dock [aria-label="Account Settings"]')!.click()
   expect(!!h.navigation.root.querySelector('.mochi-profile-screen')).toBe(true)
   expect(document.querySelector('.mochi-window .mochi-profile-screen')===null).toBe(true)
   Array.from(h.navigation.root.querySelectorAll<HTMLButtonElement>('button')).find(n=>n.textContent==='Cancel profile changes')!.click()
@@ -302,35 +302,37 @@ test('picker loading/error/empty states, account creation and dirty-form safegua
   }finally{h.cleanup()}
 })
 
-for(const width of [320,390,1100])test(`${width}: selection stays Accounts, dock settings routes outward and fictional logout defeats last-used reentry`,()=>{
+for(const width of [320,390,1100])test(`${width}: Accounts selection stays put, messenger dock routes outward and fictional logout defeats reentry`,()=>{
  const h=fixture(width)
  try{
   h.tabs[0].activate();h.accounts();h.select(h.a,true,false)
   expect(h.floats).toBe(0);expect(h.session.view.navigationState.selectedAccountId).toBe(h.a)
-  expect(h.navigation.root.querySelector('[aria-label="Account Settings"]')!==null).toBe(true)
-  h.navigation.root.querySelector<HTMLButtonElement>('[aria-label="Log out of fictional account"]')!.click()
+  expect(h.navigation.root.querySelector('.mochi-account-dock')===null).toBe(true)
+  expect(h.navigation.root.querySelector('[data-account-id="'+h.a+'"]')?.parentElement?.querySelector('.mochi-account-icon')!==null).toBe(true)
+  h.navigation.openMessenger();expect(h.floats).toBe(1)
+  document.querySelector<HTMLButtonElement>('.mochi-messenger-dock [aria-label="Log out of fictional account"]')!.click()
   expect(h.session.view.state===null).toBe(true);expect(h.session.view.navigationState.selectedAccountId).toBeUndefined()
-  h.navigation.openMessenger();h.accounts();expect(h.floats).toBe(0);expect(window.sessionStorage.getItem('mochi:fictional-logout:synthetic')).toBe('1')
+  h.navigation.openMessenger();h.accounts();expect(h.floats).toBe(1);expect(window.sessionStorage.getItem('mochi:fictional-logout:synthetic')).toBe('1')
   h.session.view.open();h.emit({type:'mochi:accounts',requestId:h.request('mochi:accounts').requestId,state:{...h.bank,phone:{preference:'last-used',lastAccountId:h.a}}})
   expect(h.session.view.state===null).toBe(true);expect(h.session.view.navigationState.selectedAccountId).toBeUndefined()
-  h.select(h.b,true,false);expect(h.session.view.navigationState.selectedAccountId).toBe(h.b);expect(h.floats).toBe(0)
+  h.select(h.b,true,false);expect(h.session.view.navigationState.selectedAccountId).toBe(h.b);expect(h.floats).toBe(1)
   h.navigation.openMessenger();expect(h.floats).toBe(1)
  }finally{h.cleanup()}
 })
 
-test('fictional logout and account editor honor generation and dirty warnings before changing scope',()=>{
+test('messenger dock logout and outer account editing honor generation and dirty warnings',()=>{
  const h=fixture(390)
  try{
-  h.tabs[0].activate();h.accounts();h.select(h.a,true,false)
+  h.tabs[0].activate();h.accounts();h.select(h.a)
   const view=h.session.view as any;view.roomId='room_'+h.a;view.ownGenerations.set(view.roomId,'pending');view.busy=true
-  h.navigation.root.querySelector<HTMLButtonElement>('[aria-label="Log out of fictional account"]')!.click()
+  document.querySelector<HTMLButtonElement>('.mochi-messenger-dock [aria-label="Log out of fictional account"]')!.click()
   expect(document.body.textContent).toContain('A reply is still generating')
   Array.from(document.querySelectorAll<HTMLButtonElement>('dialog button')).find(b=>b.textContent==='Stay here')!.click()
   expect(view.navigationState.selectedAccountId).toBe(h.a)
   view.ownGenerations.clear();view.busy=false
-  h.navigation.root.querySelector<HTMLButtonElement>('[aria-label="Account Settings"]')!.click()
+  document.querySelector<HTMLButtonElement>('.mochi-messenger-dock [aria-label="Account Settings"]')!.click()
   const input=h.navigation.root.querySelector<HTMLInputElement>('[aria-label="Profile display name"]')!;input.value='Unsaved';input.dispatchEvent(new window.Event('input'))
-  h.navigation.root.querySelector<HTMLButtonElement>('[aria-label="Log out of fictional account"]')!.click()
+  Array.from(h.navigation.root.querySelectorAll<HTMLButtonElement>('button')).find(b=>b.textContent==='Back to Accounts')!.click()
   expect(document.body.textContent).toContain('You have unsaved changes')
   Array.from(document.querySelectorAll<HTMLButtonElement>('dialog button')).find(b=>b.textContent==='Keep editing')!.click()
   expect(view.isSidebarProfileOpen).toBe(true);expect(view.navigationState.selectedAccountId).toBe(h.a)

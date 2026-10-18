@@ -95,8 +95,8 @@ export class MochiView {
     this.exitPortal(()=>{this.leave();this.resetScope();this.fictionalLoggedOut=true;try{const owner=this.profiles.state?.ownerId;if(owner)window.sessionStorage.setItem('mochi:fictional-logout:'+owner,'1')}catch{};this.pickerOpen=true;this.startupOpen=false;complete();this.redraw()},anchor,true)
   }
   private profileReturn?: () => void
-  private accountNavigation?: {picker():void; settings(anchor:HTMLElement):void}
-  setAccountNavigation(owner: {picker():void; settings(anchor:HTMLElement):void} | undefined):void {this.accountNavigation=owner}
+  private accountNavigation?: {picker():void; settings(anchor:HTMLElement):void; logout?(anchor:HTMLElement):void}
+  setAccountNavigation(owner: {picker():void; settings(anchor:HTMLElement):void; logout?(anchor:HTMLElement):void} | undefined):void {this.accountNavigation=owner}
   get isSidebarProfileOpen():boolean{return this.sidebarProfile}
   editSidebarProfile(anchor:HTMLElement, complete:()=>void, create=false, accountId?:string):void {
     // A running reply must reach the existing consequential-navigation warning.
@@ -557,10 +557,7 @@ export class MochiView {
     if(this.state){
       const controls=this.inboxControls(),[change,profiles,create,notices]=Array.from(controls.querySelectorAll<HTMLButtonElement>(':scope > button'))
       for(const control of [change,profiles]){control.classList.add('mochi-icon-button');control.lastElementChild?.remove()}
-      const dock=el('div','mochi-profile-dock');dock.dataset.compact=String(this.personalSettings.value.dock==='compact');dock.setAttribute('aria-label','Active fictional profile');const identityCopy=el('div'),switcher=el('select');switcher.setAttribute('aria-label','Switch fictional profile');for(const profile of this.profiles.state?.accounts.filter(a=>!a.archived)||[]){const option=el('option','',profile.displayName+(profile.username?' · @'+profile.username:''));option.value=profile.id;switcher.append(option)}if(!account){const option=el('option','','Unassigned legacy chats');option.value='';switcher.append(option)}switcher.value=this.state.accountId||'';switcher.onchange=()=>this.selectNavigationAccount(switcher.value||undefined,switcher,()=>this.redraw());identityCopy.append(switcher,el('small','mochi-dock-username',account?.username?'@'+account.username:'Fictional profile'));dock.append(portrait(account?.displayName||'?',account?.avatarUrl),identityCopy);identity.replaceChildren(dock)
-      const accountRow=el('div','mochi-shell-account-row');accountRow.append(identity,profiles)
       create.setAttribute('aria-label','New Chat');create.title='New Chat';create.textContent='+ New Chat';newChat=create;noticesButton=notices
-      if(!this.accountNavigation)heading.append(accountRow)
     }else heading.append(identity)
     const filter=el('input','mochi-conversation-filter');filter.type='search';filter.placeholder='Find a conversation';filter.setAttribute('aria-label','Find a conversation');filter.value=this.conversationFilter;filter.disabled=!this.state
     heading.append(filter)
@@ -589,6 +586,13 @@ export class MochiView {
     if(this.state&&!this.state.rooms.length)rooms.append(el('p','mochi-muted','No conversations yet. Create a room to get started.'))
     const noMatches=el('p','mochi-muted','No matching conversations.');const updateFilter=()=>{let found=false;for(const row of rooms.querySelectorAll<HTMLElement>('.mochi-desktop-room')){row.hidden=!(row.dataset.discovery||'').includes(filter.value.toLocaleLowerCase())||(this.conversationView==='groups'&&row.dataset.group!=='true');found ||= !row.hidden}noMatches.hidden=found||!this.state?.rooms.length};filter.oninput=()=>{this.conversationFilter=filter.value;updateFilter()};rooms.append(noMatches);updateFilter()
     sidebar.append(heading,rooms)
+    if(account){
+      const dock=el('footer','mochi-account-dock mochi-messenger-dock');dock.setAttribute('aria-label','Fictional account identity')
+      const copy=el('div');copy.append(el('strong','',account.displayName),el('small','',account.username?'@'+account.username:'Fictional account'))
+      const settings=action('Account Settings','settings',true);settings.disabled=!this.accountNavigation;settings.onclick=()=>this.accountNavigation?.settings(settings)
+      const logout=action('Log out of fictional account','logout',true);logout.onclick=()=>{if(this.accountNavigation?.logout)this.accountNavigation.logout(logout);else this.logoutNavigationAccount(logout,()=>this.redraw())}
+      dock.append(portrait(account.displayName,account.avatarUrl),copy,settings,logout);sidebar.append(dock)
+    }
     const main=el('section','mochi-desktop-main');main.setAttribute('aria-label','Conversation and settings')
     const back=el('div','mochi-desktop-back'),backButton=button('← Conversations');backButton.setAttribute('aria-label','Back to conversations')
     back.hidden=this.pickerOpen||!this.state

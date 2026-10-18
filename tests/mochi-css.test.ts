@@ -23,8 +23,8 @@ test('all Mochi component variables have scoped editable defaults and preserve h
  for(const [,name]of components.matchAll(/var\((--mochi-[\w-]+)/g))expect(definitions.has(name)).toBe(true)
  expect(tokens).toMatch(/--mochi-sidebar-width: \d+px/);expect(tokens).toMatch(/--mochi-chat-font-size: \d+px/)
  expect(tokens).toMatch(/--mochi-bubble-radius: \d+px/);expect(tokens).toMatch(/--mochi-avatar-size: \d+px/)
- expect(tokens).toContain('var(--lp-bg,var(--lumiverse-bg,#17151d))')
- expect(tokens).toContain('var(--lp-border,var(--lumiverse-border,#ffffff18))')
+ expect(tokens).toContain('var(--lumiverse-bg,var(--lp-bg,#17151d))')
+ expect(tokens).toContain('var(--lumiverse-border,var(--lp-border,#ffffff18))')
  expect(tokens).not.toMatch(/:root\s*\{/);expect(components).not.toMatch(/@import\s|https?:\/\//)
 })
 

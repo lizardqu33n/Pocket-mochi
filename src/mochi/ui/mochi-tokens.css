@@ -3,7 +3,28 @@
 .mochi-sheet,
 .mochi-sidebar,
 .mochi-workspace {
-  --mochi-account-accent: var(--lp-accent,#b6a0ed);
+  /* Semantic roles verified against Lumiverse 1.2.5 native component CSS. */
+  --mochi-drawer-bg: var(--lumiverse-bg-deep,var(--lp-bg,#111017));
+  --mochi-sidebar-bg: var(--lumiverse-bg,var(--lp-bg,#17151d));
+  --mochi-elevated-bg: var(--lumiverse-bg-elevated,var(--lp-surface-2,#25222d));
+  --mochi-section-bg: var(--lumiverse-fill-subtle,#00000012);
+  --mochi-input-bg: var(--lumiverse-bg,var(--lp-bg,#17151d));
+  --mochi-control-bg: transparent;
+  --mochi-hover-bg: var(--lumiverse-fill-hover,#80808020);
+  --mochi-selected-bg: var(--lumiverse-primary-015,#a99bff26);
+  --mochi-account-accent: var(--lumiverse-primary,var(--lp-accent,#b6a0ed));
+  --mochi-muted: color-mix(in srgb,var(--lumiverse-text-muted,var(--lp-muted,#aaa4b9)) 85%,var(--mochi-text));
+  --mochi-on-accent: var(--lumiverse-bg-deep,var(--lumiverse-primary-contrast,#21182e));
+  --mochi-accent-hover: var(--lumiverse-primary-hover,var(--mochi-accent));
+  --mochi-border-hover: var(--lumiverse-border-hover,var(--mochi-border));
+  --mochi-focus: var(--lumiverse-primary,var(--mochi-accent));
+  --mochi-focus-bg: var(--lumiverse-primary-010,#a99bff1a);
+  --mochi-danger: var(--lumiverse-danger,#e35b68);
+  --mochi-danger-hover: var(--lumiverse-danger-hover,#d44354);
+  --mochi-danger-bg: var(--lumiverse-danger-015,#e35b6826);
+  --mochi-editor-control-height: 34px;
+  --mochi-editor-gap: 8px;
+  --mochi-editor-radius: 7px;
   /* Common dimensions: change these values, then rebuild the frontend. */
   --mochi-sidebar-min-width: 280px;
   --mochi-sidebar-width: 320px;
@@ -27,7 +48,7 @@
   --mochi-space-md: 14px;
   --mochi-space-lg: 20px;
   --mochi-space-xl: 28px;
-  --mochi-user-bubble-text: #21182e;
+  --mochi-user-bubble-text: var(--mochi-on-accent);
   /* Messenger density. These are visual dimensions, never account data. */
   --mochi-list-avatar-size: 34px;
   --mochi-header-avatar-size: 38px;
@@ -45,8 +66,15 @@
   --mochi-action-stagger: 30ms;
   --mochi-action-lift: -2px;
   /* These defaults retain Lumiverse/Pocket Light, Dark and custom colors. */
-  --mochi-text: var(--lp-text,var(--lumiverse-text,#f7f5ff));
-  --mochi-accent:color-mix(in srgb,var(--lp-accent,#a99bff) 35%,#b7a0e8);
-  --mochi-surface:var(--lp-bg,var(--lumiverse-bg,#17151d));
-  --mochi-border:var(--lp-border,var(--lumiverse-border,#ffffff18));
+  --mochi-text: var(--lumiverse-text,var(--lp-text,#f7f5ff));
+  --mochi-accent:var(--lumiverse-primary,var(--lp-accent,#b7a0e8));
+  --mochi-surface:var(--lumiverse-bg,var(--lp-bg,#17151d));
+  --mochi-border:var(--lumiverse-border,var(--lp-border,#ffffff18));
+}
+
+/* Progressive native contrast selection; classic dark/light fallback remains above. */
+@supports (color:contrast-color(red)) {
+  .mochi-view,.mochi-sheet,.mochi-sidebar,.mochi-workspace {
+    --mochi-on-accent: contrast-color(var(--mochi-accent));
+  }
 }

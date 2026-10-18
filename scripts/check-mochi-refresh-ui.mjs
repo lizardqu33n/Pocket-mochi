@@ -93,9 +93,9 @@ try{for(const width of [1440,1050,390,320])for(const [theme,c]of Object.entries(
   await page.evaluate(()=>{const f=window.__defaultFixture;f.view.state.jobs={};f.view.ownGenerations.clear();f.view.redraw()})
   await back();await open('Weekend plans');await capture('group')
   await page.getByLabel('Choose next responder',{exact:true}).click();assert.equal(await page.getByRole('button',{name:'Respond as Synthetic Mira',exact:true}).isVisible(),true);await page.keyboard.press('Escape')
-  await back();const otherId=await page.evaluate(()=>window.__defaultFixture.other.id);await page.getByLabel('Switch fictional profile',{exact:true}).selectOption(otherId)
+  await back();const otherId=await page.evaluate(()=>window.__defaultFixture.other.id);await page.evaluate(id=>window.__defaultFixture.view.selectNavigationAccount(id,document.querySelector('.mochi-desktop-list'),()=>{}),otherId)
   await page.waitForFunction(id=>window.__defaultFixture.view.state.accountId===id,otherId);assert.equal(await page.locator('.mochi-desktop-room').count(),0)
-  const accountId=await page.evaluate(()=>window.__defaultFixture.account.id);await page.getByLabel('Switch fictional profile',{exact:true}).selectOption(accountId)
+  const accountId=await page.evaluate(()=>window.__defaultFixture.account.id);await page.evaluate(id=>window.__defaultFixture.view.selectNavigationAccount(id,document.querySelector('.mochi-desktop-list'),()=>{}),accountId)
   await page.waitForFunction(id=>window.__defaultFixture.view.state.accountId===id,accountId);assert.equal(await page.locator('.mochi-desktop-room').count(),3)
   if(width<640){await open('Mochi Default v2 review');await page.setViewportSize({width,height:500});await page.getByLabel('Message',{exact:true}).fill('Draft with keyboard-sized viewport');await capture('keyboard-height');tools=await toolbar.boundingBox();field=await composer.boundingBox();assert(field.y+field.height<=500&&tools.y+tools.height<=field.y+2,'composer accessible in reduced height')}
   assert.deepEqual(errors,[]);assert.equal(await page.evaluate(()=>window.__defaultFixture.providerCalls.length),0)

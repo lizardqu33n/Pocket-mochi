@@ -355,7 +355,28 @@ var mochi_tokens_default = `/* Mochi-only defaults. Inherit host colors; never m
 .mochi-sheet,
 .mochi-sidebar,
 .mochi-workspace {
-  --mochi-account-accent: var(--lp-accent,#b6a0ed);
+  /* Semantic roles verified against Lumiverse 1.2.5 native component CSS. */
+  --mochi-drawer-bg: var(--lumiverse-bg-deep,var(--lp-bg,#111017));
+  --mochi-sidebar-bg: var(--lumiverse-bg,var(--lp-bg,#17151d));
+  --mochi-elevated-bg: var(--lumiverse-bg-elevated,var(--lp-surface-2,#25222d));
+  --mochi-section-bg: var(--lumiverse-fill-subtle,#00000012);
+  --mochi-input-bg: var(--lumiverse-bg,var(--lp-bg,#17151d));
+  --mochi-control-bg: transparent;
+  --mochi-hover-bg: var(--lumiverse-fill-hover,#80808020);
+  --mochi-selected-bg: var(--lumiverse-primary-015,#a99bff26);
+  --mochi-account-accent: var(--lumiverse-primary,var(--lp-accent,#b6a0ed));
+  --mochi-muted: color-mix(in srgb,var(--lumiverse-text-muted,var(--lp-muted,#aaa4b9)) 85%,var(--mochi-text));
+  --mochi-on-accent: var(--lumiverse-bg-deep,var(--lumiverse-primary-contrast,#21182e));
+  --mochi-accent-hover: var(--lumiverse-primary-hover,var(--mochi-accent));
+  --mochi-border-hover: var(--lumiverse-border-hover,var(--mochi-border));
+  --mochi-focus: var(--lumiverse-primary,var(--mochi-accent));
+  --mochi-focus-bg: var(--lumiverse-primary-010,#a99bff1a);
+  --mochi-danger: var(--lumiverse-danger,#e35b68);
+  --mochi-danger-hover: var(--lumiverse-danger-hover,#d44354);
+  --mochi-danger-bg: var(--lumiverse-danger-015,#e35b6826);
+  --mochi-editor-control-height: 34px;
+  --mochi-editor-gap: 8px;
+  --mochi-editor-radius: 7px;
   /* Common dimensions: change these values, then rebuild the frontend. */
   --mochi-sidebar-min-width: 280px;
   --mochi-sidebar-width: 320px;
@@ -379,7 +400,7 @@ var mochi_tokens_default = `/* Mochi-only defaults. Inherit host colors; never m
   --mochi-space-md: 14px;
   --mochi-space-lg: 20px;
   --mochi-space-xl: 28px;
-  --mochi-user-bubble-text: #21182e;
+  --mochi-user-bubble-text: var(--mochi-on-accent);
   /* Messenger density. These are visual dimensions, never account data. */
   --mochi-list-avatar-size: 34px;
   --mochi-header-avatar-size: 38px;
@@ -397,10 +418,17 @@ var mochi_tokens_default = `/* Mochi-only defaults. Inherit host colors; never m
   --mochi-action-stagger: 30ms;
   --mochi-action-lift: -2px;
   /* These defaults retain Lumiverse/Pocket Light, Dark and custom colors. */
-  --mochi-text: var(--lp-text,var(--lumiverse-text,#f7f5ff));
-  --mochi-accent:color-mix(in srgb,var(--lp-accent,#a99bff) 35%,#b7a0e8);
-  --mochi-surface:var(--lp-bg,var(--lumiverse-bg,#17151d));
-  --mochi-border:var(--lp-border,var(--lumiverse-border,#ffffff18));
+  --mochi-text: var(--lumiverse-text,var(--lp-text,#f7f5ff));
+  --mochi-accent:var(--lumiverse-primary,var(--lp-accent,#b7a0e8));
+  --mochi-surface:var(--lumiverse-bg,var(--lp-bg,#17151d));
+  --mochi-border:var(--lumiverse-border,var(--lp-border,#ffffff18));
+}
+
+/* Progressive native contrast selection; classic dark/light fallback remains above. */
+@supports (color:contrast-color(red)) {
+  .mochi-view,.mochi-sheet,.mochi-sidebar,.mochi-workspace {
+    --mochi-on-accent: contrast-color(var(--mochi-accent));
+  }
 }
 `;
 
@@ -4763,95 +4791,34 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   .mochi-desktop.mochi-view { border-radius:0; }
 }
 
+.mochi-desktop-list { background:var(--mochi-sidebar-bg); }
+.mochi-account-dock { display:flex; align-items:center; gap:7px; flex-shrink:0; padding:8px; border-top:1px solid var(--mochi-border); background:var(--mochi-elevated-bg); color:var(--mochi-text); }
+.mochi-account-dock>div { display:grid; flex:1; min-width:0; gap:2px; }
+.mochi-account-dock :is(strong,small) { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mochi-account-dock small { color:var(--mochi-muted); font-size:11px; }
+.mochi-messenger-dock>.mochi-avatar { width:34px; height:34px; flex:0 0 34px; font-size:14px; }
+.mochi-view .mochi-messenger-dock .mochi-icon-button { display:grid; place-items:center; width:36px; min-width:36px; height:36px; min-height:36px; padding:8px; border:0; border-radius:6px; background:transparent; color:var(--mochi-muted); }
+.mochi-messenger-dock svg { width:17px; height:17px; }
+.mochi-view .mochi-messenger-dock button:hover { color:var(--mochi-text); background:var(--mochi-hover-bg); }
+.mochi-view .mochi-messenger-dock button:focus-visible { outline:2px solid var(--mochi-focus); outline-offset:-2px; }
+@container(max-width:639px) { .mochi-view .mochi-messenger-dock .mochi-icon-button { width:40px; min-width:40px; height:40px; min-height:40px; } }
 /* @mochi-section mochi-sidebar-styles */
-.mochi-sidebar {
-  height:100%;
-  min-height:0;
-  display:flex;
-  flex-direction:column;
-  color:var(--lumiverse-text,#eee);
-  font:inherit
-}
-.mochi-sidebar-nav {
-  display:flex;
-  gap:8px;
-  padding:12px;
-  flex-shrink:0
-}
-.mochi-sidebar-picker {
-  overflow:auto;
-  padding:0 12px 16px;
-  min-height:0
-}
-.mochi-sidebar-nav>button,.mochi-sidebar-picker button {
-  font:inherit;
-  color:inherit;
-  background:var(--lumiverse-bg-elevated,#29262f);
-  border:1px solid var(--lumiverse-border,#ffffff26);
-  border-radius:10px;
-  min-height:44px;
-  padding:8px 12px;
-  cursor:pointer
-}
-.mochi-sidebar button:focus-visible {
-  outline:2px solid var(--lumiverse-primary,#9399ab);
-  outline-offset:2px
-}
-.mochi-sidebar button:disabled {
-  opacity:.6;
-  cursor:default
-}
-.mochi-sidebar-account {
-  display:flex;
-  align-items:center;
-  text-align:left;
-  gap:12px;
-  width:100%;
-  margin:8px 0
-}
-.mochi-sidebar-account[aria-pressed=true] {
-  border-color:var(--lumiverse-primary,#9399ab)
-}
-.mochi-sidebar-avatar {
-  display:grid;
-  place-items:center;
-  flex:0 0 40px;
-  width:40px;
-  height:40px;
-  border-radius:50%;
-  overflow:hidden;
-  background:var(--lumiverse-bg,#18161d)
-}
-.mochi-sidebar-avatar img {
-  width:100%;
-  height:100%;
-  object-fit:cover
-}
-.mochi-sidebar-label {
-  min-width:0;
-  display:flex;
-  flex-direction:column;
-  gap:3px;
-  overflow-wrap:anywhere
-}
-.mochi-sidebar-label small {
-  opacity:.7
-}
-.mochi-sidebar-message {
-  margin:12px 0;
-  font-size:.9em;
-  opacity:.8
-}
-.mochi-sidebar-body {
-  flex:1;
-  min-height:0;
-  overflow:hidden;
-  display:flex;
-  flex-direction:column
-}
-.mochi-sidebar [hidden] {
-  display:none!important
-}
+.mochi-sidebar { height:100%; min-height:0; display:flex; flex-direction:column; color:var(--mochi-text); background:var(--mochi-drawer-bg); font:inherit; font-size:13px; }
+.mochi-sidebar * { box-sizing:border-box; }
+.mochi-sidebar-nav { display:flex; flex-wrap:wrap; gap:6px; padding:8px; flex-shrink:0; }
+.mochi-sidebar-picker { flex:1; min-height:0; overflow:auto; padding:0 8px 12px; scrollbar-width:thin; }
+.mochi-sidebar-nav>button,.mochi-sidebar-picker button { font:inherit; color:var(--mochi-text); background:var(--mochi-control-bg); border:1px solid var(--mochi-border); border-radius:var(--mochi-editor-radius); min-height:var(--mochi-editor-control-height); padding:6px 10px; cursor:pointer; }
+.mochi-sidebar :is(button,summary):hover { background:var(--mochi-hover-bg); }
+.mochi-sidebar :is(button,input,textarea,select,summary):focus-visible { outline:2px solid var(--mochi-focus); outline-offset:2px; }
+.mochi-sidebar :is(button,input,select):disabled { opacity:.4; cursor:not-allowed; }
+.mochi-sidebar-avatar { display:grid; place-items:center; flex:0 0 36px; width:36px; height:36px; border-radius:50%; overflow:hidden; background:var(--mochi-input-bg); color:var(--mochi-text); }
+.mochi-sidebar-avatar img { width:100%; height:100%; object-fit:cover; }
+.mochi-sidebar-label { min-width:0; display:flex; flex-direction:column; gap:3px; }
+.mochi-sidebar-label :is(strong,small) { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%; }
+.mochi-sidebar-label small,.mochi-sidebar-message { color:var(--mochi-muted); }
+.mochi-sidebar-message { margin:10px 0; font-size:12px; }
+.mochi-sidebar-body { flex:1; min-height:0; overflow:hidden; display:flex; flex-direction:column; }
+.mochi-sidebar [hidden] { display:none!important; }
 .mochi-mobile-surface .mochi-sidebar-nav {
   padding:4px 8px;
   justify-content:space-between
@@ -4961,45 +4928,72 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 
 
-/* Outer account browser: scoped, theme-inherited, ordinary editable CSS. */
-.mochi-sidebar { font-size:14px; background:var(--lp-bg,var(--lumiverse-bg,#18161d)); }
-.mochi-sidebar * { box-sizing:border-box; }
-.mochi-sidebar-nav { padding:10px; gap:6px; flex-wrap:wrap; }
-.mochi-sidebar-picker { flex:1; padding:0 10px 12px; scrollbar-width:thin; }
-.mochi-sidebar-picker h3 { margin:10px 0; font-size:16px; }
-.mochi-sidebar input:not([type=checkbox]),.mochi-sidebar select { min-width:0; width:100%; color:inherit; background:var(--lp-bg-elevated,var(--lumiverse-bg-elevated,#24212b)); border:1px solid var(--lp-border,var(--lumiverse-border,#ffffff26)); border-radius:8px; min-height:40px; padding:8px; font:inherit; }
-.mochi-sidebar :is(input,select,summary):focus-visible { outline:2px solid var(--mochi-account-accent); outline-offset:2px; }
-.mochi-account-tools { display:flex; align-items:center; gap:4px; margin:8px 0; }
+/* Native semantic roles: drawer backdrop, quiet sections, distinct fields/actions. */
+.mochi-sidebar-picker h3 { margin:8px 0; font-size:16px; }
+.mochi-sidebar .mochi-view { background:transparent; padding:0; gap:var(--mochi-editor-gap); height:auto; }
+.mochi-sidebar .mochi-muted { color:var(--mochi-muted); }
+.mochi-sidebar-picker :is(input:not([type=checkbox]),textarea,select) { min-width:0; width:100%; color:var(--mochi-text); background:var(--mochi-input-bg); border:1px solid var(--mochi-border); border-radius:var(--mochi-editor-radius); min-height:var(--mochi-editor-control-height); padding:6px 9px; font:inherit; }
+.mochi-sidebar-picker :is(input,textarea,select):focus { border-color:var(--mochi-focus); box-shadow:0 0 0 3px var(--mochi-focus-bg); }
+.mochi-sidebar-picker input::placeholder,.mochi-sidebar-picker textarea::placeholder { color:var(--mochi-muted); opacity:1; }
+.mochi-account-tools { display:flex; align-items:center; gap:4px; margin:7px 0; }
 .mochi-account-tools>input { flex:1; }
 .mochi-account-tools>select { flex:1; width:80px; }
-.mochi-sidebar button { font:inherit; color:inherit; cursor:pointer; }
-.mochi-sidebar .mochi-account-icon { display:grid; place-items:center; width:40px; min-width:40px; height:40px; min-height:40px; padding:9px; border:1px solid transparent; background:transparent; border-radius:8px; }
-.mochi-account-icon svg { width:18px; height:18px; }
-.mochi-sidebar button:hover { background:var(--lp-bg-hover,var(--lumiverse-bg-elevated,#ffffff12)); }
-.mochi-sidebar .mochi-account-icon[aria-pressed=true] { color:var(--mochi-account-accent); background:color-mix(in srgb,var(--mochi-account-accent) 12%,transparent); }
-.mochi-account-list { display:grid; gap:5px; }
-.mochi-account-startup { display:grid; gap:5px; font-size:12px; opacity:.9; margin-top:16px; }
-.mochi-account-row { display:flex; align-items:center; min-width:0; gap:4px; }
-.mochi-account-row>input { accent-color:var(--mochi-account-accent); width:20px; height:20px; }
-.mochi-sidebar .mochi-sidebar-account { margin:0; min-width:0; border:1px solid transparent; border-radius:10px; background:transparent; padding:8px; gap:10px; }
-.mochi-sidebar .mochi-sidebar-account[aria-pressed=true] { border-color:var(--mochi-account-accent); background:color-mix(in srgb,var(--mochi-account-accent) 12%,transparent); }
-.mochi-sidebar-label strong,.mochi-sidebar-label small { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%; }
-.mochi-account-list[data-layout=grid] { grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); }
-.mochi-account-list[data-layout=grid] .mochi-sidebar-account { flex-direction:column; text-align:center; min-height:125px; }
-.mochi-account-list[data-layout=grid] .mochi-sidebar-avatar { width:58px; height:58px; flex-basis:58px; }
-.mochi-account-dock { display:flex; align-items:center; gap:7px; flex-shrink:0; padding:8px; border-top:1px solid var(--lp-border,var(--lumiverse-border,#ffffff26)); background:var(--lp-bg-elevated,var(--lumiverse-bg-elevated,#24212b)); }
-.mochi-account-dock>div { display:grid; flex:1; min-width:0; gap:2px; }
-.mochi-account-dock :is(strong,small) { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.mochi-account-dock small { opacity:.7; }
-.mochi-sidebar .mochi-profile-screen { display:flex; flex-direction:column; width:100%; gap:10px; padding:0; }
-.mochi-sidebar .mochi-profile-screen fieldset { min-width:0; padding:10px; margin:0; border-radius:10px; }
+.mochi-sidebar .mochi-account-icon { display:grid; place-items:center; width:34px; min-width:34px; height:34px; min-height:34px; padding:8px; border:1px solid transparent; background:transparent; border-radius:6px; }
+.mochi-account-icon svg { width:16px; height:16px; }
+.mochi-sidebar .mochi-account-icon:hover { background:var(--mochi-hover-bg); color:var(--mochi-text); }
+.mochi-sidebar .mochi-account-icon[aria-pressed=true] { color:var(--mochi-text); border-color:var(--mochi-account-accent); background:var(--mochi-selected-bg); }
+.mochi-account-list { display:grid; gap:3px; }
+.mochi-account-startup { display:grid; gap:5px; font-size:12px; color:var(--mochi-muted); margin-top:14px; }
+.mochi-account-row { display:flex; align-items:center; min-width:0; gap:2px; }
+.mochi-account-row>input { accent-color:var(--mochi-account-accent); width:18px; height:18px; }
+.mochi-sidebar .mochi-sidebar-account { display:flex; align-items:center; text-align:left; width:100%; margin:0; min-width:0; border:1px solid transparent; border-radius:8px; background:transparent; padding:7px; gap:8px; }
+.mochi-sidebar .mochi-sidebar-account:hover { background:var(--mochi-hover-bg); }
+.mochi-sidebar .mochi-sidebar-account[aria-pressed=true] { border-color:var(--mochi-account-accent); background:var(--mochi-selected-bg); }
+.mochi-account-list[data-layout=grid] { grid-template-columns:repeat(auto-fill,minmax(116px,1fr)); }
+.mochi-account-list[data-layout=grid] .mochi-account-row { position:relative; }
+.mochi-account-list[data-layout=grid] .mochi-account-row>.mochi-account-icon { position:absolute; right:2px; top:2px; }
+.mochi-account-list[data-layout=grid] .mochi-sidebar-account { flex-direction:column; text-align:center; min-height:112px; padding-top:12px; }
+.mochi-account-list[data-layout=grid] .mochi-sidebar-avatar { width:48px; height:48px; flex-basis:48px; }
+.mochi-sidebar .mochi-profile-screen { display:flex; flex-direction:column; width:100%; gap:var(--mochi-editor-gap); padding:0; }
+.mochi-sidebar .mochi-profile-screen fieldset { min-width:0; padding:8px 0; margin:0; border:0; border-top:1px solid var(--mochi-border); border-radius:0; background:transparent; gap:6px; }
+.mochi-sidebar .mochi-profile-screen legend { padding:0 6px 0 0; font-size:12px; font-weight:650; color:var(--mochi-text); }
 .mochi-sidebar .mochi-profile-screen :is(label,textarea,pre) { min-width:0; max-width:100%; }
-.mochi-sidebar .mochi-profile-screen textarea { width:100%; color:inherit; background:var(--lp-bg,var(--lumiverse-bg,#18161d)); }
-.mochi-sidebar .mochi-profile-screen button { min-height:40px; border-radius:8px; padding:8px 10px; }
-.mochi-sidebar .mochi-profile-fields label:has(input[type=checkbox]) { display:flex; flex-direction:row; align-items:center; gap:8px; min-height:40px; }
-.mochi-persona-choices { display:grid; max-height:180px; overflow:auto; gap:4px; }
-.mochi-sync-value { white-space:pre-wrap; overflow-wrap:anywhere; font:inherit; font-size:12px; max-height:220px; overflow:auto; padding:8px; background:var(--lp-bg,var(--lumiverse-bg,#18161d)); border-radius:6px; }
-@media(max-width:400px) { .mochi-sidebar-nav { padding:6px; }.mochi-sidebar-picker { padding:0 8px 10px; }.mochi-account-dock { gap:4px; padding:6px; }.mochi-account-dock .mochi-sidebar-avatar { width:34px; height:34px; flex-basis:34px; } }
+.mochi-sidebar .mochi-profile-screen label { gap:4px; font-size:12px; color:var(--mochi-muted); }
+.mochi-sidebar .mochi-profile-screen :is(input:not([type=checkbox]),textarea,select) { min-height:var(--mochi-editor-control-height); border-radius:var(--mochi-editor-radius); background:var(--mochi-input-bg); color:var(--mochi-text); padding:6px 9px; }
+.mochi-sidebar .mochi-profile-screen button { min-height:var(--mochi-editor-control-height); border-radius:var(--mochi-editor-radius); padding:6px 10px; background:var(--mochi-control-bg); color:var(--mochi-text); }
+.mochi-sidebar .mochi-profile-screen button:hover { background:var(--mochi-hover-bg); }
+.mochi-sidebar .mochi-profile-screen .mochi-primary { background:var(--mochi-accent); color:var(--mochi-on-accent); border-color:var(--mochi-accent); font-weight:650; }
+.mochi-sidebar .mochi-profile-screen .mochi-primary:hover { border-color:var(--mochi-border-hover); box-shadow:0 0 0 2px var(--mochi-focus-bg); }
+@supports (color:contrast-color(red)) { .mochi-sidebar .mochi-profile-screen .mochi-primary:hover { background:var(--mochi-accent-hover); color:contrast-color(var(--mochi-accent-hover)); } }
+.mochi-sidebar .mochi-profile-screen .mochi-danger-action { border-color:var(--mochi-danger); background:var(--mochi-danger-bg); color:var(--mochi-text); }
+.mochi-sidebar .mochi-profile-screen .mochi-danger-action:hover { border-color:var(--mochi-danger-hover); background:color-mix(in srgb,var(--mochi-danger) 25%,var(--mochi-drawer-bg)); }
+.mochi-sidebar .mochi-profile-preview { background:var(--mochi-elevated-bg); border:1px solid var(--mochi-border); border-radius:10px; }
+.mochi-sidebar .mochi-profile-banner { display:none; }
+.mochi-sidebar .mochi-profile-preview-body { display:grid; grid-template-columns:42px minmax(0,1fr); align-items:center; gap:2px 10px; padding:10px; }
+.mochi-sidebar .mochi-profile-preview .mochi-profile-portrait { grid-row:1/3; position:static; margin:0; width:42px; height:42px; font-size:18px; border:1px solid var(--mochi-border); }
+.mochi-sidebar .mochi-profile-preview-name { font-size:15px; overflow-wrap:anywhere; }
+.mochi-sidebar .mochi-profile-actions { gap:6px; }
+.mochi-sidebar .mochi-profile-fields label:has(input[type=checkbox]) { display:flex; flex-direction:row; align-items:center; gap:8px; min-height:32px; color:var(--mochi-text); }
+.mochi-sidebar .mochi-profile-fields input[type=checkbox] { accent-color:var(--mochi-account-accent); width:18px; height:18px; min-height:18px; }
+.mochi-sidebar details>summary { cursor:pointer; min-height:30px; padding:6px; border-radius:6px; color:var(--mochi-text); }
+.mochi-persona-choices { display:grid; max-height:190px; overflow:auto; gap:3px; margin-top:5px; }
+.mochi-persona-row { min-width:0; border-bottom:1px solid var(--mochi-border); }
+.mochi-sidebar .mochi-persona-choice { display:flex; align-items:center; gap:8px; padding:5px 7px; width:100%; text-align:left; border-color:transparent; }
+.mochi-persona-choice>span:last-child { display:grid; min-width:0; gap:2px; }
+.mochi-persona-choice :is(strong,small) { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mochi-persona-choice .mochi-sidebar-avatar { width:28px; height:28px; flex-basis:28px; }
+.mochi-sidebar .mochi-persona-choice[aria-pressed=true] { background:var(--mochi-selected-bg); border-color:var(--mochi-account-accent); }
+.mochi-source-details { font-size:11px; overflow-wrap:anywhere; }
+.mochi-source-details>summary { color:var(--mochi-muted); }
+.mochi-addon-group { display:grid; gap:4px; }
+.mochi-addon-group h4 { margin:5px 0; font-size:11px; color:var(--mochi-muted); text-transform:uppercase; letter-spacing:.04em; }
+.mochi-addon-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:0 6px; padding:5px 7px; background:var(--mochi-section-bg); border:1px solid var(--mochi-border); border-radius:8px; }
+.mochi-addon-row[data-selected=true] { border-color:var(--mochi-account-accent); background:var(--mochi-selected-bg); }
+.mochi-addon-name { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mochi-addon-status { align-self:center; color:var(--mochi-muted); font-size:10px; }
+.mochi-addon-details { grid-column:1/-1; min-width:0; }
+.mochi-addon-content,.mochi-sync-value { white-space:pre-wrap; overflow-wrap:anywhere; font:inherit; font-size:12px; max-height:220px; overflow:auto; padding:8px; color:var(--mochi-text); background:var(--mochi-input-bg); border-radius:6px; }
+@media(max-width:600px),(pointer:coarse) { .mochi-sidebar,.mochi-sidebar .mochi-view { --mochi-editor-control-height:40px; }.mochi-sidebar .mochi-account-icon { width:40px; min-width:40px; height:40px; min-height:40px; }.mochi-sidebar .mochi-profile-fields label:has(input[type=checkbox]),.mochi-sidebar details>summary { min-height:40px; } }
 /* @mochi-section launcher */
 .mochi-launcher-root {
   width:58px;
@@ -6224,7 +6218,7 @@ class MochiProfiles {
     if (this.confirmation) {
       const { kind, account } = this.confirmation;
       form.append(el("h3", "", kind === "archive" ? "Archive profile?" : "Restore profile?"), el("p", "mochi-muted", kind === "archive" ? `Archive ${account.displayName} and preserve every chat and schedule? Autonomous work will stop while archived.` : `Restore ${account.displayName}? Preserved schedules may resume subject to their expiry and limits.`));
-      const confirm = button(kind === "archive" ? "Confirm archive and preserve chats" : "Confirm restore profile", "lp-button mochi-primary");
+      const confirm = button(kind === "archive" ? "Confirm archive and preserve chats" : "Confirm restore profile", "lp-button " + (kind === "archive" ? "mochi-danger-action" : "mochi-primary"));
       confirm.disabled = busy;
       confirm.onclick = () => {
         send("mochi:account_" + kind, { accountId: account.id, revision: account.revision, confirmed: true, ...kind === "archive" ? { roomPolicy: "preserve" } : {} });
@@ -6287,7 +6281,7 @@ class MochiProfiles {
     const draft = this.draft;
     if (this.sync)
       return this.renderSync(busy, send, redraw, confirmDiscard);
-    form.append(el("h3", "", draft.id ? "Edit Account" : "Create Account"), el("p", "mochi-muted", "This fictional profile · Save applies persona, name and avatar edits. Your Lumiverse login is unchanged."));
+    form.append(el("h3", "", draft.id ? "Edit Account" : "Create Account"), el("p", "mochi-muted", "Fictional account · Changes apply on Save."));
     const back = button("Back to Accounts", "lp-button");
     back.onclick = () => confirmDiscard(exit, back);
     form.prepend(back);
@@ -6355,7 +6349,7 @@ class MochiProfiles {
     for (const p of this.state.personas)
       option(p.source + ":" + p.sourceId, p.name + " · " + p.source);
     const ai = el("fieldset", "mochi-profile-fields");
-    ai.append(el("legend", "", "AI identity"), el("p", "mochi-muted", "Independent saved identity. This description is for AI context, never a public About Me."));
+    ai.append(el("legend", "", "AI identity"), el("p", "mochi-muted", "AI context only · Not your public bio."));
     form.append(ai);
     fields = ai;
     persona.value = draft.persona;
@@ -6375,17 +6369,34 @@ class MochiProfiles {
     search.placeholder = "Search personas to import…";
     search.setAttribute("aria-label", "Search Lumiverse personas");
     search.value = this.personaQuery;
+    const importPicker = el("details", "mochi-persona-import");
+    importPicker.open = !draft.id;
+    const importTitle = el("summary", "", "Import persona");
+    importPicker.append(importTitle, search);
     const choices = el("div", "mochi-persona-choices");
     const fill = () => {
       choices.replaceChildren();
       for (const p of this.state.personas.filter((p) => (p.name + " " + p.source).toLocaleLowerCase().includes(this.personaQuery.toLocaleLowerCase()))) {
-        const pick = button(p.name + " · " + p.source, "mochi-persona-choice");
+        const row = el("div", "mochi-persona-row"), pick = button("", "mochi-persona-choice"), avatar = el("span", "mochi-sidebar-avatar", p.name.slice(0, 1));
+        if (p.avatarUrl) {
+          const img = el("img");
+          img.src = p.avatarUrl;
+          img.alt = "";
+          avatar.replaceChildren(img);
+        }
         pick.setAttribute("aria-label", "Import persona " + p.name);
+        pick.setAttribute("aria-pressed", String(draft.persona === p.source + ":" + p.sourceId || draft.persona === "keep" && saved?.persona.source === p.source && saved?.persona.sourceId === p.sourceId));
+        const copy = el("span");
+        copy.append(el("strong", "", p.name), el("small", "mochi-muted", p.source));
+        pick.append(avatar, copy);
         pick.onclick = () => {
           persona.value = p.source + ":" + p.sourceId;
-          persona.dispatchEvent(new Event("change"));
+          persona.dispatchEvent(new persona.ownerDocument.defaultView.Event("change"));
         };
-        choices.append(pick);
+        const details = el("details", "mochi-source-details"), summary = el("summary", "", "Details");
+        details.append(summary, el("strong", "", p.name), el("p", "mochi-muted", p.source + " · " + p.sourceId), el("p", "mochi-muted", `${p.addons?.length || 0} add-ons · Choosing a source imports a snapshot on Save. Linking is separate.`));
+        row.append(pick, details);
+        choices.append(row);
       }
     };
     search.oninput = () => {
@@ -6393,7 +6404,8 @@ class MochiProfiles {
       fill();
     };
     fill();
-    ai.append(search, choices);
+    importPicker.append(choices);
+    ai.append(importPicker);
     const independent = button(draft.id ? "Use independent AI identity" : "Independent Mochi Account", "lp-button");
     independent.onclick = () => {
       draft.persona = "manual";
@@ -6418,7 +6430,7 @@ class MochiProfiles {
     }
     const source = draft.persona === "keep" ? saved?.persona : chosen;
     const linked = el("fieldset", "mochi-profile-fields");
-    linked.append(el("legend", "", "Linked persona"), el("p", "mochi-muted", "Linking is optional. Nothing syncs automatically. Imported values are saved independently."));
+    linked.append(el("legend", "", "Linked persona"), el("p", "mochi-muted", "Optional source link · Manual sync only."));
     form.append(linked);
     if (source?.source === "lumiverse") {
       const label = el("label", "", "Keep an explicit Lumiverse source link"), check = el("input");
@@ -6449,24 +6461,39 @@ class MochiProfiles {
     if (source?.source === "lumiverse") {
       const native = this.state.personas.find((p) => p.source === "lumiverse" && p.sourceId === source.sourceId);
       const addons = el("fieldset", "mochi-profile-fields");
-      addons.append(el("legend", "", "Persona add-ons"), el("p", "mochi-muted", "Selections belong to this Mochi profile and affect future replies in its matching-persona chats. Saved messages and native Lumiverse settings stay unchanged."));
+      addons.append(el("legend", "", "Persona add-ons"), el("p", "mochi-muted", "Selections affect future replies in matching-persona chats."));
       if (!native)
         addons.append(el("p", "mochi-muted", "The source persona is unavailable. Add-ons will not be included."));
       else if (!native.addons?.length)
         addons.append(el("p", "mochi-muted", "No native add-ons are attached to this persona."));
-      for (const addon of native?.addons || []) {
-        const label = el("label", "", addon.label), check = el("input");
-        check.type = "checkbox";
-        check.checked = draft.addonIds.includes(addon.id) && addon.available;
-        check.disabled = busy || !addon.available;
-        check.setAttribute("aria-label", "Enable add-on " + addon.label);
-        check.onchange = () => {
-          draft.addonIds = check.checked ? [...new Set([...draft.addonIds, addon.id])] : draft.addonIds.filter((id) => id !== addon.id);
-        };
-        label.prepend(check);
-        addons.append(label, el("p", "mochi-muted", addon.available ? addon.content : "Unavailable; omitted from replies."));
-        if (addon.outletName)
-          addons.append(el("small", "mochi-muted", `Placed only at {{persona_outlet::${addon.outletName}}} in chat or preset instructions.`));
+      for (const [global, heading] of [[false, "Persona Add-Ons"], [true, "Global Add-Ons"]]) {
+        const items = (native?.addons || []).filter((a) => !!a.global === global);
+        if (!items.length)
+          continue;
+        const group = el("section", "mochi-addon-group");
+        group.append(el("h4", "", heading));
+        for (const addon of items) {
+          const row = el("div", "mochi-addon-row"), label = el("label"), check = el("input");
+          label.append(el("span", "mochi-addon-name", addon.label));
+          check.type = "checkbox";
+          check.checked = draft.addonIds.includes(addon.id) && addon.available;
+          check.disabled = busy || !addon.available;
+          check.setAttribute("aria-label", "Enable add-on " + addon.label);
+          row.dataset.selected = String(check.checked);
+          check.onchange = () => {
+            draft.addonIds = check.checked ? [...new Set([...draft.addonIds, addon.id])] : draft.addonIds.filter((id) => id !== addon.id);
+            row.dataset.selected = String(check.checked);
+          };
+          label.prepend(check);
+          const details = el("details", "mochi-addon-details"), summary = el("summary", "", "Details");
+          summary.setAttribute("aria-label", "Details for add-on " + addon.label);
+          details.append(summary, el("strong", "", addon.label), el("pre", "mochi-addon-content", addon.available ? addon.content : "Unavailable; omitted from replies."));
+          if (addon.outletName)
+            details.append(el("small", "mochi-muted", `Placed only at {{persona_outlet::${addon.outletName}}} in chat or preset instructions.`));
+          row.append(label, el("small", "mochi-addon-status", addon.available ? "Compatible" : "Unavailable"), details);
+          group.append(row);
+        }
+        addons.append(group);
       }
       if (draft.addonIds.some((id) => !native?.addons?.some((a) => a.id === id && a.available)))
         addons.append(el("p", "mochi-muted", "Some saved add-ons are missing or inaccessible. They are omitted from replies and removed from selections on Save."));
@@ -6518,7 +6545,7 @@ class MochiProfiles {
     }
     form.append(el("p", "mochi-muted", "Name, identity and portrait changes apply to new chats. Add-on selections apply to future replies in matching-persona chats. Existing messages and authorship are preserved."));
     if (saved) {
-      const archive = button("Archive profile", "lp-button mochi-secondary-action");
+      const archive = button("Archive profile", "lp-button mochi-danger-action");
       archive.disabled = busy;
       archive.onclick = () => {
         this.confirmation = { kind: "archive", account: saved };
@@ -9568,35 +9595,11 @@ class MochiView {
         control.classList.add("mochi-icon-button");
         control.lastElementChild?.remove();
       }
-      const dock = el("div", "mochi-profile-dock");
-      dock.dataset.compact = String(this.personalSettings.value.dock === "compact");
-      dock.setAttribute("aria-label", "Active fictional profile");
-      const identityCopy = el("div"), switcher = el("select");
-      switcher.setAttribute("aria-label", "Switch fictional profile");
-      for (const profile of this.profiles.state?.accounts.filter((a) => !a.archived) || []) {
-        const option = el("option", "", profile.displayName + (profile.username ? " · @" + profile.username : ""));
-        option.value = profile.id;
-        switcher.append(option);
-      }
-      if (!account) {
-        const option = el("option", "", "Unassigned legacy chats");
-        option.value = "";
-        switcher.append(option);
-      }
-      switcher.value = this.state.accountId || "";
-      switcher.onchange = () => this.selectNavigationAccount(switcher.value || undefined, switcher, () => this.redraw());
-      identityCopy.append(switcher, el("small", "mochi-dock-username", account?.username ? "@" + account.username : "Fictional profile"));
-      dock.append(portrait(account?.displayName || "?", account?.avatarUrl), identityCopy);
-      identity.replaceChildren(dock);
-      const accountRow = el("div", "mochi-shell-account-row");
-      accountRow.append(identity, profiles);
       create.setAttribute("aria-label", "New Chat");
       create.title = "New Chat";
       create.textContent = "+ New Chat";
       newChat = create;
       noticesButton = notices;
-      if (!this.accountNavigation)
-        heading.append(accountRow);
     } else
       heading.append(identity);
     const filter = el("input", "mochi-conversation-filter");
@@ -9673,6 +9676,24 @@ class MochiView {
     rooms.append(noMatches);
     updateFilter();
     sidebar.append(heading, rooms);
+    if (account) {
+      const dock = el("footer", "mochi-account-dock mochi-messenger-dock");
+      dock.setAttribute("aria-label", "Fictional account identity");
+      const copy = el("div");
+      copy.append(el("strong", "", account.displayName), el("small", "", account.username ? "@" + account.username : "Fictional account"));
+      const settings = action("Account Settings", "settings", true);
+      settings.disabled = !this.accountNavigation;
+      settings.onclick = () => this.accountNavigation?.settings(settings);
+      const logout = action("Log out of fictional account", "logout", true);
+      logout.onclick = () => {
+        if (this.accountNavigation?.logout)
+          this.accountNavigation.logout(logout);
+        else
+          this.logoutNavigationAccount(logout, () => this.redraw());
+      };
+      dock.append(portrait(account.displayName, account.avatarUrl), copy, settings, logout);
+      sidebar.append(dock);
+    }
     const main = el("section", "mochi-desktop-main");
     main.setAttribute("aria-label", "Conversation and settings");
     const back = el("div", "mochi-desktop-back"), backButton = button("← Conversations");
@@ -12076,9 +12097,7 @@ function createMochiSidebar(ctx, session, policy, activateSidebar = () => {}, di
   picker.className = "mochi-sidebar-picker";
   body.className = "mochi-sidebar-body";
   body.hidden = true;
-  const dock = document.createElement("footer");
-  dock.className = "mochi-account-dock";
-  root.append(style, nav, fallbackStatus, picker, body, editor, dock);
+  root.append(style, nav, fallbackStatus, picker, body, editor);
   let query = "", sort = "displayName", descending = false, grid = false, bulk = false, archived = false;
   const selected = new Set;
   let editorActivated = false;
@@ -12209,26 +12228,6 @@ function createMochiSidebar(ctx, session, policy, activateSidebar = () => {}, di
     editor.hidden = !editing;
     const state = session.view.navigationState;
     open.disabled = !state.selectedAccountId || !session.view.state || state.switching;
-    dock.replaceChildren();
-    const current = state.accounts?.accounts.find((a) => a.id === state.selectedAccountId && !a.archived);
-    if (current) {
-      const copy = document.createElement("div"), name = document.createElement("strong"), username = document.createElement("small");
-      name.textContent = current.displayName;
-      username.textContent = current.username ? "@" + current.username : "Fictional account";
-      copy.append(name, username);
-      const settings = glyph("Account Settings", "settings", (anchor) => edit(anchor, false, current.id)), logout = glyph("Log out of fictional account", "logout", (anchor) => session.view.logoutNavigationAccount(anchor, () => {
-        ownedWindow?.hide();
-        workspace?.close();
-        mobileSurface?.hide();
-        showPicker();
-      }));
-      dock.append(portrait(current.displayName, current.avatarUrl), copy, settings, logout);
-    } else {
-      const text = document.createElement("small");
-      text.textContent = "No fictional account selected";
-      dock.append(text);
-    }
-    dock.hidden = !!mobileSurface?.isOpen && !editing;
     if (editing) {
       if (ownedWindow?.isOpen)
         ownedWindow.hide();
@@ -12375,6 +12374,11 @@ function createMochiSidebar(ctx, session, policy, activateSidebar = () => {}, di
         row.append(check);
       }
       row.append(node);
+      if (!archived) {
+        const settings = glyph("Edit account " + account.displayName, "settings", (anchor) => edit(anchor, false, account.id));
+        settings.disabled = state.switching;
+        row.append(settings);
+      }
       list.append(row);
     }
     if (bulk) {
@@ -12443,7 +12447,13 @@ function createMochiSidebar(ctx, session, policy, activateSidebar = () => {}, di
     }, anchor, true);
   };
   const settings = (anchor) => edit(anchor);
-  session.view.setAccountNavigation({ picker: openPicker, settings });
+  session.view.setAccountNavigation({ picker: openPicker, settings, logout: (anchor) => session.view.logoutNavigationAccount(anchor, () => {
+    ownedWindow?.hide();
+    workspace?.close();
+    mobileSurface?.hide();
+    activateSidebar();
+    showPicker();
+  }) });
   return { root, open: () => {
     session.assertActive();
     showPicker();

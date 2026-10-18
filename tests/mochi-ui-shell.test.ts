@@ -77,9 +77,8 @@ test('header search and details settings invoke original tools, with dirty setti
 test('refined sidebar keeps compact labeled account controls and original create/notification routes',()=>{
  const f=fixture(1080)
  try{
-  const account=document.querySelector('.mochi-shell-account-row')!,tools=document.querySelector('.mochi-conversation-filters')!
-  expect(account.querySelectorAll('button')).toHaveLength(1);expect(account.querySelector('[aria-label="Switch fictional profile"]')).not.toBeNull()
-  for(const control of account.querySelectorAll('button')){expect(control.title).toBeTruthy();expect(control.getAttribute('aria-label')).toBeTruthy();expect(control.classList.contains('mochi-icon-button')).toBe(true)}
+  const tools=document.querySelector('.mochi-conversation-filters')!
+  expect(document.querySelector('.mochi-shell-account-row')===null).toBe(true);expect(document.querySelector('[aria-label="Switch fictional profile"]')===null).toBe(true)
   expect(tools.textContent).toContain('+ New Chat')
   expect(document.querySelector('.mochi-desktop-list [aria-label="Mochi notifications"]')).toBeNull()
   expect(document.querySelector('.mochi-room-header [aria-label="Mochi notifications"]')).not.toBeNull()

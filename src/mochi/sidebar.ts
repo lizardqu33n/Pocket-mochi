@@ -18,8 +18,7 @@ export function createMochiSidebar(ctx: Pick<SpindleFrontendContext,'ui'>, sessi
   const fallbackStatus=document.createElement('p');fallbackStatus.className='mochi-sidebar-message';fallbackStatus.setAttribute('role','status');fallbackStatus.hidden=true
   editor.className='mochi-sidebar-picker';editor.hidden=true
   nav.className='mochi-sidebar-nav';nav.setAttribute('aria-label','Mochi navigation');picker.className='mochi-sidebar-picker';body.className='mochi-sidebar-body';body.hidden=true
-  const dock=document.createElement('footer');dock.className='mochi-account-dock'
-  root.append(style,nav,fallbackStatus,picker,body,editor,dock)
+  root.append(style,nav,fallbackStatus,picker,body,editor)
   let query='',sort='displayName',descending=false,grid=false,bulk=false,archived=false
   const selected=new Set<string>()
   let editorActivated=false
@@ -69,14 +68,6 @@ export function createMochiSidebar(ctx: Pick<SpindleFrontendContext,'ui'>, sessi
     editor.hidden=!editing
     const state=session.view.navigationState
     open.disabled=!state.selectedAccountId||!session.view.state||state.switching
-    dock.replaceChildren()
-    const current=state.accounts?.accounts.find(a=>a.id===state.selectedAccountId&&!a.archived)
-    if(current){
-      const copy=document.createElement('div'),name=document.createElement('strong'),username=document.createElement('small');name.textContent=current.displayName;username.textContent=current.username?'@'+current.username:'Fictional account';copy.append(name,username)
-      const settings=glyph('Account Settings','settings',anchor=>edit(anchor,false,current.id)),logout=glyph('Log out of fictional account','logout',anchor=>session.view.logoutNavigationAccount(anchor,()=>{ownedWindow?.hide();workspace?.close();mobileSurface?.hide();showPicker()}))
-      dock.append(portrait(current.displayName,current.avatarUrl),copy,settings,logout)
-    }else{const text=document.createElement('small');text.textContent='No fictional account selected';dock.append(text)}
-    dock.hidden=!!mobileSurface?.isOpen&&!editing
     if(editing){
       if(ownedWindow?.isOpen)ownedWindow.hide()
       mobileSurface?.hide();picker.hidden=true;body.hidden=true
@@ -115,7 +106,7 @@ export function createMochiSidebar(ctx: Pick<SpindleFrontendContext,'ui'>, sessi
       node.setAttribute('aria-label',`${archived?'Recover':'Use Mochi account'} ${account.displayName}`);node.setAttribute('aria-pressed',String(state.selectedAccountId===account.id));node.disabled=state.switching
       const copy=document.createElement('span');copy.className='mochi-sidebar-label';const name=document.createElement('strong'),detail=document.createElement('small');name.textContent=account.displayName;detail.textContent=(account.username?'@'+account.username+' · ':'')+account.roomIds.length+' chats';copy.append(name,detail);node.append(portrait(account.displayName,account.avatarUrl),copy)
       if(bulk){const check=document.createElement('input');check.type='checkbox';check.setAttribute('aria-label','Select '+account.displayName);check.checked=selected.has(account.id);check.onchange=()=>{check.checked?selected.add(account.id):selected.delete(account.id);render()};row.append(check)}
-      row.append(node);list.append(row)
+      row.append(node);if(!archived){const settings=glyph('Edit account '+account.displayName,'settings',anchor=>edit(anchor,false,account.id));settings.disabled=state.switching;row.append(settings)}list.append(row)
     }
     if(bulk){message(`${selected.size} selected · ${all.filter(a=>selected.has(a.id)).reduce((n,a)=>n+a.roomIds.length,0)} preserved chats`);picker.append(button('Select all shown',()=>{visible.forEach(a=>selected.add(a.id));render()}),button('Clear selection',()=>{selected.clear();render()}))}
     if(state.accounts.legacyRoomCount){const recovery=document.createElement('details'),summary=document.createElement('summary');summary.textContent='Legacy recovery';recovery.append(summary,button(`Review ${state.accounts.legacyRoomCount} unassigned chats`,anchor=>session.view.selectNavigationAccount(undefined,anchor,present)));picker.append(recovery)}
@@ -129,6 +120,6 @@ export function createMochiSidebar(ctx: Pick<SpindleFrontendContext,'ui'>, sessi
   render()
   const openPicker=()=>{session.assertActive();const anchor=document.activeElement as HTMLElement;session.view.exitPortal(()=>{if(ownedWindow?.isOpen)ownedWindow.hide();if(!mobileSurface?.isOpen)activateSidebar();showPicker()},anchor,true)}
   const settings=(anchor:HTMLElement)=>edit(anchor)
-  session.view.setAccountNavigation({picker:openPicker,settings})
+  session.view.setAccountNavigation({picker:openPicker,settings,logout:anchor=>session.view.logoutNavigationAccount(anchor,()=>{ownedWindow?.hide();workspace?.close();mobileSurface?.hide();activateSidebar();showPicker()})})
   return {root,open:()=>{session.assertActive();showPicker()},settings,openMessenger:()=>{session.assertActive();const current=session.view.navigationState;if(current.selectedAccountId&&current.accounts?.accounts.some(a=>a.id===current.selectedAccountId&&!a.archived)&&session.view.state?.accountId===current.selectedAccountId)present();else openPicker()},onMessengerVisibility(handler){visibility.add(handler);handler(ownedWindow?.isOpen||workspace?.isOpen||false);return()=>{visibility.delete(handler)}},destroy:()=>{detach();dispose()}}
 }

@@ -14,8 +14,9 @@ list open; **Open Mochi** opens its conversations separately.
 - **New account** creates an independent identity, or use the searchable persona
   picker to import a Lumiverse/Pocket identity. Save captures an independent
   snapshot. The AI description is not a public About Me.
-- The bottom dock shows the selected account. Its cog opens **Edit Account** in
-  this same sidebar. Back/Cancel check unsaved changes; saving returns to Accounts.
+- Each account row has a cog for **Edit Account** in this same outer sidebar.
+  The identity dock is at the bottom of the messenger conversation list; its cog
+  also opens this outer editor. Back/Cancel check unsaved changes; saving returns to Accounts.
 
 ## Linking and manual sync
 
