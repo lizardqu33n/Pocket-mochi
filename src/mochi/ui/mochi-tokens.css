@@ -4,11 +4,11 @@
 .mochi-sidebar,
 .mochi-workspace {
   /* Common dimensions: change these values, then rebuild the frontend. */
-  --mochi-sidebar-min-width: 200px;
-  --mochi-sidebar-width: 232px;
+  --mochi-sidebar-min-width: 280px;
+  --mochi-sidebar-width: 320px;
   --mochi-sidebar-details-min-width: 190px;
-  --mochi-sidebar-details-width: 224px;
-  --mochi-profile-panel-width: 252px;
+  --mochi-sidebar-details-width: 320px;
+  --mochi-profile-panel-width: 300px;
   --mochi-chat-font-size: 15px;
   --mochi-bubble-radius: 22px;
   --mochi-bubble-corner-radius: 6px;
@@ -19,8 +19,8 @@
   --mochi-wordmark-width: 96px;
   --mochi-control-font-size: 14px;
   --mochi-heading-font-size: 18px;
-  --mochi-radius-field: 12px;
-  --mochi-radius-card: 18px;
+  --mochi-radius-field: 10px;
+  --mochi-radius-card: 14px;
   --mochi-space-xs: 6px;
   --mochi-space-sm: 10px;
   --mochi-space-md: 14px;
@@ -31,10 +31,18 @@
   --mochi-list-avatar-size: 34px;
   --mochi-header-avatar-size: 38px;
   --mochi-profile-avatar-size: 76px;
-  --mochi-message-avatar-size: 34px;
+  --mochi-message-avatar-size: 38px;
   --mochi-message-gap: 12px;
   --mochi-messenger-control-size: 40px;
   --mochi-messenger-font: var(--lumiverse-font-family, system-ui, sans-serif);
+  --mochi-bubble-line-length: 62ch;
+  --mochi-panel-radius: 22px;
+  --mochi-control-radius: 8px;
+  --mochi-header-icon-size: 18px;
+  --mochi-composer-min-height: 48px;
+  --mochi-action-duration: 140ms;
+  --mochi-action-stagger: 30ms;
+  --mochi-action-lift: -2px;
   /* These defaults retain Lumiverse/Pocket Light, Dark and custom colors. */
   --mochi-text: var(--lp-text,var(--lumiverse-text,#f7f5ff));
   --mochi-accent:color-mix(in srgb,var(--lp-accent,#a99bff) 35%,#b7a0e8);

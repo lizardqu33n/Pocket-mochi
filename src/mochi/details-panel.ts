@@ -22,7 +22,7 @@ export function roomDetails(room:MochiRoom,characters:MochiCharacter[],close:()=
   card.append(avatar,label)
   if(character&&character.name!==name)card.append(el('small','mochi-muted',character.name))
   card.append(status)
-  const about=el('div','mochi-profile-about');about.append(el('h5','','About'),el('p','',character?.about||'No profile information shared.'));card.append(about);panel.append(card)
+  const about=el('div','mochi-profile-about');about.append(el('h5','','About'),el('p','','No Mochi bio saved yet.'));card.append(about);panel.append(card)
  }
  const chat=el('p','mochi-profile-chat-name','Chat name: '+room.title);panel.append(chat)
  const configure=button(direct?'Chat settings':'Chat settings & group icon','lp-button mochi-profile-settings');configure.setAttribute('aria-label','Open conversation settings');configure.onclick=settings;panel.append(configure)

@@ -108,3 +108,29 @@ The character-first messenger adds these CSS controls. Change them in `mochi-tok
 Group chats have a **Group icon** picker under **Chat Settings → General** (and in New Chat after choosing at least two characters). Choose a built-in local icon or **Automatic member portraits**, then **Save settings**. This changes the group’s presentation, never its members or stored speaker identities. Converting a group to a direct chat restores the character portrait. Custom image uploads are not part of this picker.
 
 For focused messenger screenshots, run `node scripts/check-mochi-messenger-ui.mjs` with the same browser/toolchain variables described above. Optionally set `MOCHI_MESSENGER_OUTPUT` to an evidence folder. It exercises synthetic direct/group chats, profiles, group icon editing, new chats and fictional-profile switching at 1280, 390 and 320px in three themes. No real login switching or host reload is involved.
+
+## Part 1 messenger refresh
+
+The conversation tools are **directly above the message composer, at the bottom of the chat**. Search, Notifications and Participants are permanent header buttons. Click the character portrait/name to open their profile. Chat Settings is the fixed cog at the right end of the bottom toolbar. Saved custom tool visibility/order remains separate; no saved toolbar records are migrated. New unsaved defaults show Presets, Pins & Notes, Memory and Preview.
+
+Next Responder is the small icon **inside the message field, immediately before Send**. Open it to select Automatic or an eligible character. It changes only who answers next, not Natural/Instant/Manual mode.
+
+Useful refresh tokens:
+
+| Token | Purpose |
+|---|---|
+| `--mochi-sidebar-width`, `--mochi-profile-panel-width` | Default 320px conversation list and 300px profile column |
+| `--mochi-bubble-line-length` | Message line-length cap (`62ch` by default) |
+| `--mochi-header-icon-size` | Permanent header and bottom tool glyph size |
+| `--mochi-composer-min-height` | Minimum message-field height |
+| `--mochi-panel-radius`, `--mochi-radius-card`, `--mochi-radius-field`, `--mochi-control-radius` | Distinct panel/card/field/control rounding |
+| `--mochi-action-duration`, `--mochi-action-stagger` | Message-action bounce duration and right-to-left delay |
+| `--mochi-action-lift` | Selected-bubble lift (`-2px`) |
+
+Click/tap a bubble, long-press it, or focus its message and press Enter to show its actions. Escape dismisses and returns focus to the message. Reduced-motion preference disables the bounce and lift. Messages remain separate records and bubbles even when grouped visually.
+
+Wide layouts (1280px and above) show the profile by default. Medium layouts start closed; narrow screens open it as a dedicated view. Manual desktop open/close is remembered **for this browser tab’s session, keyed by the authenticated Lumiverse owner** when available. Narrow-screen automatic collapse does not rewrite that desktop choice. This adds no shared preference migration or cross-device setting.
+
+The character profile intentionally shows **No Mochi bio saved yet** rather than republishing an AI description. Bio editing belongs to Part 2.
+
+Run `node scripts/check-mochi-refresh-ui.mjs` for focused refresh checks. Set the same browser/toolchain variables described above, and optionally `MOCHI_REFRESH_OUTPUT`. It checks wide/medium/390px/320px layouts, inherited themes, bottom toolbar placement, responder selection, grouping, action selection/animation, Stop and fictional-account isolation. The older messenger check command forwards to this check.

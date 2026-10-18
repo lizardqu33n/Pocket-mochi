@@ -99,7 +99,7 @@ test('All and Groups combine with account-scoped text discovery without touching
   choose('Groups');expect(visible()).toHaveLength(1);expect(visible()[0].getAttribute('aria-current')).toBe('true')
   const input=document.querySelector<HTMLInputElement>('[aria-label="Find a conversation"]')!;input.value='Second DM';input.dispatchEvent(new f.dom.window.Event('input'));expect(visible()).toHaveLength(0)
   choose('All');expect(visible()).toHaveLength(1);expect(JSON.stringify(f.view.state)).toBe(before);expect(f.sent).toHaveLength(0)
-  expect(document.querySelector('.mochi-activity-snapshot')).toBeNull();expect(document.querySelector('.mochi-profile-about')!.textContent).toContain('No profile information shared.')
+  expect(document.querySelector('.mochi-activity-snapshot')).toBeNull();expect(document.querySelector('.mochi-profile-about')!.textContent).toContain('No Mochi bio saved yet.')
  }finally{f.cleanup()}
 })
 
@@ -138,8 +138,8 @@ for(const [label,selector] of [
   const personal=(f.view as any).personalSettings
   personal.saved={preferences:{...personal.value,hidden:[]}}
   f.redraw()
-  const toolbar=document.querySelector('.mochi-toolbar-shortcuts')!
-  const shortcuts=Array.from(toolbar.querySelectorAll<HTMLButtonElement>('button'))
+  const toolbar=document.querySelector('.mochi-desktop-main')!
+  const shortcuts=Array.from(toolbar.querySelectorAll<HTMLButtonElement>('.mochi-header-controls>button,.mochi-toolbar-shortcuts>button,.mochi-bottom-toolbar>[aria-label="Chat Settings"]'))
   expect(new Set(shortcuts.map(n=>n.querySelector('svg')!.innerHTML)).size).toBe(shortcuts.length)
   shortcuts.find(n=>n.getAttribute('aria-label')===label)!.click()
   expect(document.querySelector(selector)).not.toBeNull()
@@ -154,7 +154,7 @@ test('character-first header and You attribution are projections, never stored i
   (f.room.messages[0] as any).name='Edith';f.redraw();const before=JSON.stringify(f.room)
   expect(document.querySelector('.mochi-conversation-title')!.textContent).toBe(f.room.settings!.characterNames.one)
   expect(document.querySelector('.mochi-room-info .mochi-chat-avatar')).not.toBeNull()
-  expect(document.querySelector('.mochi-chat-name')!.textContent).toBe('Chat name: '+f.room.title)
+  expect(document.querySelector('.mochi-chat-name')!.textContent).toBe(f.room.title)
   expect(document.querySelector('.mochi-message-name')!.textContent).toBe('You')
   expect(document.querySelector('.mochi-message')!.getAttribute('aria-label')).toBe('Message from You')
   expect(document.querySelector('.mochi-desktop-room-copy small')!.textContent).toContain('You: Synthetic')

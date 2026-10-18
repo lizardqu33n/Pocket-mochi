@@ -1,3 +1,4 @@
+import {messengerUIPreferences} from '../src/mochi/personal-settings.js'
 import {test,expect} from 'bun:test'
 import {JSDOM} from 'jsdom'
 import {fixture} from './mochi-accounts.test.js'
@@ -54,7 +55,7 @@ test('toolbar customization persists, preserves overflow access and restores def
   h.click('Personal Settings');await h.preferences();const scope=h.view.state!.accountId
   for(const box of h.root.querySelectorAll<HTMLInputElement>('[aria-label^="Show "]')){box.checked=false;box.dispatchEvent(new window.Event('change'))}
   h.click('Move Presets up');h.click('Save presentation');await h.preferences();h.click('Return to conversation')
-  expect(h.view.state!.accountId).toBe(scope);expect(h.root.querySelector('.mochi-custom-toolbar [aria-label="Chat Settings"]')).toBeNull();expect(h.root.querySelector('[aria-label="Room options"]')).not.toBeNull();expect(h.root.querySelector('[aria-label="Settings"]')).not.toBeNull();expect(h.root.querySelector('[aria-label="Personal Settings"]')).not.toBeNull();expect(h.root.querySelector('[aria-label="Message"]')).not.toBeNull()
+  expect(h.view.state!.accountId).toBe(scope);expect(Boolean(h.root.querySelector('.mochi-bottom-toolbar>[aria-label="Chat Settings"]'))).toBe(true);expect(h.root.querySelector('[aria-label="Room options"]')).not.toBeNull();expect(h.root.querySelector('[aria-label="Settings"]')).not.toBeNull();expect(h.root.querySelector('[aria-label="Personal Settings"]')).not.toBeNull();expect(h.root.querySelector('[aria-label="Message"]')).not.toBeNull()
   h.click('Personal Settings');h.click('Restore default presentation');expect(h.sent.filter(p=>p.type==='mochi:ui_preferences'&&p.action==='save')).toHaveLength(1);h.click('Save presentation');await h.preferences();h.click('Return to conversation');expect(h.root.querySelector('.mochi-custom-toolbar [aria-label="Chat Settings"]')).not.toBeNull()
  }finally{h.close()}
 })
@@ -72,7 +73,7 @@ test('presentation tickets reject late fictional scopes and foreign owners; rese
  panel.load();const old=sent.at(-1);account='account_'+'b'.repeat(32);panel.reset();panel.load();const current=sent.at(-1)
  const custom={...defaultUIPreferences(),dock:'compact' as const}
  panel.receive({type:'mochi:ui_preferences',requestId:old.requestId,record:{version:1,ownerId:'alice',accountId:old.accountId,revision:1,preferences:custom}});expect(panel.saved).toBeUndefined()
- panel.receive({type:'mochi:ui_preferences',requestId:current.requestId,record:{version:1,ownerId:'bob',accountId:account,revision:1,preferences:custom}});expect(panel.saved).toBeUndefined();expect(panel.value).toEqual(defaultUIPreferences());panel.reset()
+ panel.receive({type:'mochi:ui_preferences',requestId:current.requestId,record:{version:1,ownerId:'bob',accountId:account,revision:1,preferences:custom}});expect(panel.saved).toBeUndefined();expect(panel.value).toEqual(messengerUIPreferences());panel.reset()
 })
 
 test('opening settings and saving visual preferences do not cancel a running reply',async()=>{

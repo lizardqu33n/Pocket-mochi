@@ -48,7 +48,7 @@ test('workspace starts without a phone/RP chat and uses account-wide last-used p
     expect(h.sent.every(p => p.phone === undefined && p.chatId === undefined && p.characterId === undefined)).toBe(true)
     expect(h.sent.find(p=>p.type==='mochi:list').accountId).toBe(a.id)
     expect([...f.files]).toEqual(before)
-    expect(h.root.textContent).toContain('New room')
+    expect(h.root.querySelector('[aria-label="New Chat"],[aria-label="New chat"]')!==null).toBe(true)
   } finally { h.cleanup() }
 })
 

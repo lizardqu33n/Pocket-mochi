@@ -1,10 +1,12 @@
 import {el,button,requestId} from '../frontend/shared.js'
 import {defaultUIPreferences,validateUIPreferences,TOOLBAR_LABELS,type UIPreferences,type UIPreferenceRecord} from './ui-preferences.js'
 
+export const messengerUIPreferences=():UIPreferences=>({...defaultUIPreferences(),order:['presets','notes','memory','preview','settings','search','notifications','participants'],hidden:[]})
+
 export class PersonalSettings {
  saved?:UIPreferenceRecord;draft?:UIPreferences;status='';private ticket='';private scope='';private timer?:ReturnType<typeof setTimeout>
  constructor(private send:(p:any)=>void,private current:()=>string|undefined,private owner:()=>string|undefined,private redraw:()=>void){}
- get value():UIPreferences{return this.saved?.preferences||defaultUIPreferences()}
+ get value():UIPreferences{return this.saved?.preferences||messengerUIPreferences()}
  get dirty():boolean{return !!this.draft&&JSON.stringify(this.draft)!==JSON.stringify(this.value)}
  reset():void{clearTimeout(this.timer);this.ticket='';this.scope='';this.saved=undefined;this.draft=undefined;this.status=''}
  discard():void{this.draft=this.saved?structuredClone(this.saved.preferences):undefined}
@@ -22,7 +24,7 @@ export class PersonalSettings {
   const record=p.record
   if(!record||record.version!==1||!Number.isSafeInteger(record.revision)||record.revision<0||record.accountId!==this.current()||this.owner()&&record.ownerId!==this.owner())return true
   try{record.preferences=validateUIPreferences(record.preferences)}catch{return true}
-  const dirty=this.dirty;this.saved=record;if(!dirty)this.draft=structuredClone(record.preferences);this.status='Presentation saved for this fictional profile; legacy preferences belong to this Lumiverse login.';this.redraw();return true
+  const dirty=this.dirty;if(record.revision===0)record.preferences=messengerUIPreferences();this.saved=record;if(!dirty)this.draft=structuredClone(record.preferences);this.status='Presentation saved for this fictional profile; legacy preferences belong to this Lumiverse login.';this.redraw();return true
  }
  render():HTMLElement{
   const root=el('section','mochi-personal-presentation');root.setAttribute('aria-label','Messenger presentation')
@@ -33,13 +35,14 @@ export class PersonalSettings {
   this.draft||=structuredClone(this.value);const draft=this.draft
   const choice=(label:string,key:'presentation'|'dock',values:Array<[string,string]>)=>{const wrap=el('label','',label),select=el('select');select.setAttribute('aria-label',label);for(const [value,name]of values){const o=el('option','',name);o.value=value;select.append(o)}select.value=draft[key];select.onchange=()=>{(draft as any)[key]=select.value};wrap.append(select);root.append(wrap)}
   choice('Toolbar presentation','presentation',[['icons','Compact icons'],['labels','Icons and labels']]);choice('Profile dock appearance','dock',[['comfortable','Avatar, name and username'],['compact','Compact avatar and profile selector']])
-  root.append(el('h4','','Toolbar actions'),el('p','mochi-muted','Hidden actions stay in Room options. Chat Settings, Personal Settings and profile switching always remain reachable.'))
-  for(const [index,key]of draft.order.entries()){
+  root.append(el('h4','','Toolbar actions'),el('p','mochi-muted','Hidden tools stay in Room options. Search, Notifications and Participants stay in the header; Chat Settings stays at the bottom right. Profile switching remains available.'))
+  const movable=draft.order.filter(key=>!['search','participants','notifications','settings'].includes(key))
+  for(const [index,key]of movable.entries()){
    const row=el('div','mochi-toolbar-preference'),label=el('label','',TOOLBAR_LABELS[key]),shown=el('input');shown.type='checkbox';shown.checked=!draft.hidden.includes(key);shown.setAttribute('aria-label','Show '+TOOLBAR_LABELS[key]);shown.onchange=()=>{draft.hidden=draft.hidden.filter(k=>k!==key);if(!shown.checked)draft.hidden.push(key)};label.append(shown)
-   const move=(delta:number)=>{[draft.order[index],draft.order[index+delta]]=[draft.order[index+delta],key];this.redraw()}
-   const up=button('↑'),down=button('↓');up.setAttribute('aria-label','Move '+TOOLBAR_LABELS[key]+' up');down.setAttribute('aria-label','Move '+TOOLBAR_LABELS[key]+' down');up.disabled=index===0;down.disabled=index===draft.order.length-1;up.onclick=()=>move(-1);down.onclick=()=>move(1);row.append(label,up,down);root.append(row)
+   const move=(delta:number)=>{const from=draft.order.indexOf(key),to=draft.order.indexOf(movable[index+delta]);[draft.order[from],draft.order[to]]=[draft.order[to],key];this.redraw()}
+   const up=button('↑'),down=button('↓');up.setAttribute('aria-label','Move '+TOOLBAR_LABELS[key]+' up');down.setAttribute('aria-label','Move '+TOOLBAR_LABELS[key]+' down');up.disabled=index===0;down.disabled=index===movable.length-1;up.onclick=()=>move(-1);down.onclick=()=>move(1);row.append(label,up,down);root.append(row)
   }
-  const save=button('Save presentation'),cancel=button('Cancel changes'),reset=button('Reset to defaults');cancel.setAttribute('aria-label','Cancel presentation changes');reset.setAttribute('aria-label','Restore default presentation');const actions=el('div','mochi-presentation-actions');save.disabled=!!this.ticket;save.onclick=()=>{this.request('save');this.redraw()};cancel.onclick=()=>{this.discard();this.redraw()};reset.onclick=()=>{this.draft=defaultUIPreferences();this.redraw()};actions.append(save,cancel,reset);root.append(actions)
+  const save=button('Save presentation'),cancel=button('Cancel changes'),reset=button('Reset to defaults');cancel.setAttribute('aria-label','Cancel presentation changes');reset.setAttribute('aria-label','Restore default presentation');const actions=el('div','mochi-presentation-actions');save.disabled=!!this.ticket;save.onclick=()=>{this.request('save');this.redraw()};cancel.onclick=()=>{this.discard();this.redraw()};reset.onclick=()=>{this.draft=messengerUIPreferences();this.redraw()};actions.append(save,cancel,reset);root.append(actions)
   return root
  }
 }
