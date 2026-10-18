@@ -1,3 +1,4 @@
+import {groupIcon} from './group-icons.js'
 import {MochiUIPreferences} from './ui-preferences.js'
 import {SummaryError,prepareSummary,requestSummary,summaryInput,summarySources,summaryConfiguration,hashSummaryInput,type SummarySuggestion} from './summarization.js'
 import {validateMemory,proveCoverage,inspectMemory,MAX_SUMMARY_TEXT,MAX_SUMMARY_VERSIONS,type SummaryVersion} from './memory.js'
@@ -58,6 +59,7 @@ function validateRoom(value: any, id: string): MochiRoom {
   if (!value || value.version !== 1 || value.id !== id || !Number.isSafeInteger(value.revision) || value.revision < 1 ||
       !Array.isArray(value.messages) || !Array.isArray(value.characterIds) || !value.persona ||
       !['manual', 'lumiverse', 'pocket'].includes(value.persona.source)) throw new Error('Unsupported or damaged room; its file has been preserved.')
+  groupIcon(value.groupIcon)
   text(value.title, 120, true)
   text(value.persona.name, 120, true)
   text(value.persona.description, 12000)
@@ -259,8 +261,9 @@ export class MochiService {
       if (await this.host.userStorage.exists(pathFor(id), user)) throw new Error('Room identifier collision; retry creation.')
       const profile = input.accountId === undefined ? undefined : await this.fictionalAccounts.get(user, input.accountId)
       if (profile) await this.persona(user, profile.persona) // Recheck ownership; preserve the saved snapshot.
-      const now = new Date().toISOString()
-      const room: MochiRoom = { version: 1, id, ...(profile ? { accountId: profile.id } : {}), revision: 1, title: text(input.title, 120, true), characterIds: await this.membership(user, input.characterIds), persona: profile ? { ...profile.persona, name: profile.displayName, avatarUrl: profile.avatarUrl } : await this.persona(user, input.persona), messages: [], createdAt: now, updatedAt: now, settings: { ...defaultMochiSettings(), responseMode: 'natural' }, receipts: [], notifications: [], notificationRevision: 0 }
+      const now = new Date().toISOString(),icon=groupIcon(input.groupIcon)
+      const room: MochiRoom = { version: 1, id, ...(profile ? { accountId: profile.id } : {}), revision: 1, title: text(input.title, 120, true), ...(icon ? {groupIcon:icon} : {}), characterIds: await this.membership(user, input.characterIds), persona: profile ? { ...profile.persona, name: profile.displayName, avatarUrl: profile.avatarUrl } : await this.persona(user, input.persona), messages: [], createdAt: now, updatedAt: now, settings: { ...defaultMochiSettings(), responseMode: 'natural' }, receipts: [], notifications: [], notificationRevision: 0 }
+      if(room.characterIds.length<2)delete room.groupIcon
       room.preset=validateBinding(input.preset??{id:DEFAULT_V2_PRESET_ID,revision:1,accountId:room.accountId},room.accountId)
       const preset=await this.presets.resolve(user,room)
       if(!preset.builtIn&&(await this.presets.read(user,room.accountId)).presets.find(p=>p.id===preset.id)?.archived)throw Error('Restore this archived preset before binding another chat.')
@@ -275,13 +278,15 @@ export class MochiService {
       if (saved.accountId && input.persona !== undefined) throw new Error('Fictional account rooms retain their identity snapshot. Per-room identity updates are not implemented yet.')
       if (input.revision !== saved.revision) throw new Error('This room changed elsewhere. Refresh before saving again.')
       const ids = await this.membership(user, input.characterIds)
+      const icon=groupIcon(input.groupIcon===undefined?saved.groupIcon:input.groupIcon)
+      const nextIcon=ids.length>1?icon:undefined
       const settings = this.settings(input.settings ?? saved.settings, ids)
       for(const [id,style]of Object.entries(settings.textingStyles||{}))if(!ids.includes(id)&&!equivalent(style,saved.settings?.textingStyles?.[id]))throw Error('Texting preferences can only be changed for characters in this chat.')
       if (settings.aiBehavior && (!saved.runtime?.enabled || !await this.backgroundEnabled(user))) throw new Error('Enable account and room background messaging before AI timing suggestions.')
       if (settings.connectionId && !await this.host.connections?.get(settings.connectionId, user)) throw new Error('This connection is not available to your account.')
       const title = text(input.title, 120, true), persona = input.persona ? await this.persona(user, input.persona) : saved.persona
-      if (title === saved.title && equivalent(ids, saved.characterIds) && equivalent(settings, saved.settings) && equivalent(persona, saved.persona)) return saved
-      const room = { ...saved, title, characterIds: ids, settings, persona, revision: saved.revision + 1, updatedAt: new Date().toISOString() }
+      if (nextIcon===saved.groupIcon && title === saved.title && equivalent(ids, saved.characterIds) && equivalent(settings, saved.settings) && equivalent(persona, saved.persona)) return saved
+      const room = { ...saved, groupIcon:nextIcon, title, characterIds: ids, settings, persona, revision: saved.revision + 1, updatedAt: new Date().toISOString() }
       for(const j of room.runtime?.jobs || []) if(!TERMINAL.has(j.status)){j.status='cancelled';delete j.draft;delete j.additional}
       for (const n of room.notifications!) n.roomTitle = room.title
       room.notificationRevision = (saved.notificationRevision || 0) + 1
@@ -453,7 +458,7 @@ export class MochiService {
     const connections = this.host.permissions.has('generation') && this.host.connections ? (await this.host.connections.list(user)).map(c => ({ id: c.id, name: c.name || c.model, model: c.model, isDefault: c.is_default === true })) : []
     const jobs: Record<string, string> = {}
     for (const room of rooms) { const job = this.jobs.get(this.jobKey(user, room.id)); if (job && !job.requestId.startsWith('server_')) jobs[room.id] = job.requestId }
-    return { accountId: accountId as string | undefined, backgroundEnabled: await this.backgroundEnabled(user), rooms: rooms.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).map(({ runtime, ...room }) => room), characters: characters.map(c => ({ id: c.id, name: c.name, avatarUrl: c.image_id ? `/api/v1/images/${c.image_id}` : '' })), personas: choices, warnings, connections, jobs, notifications: rooms.flatMap(r => r.notifications || []).sort((a, b) => b.createdAt.localeCompare(a.createdAt)) }
+    return { accountId: accountId as string | undefined, backgroundEnabled: await this.backgroundEnabled(user), rooms: rooms.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).map(({ runtime, ...room }) => room), characters: characters.map(c => ({ id: c.id, name: c.name, ...(typeof c.description==='string'?{about:c.description.slice(0,12000)}:{}), avatarUrl: c.image_id ? `/api/v1/images/${c.image_id}` : '' })), personas: choices, warnings, connections, jobs, notifications: rooms.flatMap(r => r.notifications || []).sort((a, b) => b.createdAt.localeCompare(a.createdAt)) }
   }
   async cancel(userId: string, id: string, requestId: string, accountId?: unknown): Promise<void> {
     const user = this.account(userId)

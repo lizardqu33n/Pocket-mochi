@@ -6,7 +6,7 @@ export interface MochiPersona {
   description: string
   avatarUrl: string
 }
-export interface MochiCharacter { id: string; name: string; avatarUrl: string }
+export interface MochiCharacter { id: string; name: string; avatarUrl: string; about?: string }
 export interface MochiReaction {emoji:string;actor:'user'|'character';actorId:string;name:string}
 export interface MochiSystemNote {id:string;title:string;body:string;enabled:boolean}
 export interface MochiMessage {
@@ -37,6 +37,7 @@ export interface MochiRoom {
   revision: number
   title: string
   characterIds: string[]
+  groupIcon?: string
   persona: MochiPersona
   messages: unknown[]
   chatPins?: string[]

@@ -30,7 +30,7 @@ try{for(const width of process.env.MOCHI_CSS_EXAMPLES?[1280]:[1280,390,320])for(
   await capture('chat')
   const toolbar=page.locator('.mochi-room-header>.mochi-custom-toolbar'),more=page.getByLabel('Room options',{exact:true})
   const bounds=await toolbar.boundingBox(),info=await page.locator('.mochi-room-info').boundingBox(),end=await more.boundingBox()
-  assert(bounds.y>=info.y+info.height-1,'toolbar must be below title/status')
+  if(width<640)assert(bounds.y>=info.y+info.height-1,'mobile toolbar below identity');else assert(bounds.x>=info.x+info.width-1,'desktop toolbar beside identity')
   assert(end.x>=bounds.x&&end.x+end.width<=bounds.x+bounds.width+1,'More remains in toolbar bounds')
   assert.equal(await toolbar.evaluate(n=>getComputedStyle(n).flexWrap),'nowrap')
   const buttons=await toolbar.locator('.mochi-toolbar-shortcuts>button').all()
@@ -46,15 +46,15 @@ try{for(const width of process.env.MOCHI_CSS_EXAMPLES?[1280]:[1280,390,320])for(
 
   if(process.env.MOCHI_CSS_EXAMPLES){
    const values=await page.evaluate(()=>{const bubble=getComputedStyle(document.querySelector('.mochi-bubble')),avatar=getComputedStyle(document.querySelector('.mochi-avatar-frame')),layout=getComputedStyle(document.querySelector('.mochi-desktop'));return{sidebar:layout.gridTemplateColumns.split(' ')[0],font:bubble.fontSize,radius:bubble.borderBottomLeftRadius,avatar:avatar.width}})
-   assert.deepEqual(values,{sidebar:'280px',font:'16px',radius:'22px',avatar:'44px'});await writeFile(resolve(out,'owner-examples.json'),JSON.stringify(values,null,2));continue
+   assert.deepEqual(values,{sidebar:'280px',font:'16px',radius:'26px',avatar:'40px'});await writeFile(resolve(out,'owner-examples.json'),JSON.stringify(values,null,2));continue
   }
   // Exercise long, reordered, profile-scoped preferences without persisting fixture data.
   await page.evaluate(()=>{const f=window.__defaultFixture,p=f.view.personalSettings;window.__toolbarSaved=p.saved;p.saved={...p.saved,preferences:{...p.value,order:[...p.value.order].reverse(),hidden:['search'],presentation:'labels'}};f.view.redraw()})
   const labels=await toolbar.locator('.mochi-toolbar-shortcuts>button').evaluateAll(ns=>ns.map(n=>n.getAttribute('aria-label')))
-  assert.deepEqual(labels,['Pins & Notes','Preview AI prompt','Conversation Memory','Presets','Chat Settings','Mochi notifications','Participants','Conversation details'])
+  assert.deepEqual(labels,['Pins & Notes','Preview AI prompt','Conversation Memory','Presets','Chat Settings','Mochi notifications','Participants','Character profile'])
   const glyphs=await toolbar.locator('.mochi-toolbar-shortcuts>button svg').evaluateAll(ns=>ns.map(n=>n.innerHTML));assert.equal(new Set(glyphs).size,glyphs.length,'distinct action artwork')
   assert.equal(await toolbar.locator('.mochi-toolbar-label').first().isVisible(),true,'saved labels remain visible on mobile')
-  await toolbar.getByRole('button',{name:'Conversation details',exact:true}).focus()
+  await toolbar.getByRole('button',{name:'Character profile',exact:true}).focus()
   const fixed=await more.boundingBox();assert(fixed.x+fixed.width<=width+1,'More remains fixed with long labels')
   await more.click();await page.waitForTimeout(30);assert.equal(await sheet.getByRole('button',{name:'Search conversation',exact:true}).isVisible(),true,'hidden shortcut remains in More')
   await page.keyboard.press('Escape')

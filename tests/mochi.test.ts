@@ -577,7 +577,7 @@ test('token trimming preserves stored history and newest turn; oversize prompts 
   expect(f.requests[0].messages.length).toBeLessThan(22)
   expect(f.requests[0].messages.at(-2).content).toContain(messages[19].content)
   const oversized = { ...room, messages: [messages[0]], persona: { ...room.persona, description: 'z'.repeat(12000) } }
-  await expect(buildMochiPrompt(oversized, [{ id: 'c1' }], 'c1', async m => JSON.stringify(m).length, new AbortController().signal)).rejects.toThrow('budget')
+  await expect(buildMochiPrompt(oversized, [{ id: 'c1' }], 'c1', async m => JSON.stringify(m).length, new AbortController().signal, false, await f.service.presets.resolve('alice',oversized))).rejects.toThrow('budget')
   expect(oversized.messages).toHaveLength(1)
 })
 test('cancel discards providers that ignore abort and prevents overlaps until they settle', async () => {

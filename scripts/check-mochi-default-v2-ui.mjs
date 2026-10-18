@@ -11,7 +11,7 @@ const output=resolve(process.env.MOCHI_DEFAULT_OUTPUT||resolve(root,'tmp/mochi-d
 await mkdir(output,{recursive:true})
 const build=spawnSync(process.env.MOCHI_BUN||'bun',['build',resolve(root,'scripts/fixtures/mochi-default-v2.ts'),'--target=browser','--outfile='+resolve(output,'view.js')],{cwd:root,encoding:'utf8'})
 assert.equal(build.status,0,build.stderr)
-await writeFile(resolve(output,'index.html'),'<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Synthetic Mochi Default v2</title><style>body{margin:0;font:14px system-ui}#app{width:100%;height:100dvh;min-width:0;--lp-bg:#191b24;--lp-surface:#191b24;--lp-surface-2:#232530;--lp-text:#f1edf9;--lp-border:#ffffff22;--lp-muted:#aaa4b9;--lp-accent:#baa4ef}button,input,select,textarea{font:inherit}</style><div class="lumiphone-widget-root" id="app"></div><script src="view.js"></script>')
+await writeFile(resolve(output,'index.html'),'<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Synthetic Mochi Default v2</title><style>body{margin:0;font:14px system-ui}#app{width:100%;height:100dvh;min-width:0;container-type:inline-size;--lp-bg:#191b24;--lp-surface:#191b24;--lp-surface-2:#232530;--lp-text:#f1edf9;--lp-border:#ffffff22;--lp-muted:#aaa4b9;--lp-accent:#baa4ef}button,input,select,textarea{font:inherit}</style><div class="lumiphone-widget-root" id="app"></div><script src="view.js"></script>')
 const browser=await chromium.launch({headless:true,...(process.env.POCKET_BROWSER_PATH?{executablePath:process.env.POCKET_BROWSER_PATH}:{})}),observations=[]
 try{
  for(const width of [1280,390,320]){
@@ -77,10 +77,10 @@ try{
   await page.evaluate(()=>{const f=window.__defaultFixture;f.view.select('');f.view.load()})
   await page.getByRole('button',{name:'New Chat',exact:true}).click()
   assert.equal(await page.getByLabel('Initial preset',{exact:true}).inputValue(),'mochi_default_v2')
-  await page.getByLabel('Room name',{exact:true}).fill('Created through the browser')
+  await page.getByLabel('Chat name',{exact:true}).fill('Created through the browser')
   await page.getByRole('button',{name:'Synthetic Rowan',exact:true}).click()
   await page.screenshot({path:resolve(output,`new-conversation-${width}.png`)})
-  await page.getByRole('button',{name:'Create room',exact:true}).click()
+  await page.getByRole('button',{name:'Create chat',exact:true}).click()
   await page.getByLabel('Message',{exact:true}).waitFor()
   assert.equal(await page.evaluate(()=>window.__defaultFixture.view.state.rooms.find(r=>r.title==='Created through the browser').preset.id),'mochi_default_v2')
   assert.deepEqual(errors,[]);assert.equal(await page.evaluate(()=>window.__defaultFixture.providerCalls.length),0)

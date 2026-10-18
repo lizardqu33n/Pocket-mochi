@@ -36,15 +36,15 @@ for(const width of [320,390,900,1200])test(`${width}px DOM: details toggle prese
   composer.value='Unsent draft';composer.dispatchEvent(new f.dom.window.Event('input'));thread.scrollTop=57
   const internals=f.view as any;internals.ownGenerations.set(f.room.id,'inflight_reply');const sentinel={text:'Retained summary suggestion'};internals.memoryPanel.suggestion=sentinel
   const before=structuredClone(f.room),count=f.sent.length
-  f.click('Conversation details')
+  f.click('Character profile')
   expect(document.querySelector('.mochi-desktop')!.getAttribute('data-details')).toBe('true')
-  expect(document.querySelector('[aria-label="Conversation details"]')!.getAttribute('aria-expanded')).toBe('true')
-  expect(document.activeElement?.getAttribute('aria-label')).toBe('Close conversation details')
+  expect(document.querySelector('[aria-label="Character profile"]')!.getAttribute('aria-expanded')).toBe('true')
+  expect(document.activeElement?.getAttribute('aria-label')).toBe('Close character profile')
   expect(document.querySelector('.mochi-profile-person h4')!.textContent).toBe(f.room.settings!.characterNames.one)
   expect(document.querySelector('.mochi-profile-status')!.textContent).toBe('Availability: online')
   expect(document.querySelector('.mochi-profile-panel')!.textContent).not.toContain('routines')
   document.querySelector('.mochi-profile-panel')!.dispatchEvent(new f.dom.window.KeyboardEvent('keydown',{key:'Escape',bubbles:true}))
-  expect(document.activeElement?.getAttribute('aria-label')).toBe('Conversation details');expect(document.querySelector('.mochi-thread')).toBe(thread);expect(thread.scrollTop).toBe(57)
+  expect(document.activeElement?.getAttribute('aria-label')).toBe('Character profile');expect(document.querySelector('.mochi-thread')).toBe(thread);expect(thread.scrollTop).toBe(57)
   expect(document.querySelector('[aria-label="Message"]')).toBe(composer);expect(composer.value).toBe('Unsent draft');expect(f.sent).toHaveLength(count)
   expect(internals.ownGenerations.get(f.room.id)).toBe('inflight_reply');expect(internals.memoryPanel.suggestion).toBe(sentinel);expect(f.room).toEqual(before)
  }finally{f.cleanup()}
@@ -52,7 +52,7 @@ for(const width of [320,390,900,1200])test(`${width}px DOM: details toggle prese
 test('group details, source fallback and search filter do not invent profile fields or switch rooms',()=>{
  const f=fixture(900,true)
  try{
-  f.click('Conversation details');expect(document.querySelectorAll('.mochi-profile-person')).toHaveLength(2);expect(document.querySelector('.mochi-profile-heading h3')!.textContent).toBe('Group participants')
+  f.click('Character profile');expect(document.querySelectorAll('.mochi-profile-person')).toHaveLength(2);expect(document.querySelector('.mochi-profile-heading h3')!.textContent).toBe('Group profile')
   const room=f.view.roomId,filter=document.querySelector<HTMLInputElement>('[aria-label="Find a conversation"]')!
   filter.value='no matches';filter.dispatchEvent(new f.dom.window.Event('input'));expect(document.querySelector<HTMLButtonElement>('.mochi-desktop-room')!.hidden).toBe(true)
   expect(f.view.roomId).toBe(room);expect(f.sent).toHaveLength(0)
@@ -66,9 +66,9 @@ test('header search and details settings invoke original tools, with dirty setti
  const f=fixture(1200)
  try{
   f.click('Search conversation');expect(document.querySelector('[aria-label="Search conversation text"]')).not.toBeNull()
-  f.click('Conversation details');f.click('Close conversation details');f.click('Conversation details')
-  Array.from(document.querySelectorAll<HTMLButtonElement>('.mochi-profile-panel button')).find(n=>n.textContent==='Open conversation settings')!.click()
-  const input=document.querySelector<HTMLInputElement>('[aria-label="Room name"]')!;expect(input).not.toBeNull()
+  f.click('Character profile');f.click('Close character profile');f.click('Character profile')
+  Array.from(document.querySelectorAll<HTMLButtonElement>('.mochi-profile-panel button')).find(n=>n.getAttribute('aria-label')==='Open conversation settings')!.click()
+  const input=document.querySelector<HTMLInputElement>('[aria-label="Chat name"]')!;expect(input).not.toBeNull()
   input.value='Uncommitted title';input.dispatchEvent(new f.dom.window.Event('input'));expect(f.view.hasUnsavedChanges()).toBe(true);expect(f.room.title).not.toBe('Uncommitted title')
   expect(f.sent.every(p=>p.type!=='mochi:update')).toBe(true)
  }finally{f.cleanup()}
@@ -88,18 +88,18 @@ test('refined sidebar keeps compact labeled account controls and original create
  }finally{f.cleanup()}
 })
 
-test('All, Unread and Groups combine with account-scoped text discovery without touching read state',()=>{
+test('All and Groups combine with account-scoped text discovery without touching read state',()=>{
  const f=fixture(1080,true)
  try{
   const other={...structuredClone(f.room),id:'room_'+'b'.repeat(32),title:'Second DM',characterIds:['one']}
   f.view.state!.rooms.push(other);f.view.state!.notifications=[{id:'notice',roomId:other.id,messageId:'msg',title:'Synthetic',roomTitle:other.title,body:'',avatarUrl:'',createdAt:other.createdAt,read:false}];f.redraw()
   const before=JSON.stringify(f.view.state),visible=()=>Array.from(document.querySelectorAll<HTMLButtonElement>('.mochi-desktop-room')).filter(row=>!row.hidden)
   const choose=(name:string)=>Array.from(document.querySelectorAll<HTMLButtonElement>('.mochi-conversation-filters button')).find(node=>node.textContent===name)!.click()
-  expect(visible()).toHaveLength(2);choose('Unread');expect(visible()).toHaveLength(1);expect(visible()[0].textContent).toContain('Second DM')
+  expect(visible()).toHaveLength(2);expect(document.querySelector('.mochi-conversation-filters')!.textContent).not.toContain('Unread');expect(document.querySelector('[aria-label="New Chat"]')).not.toBeNull()
   choose('Groups');expect(visible()).toHaveLength(1);expect(visible()[0].getAttribute('aria-current')).toBe('true')
   const input=document.querySelector<HTMLInputElement>('[aria-label="Find a conversation"]')!;input.value='Second DM';input.dispatchEvent(new f.dom.window.Event('input'));expect(visible()).toHaveLength(0)
   choose('All');expect(visible()).toHaveLength(1);expect(JSON.stringify(f.view.state)).toBe(before);expect(f.sent).toHaveLength(0)
-  expect(document.querySelector('.mochi-activity-snapshot')!.textContent).toContain('No current activity available')
+  expect(document.querySelector('.mochi-activity-snapshot')).toBeNull();expect(document.querySelector('.mochi-profile-about')!.textContent).toContain('No profile information shared.')
  }finally{f.cleanup()}
 })
 
@@ -129,7 +129,7 @@ test('compact search keeps clear/close accessible, submitting only the existing 
 
 for(const [label,selector] of [
  ['Search conversation','.mochi-search-panel'],['Participants','dialog[open]'],
- ['Chat Settings','[aria-label="Room name"]'],['Presets','[aria-label="Mochi presets"]'],
+ ['Chat Settings','[aria-label="Chat name"]'],['Presets','[aria-label="Mochi presets"]'],
  ['Conversation Memory','.mochi-memory-panel'],['Preview AI prompt','.mochi-preview-panel'],
  ['Pins & Notes','dialog[open]'],['Mochi notifications','[aria-label="Back to rooms"]'],
 ] as const)test(`distinct toolbar shortcut opens ${label}`,()=>{
@@ -145,5 +145,29 @@ for(const [label,selector] of [
   expect(document.querySelector(selector)).not.toBeNull()
   expect(f.room.messages).toHaveLength(1)
   expect(f.sent.some(p=>p.type==='mochi:generate')).toBe(false)
+ }finally{f.cleanup()}
+})
+
+test('character-first header and You attribution are projections, never stored identity edits',()=>{
+ const f=fixture(390)
+ try{
+  (f.room.messages[0] as any).name='Edith';f.redraw();const before=JSON.stringify(f.room)
+  expect(document.querySelector('.mochi-conversation-title')!.textContent).toBe(f.room.settings!.characterNames.one)
+  expect(document.querySelector('.mochi-room-info .mochi-chat-avatar')).not.toBeNull()
+  expect(document.querySelector('.mochi-chat-name')!.textContent).toBe('Chat name: '+f.room.title)
+  expect(document.querySelector('.mochi-message-name')!.textContent).toBe('You')
+  expect(document.querySelector('.mochi-message')!.getAttribute('aria-label')).toBe('Message from You')
+  expect(document.querySelector('.mochi-desktop-room-copy small')!.textContent).toContain('You: Synthetic')
+  expect(JSON.stringify(f.room)).toBe(before)
+ }finally{f.cleanup()}
+})
+test('group artwork is shared by list, header and profile; automatic portraits restore cleanly',()=>{
+ const f=fixture(390,true)
+ try{
+  f.room.groupIcon='⭐';f.redraw();f.click('Character profile')
+  for(const selector of ['.mochi-desktop-room .mochi-chat-avatar','.mochi-room-info .mochi-chat-avatar','.mochi-profile-group .mochi-chat-avatar'])expect(document.querySelector(selector)!.textContent).toBe('⭐')
+  delete f.room.groupIcon;f.redraw()
+  for(const selector of ['.mochi-desktop-room .mochi-group-portraits','.mochi-room-info .mochi-group-portraits','.mochi-profile-group .mochi-group-portraits'])expect(document.querySelector(selector)!.children).toHaveLength(2)
+  expect(f.sent).toHaveLength(0)
  }finally{f.cleanup()}
 })

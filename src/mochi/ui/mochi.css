@@ -1544,6 +1544,14 @@
   inset: auto 0 calc(100% + 4px) auto;
 }
 
+/* Compact account picker uses the same messenger controls. */
+.mochi-view .mochi-account-picker { gap: 10px; padding: 12px; }
+.mochi-view .mochi-account-list { display: grid; gap: 6px; }
+.mochi-view .mochi-account-picker .mochi-card { min-height: 56px; padding: 8px 10px; gap: 10px; border-radius: 10px; }
+.mochi-view .mochi-account-picker .mochi-avatar { width: 34px; height: 34px; }
+.mochi-view .mochi-account-picker .lp-button { min-height: 40px; padding: 6px 10px; border-radius: 8px; }
+.mochi-view .mochi-form label[hidden] { display: none; }
+
 /* @mochi-section mochi-reply-styles */
 .mochi-view .mochi-quote {
   display:flex;
@@ -3579,6 +3587,261 @@
     padding:4px;
     font-size:11px
   }
+}
+
+/* Messenger refinement: compact, character-first presentation. */
+.mochi-desktop.mochi-view {
+  font-family: var(--mochi-messenger-font);
+}
+.mochi-desktop .mochi-desktop-list-head {
+  padding: 10px 10px 6px;
+  gap: 8px;
+}
+.mochi-desktop .mochi-shell-brand {
+  padding: 0 2px 4px;
+}
+.mochi-desktop .mochi-wordmark-image {
+  width: var(--mochi-wordmark-width);
+}
+.mochi-desktop .mochi-shell-account-row {
+  gap: 6px;
+}
+.mochi-desktop .mochi-desktop-account {
+  gap: 7px;
+  padding: 4px 0;
+}
+.mochi-desktop .mochi-desktop-account>.mochi-avatar {
+  width: 30px;
+  height: 30px;
+}
+.mochi-desktop .mochi-desktop-account select {
+  font-size: 12px;
+  min-height: 36px;
+  padding: 4px 22px 4px 6px;
+}
+.mochi-desktop .mochi-shell-account-row>.lp-button {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 7px;
+  border-radius: 8px;
+  background: transparent;
+  border-color: transparent;
+}
+.mochi-desktop .mochi-conversation-filter {
+  min-height: 36px;
+  padding: 7px 10px;
+}
+.mochi-desktop .mochi-conversation-filters {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 4px;
+  padding: 0;
+}
+.mochi-desktop .mochi-conversation-filters>.lp-button {
+  min-height: 36px;
+  padding: 5px 8px;
+  font-size: 12px;
+  border-radius: 8px;
+}
+.mochi-desktop .mochi-desktop-rooms {
+  padding: 4px 6px;
+  gap: 3px;
+}
+.mochi-desktop .mochi-desktop-room {
+  padding: 8px;
+  gap: 8px;
+  min-height: 58px;
+  border-radius: 10px;
+}
+.mochi-desktop .mochi-desktop-room .mochi-room-avatars {
+  width: var(--mochi-list-avatar-size);
+  height: var(--mochi-list-avatar-size);
+  flex: none;
+}
+.mochi-desktop .mochi-desktop-room .mochi-avatar {
+  width: var(--mochi-list-avatar-size);
+  height: var(--mochi-list-avatar-size);
+}
+.mochi-desktop .mochi-desktop-room-copy strong {
+  font-size: 13px;
+}
+.mochi-desktop .mochi-desktop-room-copy small {
+  font-size: 11px;
+}
+.mochi-group-portraits {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  overflow: hidden;
+}
+.mochi-group-portraits>span {
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb,var(--mochi-accent) 15%,var(--mochi-surface));
+}
+.mochi-desktop-main .mochi-view[data-surface] .mochi-room-header {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  align-items: center;
+  padding: 8px 0 10px;
+  gap: 8px;
+}
+.mochi-desktop .mochi-room-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.mochi-desktop .mochi-room-info>.mochi-chat-avatar {
+  width: var(--mochi-header-avatar-size);
+  height: var(--mochi-header-avatar-size);
+  flex: none;
+}
+.mochi-header-copy {
+  min-width: 0;
+}
+.mochi-desktop .mochi-conversation-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+}
+.mochi-desktop .mochi-room-meta {
+  font-size: 11px;
+  margin: 3px 0 0;
+}
+.mochi-chat-name {
+  display: block;
+  font-size: 10px;
+  color: var(--lp-muted,inherit);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  margin-top: 2px;
+}
+.mochi-desktop-main .mochi-view[data-surface] .mochi-room-header>.mochi-custom-toolbar {
+  width: auto;
+  max-width: 420px;
+}
+.mochi-desktop .mochi-room-header .mochi-custom-toolbar .mochi-icon-button,.mochi-desktop .mochi-room-header .mochi-custom-toolbar .lp-nav-action {
+  min-width: var(--mochi-messenger-control-size);
+  min-height: var(--mochi-messenger-control-size);
+  height: var(--mochi-messenger-control-size);
+  padding: 7px;
+}
+.mochi-desktop .mochi-avatar-frame,.mochi-desktop .mochi-avatar-frame .mochi-message-avatar {
+  width: var(--mochi-message-avatar-size);
+  height: var(--mochi-message-avatar-size);
+}
+.mochi-desktop .mochi-message-body {
+  max-width: min(80%,calc(100% - var(--mochi-message-avatar-size) - 10px));
+}
+.mochi-desktop .mochi-bubble {
+  font-family: var(--mochi-messenger-font);
+  padding: var(--mochi-bubble-padding-y) var(--mochi-bubble-padding-x);
+  line-height: 1.45;
+}
+.mochi-desktop-main .mochi-thread {
+  gap: var(--mochi-message-gap);
+  justify-content: flex-start;
+  padding-top: 10px;
+}
+.mochi-desktop .mochi-message {
+  flex: 0 0 auto;
+}
+.mochi-desktop .mochi-message[data-grouped=true] {
+  margin-top: -6px;
+}
+.mochi-desktop .mochi-message-heading {
+  padding-top: 2px;
+}
+.mochi-desktop .mochi-presence-dot {
+  width: 9px;
+  height: 9px;
+}
+.mochi-desktop .mochi-profile-panel {
+  padding: 12px;
+}
+.mochi-desktop .mochi-profile-heading {
+  margin-bottom: 10px;
+}
+.mochi-desktop .mochi-profile-heading h3 {
+  font-size: 13px;
+}
+.mochi-desktop .mochi-profile-heading button,.mochi-desktop .mochi-profile-panel button {
+  min-height: 40px;
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+.mochi-profile-cover {
+  height: 64px;
+  border-radius: 10px;
+  background: linear-gradient(120deg,color-mix(in srgb,var(--mochi-accent) 24%,var(--mochi-surface)),var(--mochi-surface));
+}
+.mochi-desktop .mochi-profile-panel[data-kind=direct] .mochi-profile-person {
+  text-align: center;
+  padding: 0;
+  margin-top: -26px;
+}
+.mochi-desktop .mochi-profile-panel[data-kind=direct] .mochi-profile-person>.mochi-avatar {
+  width: var(--mochi-profile-avatar-size);
+  height: var(--mochi-profile-avatar-size);
+  margin: 0 auto 10px;
+  border: 3px solid var(--mochi-surface);
+}
+.mochi-desktop .mochi-profile-person h4,.mochi-profile-group h4 {
+  font-size: 17px;
+  margin: 6px 0;
+  overflow-wrap: anywhere;
+}
+.mochi-desktop .mochi-profile-panel p {
+  font-size: 12px;
+  line-height: 1.5;
+}
+.mochi-profile-about {
+  text-align: left;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--mochi-border);
+  grid-column: 1 / -1;
+}
+.mochi-profile-about h5 {
+  margin: 0 0 6px;
+  font-size: 12px;
+}
+.mochi-profile-about p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.mochi-profile-chat-name {
+  color: var(--lp-muted,inherit);
+  overflow-wrap: anywhere;
+}
+.mochi-profile-group {
+  text-align: center;
+  margin-top: -26px;
+}
+.mochi-desktop .mochi-profile-panel .mochi-profile-group>.mochi-chat-avatar {
+  width: var(--mochi-profile-avatar-size);
+  height: var(--mochi-profile-avatar-size);
+  margin: 0 auto;
+  font-size: 30px;
+}
+.mochi-desktop .mochi-profile-panel[data-kind=group] .mochi-profile-person {
+  margin-top: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--mochi-border);
+}
+@container (max-width:639px) {
+ .mochi-desktop-main .mochi-view[data-surface] .mochi-room-header {
+  grid-template-columns: minmax(0,1fr);
+  gap: 4px;
+}
+ .mochi-desktop-main .mochi-view[data-surface] .mochi-room-header>.mochi-custom-toolbar {
+  width: 100%;
+  max-width: none;
+}
 }
 
 /* @mochi-section mochi-sidebar-styles */

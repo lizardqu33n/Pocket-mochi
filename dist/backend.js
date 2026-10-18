@@ -6,6 +6,16 @@ function galleryOffset(value) {
   return Number.isFinite(offset) ? Math.max(0, Math.min(1e6, Math.floor(offset))) : 0;
 }
 
+// src/mochi/group-icons.ts
+var GROUP_ICONS = ["\uD83D\uDCAC", "\uD83C\uDF19", "\u2B50", "\uD83C\uDF38", "\uD83C\uDF61", "\uD83C\uDFAE", "\uD83D\uDCDA", "\uD83C\uDFB5", "\uD83C\uDF3F", "\u2764\uFE0F"];
+function groupIcon(value) {
+  if (value === undefined || value === "")
+    return;
+  if (typeof value !== "string" || !GROUP_ICONS.includes(value))
+    throw Error("Choose a supported group icon.");
+  return value;
+}
+
 // src/mochi/persona-addons.ts
 function validateAddonSelection(value) {
   const v = value;
@@ -1803,6 +1813,7 @@ function entityId(value) {
 function validateRoom(value, id) {
   if (!value || value.version !== 1 || value.id !== id || !Number.isSafeInteger(value.revision) || value.revision < 1 || !Array.isArray(value.messages) || !Array.isArray(value.characterIds) || !value.persona || !["manual", "lumiverse", "pocket"].includes(value.persona.source))
     throw new Error("Unsupported or damaged room; its file has been preserved.");
+  groupIcon(value.groupIcon);
   text(value.title, 120, true);
   text(value.persona.name, 120, true);
   text(value.persona.description, 12000);
@@ -2097,8 +2108,10 @@ class MochiService {
       const profile = input.accountId === undefined ? undefined : await this.fictionalAccounts.get(user, input.accountId);
       if (profile)
         await this.persona(user, profile.persona);
-      const now = new Date().toISOString();
-      const room = { version: 1, id, ...profile ? { accountId: profile.id } : {}, revision: 1, title: text(input.title, 120, true), characterIds: await this.membership(user, input.characterIds), persona: profile ? { ...profile.persona, name: profile.displayName, avatarUrl: profile.avatarUrl } : await this.persona(user, input.persona), messages: [], createdAt: now, updatedAt: now, settings: { ...defaultMochiSettings(), responseMode: "natural" }, receipts: [], notifications: [], notificationRevision: 0 };
+      const now = new Date().toISOString(), icon = groupIcon(input.groupIcon);
+      const room = { version: 1, id, ...profile ? { accountId: profile.id } : {}, revision: 1, title: text(input.title, 120, true), ...icon ? { groupIcon: icon } : {}, characterIds: await this.membership(user, input.characterIds), persona: profile ? { ...profile.persona, name: profile.displayName, avatarUrl: profile.avatarUrl } : await this.persona(user, input.persona), messages: [], createdAt: now, updatedAt: now, settings: { ...defaultMochiSettings(), responseMode: "natural" }, receipts: [], notifications: [], notificationRevision: 0 };
+      if (room.characterIds.length < 2)
+        delete room.groupIcon;
       room.preset = validateBinding(input.preset ?? { id: DEFAULT_V2_PRESET_ID, revision: 1, accountId: room.accountId }, room.accountId);
       const preset = await this.presets.resolve(user, room);
       if (!preset.builtIn && (await this.presets.read(user, room.accountId)).presets.find((p) => p.id === preset.id)?.archived)
@@ -2116,6 +2129,8 @@ class MochiService {
       if (input.revision !== saved.revision)
         throw new Error("This room changed elsewhere. Refresh before saving again.");
       const ids = await this.membership(user, input.characterIds);
+      const icon = groupIcon(input.groupIcon === undefined ? saved.groupIcon : input.groupIcon);
+      const nextIcon = ids.length > 1 ? icon : undefined;
       const settings = this.settings(input.settings ?? saved.settings, ids);
       for (const [id, style] of Object.entries(settings.textingStyles || {}))
         if (!ids.includes(id) && !equivalent(style, saved.settings?.textingStyles?.[id]))
@@ -2125,9 +2140,9 @@ class MochiService {
       if (settings.connectionId && !await this.host.connections?.get(settings.connectionId, user))
         throw new Error("This connection is not available to your account.");
       const title = text(input.title, 120, true), persona = input.persona ? await this.persona(user, input.persona) : saved.persona;
-      if (title === saved.title && equivalent(ids, saved.characterIds) && equivalent(settings, saved.settings) && equivalent(persona, saved.persona))
+      if (nextIcon === saved.groupIcon && title === saved.title && equivalent(ids, saved.characterIds) && equivalent(settings, saved.settings) && equivalent(persona, saved.persona))
         return saved;
-      const room = { ...saved, title, characterIds: ids, settings, persona, revision: saved.revision + 1, updatedAt: new Date().toISOString() };
+      const room = { ...saved, groupIcon: nextIcon, title, characterIds: ids, settings, persona, revision: saved.revision + 1, updatedAt: new Date().toISOString() };
       for (const j of room.runtime?.jobs || [])
         if (!TERMINAL.has(j.status)) {
           j.status = "cancelled";
@@ -2416,7 +2431,7 @@ class MochiService {
       if (job && !job.requestId.startsWith("server_"))
         jobs[room.id] = job.requestId;
     }
-    return { accountId, backgroundEnabled: await this.backgroundEnabled(user), rooms: rooms.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).map(({ runtime, ...room }) => room), characters: characters.map((c) => ({ id: c.id, name: c.name, avatarUrl: c.image_id ? `/api/v1/images/${c.image_id}` : "" })), personas: choices, warnings, connections, jobs, notifications: rooms.flatMap((r) => r.notifications || []).sort((a, b) => b.createdAt.localeCompare(a.createdAt)) };
+    return { accountId, backgroundEnabled: await this.backgroundEnabled(user), rooms: rooms.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).map(({ runtime, ...room }) => room), characters: characters.map((c) => ({ id: c.id, name: c.name, ...typeof c.description === "string" ? { about: c.description.slice(0, 12000) } : {}, avatarUrl: c.image_id ? `/api/v1/images/${c.image_id}` : "" })), personas: choices, warnings, connections, jobs, notifications: rooms.flatMap((r) => r.notifications || []).sort((a, b) => b.createdAt.localeCompare(a.createdAt)) };
   }
   async cancel(userId, id, requestId, accountId) {
     const user = this.account(userId);

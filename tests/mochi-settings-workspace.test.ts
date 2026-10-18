@@ -36,14 +36,14 @@ for(const width of [320,390,900,1280])test(`${width}px Chat/Personal workspace k
  try{
   h.click('Chat Settings');expect(h.root.querySelector('.mochi-composer')).toBeNull();expect(h.root.querySelector('[aria-label="Chat Settings"]')).not.toBeNull()
   const changes=h.sent.filter(p=>p.type!=='mochi:choices'&&p.type!=='mochi:accounts'&&p.type!=='mochi:ui_preferences').length
-  const name=h.root.querySelector<HTMLInputElement>('[aria-label="Room name"]')!;name.value='Retained title';name.dispatchEvent(new window.Event('input'))
+  const name=h.root.querySelector<HTMLInputElement>('[aria-label="Chat name"]')!;name.value='Retained title';name.dispatchEvent(new window.Event('input'))
   for(const category of ['Texting Behavior','Availability & Schedules','Advanced','General'])h.click(category)
   expect(h.sent.filter(p=>p.type!=='mochi:choices'&&p.type!=='mochi:accounts'&&p.type!=='mochi:ui_preferences')).toHaveLength(changes)
-  expect(h.root.querySelector<HTMLInputElement>('[aria-label="Room name"]')!.value).toBe('Retained title')
-  h.click('Edit character 1: Same name');await Promise.resolve();const first=h.root.querySelector<HTMLInputElement>('[aria-label="Room name for Same name · character 1"]')!;first.value='Only first';first.dispatchEvent(new window.Event('input'));h.click('Back to characters');await Promise.resolve()
+  expect(h.root.querySelector<HTMLInputElement>('[aria-label="Chat name"]')!.value).toBe('Retained title')
+  h.click('Edit character 1: Same name');await Promise.resolve();const first=h.root.querySelector<HTMLInputElement>('[aria-label="Display name for Same name · character 1"]')!;first.value='Only first';first.dispatchEvent(new window.Event('input'));h.click('Back to characters');await Promise.resolve()
   expect(document.activeElement?.getAttribute('aria-label')).toBe('Edit character 1: Same name')
-  h.click('Edit character 2: Same name');expect(h.root.querySelector<HTMLInputElement>('[aria-label="Room name for Same name · character 2"]')!.value).toBe('');h.click('Back to characters')
-  h.click('Personal');await h.preferences();h.click('Chat');expect(h.root.querySelector<HTMLInputElement>('[aria-label="Room name"]')!.value).toBe('Retained title')
+  h.click('Edit character 2: Same name');expect(h.root.querySelector<HTMLInputElement>('[aria-label="Display name for Same name · character 2"]')!.value).toBe('');h.click('Back to characters')
+  h.click('Personal');await h.preferences();h.click('Chat');expect(h.root.querySelector<HTMLInputElement>('[aria-label="Chat name"]')!.value).toBe('Retained title')
   h.click('Save settings');const save=h.sent.findLast(p=>p.type==='mochi:update');expect(save.settings.characterNames.alice_character).toBe('Only first');expect(save.settings.characterNames.alice_other).toBeUndefined();expect(save.title).toBe('Retained title')
  }finally{h.close()}
 })
@@ -63,7 +63,7 @@ test('dirty navigation requires confirmation and preset tools return to intact a
  const h=await ui(900)
  try{
   h.click('Chat Settings');h.click('Advanced');h.click('Presets');expect(h.root.querySelector('[aria-label="Mochi presets"]')).not.toBeNull();expect(h.root.querySelector('.mochi-composer')).toBeNull();h.click('Return to conversation');expect(h.root.querySelector('[aria-label="Advanced settings"]')).not.toBeNull()
-  h.click('General');const input=h.root.querySelector<HTMLInputElement>('[aria-label="Room name"]')!;input.value='Dirty';input.dispatchEvent(new window.Event('input'));h.click('Return to conversation');expect(h.root.querySelector('dialog[open]')).not.toBeNull();h.click('Keep editing');expect(h.root.querySelector<HTMLInputElement>('[aria-label="Room name"]')!.value).toBe('Dirty')
+  h.click('General');const input=h.root.querySelector<HTMLInputElement>('[aria-label="Chat name"]')!;input.value='Dirty';input.dispatchEvent(new window.Event('input'));h.click('Return to conversation');expect(h.root.querySelector('dialog[open]')).not.toBeNull();h.click('Keep editing');expect(h.root.querySelector<HTMLInputElement>('[aria-label="Chat name"]')!.value).toBe('Dirty')
  }finally{h.close()}
 })
 

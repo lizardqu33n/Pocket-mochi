@@ -47,7 +47,7 @@ export class ChatSettingsLayout {
    if(detail){
     if(detail.tagName==='DETAILS')(detail as HTMLDetailsElement).open=true
     const heading=detail.querySelector('summary,legend')!;heading.textContent=heading.textContent!.replace('presence & room name','character settings')
-    const texting=el('div','mochi-character-fields'),availability=el('div','mochi-character-fields'),nickname=detail.querySelector('[aria-label^="Room name for "]')?.closest('label'),style=detail.querySelector('.mochi-texting-controls')
+    const texting=el('div','mochi-character-fields'),availability=el('div','mochi-character-fields'),nickname=detail.querySelector('[aria-label^="Display name for "]')?.closest('label'),style=detail.querySelector('.mochi-texting-controls')
     if(nickname)texting.append(nickname);if(style)texting.append(style)
     for(const node of Array.from(detail.children))if(node!==heading)availability.append(node)
     const detailNav=el('nav','mochi-character-detail-nav');for(const [key,label]of [['texting','Texting & nickname'],['availability','Availability']] as const){const tab=button(label);tab.setAttribute('aria-label','Character '+key+' settings');tab.setAttribute('aria-pressed',String(this.characterTab===key));tab.onclick=()=>{this.characterTab=key;this.scroll=0;redraw()};detailNav.append(tab)}

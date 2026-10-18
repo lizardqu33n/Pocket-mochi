@@ -16,10 +16,10 @@ Keep a copy or commit your work before experimenting. Make one small change at a
 Inside the existing token block, change values such as:
 
 ```css
---mochi-sidebar-width: 280px;       /* default 240px; desktop conversation list */
---mochi-chat-font-size: 16px;       /* default 14px; message text */
---mochi-bubble-radius: 22px;        /* default 18px; main bubble corners */
---mochi-avatar-size: 44px;          /* default 40px; chat portrait and its frame */
+--mochi-sidebar-width: 280px;       /* desktop conversation list */
+--mochi-chat-font-size: 16px;       /* message text */
+--mochi-bubble-radius: 26px;        /* main bubble corners */
+--mochi-message-avatar-size: 40px;  /* messenger portrait and its frame */
 ```
 
 Change the existing lines; do not add a second token block with competing values. Keep units such as `px` and the ending semicolons.
@@ -37,7 +37,7 @@ Useful related controls:
 | `--mochi-wordmark-width` | Mochi logo width |
 | `--mochi-control-font-size`, `--mochi-heading-font-size` | Shared control/heading defaults |
 | `--mochi-radius-field`, `--mochi-radius-card` | Common field/card rounding |
-| `--mochi-space-xs` through `--mochi-space-xl` | Common gaps, from 4px to 24px |
+| `--mochi-space-xs` through `--mochi-space-xl` | Shared spacing scale |
 
 Avatars in participant lists, profile previews, and the responder picker intentionally have their own sizes in `mochi.css`; the chat-avatar token does not enlarge every avatar. Mobile layouts intentionally hide or stack the desktop sidebar, so changing sidebar width does not force a sidebar onto a small screen. Host-owned floating-window bounds, dragging/resizing, and measured composer auto-growth remain application/host layout responsibilities.
 
@@ -88,3 +88,23 @@ Do not use this guide to change Ubuntu production, saved credentials, or private
 - **Browser test cannot find Playwright/Chromium:** use an existing configured toolchain or ask the maintainer to run the optional browser checks. The normal frontend build needs Bun and the project's dependencies, not Playwright.
 
 The small TypeScript files that used to hold CSS now import named sections. They contain no component-style definitions. Those adapters retain the original cascade/insertion order; normal styling edits belong in these two CSS files.
+
+## Compact messenger dimensions
+
+The character-first messenger adds these CSS controls. Change them in `mochi-tokens.css`, then rebuild the frontend as above:
+
+| Variable | What it changes |
+|---|---|
+| `--mochi-message-avatar-size` | Portraits beside messages (for example `40px`) |
+| `--mochi-list-avatar-size` | Conversation list portraits |
+| `--mochi-header-avatar-size` | Active character portrait in the header |
+| `--mochi-profile-avatar-size` | Large profile-panel portrait |
+| `--mochi-message-gap` | Space between separate messages |
+| `--mochi-messenger-control-size` | Toolbar hit target; keep at least `40px` |
+| `--mochi-messenger-font` | Messenger font; inherits the host font variable by default |
+
+`--mochi-avatar-size` still controls compatibility views; use the more specific message token for the messenger. Bubble padding still uses `--mochi-bubble-padding-x` and `--mochi-bubble-padding-y`. Sidebar and profile panel widths still use the original width tokens.
+
+Group chats have a **Group icon** picker under **Chat Settings → General** (and in New Chat after choosing at least two characters). Choose a built-in local icon or **Automatic member portraits**, then **Save settings**. This changes the group’s presentation, never its members or stored speaker identities. Converting a group to a direct chat restores the character portrait. Custom image uploads are not part of this picker.
+
+For focused messenger screenshots, run `node scripts/check-mochi-messenger-ui.mjs` with the same browser/toolchain variables described above. Optionally set `MOCHI_MESSENGER_OUTPUT` to an evidence folder. It exercises synthetic direct/group chats, profiles, group icon editing, new chats and fictional-profile switching at 1280, 390 and 320px in three themes. No real login switching or host reload is involved.

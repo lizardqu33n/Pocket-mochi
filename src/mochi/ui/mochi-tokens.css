@@ -5,18 +5,18 @@
 .mochi-workspace {
   /* Common dimensions: change these values, then rebuild the frontend. */
   --mochi-sidebar-min-width: 200px;
-  --mochi-sidebar-width: 260px;
+  --mochi-sidebar-width: 232px;
   --mochi-sidebar-details-min-width: 190px;
   --mochi-sidebar-details-width: 224px;
-  --mochi-profile-panel-width: 240px;
+  --mochi-profile-panel-width: 252px;
   --mochi-chat-font-size: 15px;
   --mochi-bubble-radius: 22px;
   --mochi-bubble-corner-radius: 6px;
-  --mochi-bubble-padding-y: 11px;
-  --mochi-bubble-padding-x: 16px;
+  --mochi-bubble-padding-y: 8px;
+  --mochi-bubble-padding-x: 12px;
   --mochi-bubble-max-width: 80%;
   --mochi-avatar-size: 44px;
-  --mochi-wordmark-width: 108px;
+  --mochi-wordmark-width: 96px;
   --mochi-control-font-size: 14px;
   --mochi-heading-font-size: 18px;
   --mochi-radius-field: 12px;
@@ -27,6 +27,14 @@
   --mochi-space-lg: 20px;
   --mochi-space-xl: 28px;
   --mochi-user-bubble-text: #21182e;
+  /* Messenger density. These are visual dimensions, never account data. */
+  --mochi-list-avatar-size: 34px;
+  --mochi-header-avatar-size: 38px;
+  --mochi-profile-avatar-size: 76px;
+  --mochi-message-avatar-size: 34px;
+  --mochi-message-gap: 12px;
+  --mochi-messenger-control-size: 40px;
+  --mochi-messenger-font: var(--lumiverse-font-family, system-ui, sans-serif);
   /* These defaults retain Lumiverse/Pocket Light, Dark and custom colors. */
   --mochi-text: var(--lp-text,var(--lumiverse-text,#f7f5ff));
   --mochi-accent:color-mix(in srgb,var(--lp-accent,#a99bff) 35%,#b7a0e8);
