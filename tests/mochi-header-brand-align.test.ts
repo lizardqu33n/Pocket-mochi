@@ -1,3 +1,4 @@
+import {originalDefaults} from '../scripts/mochi-css-contract'
 import {expect,test} from 'bun:test'
 import {JSDOM} from 'jsdom'
 import {MOCHI_DESKTOP_STYLES} from '../src/mochi/desktop-styles.js'
@@ -27,7 +28,7 @@ test('header uses baseline-free centered frames while keeping both original artw
     expect(header.querySelectorAll('img')).toHaveLength(1);expect(header.querySelectorAll('svg')).toHaveLength(1)
     expect(name.querySelector('img')!.alt).toBe('Mochi');expect(mascot.querySelector('svg')!.getAttribute('viewBox')).toBe('83 247 1088 789')
     expect(header.querySelector('button')).toBeNull()
-    const rule=(selector:string)=>MOCHI_DESKTOP_STYLES.replace(/\s*([{};])\s*/g,'$1').split('}').find(text=>text.trimStart().startsWith(selector+'{'))!
+    const rule=(selector:string)=>originalDefaults(MOCHI_DESKTOP_STYLES).replace(/\s*([{};])\s*/g,'$1').split('}').find(text=>text.trimStart().startsWith(selector+'{'))!
     expect(rule('.mochi-shell-brand')).toContain('align-items:center')
     expect(rule('.mochi-shell-brand h2')).toContain('display:flex');expect(rule('.mochi-shell-brand h2')).toContain('line-height:0')
     expect(rule('.mochi-shell-mascot')).toContain('height:36px');expect(rule('.mochi-shell-mascot')).toContain('display:flex')

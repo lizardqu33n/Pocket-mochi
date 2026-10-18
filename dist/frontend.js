@@ -60,6 +60,10 @@ function button(label, className = "lp-button") {
   node.type = "button";
   return node;
 }
+function cssPixelToken(node, name, fallback) {
+  const raw = node.ownerDocument.defaultView?.getComputedStyle(node).getPropertyValue(name).trim() || "";
+  return /^\d+(?:\.\d+)?px$/.test(raw) ? Number.parseFloat(raw) : fallback;
+}
 function formatTime(value) {
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime()))
@@ -95,7 +99,8 @@ var mochi_tokens_default = `/* Mochi-only defaults. Inherit host colors; never m
 .mochi-window,
 .mochi-mobile-surface,
 .mochi-launcher-root,
-.mochi-notification-toast) {
+.mochi-notification-toast,
+.pocket-portal[data-destination=mochi]) {
   /* Saved preferences set only backing variables; Custom CSS may override these public aliases. */
   --mochi-interface-scale: var(--mochi-saved-interface-scale,1);
   --mochi-message-scale: var(--mochi-saved-message-scale,1);
@@ -132,6 +137,15 @@ var mochi_tokens_default = `/* Mochi-only defaults. Inherit host colors; never m
   --mochi-editor-gap: 8px;
   --mochi-editor-radius: 7px;
   --mochi-icon-stroke-width: 1.7;
+  /* Measured overlays: algorithmic margins use nonnegative pixel lengths. */
+  --mochi-menu-max-height: 300px;
+  --mochi-menu-viewport-gap: 8px;
+  --mochi-action-gap: 3px;
+  --mochi-action-edge-inset: 4px;
+  --mochi-dialog-edge: 12px;
+  --mochi-dialog-bottom-gap: 24px;
+  --mochi-dialog-height-reserve: 70px;
+  --mochi-dialog-min-height: 120px;
   /* @mochi-tokens accounts-and-chrome: public v1, original defaults */
   --mochi-accounts-nav-gap: 6px;
   --mochi-accounts-nav-padding: 8px;
@@ -244,109 +258,120 @@ var mochi_tokens_default = `/* Mochi-only defaults. Inherit host colors; never m
 var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve existing cascade boundaries. */
 
 /* @mochi-section base */
+/* CSS owns appearance; runtime code supplies only measured geometry. */
+.mochi-view .mochi-composer-row textarea[data-pocket-composer] {
+  height:var(--mochi-composer-height,var(--mochi-measured-composer-height,auto));
+}
+.mochi-view .mochi-bottom-toolbar [data-mochi-slot=conversation-menu][data-mochi-slot] {
+  max-height:var(--mochi-v2-bottom-toolbar-data-mochi-slot-conversation-menu-data-mochi-slot-max-height,min(var(--mochi-menu-max-height,300px),var(--mochi-measured-menu-height,300px)));
+}
+.mochi-view .mochi-message-body .mochi-action-strip {
+  right:var(--mochi-action-right,var(--mochi-measured-action-right,0px));
+  bottom:var(--mochi-action-bottom,calc(var(--mochi-measured-action-bottom,100%) + var(--mochi-action-gap,3px)));
+}
 /* Public artwork hooks; button labels and event targets remain unchanged. */
 [data-mochi-icon] { stroke-width:var(--mochi-icon-stroke-width); }
 .mochi-presence-dot[data-status=away],.mochi-room-meta[data-status=away]::before {
-  background:#e7b95e
+  background:var(--mochi-v2-presence-dot-data-status-away-background,#e7b95e)
 }
 .mochi-presence-dot[data-status=dnd],.mochi-room-meta[data-status=dnd]::before {
-  background:#d77991
+  background:var(--mochi-v2-presence-dot-data-status-dnd-background,#d77991)
 }
 .mochi-presence-dot[data-status=offline],.mochi-room-meta[data-status=offline]::before {
-  background:#85818d
+  background:var(--mochi-v2-presence-dot-data-status-offline-background,#85818d)
 }
 .mochi-message-meta {
   display:flex;
   gap:var(--mochi-space-sm);
-  align-items:center;
+  align-items:var(--mochi-v2-message-meta-align-items,center);
   max-width:100%;
-  min-height:44px
+  min-height:var(--mochi-v2-message-meta-min-height,44px)
 }
 .mochi-message[data-grouped=true] {
-  margin-top:-8px
+  margin-top:var(--mochi-v2-message-data-grouped-true-margin-top,-8px)
 }
 .mochi-view .mochi-room-header {
-  grid-template-columns:minmax(0,1fr) 96px
+  grid-template-columns:var(--mochi-v2-room-header-grid-template-columns,minmax(0,1fr) 96px)
 }
 .mochi-standalone {
-  font-size:calc(10px * var(--mochi-interface-scale,1));
-  font-weight:600;
-  border:1px solid color-mix(in srgb,var(--mochi-accent) 45%,transparent);
-  border-radius:99px;
-  padding:4px 8px;
+  font-size:var(--mochi-v2-standalone-font-size,calc(10px * var(--mochi-interface-scale,1)));
+  font-weight:var(--mochi-v2-standalone-font-weight,600);
+  border:var(--mochi-v2-standalone-border,1px solid color-mix(in srgb,var(--mochi-accent) 45%,transparent));
+  border-radius:var(--mochi-v2-standalone-border-radius,99px);
+  padding:var(--mochi-v2-standalone-padding,4px 8px);
   color:var(--mochi-accent);
   letter-spacing:0
 }
 .mochi-view .mochi-room-selector {
-  font-weight:650;
-  border-radius:99px;
+  font-weight:var(--mochi-v2-room-selector-font-weight,650);
+  border-radius:var(--mochi-v2-room-selector-border-radius,99px);
   color:inherit;
-  background:color-mix(in srgb,var(--mochi-accent) 7%,var(--mochi-surface));
-  padding:9px 10px;
-  font-size:calc(14px * var(--mochi-interface-scale,1))
+  background:var(--mochi-v2-room-selector-background,color-mix(in srgb,var(--mochi-accent) 7%,var(--mochi-surface)));
+  padding:var(--mochi-v2-room-selector-padding,9px 10px);
+  font-size:var(--mochi-v2-room-selector-font-size,calc(14px * var(--mochi-interface-scale,1)))
 }
 .mochi-brand {
-  gap:6px!important
+  gap:var(--mochi-v2-brand-gap,6px)!important
 }
 .mochi-view .mochi-message-actions {
-  width:44px;
-  height:44px;
-  min-height:44px;
-  margin-top:-3px;
-  background:transparent;
-  border-color:transparent
+  width:var(--mochi-v2-message-actions-width,44px);
+  height:var(--mochi-v2-message-actions-height,44px);
+  min-height:var(--mochi-v2-message-actions-min-height,44px);
+  margin-top:var(--mochi-v2-message-actions-margin-top,-3px);
+  background:var(--mochi-v2-message-actions-background,transparent);
+  border-color:var(--mochi-v2-message-actions-border-color,transparent)
 }
 .mochi-action-panel,.mochi-participants,.mochi-notification-list {
   display:grid;
-  gap:12px
+  gap:var(--mochi-v2-action-panel-gap,12px)
 }
 .mochi-action-panel :is(button,textarea) {
   width:100%
 }
 .mochi-action-panel textarea {
-  min-height:110px;
-  border:1px solid var(--lp-border);
+  min-height:var(--mochi-v2-action-panel-textarea-min-height,110px);
+  border:var(--mochi-v2-action-panel-textarea-border,1px solid var(--lp-border));
   border-radius:var(--mochi-radius-card);
-  padding:12px;
-  background:var(--lp-bg);
-  color:var(--lp-text);
+  padding:var(--mochi-v2-action-panel-textarea-padding,12px);
+  background:var(--mochi-v2-action-panel-textarea-background,var(--lp-bg));
+  color:var(--mochi-v2-action-panel-textarea-color,var(--lp-text));
   font:inherit;
   resize:vertical
 }
 .mochi-action-panel .lp-button {
   display:flex;
-  align-items:center;
-  gap:10px;
-  justify-content:center;
-  min-height:44px
+  align-items:var(--mochi-v2-action-panel-button-align-items,center);
+  gap:var(--mochi-v2-action-panel-button-gap,10px);
+  justify-content:var(--mochi-v2-action-panel-button-justify-content,center);
+  min-height:var(--mochi-v2-action-panel-button-min-height,44px)
 }
 .mochi-action-panel svg {
-  width:20px;
-  height:20px
+  width:var(--mochi-v2-action-panel-svg-width,20px);
+  height:var(--mochi-v2-action-panel-svg-height,20px)
 }
 .mochi-view [data-unread=true] {
-  box-shadow:inset 0 0 0 2px var(--mochi-accent)
+  box-shadow:var(--mochi-v2-data-unread-true-box-shadow,inset 0 0 0 2px var(--mochi-accent))
 }
 .mochi-notification-toast .mochi-notification-avatar {
-  width:32px;
-  height:32px;
-  border-radius:50%;
+  width:var(--mochi-v2-notification-toast-notification-avatar-width,32px);
+  height:var(--mochi-v2-notification-toast-notification-avatar-height,32px);
+  border-radius:var(--mochi-v2-notification-toast-notification-avatar-border-radius,50%);
   overflow:hidden;
-  flex:none;
+  flex:var(--mochi-v2-notification-toast-notification-avatar-flex,none);
   display:grid;
-  place-items:center;
-  background:var(--lp-surface-2)
+  place-items:var(--mochi-v2-notification-toast-notification-avatar-place-items,center);
+  background:var(--mochi-v2-notification-toast-notification-avatar-background,var(--lp-surface-2))
 }
 .mochi-notification-avatar img {
   width:100%;
   height:100%;
-  object-fit:cover
+  object-fit:var(--mochi-v2-notification-avatar-img-object-fit,cover)
 }
 .mochi-notification-toast strong,.mochi-notification-toast span {
-  overflow-wrap:anywhere
+  overflow-wrap:var(--mochi-v2-notification-toast-strong-overflow-wrap,anywhere)
 }
 .mochi-notification-toast {
-  max-width:calc(100% - 24px)
+  max-width:var(--mochi-v2-notification-toast-max-width,calc(100% - 24px))
 }
 .mochi-message[data-grouped=true] .mochi-message-avatar {
   visibility:hidden
@@ -356,17 +381,17 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 .mochi-view {
   width:100%;
-  flex:1
+  flex:var(--mochi-v2-surface-flex,1)
 }
 .mochi-view {
   color:var(--mochi-text);
   background:var(--mochi-surface);
   font:inherit;
-  line-height:1.45;
-  padding:16px;
+  line-height:var(--mochi-v2-surface-line-height,1.45);
+  padding:var(--mochi-v2-surface-padding,16px);
   display:flex;
-  flex-direction:column;
-  gap:14px;
+  flex-direction:var(--mochi-v2-surface-flex-direction,column);
+  gap:var(--mochi-v2-surface-gap,14px);
   overflow:auto;
   height:100%;
   min-width:0;
@@ -380,242 +405,242 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   margin:0
 }
 .mochi-view h2 {
-  font-size:calc(23px * var(--mochi-interface-scale,1));
-  letter-spacing:-.04em
+  font-size:var(--mochi-v2-h2-font-size,calc(23px * var(--mochi-interface-scale,1)));
+  letter-spacing:var(--mochi-v2-h2-letter-spacing,-.04em)
 }
 .mochi-view h3 {
   font-size:var(--mochi-heading-font-size);
-  overflow-wrap:anywhere
+  overflow-wrap:var(--mochi-v2-h3-overflow-wrap,anywhere)
 }
 .mochi-view header,.mochi-actions {
   display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:8px
+  align-items:var(--mochi-v2-header-align-items,center);
+  justify-content:var(--mochi-v2-header-justify-content,space-between);
+  gap:var(--mochi-v2-header-gap,8px)
 }
 .mochi-brand {
   display:flex;
-  align-items:center;
-  gap:8px
+  align-items:var(--mochi-v2-brand-align-items,center);
+  gap:var(--mochi-v2-brand-gap,8px)
 }
 .mochi-brand>span {
   color:var(--mochi-accent)
 }
 .mochi-view svg {
-  width:20px;
-  height:20px;
+  width:var(--mochi-v2-svg-width,20px);
+  height:var(--mochi-v2-svg-height,20px);
   display:block;
-  flex:none
+  flex:var(--mochi-v2-svg-flex,none)
 }
 .mochi-view button {
   font:inherit;
   color:inherit;
-  cursor:pointer
+  cursor:var(--mochi-v2-button-cursor,pointer)
 }
 .mochi-view .lp-button {
   display:inline-flex;
-  align-items:center;
-  justify-content:center;
+  align-items:var(--mochi-v2-button-align-items,center);
+  justify-content:var(--mochi-v2-button-justify-content,center);
   gap:var(--mochi-space-sm);
-  min-height:44px;
-  padding:10px 14px;
-  border:1px solid var(--mochi-border);
+  min-height:var(--mochi-v2-button-min-height,44px);
+  padding:var(--mochi-v2-button-padding,10px 14px);
+  border:var(--mochi-v2-button-border,1px solid var(--mochi-border));
   border-radius:var(--mochi-radius-card);
-  background:color-mix(in srgb,var(--lp-text,#fff) 4%,var(--mochi-surface));
+  background:var(--mochi-v2-button-background,color-mix(in srgb,var(--lp-text,#fff) 4%,var(--mochi-surface)));
   font-size:var(--mochi-control-font-size);
-  font-weight:600
+  font-weight:var(--mochi-v2-button-font-weight,600)
 }
 .mochi-view .mochi-icon-button {
-  width:44px;
-  padding:10px;
-  flex:none;
-  border-radius:50%
+  width:var(--mochi-v2-icon-button-width,44px);
+  padding:var(--mochi-v2-icon-button-padding,10px);
+  flex:var(--mochi-v2-icon-button-flex,none);
+  border-radius:var(--mochi-v2-icon-button-border-radius,50%)
 }
 .mochi-view .mochi-primary {
   background:var(--mochi-accent);
-  color:#21182e;
-  border-color:transparent
+  color:var(--mochi-v2-primary-color,#21182e);
+  border-color:var(--mochi-v2-primary-border-color,transparent)
 }
 .mochi-view button:disabled {
-  opacity:.45;
-  cursor:default
+  opacity:var(--mochi-v2-button-disabled-opacity,.45);
+  cursor:var(--mochi-v2-button-disabled-cursor,default)
 }
 .mochi-view button:not(:disabled):hover {
   border-color:var(--mochi-accent)
 }
 .mochi-view :is(button,input,textarea,select):focus-visible {
-  outline:2px solid var(--mochi-accent);
-  outline-offset:3px
+  outline:var(--mochi-v2-is-button-outline,2px solid var(--mochi-accent));
+  outline-offset:var(--mochi-v2-is-button-outline-offset,3px)
 }
 .mochi-muted {
-  color:var(--lp-muted,var(--lumiverse-text-muted,#a9a3b5));
-  font-size:calc(12px * var(--mochi-interface-scale,1))
+  color:var(--mochi-v2-muted-color,var(--lp-muted,var(--lumiverse-text-muted,#a9a3b5)));
+  font-size:var(--mochi-v2-muted-font-size,calc(12px * var(--mochi-interface-scale,1)))
 }
 .mochi-error {
-  color:var(--lp-destructive,#ed7c8c);
-  font-size:calc(13px * var(--mochi-interface-scale,1));
-  overflow-wrap:anywhere
+  color:var(--mochi-v2-error-color,var(--lp-destructive,#ed7c8c));
+  font-size:var(--mochi-v2-error-font-size,calc(13px * var(--mochi-interface-scale,1)));
+  overflow-wrap:var(--mochi-v2-error-overflow-wrap,anywhere)
 }
 .mochi-room-header {
   display:grid;
-  grid-template-columns:minmax(0,1fr) auto;
-  gap:10px;
-  align-items:center;
-  padding-bottom:12px;
-  border-bottom:1px solid var(--mochi-border)
+  grid-template-columns:var(--mochi-v2-room-header-grid-template-columns,minmax(0,1fr) auto);
+  gap:var(--mochi-v2-room-header-gap,10px);
+  align-items:var(--mochi-v2-room-header-align-items,center);
+  padding-bottom:var(--mochi-v2-room-header-padding-bottom,12px);
+  border-bottom:var(--mochi-v2-room-header-border-bottom,1px solid var(--mochi-border))
 }
 .mochi-room-header .mochi-actions {
-  justify-content:end
+  justify-content:var(--mochi-v2-room-header-actions-justify-content,end)
 }
 .mochi-room-info {
   display:grid;
-  gap:3px;
+  gap:var(--mochi-v2-room-info-gap,3px);
   min-width:0
 }
 .mochi-member-strip {
   display:flex;
   gap:var(--mochi-space-sm);
-  flex-wrap:wrap
+  flex-wrap:var(--mochi-v2-member-strip-flex-wrap,wrap)
 }
 .mochi-member {
   display:flex;
-  align-items:center;
-  gap:6px;
+  align-items:var(--mochi-v2-member-align-items,center);
+  gap:var(--mochi-v2-member-gap,6px);
   min-width:0;
-  font-size:calc(11px * var(--mochi-interface-scale,1));
+  font-size:var(--mochi-v2-member-font-size,calc(11px * var(--mochi-interface-scale,1)));
   max-width:100%
 }
 .mochi-member>span:last-child {
-  overflow-wrap:anywhere
+  overflow-wrap:var(--mochi-v2-member-span-last-child-overflow-wrap,anywhere)
 }
 .mochi-member .mochi-avatar {
-  width:26px;
-  height:26px;
-  font-size:calc(11px * var(--mochi-interface-scale,1));
-  flex:none
+  width:var(--mochi-v2-member-avatar-width,26px);
+  height:var(--mochi-v2-member-avatar-height,26px);
+  font-size:var(--mochi-v2-member-avatar-font-size,calc(11px * var(--mochi-interface-scale,1)));
+  flex:var(--mochi-v2-member-avatar-flex,none)
 }
 .mochi-card {
   width:100%;
-  padding:14px;
-  border:1px solid var(--mochi-border);
-  border-radius:16px;
-  background:color-mix(in srgb,var(--mochi-accent) 4%,var(--mochi-surface));
+  padding:var(--mochi-v2-card-padding,14px);
+  border:var(--mochi-v2-card-border,1px solid var(--mochi-border));
+  border-radius:var(--mochi-v2-card-border-radius,16px);
+  background:var(--mochi-v2-card-background,color-mix(in srgb,var(--mochi-accent) 4%,var(--mochi-surface)));
   display:flex;
   gap:var(--mochi-space-md);
-  text-align:left;
-  align-items:center
+  text-align:var(--mochi-v2-card-text-align,left);
+  align-items:var(--mochi-v2-card-align-items,center)
 }
 .mochi-card-copy {
   min-width:0;
   display:grid;
   gap:var(--mochi-space-xs);
-  flex:1
+  flex:var(--mochi-v2-card-copy-flex,1)
 }
 .mochi-card-copy strong {
-  overflow-wrap:anywhere;
-  font-size:calc(14px * var(--mochi-interface-scale,1))
+  overflow-wrap:var(--mochi-v2-card-copy-strong-overflow-wrap,anywhere);
+  font-size:var(--mochi-v2-card-copy-strong-font-size,calc(14px * var(--mochi-interface-scale,1)))
 }
 .mochi-preview {
-  font-size:calc(12px * var(--mochi-interface-scale,1));
-  color:var(--lp-muted,#a9a3b5);
+  font-size:var(--mochi-v2-preview-font-size,calc(12px * var(--mochi-interface-scale,1)));
+  color:var(--mochi-v2-preview-color,var(--lp-muted,#a9a3b5));
   overflow:hidden;
   display:-webkit-box;
-  -webkit-line-clamp:2;
-  -webkit-box-orient:vertical;
-  overflow-wrap:anywhere
+  -webkit-line-clamp:var(--mochi-v2-preview--webkit-line-clamp,2);
+  -webkit-box-orient:var(--mochi-v2-preview--webkit-box-orient,vertical);
+  overflow-wrap:var(--mochi-v2-preview-overflow-wrap,anywhere)
 }
 .mochi-room-avatars {
-  width:48px;
-  flex:none;
+  width:var(--mochi-v2-room-avatars-width,48px);
+  flex:var(--mochi-v2-room-avatars-flex,none);
   display:flex;
-  flex-wrap:wrap;
-  gap:2px
+  flex-wrap:var(--mochi-v2-room-avatars-flex-wrap,wrap);
+  gap:var(--mochi-v2-room-avatars-gap,2px)
 }
 .mochi-room-avatars .mochi-avatar {
-  width:23px;
-  height:23px;
-  font-size:calc(10px * var(--mochi-interface-scale,1))
+  width:var(--mochi-v2-room-avatars-avatar-width,23px);
+  height:var(--mochi-v2-room-avatars-avatar-height,23px);
+  font-size:var(--mochi-v2-room-avatars-avatar-font-size,calc(10px * var(--mochi-interface-scale,1)))
 }
 .mochi-room-avatars[data-single=true] .mochi-avatar {
-  width:44px;
-  height:44px;
-  font-size:calc(18px * var(--mochi-interface-scale,1))
+  width:var(--mochi-v2-room-avatars-data-single-true-avatar-width,44px);
+  height:var(--mochi-v2-room-avatars-data-single-true-avatar-height,44px);
+  font-size:var(--mochi-v2-room-avatars-data-single-true-avatar-font-size,calc(18px * var(--mochi-interface-scale,1)))
 }
 .mochi-form {
   display:flex;
-  flex-direction:column;
-  gap:18px;
+  flex-direction:var(--mochi-v2-form-flex-direction,column);
+  gap:var(--mochi-v2-form-gap,18px);
   min-width:0
 }
 .mochi-view label {
   display:flex;
-  flex-direction:column;
-  gap:7px;
-  font-size:calc(12px * var(--mochi-interface-scale,1));
-  font-weight:600;
+  flex-direction:var(--mochi-v2-label-flex-direction,column);
+  gap:var(--mochi-v2-label-gap,7px);
+  font-size:var(--mochi-v2-label-font-size,calc(12px * var(--mochi-interface-scale,1)));
+  font-weight:var(--mochi-v2-label-font-weight,600);
   min-width:0
 }
 .mochi-view :is(input,textarea,select) {
   box-sizing:border-box;
   width:100%;
   min-width:0;
-  min-height:44px;
-  padding:11px 12px;
+  min-height:var(--mochi-v2-is-input-min-height,44px);
+  padding:var(--mochi-v2-is-input-padding,11px 12px);
   border-radius:var(--mochi-radius-card);
-  border:1px solid var(--mochi-border);
-  background:color-mix(in srgb,var(--lp-text,#fff) 3%,var(--mochi-surface));
+  border:var(--mochi-v2-is-input-border,1px solid var(--mochi-border));
+  background:var(--mochi-v2-is-input-background,color-mix(in srgb,var(--lp-text,#fff) 3%,var(--mochi-surface)));
   color:inherit;
   font:inherit;
-  font-size:calc(14px * var(--mochi-interface-scale,1));
-  line-height:1.4
+  font-size:var(--mochi-v2-is-input-font-size,calc(14px * var(--mochi-interface-scale,1)));
+  line-height:var(--mochi-v2-is-input-line-height,1.4)
 }
 .mochi-view textarea {
   resize:vertical
 }
 .mochi-view option {
   background:var(--mochi-surface);
-  color:var(--lp-text,#f7f5ff)
+  color:var(--mochi-v2-option-color,var(--lp-text,#f7f5ff))
 }
 .mochi-view .mochi-toggle {
-  flex-direction:row;
-  align-items:center;
-  justify-content:space-between;
+  flex-direction:var(--mochi-v2-toggle-flex-direction,row);
+  align-items:var(--mochi-v2-toggle-align-items,center);
+  justify-content:var(--mochi-v2-toggle-justify-content,space-between);
   gap:var(--mochi-space-md);
-  padding:12px;
-  background:color-mix(in srgb,var(--mochi-accent) 5%,var(--mochi-surface));
-  border:1px solid var(--mochi-border);
-  border-radius:12px
+  padding:var(--mochi-v2-toggle-padding,12px);
+  background:var(--mochi-v2-toggle-background,color-mix(in srgb,var(--mochi-accent) 5%,var(--mochi-surface)));
+  border:var(--mochi-v2-toggle-border,1px solid var(--mochi-border));
+  border-radius:var(--mochi-v2-toggle-border-radius,12px)
 }
 .mochi-view input[type=checkbox] {
-  appearance:auto;
-  min-height:24px;
-  width:24px;
-  height:24px;
-  flex:none;
+  appearance:var(--mochi-v2-input-type-checkbox-appearance,auto);
+  min-height:var(--mochi-v2-input-type-checkbox-min-height,24px);
+  width:var(--mochi-v2-input-type-checkbox-width,24px);
+  height:var(--mochi-v2-input-type-checkbox-height,24px);
+  flex:var(--mochi-v2-input-type-checkbox-flex,none);
   accent-color:var(--mochi-accent);
   margin:0
 }
 .mochi-picker {
   display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:8px
+  grid-template-columns:var(--mochi-v2-picker-grid-template-columns,repeat(3,minmax(0,1fr)));
+  gap:var(--mochi-v2-picker-gap,8px)
 }
 .mochi-choice {
   position:relative;
   display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:flex-start;
+  flex-direction:var(--mochi-v2-choice-flex-direction,column);
+  align-items:var(--mochi-v2-choice-align-items,center);
+  justify-content:var(--mochi-v2-choice-justify-content,flex-start);
   gap:var(--mochi-space-sm);
   min-width:0;
-  padding:12px 6px;
-  border:1px solid transparent;
-  border-radius:14px;
-  background:transparent;
-  font-size:calc(12px * var(--mochi-interface-scale,1))!important;
-  line-height:1.35;
-  overflow-wrap:anywhere;
-  text-align:center
+  padding:var(--mochi-v2-choice-padding,12px 6px);
+  border:var(--mochi-v2-choice-border,1px solid transparent);
+  border-radius:var(--mochi-v2-choice-border-radius,14px);
+  background:var(--mochi-v2-choice-background,transparent);
+  font-size:var(--mochi-v2-choice-font-size,calc(12px * var(--mochi-interface-scale,1)))!important;
+  line-height:var(--mochi-v2-choice-line-height,1.35);
+  overflow-wrap:var(--mochi-v2-choice-overflow-wrap,anywhere);
+  text-align:var(--mochi-v2-choice-text-align,center)
 }
 .mochi-choice>span:last-child {
   width:100%;
@@ -623,352 +648,352 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 .mochi-choice[aria-pressed=true] {
   border-color:var(--mochi-accent);
-  background:color-mix(in srgb,var(--mochi-accent) 12%,var(--mochi-surface))
+  background:var(--mochi-v2-choice-aria-pressed-true-background,color-mix(in srgb,var(--mochi-accent) 12%,var(--mochi-surface)))
 }
 .mochi-choice[aria-pressed=true]::after {
-  content:'✓';
+  content:var(--mochi-v2-choice-aria-pressed-true-after-content,'✓');
   position:absolute;
-  right:5px;
-  top:5px;
-  border-radius:50%;
-  width:18px;
-  height:18px;
+  right:var(--mochi-v2-choice-aria-pressed-true-after-right,5px);
+  top:var(--mochi-v2-choice-aria-pressed-true-after-top,5px);
+  border-radius:var(--mochi-v2-choice-aria-pressed-true-after-border-radius,50%);
+  width:var(--mochi-v2-choice-aria-pressed-true-after-width,18px);
+  height:var(--mochi-v2-choice-aria-pressed-true-after-height,18px);
   background:var(--mochi-accent);
-  color:#21182e;
-  font-size:calc(12px * var(--mochi-interface-scale,1))
+  color:var(--mochi-v2-choice-aria-pressed-true-after-color,#21182e);
+  font-size:var(--mochi-v2-choice-aria-pressed-true-after-font-size,calc(12px * var(--mochi-interface-scale,1)))
 }
 .mochi-avatar,.mochi-message-avatar {
   display:flex;
-  align-items:center;
-  justify-content:center;
-  width:48px;
-  height:48px;
-  flex:none;
-  border-radius:50%;
-  background:color-mix(in srgb,var(--mochi-accent) 18%,var(--mochi-surface));
-  border:1px solid color-mix(in srgb,var(--mochi-accent) 35%,var(--mochi-border));
+  align-items:var(--mochi-v2-avatar-align-items,center);
+  justify-content:var(--mochi-v2-avatar-justify-content,center);
+  width:var(--mochi-v2-avatar-width,48px);
+  height:var(--mochi-v2-avatar-height,48px);
+  flex:var(--mochi-v2-avatar-flex,none);
+  border-radius:var(--mochi-v2-avatar-border-radius,50%);
+  background:var(--mochi-v2-avatar-background,color-mix(in srgb,var(--mochi-accent) 18%,var(--mochi-surface)));
+  border:var(--mochi-v2-avatar-border,1px solid color-mix(in srgb,var(--mochi-accent) 35%,var(--mochi-border)));
   overflow:hidden;
   color:var(--mochi-accent);
-  font-weight:650
+  font-weight:var(--mochi-v2-avatar-font-weight,650)
 }
 .mochi-avatar img,.mochi-message-avatar img {
   width:100%;
   height:100%;
-  object-fit:cover
+  object-fit:var(--mochi-v2-avatar-img-object-fit,cover)
 }
 .mochi-thread {
   display:flex;
-  flex-direction:column;
-  gap:18px;
-  flex:1;
-  min-height:160px;
+  flex-direction:var(--mochi-v2-thread-flex-direction,column);
+  gap:var(--mochi-v2-thread-gap,18px);
+  flex:var(--mochi-v2-thread-flex,1);
+  min-height:var(--mochi-v2-thread-min-height,160px);
   overflow-y:auto;
   overscroll-behavior:contain;
-  padding:4px 0 10px
+  padding:var(--mochi-v2-thread-padding,4px 0 10px)
 }
 .mochi-message {
   display:flex;
   gap:var(--mochi-space-sm);
-  align-items:flex-start;
+  align-items:var(--mochi-v2-message-align-items,flex-start);
   min-width:0
 }
 .mochi-message[data-role=user] {
-  flex-direction:row-reverse
+  flex-direction:var(--mochi-v2-message-data-role-user-flex-direction,row-reverse)
 }
 .mochi-message-avatar {
-  width:32px;
-  height:32px;
-  font-size:calc(12px * var(--mochi-interface-scale,1));
-  margin-top:2px
+  width:var(--mochi-v2-message-avatar-width,32px);
+  height:var(--mochi-v2-message-avatar-height,32px);
+  font-size:var(--mochi-v2-message-avatar-font-size,calc(12px * var(--mochi-interface-scale,1)));
+  margin-top:var(--mochi-v2-message-avatar-margin-top,2px)
 }
 .mochi-message-body {
-  max-width:min(86%,calc(100% - 40px));
+  max-width:var(--mochi-v2-message-body-max-width,min(86%,calc(100% - 40px)));
   min-width:0;
   display:flex;
-  flex-direction:column;
-  align-items:flex-start;
-  gap:5px
+  flex-direction:var(--mochi-v2-message-body-flex-direction,column);
+  align-items:var(--mochi-v2-message-body-align-items,flex-start);
+  gap:var(--mochi-v2-message-body-gap,5px)
 }
 .mochi-message[data-role=user] .mochi-message-body {
-  align-items:flex-end
+  align-items:var(--mochi-v2-message-data-role-user-message-body-align-items,flex-end)
 }
 .mochi-message-name {
-  font-size:calc(12px * var(--mochi-interface-scale,1));
-  font-weight:650;
-  overflow-wrap:anywhere
+  font-size:var(--mochi-v2-message-name-font-size,calc(12px * var(--mochi-interface-scale,1)));
+  font-weight:var(--mochi-v2-message-name-font-weight,650);
+  overflow-wrap:var(--mochi-v2-message-name-overflow-wrap,anywhere)
 }
 .mochi-bubble {
-  width:fit-content;
+  width:var(--mochi-v2-bubble-width,fit-content);
   max-width:100%;
-  background:color-mix(in srgb,var(--lp-text,#fff) 7%,var(--mochi-surface));
-  border:1px solid var(--mochi-border);
+  background:var(--mochi-v2-bubble-background,color-mix(in srgb,var(--lp-text,#fff) 7%,var(--mochi-surface)));
+  border:var(--mochi-v2-bubble-border,1px solid var(--mochi-border));
   border-radius:var(--mochi-radius-card);
-  padding:10px 12px;
-  white-space:pre-wrap;
-  overflow-wrap:anywhere;
+  padding:var(--mochi-v2-bubble-padding,10px 12px);
+  white-space:var(--mochi-v2-bubble-white-space,pre-wrap);
+  overflow-wrap:var(--mochi-v2-bubble-overflow-wrap,anywhere);
   font-size:var(--mochi-chat-font-size);
-  line-height:1.5
+  line-height:var(--mochi-v2-bubble-line-height,1.5)
 }
 .mochi-message[data-role=user] .mochi-bubble {
-  background:color-mix(in srgb,var(--mochi-accent) 24%,var(--mochi-surface));
-  border-color:color-mix(in srgb,var(--mochi-accent) 28%,var(--mochi-border))
+  background:var(--mochi-v2-message-data-role-user-bubble-background,color-mix(in srgb,var(--mochi-accent) 24%,var(--mochi-surface)));
+  border-color:var(--mochi-v2-message-data-role-user-bubble-border-color,color-mix(in srgb,var(--mochi-accent) 28%,var(--mochi-border)))
 }
 .mochi-message time {
-  font-size:calc(10px * var(--mochi-interface-scale,1));
-  color:var(--lp-muted,#a9a3b5)
+  font-size:var(--mochi-v2-message-time-font-size,calc(10px * var(--mochi-interface-scale,1)));
+  color:var(--mochi-v2-message-time-color,var(--lp-muted,#a9a3b5))
 }
 .mochi-composer {
   position:sticky;
   bottom:0;
   flex-shrink:0;
   background:var(--mochi-surface);
-  padding:10px 0 max(4px,env(safe-area-inset-bottom,0px));
+  padding:var(--mochi-v2-composer-padding,10px 0 max(4px,env(safe-area-inset-bottom,0px)));
   display:flex;
-  flex-direction:column;
+  flex-direction:var(--mochi-v2-composer-flex-direction,column);
   gap:var(--mochi-space-sm);
-  border-top:1px solid var(--mochi-border)
+  border-top:var(--mochi-v2-composer-border-top,1px solid var(--mochi-border))
 }
 .mochi-composer-row {
   display:flex;
   gap:var(--mochi-space-sm);
-  align-items:flex-end
+  align-items:var(--mochi-v2-composer-row-align-items,flex-end)
 }
 .mochi-composer textarea {
-  flex:1;
-  min-height:44px;
-  max-height:112px;
+  flex:var(--mochi-v2-composer-textarea-flex,1);
+  min-height:var(--mochi-v2-composer-textarea-min-height,44px);
+  max-height:var(--mochi-v2-composer-textarea-max-height,112px);
   resize:none;
-  border-radius:18px;
-  padding:11px 13px
+  border-radius:var(--mochi-v2-composer-textarea-border-radius,18px);
+  padding:var(--mochi-v2-composer-textarea-padding,11px 13px)
 }
 .mochi-composer select {
-  font-size:calc(12px * var(--mochi-interface-scale,1));
-  min-height:36px;
-  padding:7px 10px
+  font-size:var(--mochi-v2-composer-select-font-size,calc(12px * var(--mochi-interface-scale,1)));
+  min-height:var(--mochi-v2-composer-select-min-height,36px);
+  padding:var(--mochi-v2-composer-select-padding,7px 10px)
 }
 .mochi-composer-hint {
-  font-size:calc(10px * var(--mochi-interface-scale,1));
-  color:var(--lp-muted,#a9a3b5)
+  font-size:var(--mochi-v2-composer-hint-font-size,calc(10px * var(--mochi-interface-scale,1)));
+  color:var(--mochi-v2-composer-hint-color,var(--lp-muted,#a9a3b5))
 }
 .mochi-view>header,.mochi-room-header,.mochi-member-strip {
   flex-shrink:0
 }
 @container (max-width:320px) {
   .mochi-picker {
-    grid-template-columns:repeat(2,minmax(0,1fr))
+    grid-template-columns:var(--mochi-v2-picker-container-max-width-320px-grid-template-columns,repeat(2,minmax(0,1fr)))
   }
   .mochi-room-header {
-    gap:6px
+    gap:var(--mochi-v2-room-header-container-max-width-320px-gap,6px)
   }
   .mochi-member-strip {
-    gap:6px
+    gap:var(--mochi-v2-member-strip-container-max-width-320px-gap,6px)
   }
   .mochi-standalone {
     display:none
   }
   .mochi-view header .mochi-actions {
-    gap:4px
+    gap:var(--mochi-v2-header-actions-container-max-width-320px-gap,4px)
   }
 }
 /* Mochi 03.5: keep all refinements inside the independent app surface. */
 .mochi-view {
-  padding:14px;
-  gap:12px
+  padding:var(--mochi-v2-surface-padding,14px);
+  gap:var(--mochi-v2-surface-gap,12px)
 }
 .mochi-view>header {
-  padding:2px 0 10px;
-  border-bottom:1px solid var(--mochi-border)
+  padding:var(--mochi-v2-header-padding,2px 0 10px);
+  border-bottom:var(--mochi-v2-header-border-bottom,1px solid var(--mochi-border))
 }
 .mochi-view h2 {
-  font-size:calc(28px * var(--mochi-interface-scale,1));
-  font-weight:800;
-  letter-spacing:-.045em
+  font-size:var(--mochi-v2-h2-font-size,calc(28px * var(--mochi-interface-scale,1)));
+  font-weight:var(--mochi-v2-h2-font-weight,800);
+  letter-spacing:var(--mochi-v2-h2-letter-spacing,-.045em)
 }
 .mochi-brand {
   min-width:0;
-  gap:7px!important
+  gap:var(--mochi-v2-brand-gap,7px)!important
 }
 .mochi-view .mochi-mascot svg {
-  width:38px;
-  height:32px
+  width:var(--mochi-v2-mascot-svg-width,38px);
+  height:var(--mochi-v2-mascot-svg-height,32px)
 }
 .mochi-view header .mochi-icon-button {
   position:relative;
-  background:transparent;
-  border-color:transparent
+  background:var(--mochi-v2-header-icon-button-background,transparent);
+  border-color:var(--mochi-v2-header-icon-button-border-color,transparent)
 }
 .mochi-unread-count {
   position:absolute;
-  right:1px;
+  right:var(--mochi-v2-unread-count-right,1px);
   top:0;
-  min-width:17px;
-  padding:1px 4px;
-  border-radius:99px;
+  min-width:var(--mochi-v2-unread-count-min-width,17px);
+  padding:var(--mochi-v2-unread-count-padding,1px 4px);
+  border-radius:var(--mochi-v2-unread-count-border-radius,99px);
   background:var(--mochi-accent);
-  color:#21182e;
-  font-size:calc(10px * var(--mochi-interface-scale,1));
-  line-height:15px
+  color:var(--mochi-v2-unread-count-color,#21182e);
+  font-size:var(--mochi-v2-unread-count-font-size,calc(10px * var(--mochi-interface-scale,1)));
+  line-height:var(--mochi-v2-unread-count-line-height,15px)
 }
 .mochi-view .mochi-room-selector {
-  min-height:46px;
-  padding:10px 14px;
-  border-color:color-mix(in srgb,var(--mochi-accent) 30%,var(--mochi-border));
-  background:color-mix(in srgb,var(--mochi-accent) 9%,var(--mochi-surface));
-  font-size:calc(15px * var(--mochi-interface-scale,1))
+  min-height:var(--mochi-v2-room-selector-min-height,46px);
+  padding:var(--mochi-v2-room-selector-padding,10px 14px);
+  border-color:var(--mochi-v2-room-selector-border-color,color-mix(in srgb,var(--mochi-accent) 30%,var(--mochi-border)));
+  background:var(--mochi-v2-room-selector-background,color-mix(in srgb,var(--mochi-accent) 9%,var(--mochi-surface)));
+  font-size:var(--mochi-v2-room-selector-font-size,calc(15px * var(--mochi-interface-scale,1)))
 }
 .mochi-room-header {
   border:0;
   padding-bottom:0;
-  gap:8px
+  gap:var(--mochi-v2-room-header-gap,8px)
 }
 .mochi-room-info {
-  gap:5px
+  gap:var(--mochi-v2-room-info-gap,5px)
 }
 .mochi-member-strip {
-  gap:6px;
-  padding-bottom:10px;
-  border-bottom:1px solid var(--mochi-border)
+  gap:var(--mochi-v2-member-strip-gap,6px);
+  padding-bottom:var(--mochi-v2-member-strip-padding-bottom,10px);
+  border-bottom:var(--mochi-v2-member-strip-border-bottom,1px solid var(--mochi-border))
 }
 .mochi-member-strip .mochi-member {
-  padding:3px 7px 3px 3px;
-  border-radius:99px;
-  background:color-mix(in srgb,var(--mochi-accent) 5%,var(--mochi-surface));
+  padding:var(--mochi-v2-member-strip-member-padding,3px 7px 3px 3px);
+  border-radius:var(--mochi-v2-member-strip-member-border-radius,99px);
+  background:var(--mochi-v2-member-strip-member-background,color-mix(in srgb,var(--mochi-accent) 5%,var(--mochi-surface)));
   max-width:100%
 }
 .mochi-member-strip .mochi-avatar {
-  width:30px;
-  height:30px
+  width:var(--mochi-v2-member-strip-avatar-width,30px);
+  height:var(--mochi-v2-member-strip-avatar-height,30px)
 }
 .mochi-member-strip .mochi-member>span:last-child {
   display:-webkit-box;
-  -webkit-line-clamp:2;
-  -webkit-box-orient:vertical;
+  -webkit-line-clamp:var(--mochi-v2-member-strip-member-span-last-child--webkit-line-clamp,2);
+  -webkit-box-orient:var(--mochi-v2-member-strip-member-span-last-child--webkit-box-orient,vertical);
   overflow:hidden;
-  line-height:1.3
+  line-height:var(--mochi-v2-member-strip-member-span-last-child-line-height,1.3)
 }
 .mochi-thread {
-  gap:14px;
+  gap:var(--mochi-v2-thread-gap,14px);
   padding-top:0
 }
 .mochi-message {
-  gap:9px
+  gap:var(--mochi-v2-message-gap,9px)
 }
 .mochi-message-avatar {
-  width:36px;
-  height:36px;
-  margin-top:4px
+  width:var(--mochi-v2-message-avatar-width,36px);
+  height:var(--mochi-v2-message-avatar-height,36px);
+  margin-top:var(--mochi-v2-message-avatar-margin-top,4px)
 }
 .mochi-message-body {
-  max-width:min(86%,calc(100% - 45px));
-  gap:2px
+  max-width:var(--mochi-v2-message-body-max-width,min(86%,calc(100% - 45px)));
+  gap:var(--mochi-v2-message-body-gap,2px)
 }
 .mochi-message-meta {
   width:100%;
-  min-height:36px;
-  gap:6px;
+  min-height:var(--mochi-v2-message-meta-min-height,36px);
+  gap:var(--mochi-v2-message-meta-gap,6px);
   position:relative;
-  padding-right:34px
+  padding-right:var(--mochi-v2-message-meta-padding-right,34px)
 }
 .mochi-message-name {
-  font-size:calc(13px * var(--mochi-interface-scale,1))
+  font-size:var(--mochi-v2-message-name-font-size,calc(13px * var(--mochi-interface-scale,1)))
 }
 .mochi-message time {
-  white-space:nowrap;
-  font-size:calc(10px * var(--mochi-interface-scale,1));
-  flex:none
+  white-space:var(--mochi-v2-message-time-white-space,nowrap);
+  font-size:var(--mochi-v2-message-time-font-size,calc(10px * var(--mochi-interface-scale,1)));
+  flex:var(--mochi-v2-message-time-flex,none)
 }
 .mochi-message[data-role=user] .mochi-message-meta {
-  justify-content:flex-end
+  justify-content:var(--mochi-v2-message-data-role-user-message-meta-justify-content,flex-end)
 }
 .mochi-view .mochi-message-actions {
   position:absolute;
-  right:-7px;
-  top:-4px;
-  width:44px;
-  height:44px;
+  right:var(--mochi-v2-message-actions-right,-7px);
+  top:var(--mochi-v2-message-actions-top,-4px);
+  width:var(--mochi-v2-message-actions-width,44px);
+  height:var(--mochi-v2-message-actions-height,44px);
   margin:0;
   border:0!important;
-  background:transparent!important;
+  background:var(--mochi-v2-message-actions-background,transparent)!important;
   opacity:0
 }
 .mochi-view .mochi-message-actions svg {
-  width:15px;
-  height:15px
+  width:var(--mochi-v2-message-actions-svg-width,15px);
+  height:var(--mochi-v2-message-actions-svg-height,15px)
 }
 .mochi-message:hover .mochi-message-actions,.mochi-message:focus-within .mochi-message-actions {
-  opacity:1
+  opacity:var(--mochi-v2-message-hover-message-actions-opacity,1)
 }
 .mochi-bubble {
-  padding:12px 14px;
-  border-radius:17px;
-  line-height:1.55
+  padding:var(--mochi-v2-bubble-padding,12px 14px);
+  border-radius:var(--mochi-v2-bubble-border-radius,17px);
+  line-height:var(--mochi-v2-bubble-line-height,1.55)
 }
 .mochi-message[data-role=assistant] .mochi-bubble {
-  border-top-left-radius:6px
+  border-top-left-radius:var(--mochi-v2-message-data-role-assistant-bubble-border-top-left-radius,6px)
 }
 .mochi-message[data-role=user] .mochi-bubble {
   background:var(--mochi-accent);
   color:var(--mochi-user-bubble-text);
-  border-color:transparent;
-  border-top-right-radius:6px
+  border-color:var(--mochi-v2-message-data-role-user-bubble-border-color,transparent);
+  border-top-right-radius:var(--mochi-v2-message-data-role-user-bubble-border-top-right-radius,6px)
 }
 .mochi-message[data-grouped=true] {
-  margin-top:-6px
+  margin-top:var(--mochi-v2-message-data-grouped-true-margin-top,-6px)
 }
 .mochi-message[data-grouped=true] .mochi-message-meta {
-  min-height:28px
+  min-height:var(--mochi-v2-message-data-grouped-true-message-meta-min-height,28px)
 }
 .mochi-composer {
-  gap:7px;
-  padding-top:10px
+  gap:var(--mochi-v2-composer-gap,7px);
+  padding-top:var(--mochi-v2-composer-padding-top,10px)
 }
 .mochi-composer-row {
-  gap:8px;
-  align-items:center;
-  padding:6px;
-  border:1px solid var(--mochi-border);
-  border-radius:26px;
-  background:color-mix(in srgb,var(--lp-text,#fff) 4%,var(--mochi-surface))
+  gap:var(--mochi-v2-composer-row-gap,8px);
+  align-items:var(--mochi-v2-composer-row-align-items,center);
+  padding:var(--mochi-v2-composer-row-padding,6px);
+  border:var(--mochi-v2-composer-row-border,1px solid var(--mochi-border));
+  border-radius:var(--mochi-v2-composer-row-border-radius,26px);
+  background:var(--mochi-v2-composer-row-background,color-mix(in srgb,var(--lp-text,#fff) 4%,var(--mochi-surface)))
 }
 .mochi-composer textarea {
-  background:transparent;
+  background:var(--mochi-v2-composer-textarea-background,transparent);
   border:0;
-  border-radius:20px;
-  padding:10px 14px
+  border-radius:var(--mochi-v2-composer-textarea-border-radius,20px);
+  padding:var(--mochi-v2-composer-textarea-padding,10px 14px)
 }
 .mochi-composer .mochi-icon-button {
-  height:44px
+  height:var(--mochi-v2-composer-icon-button-height,44px)
 }
 .mochi-composer select {
   max-width:100%;
-  border-radius:99px;
-  background:transparent;
-  border-color:transparent
+  border-radius:var(--mochi-v2-composer-select-border-radius,99px);
+  background:var(--mochi-v2-composer-select-background,transparent);
+  border-color:var(--mochi-v2-composer-select-border-color,transparent)
 }
 .mochi-composer-hint {
-  text-align:center
+  text-align:var(--mochi-v2-composer-hint-text-align,center)
 }
 .mochi-notification-entry {
   display:flex;
-  align-items:center;
+  align-items:var(--mochi-v2-notification-entry-align-items,center);
   gap:var(--mochi-space-xs);
   min-width:0
 }
 .mochi-notification-entry .mochi-card {
-  flex:1;
+  flex:var(--mochi-v2-notification-entry-card-flex,1);
   min-width:0
 }
 .mochi-notification-entry>.mochi-icon-button {
-  background:transparent;
-  border-color:transparent
+  background:var(--mochi-v2-notification-entry-icon-button-background,transparent);
+  border-color:var(--mochi-v2-notification-entry-icon-button-border-color,transparent)
 }
 .mochi-notification-list>.mochi-actions {
-  justify-content:flex-start;
-  flex-wrap:wrap
+  justify-content:var(--mochi-v2-notification-list-actions-justify-content,flex-start);
+  flex-wrap:var(--mochi-v2-notification-list-actions-flex-wrap,wrap)
 }
 @media (hover:none) {
   .mochi-view .mochi-message-actions {
-    opacity:.7
+    opacity:var(--mochi-v2-message-actions-media-hover-none-opacity,.7)
   }
 }
 @container (max-width:360px) {
@@ -978,146 +1003,146 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 /* Layout correction: compact identities, separate author/time hierarchy. */
 .mochi-view .mochi-room-header {
-  grid-template-columns:minmax(0,1fr) 44px
+  grid-template-columns:var(--mochi-v2-room-header-grid-template-columns,minmax(0,1fr) 44px)
 }
 .mochi-view .mochi-member-strip {
-  align-self:flex-start;
-  width:auto;
+  align-self:var(--mochi-v2-member-strip-align-self,flex-start);
+  width:var(--mochi-v2-member-strip-width,auto);
   display:flex;
-  align-items:center;
-  gap:10px;
-  flex-wrap:nowrap;
+  align-items:var(--mochi-v2-member-strip-align-items,center);
+  gap:var(--mochi-v2-member-strip-gap,10px);
+  flex-wrap:var(--mochi-v2-member-strip-flex-wrap,nowrap);
   padding:0;
-  min-height:44px;
+  min-height:var(--mochi-v2-member-strip-min-height,44px);
   border:0;
-  background:transparent;
-  text-align:left
+  background:var(--mochi-v2-member-strip-background,transparent);
+  text-align:var(--mochi-v2-member-strip-text-align,left)
 }
 .mochi-portrait-stack {
   display:flex;
-  align-items:center;
+  align-items:var(--mochi-v2-portrait-stack-align-items,center);
   padding-left:0;
-  flex:none
+  flex:var(--mochi-v2-portrait-stack-flex,none)
 }
 .mochi-portrait-stack .mochi-avatar {
-  width:32px;
-  height:32px;
-  border:2px solid var(--mochi-surface)
+  width:var(--mochi-v2-portrait-stack-avatar-width,32px);
+  height:var(--mochi-v2-portrait-stack-avatar-height,32px);
+  border:var(--mochi-v2-portrait-stack-avatar-border,2px solid var(--mochi-surface))
 }
 .mochi-portrait-stack .mochi-avatar+.mochi-avatar {
-  margin-left:-10px
+  margin-left:var(--mochi-v2-portrait-stack-avatar-avatar-margin-left,-10px)
 }
 .mochi-participant-count {
-  font-size:calc(12px * var(--mochi-interface-scale,1));
-  color:var(--lp-muted,#a9a3b5)
+  font-size:var(--mochi-v2-participant-count-font-size,calc(12px * var(--mochi-interface-scale,1)));
+  color:var(--mochi-v2-participant-count-color,var(--lp-muted,#a9a3b5))
 }
 .mochi-thread {
-  border-top:1px solid var(--mochi-border);
-  padding-top:16px;
-  gap:20px
+  border-top:var(--mochi-v2-thread-border-top,1px solid var(--mochi-border));
+  padding-top:var(--mochi-v2-thread-padding-top,16px);
+  gap:var(--mochi-v2-thread-gap,20px)
 }
 .mochi-message-avatar {
-  width:38px;
-  height:38px;
+  width:var(--mochi-v2-message-avatar-width,38px);
+  height:var(--mochi-v2-message-avatar-height,38px);
   margin-top:0
 }
 .mochi-message-body {
-  max-width:min(86%,calc(100% - 47px));
-  gap:6px
+  max-width:var(--mochi-v2-message-body-max-width,min(86%,calc(100% - 47px)));
+  gap:var(--mochi-v2-message-body-gap,6px)
 }
 .mochi-message-name {
   display:block;
   width:100%;
   min-width:0;
-  white-space:nowrap;
+  white-space:var(--mochi-v2-message-name-white-space,nowrap);
   overflow:hidden;
-  text-overflow:ellipsis;
-  font-size:calc(13px * var(--mochi-interface-scale,1));
-  line-height:20px;
-  overflow-wrap:normal
+  text-overflow:var(--mochi-v2-message-name-text-overflow,ellipsis);
+  font-size:var(--mochi-v2-message-name-font-size,calc(13px * var(--mochi-interface-scale,1)));
+  line-height:var(--mochi-v2-message-name-line-height,20px);
+  overflow-wrap:var(--mochi-v2-message-name-overflow-wrap,normal)
 }
 .mochi-message[data-role=user] .mochi-message-name {
-  text-align:right
+  text-align:var(--mochi-v2-message-data-role-user-message-name-text-align,right)
 }
 .mochi-message-meta {
-  width:auto;
+  width:var(--mochi-v2-message-meta-width,auto);
   max-width:100%;
-  min-height:24px;
-  padding-right:38px;
-  gap:8px
+  min-height:var(--mochi-v2-message-meta-min-height,24px);
+  padding-right:var(--mochi-v2-message-meta-padding-right,38px);
+  gap:var(--mochi-v2-message-meta-gap,8px)
 }
 .mochi-message[data-role=user] .mochi-message-meta {
-  justify-content:flex-end
+  justify-content:var(--mochi-v2-message-data-role-user-message-meta-justify-content,flex-end)
 }
 .mochi-message-meta small {
-  white-space:nowrap;
-  font-size:calc(10px * var(--mochi-interface-scale,1))
+  white-space:var(--mochi-v2-message-meta-small-white-space,nowrap);
+  font-size:var(--mochi-v2-message-meta-small-font-size,calc(10px * var(--mochi-interface-scale,1)))
 }
 .mochi-view .mochi-message-actions {
-  top:-10px;
-  right:-6px
+  top:var(--mochi-v2-message-actions-top,-10px);
+  right:var(--mochi-v2-message-actions-right,-6px)
 }
 .mochi-message[data-grouped=true] {
-  margin-top:-16px
+  margin-top:var(--mochi-v2-message-data-grouped-true-margin-top,-16px)
 }
 .mochi-message[data-grouped=true] .mochi-message-name {
   display:none
 }
 .mochi-message[data-grouped=true] .mochi-message-meta {
-  min-height:24px
+  min-height:var(--mochi-v2-message-data-grouped-true-message-meta-min-height,24px)
 }
 .mochi-bubble {
-  padding:11px 14px
+  padding:var(--mochi-v2-bubble-padding,11px 14px)
 }
 .mochi-composer {
-  margin:0 -14px -14px;
-  padding:10px 14px max(14px,env(safe-area-inset-bottom,0px));
-  gap:6px;
-  background:color-mix(in srgb,var(--mochi-accent) 3%,var(--mochi-surface))
+  margin:var(--mochi-v2-composer-margin,0 -14px -14px);
+  padding:var(--mochi-v2-composer-padding,10px 14px max(14px,env(safe-area-inset-bottom,0px)));
+  gap:var(--mochi-v2-composer-gap,6px);
+  background:var(--mochi-v2-composer-background,color-mix(in srgb,var(--mochi-accent) 3%,var(--mochi-surface)))
 }
 .mochi-responder {
   position:relative;
-  max-width:70%;
-  width:fit-content;
-  min-width:100px;
-  min-height:44px;
-  border-radius:99px;
-  padding:6px 36px 6px 8px;
-  background:color-mix(in srgb,var(--mochi-accent) 6%,var(--mochi-surface));
-  border:1px solid var(--mochi-border)
+  max-width:var(--mochi-v2-responder-max-width,70%);
+  width:var(--mochi-v2-responder-width,fit-content);
+  min-width:var(--mochi-v2-responder-min-width,100px);
+  min-height:var(--mochi-v2-responder-min-height,44px);
+  border-radius:var(--mochi-v2-responder-border-radius,99px);
+  padding:var(--mochi-v2-responder-padding,6px 36px 6px 8px);
+  background:var(--mochi-v2-responder-background,color-mix(in srgb,var(--mochi-accent) 6%,var(--mochi-surface)));
+  border:var(--mochi-v2-responder-border,1px solid var(--mochi-border))
 }
 .mochi-responder::after {
-  content:'⌄';
+  content:var(--mochi-v2-responder-after-content,'⌄');
   position:absolute;
-  right:12px;
-  top:50%;
-  transform:translateY(-50%);
-  line-height:1;
-  color:var(--lp-muted,#a9a3b5);
+  right:var(--mochi-v2-responder-after-right,12px);
+  top:var(--mochi-v2-responder-after-top,50%);
+  transform:var(--mochi-v2-responder-after-transform,translateY(-50%));
+  line-height:var(--mochi-v2-responder-after-line-height,1);
+  color:var(--mochi-v2-responder-after-color,var(--lp-muted,#a9a3b5));
   pointer-events:none
 }
 .mochi-responder-identity {
   display:flex;
-  align-items:center;
-  gap:10px;
+  align-items:var(--mochi-v2-responder-identity-align-items,center);
+  gap:var(--mochi-v2-responder-identity-gap,10px);
   min-width:0
 }
 .mochi-responder .mochi-avatar {
-  width:26px;
-  height:26px;
+  width:var(--mochi-v2-responder-avatar-width,26px);
+  height:var(--mochi-v2-responder-avatar-height,26px);
   border:0;
-  flex:none
+  flex:var(--mochi-v2-responder-avatar-flex,none)
 }
 .mochi-responder .mochi-avatar svg {
-  width:16px;
-  height:16px
+  width:var(--mochi-v2-responder-avatar-svg-width,16px);
+  height:var(--mochi-v2-responder-avatar-svg-height,16px)
 }
 .mochi-responder-name {
   min-width:0;
   overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-  font-size:calc(12px * var(--mochi-interface-scale,1))
+  text-overflow:var(--mochi-v2-responder-name-text-overflow,ellipsis);
+  white-space:var(--mochi-v2-responder-name-white-space,nowrap);
+  font-size:var(--mochi-v2-responder-name-font-size,calc(12px * var(--mochi-interface-scale,1)))
 }
 .mochi-composer .mochi-responder select {
   position:absolute;
@@ -1125,27 +1150,27 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   height:100%;
   width:100%;
   opacity:0;
-  cursor:pointer;
-  min-height:44px
+  cursor:var(--mochi-v2-composer-responder-select-cursor,pointer);
+  min-height:var(--mochi-v2-composer-responder-select-min-height,44px)
 }
 .mochi-responder:focus-within {
-  outline:2px solid var(--mochi-accent);
-  outline-offset:2px
+  outline:var(--mochi-v2-responder-focus-within-outline,2px solid var(--mochi-accent));
+  outline-offset:var(--mochi-v2-responder-focus-within-outline-offset,2px)
 }
 /* Review correction: corner mascot, heart wordmark, attached metadata. */
 .mochi-view>header {
   display:grid;
-  grid-template-columns:minmax(0,1fr) auto 52px;
+  grid-template-columns:var(--mochi-v2-header-grid-template-columns,minmax(0,1fr) auto 52px);
   gap:var(--mochi-space-sm);
-  align-items:center;
-  min-height:60px
+  align-items:var(--mochi-v2-header-align-items,center);
+  min-height:var(--mochi-v2-header-min-height,60px)
 }
 .mochi-view .mochi-mascot svg {
-  width:52px;
-  height:42px
+  width:var(--mochi-v2-mascot-svg-width,52px);
+  height:var(--mochi-v2-mascot-svg-height,42px)
 }
 .mochi-mascot {
-  justify-self:end;
+  justify-self:var(--mochi-v2-mascot-justify-self,end);
   pointer-events:none
 }
 .mochi-wordmark-i {
@@ -1153,84 +1178,84 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   display:inline-block
 }
 .mochi-wordmark-i::before {
-  content:'♥';
+  content:var(--mochi-v2-wordmark-i-before-content,'♥');
   position:absolute;
-  top:-2px;
-  left:50%;
-  transform:translateX(-50%) rotate(-12deg);
-  font-size:calc(10px * var(--mochi-interface-scale,1));
-  line-height:1;
-  color:#e89dbd;
+  top:var(--mochi-v2-wordmark-i-before-top,-2px);
+  left:var(--mochi-v2-wordmark-i-before-left,50%);
+  transform:var(--mochi-v2-wordmark-i-before-transform,translateX(-50%) rotate(-12deg));
+  font-size:var(--mochi-v2-wordmark-i-before-font-size,calc(10px * var(--mochi-interface-scale,1)));
+  line-height:var(--mochi-v2-wordmark-i-before-line-height,1);
+  color:var(--mochi-v2-wordmark-i-before-color,#e89dbd);
   letter-spacing:0
 }
 .mochi-message-heading {
   display:flex;
-  align-items:baseline;
+  align-items:var(--mochi-v2-message-heading-align-items,baseline);
   width:100%;
   min-width:0;
   gap:var(--mochi-space-sm);
-  padding-top:5px
+  padding-top:var(--mochi-v2-message-heading-padding-top,5px)
 }
 .mochi-message-name {
-  flex:1;
-  width:auto;
-  font-size:calc(12px * var(--mochi-interface-scale,1));
-  line-height:18px
+  flex:var(--mochi-v2-message-name-flex,1);
+  width:var(--mochi-v2-message-name-width,auto);
+  font-size:var(--mochi-v2-message-name-font-size,calc(12px * var(--mochi-interface-scale,1)));
+  line-height:var(--mochi-v2-message-name-line-height,18px)
 }
 .mochi-message-heading time {
-  flex:none;
-  font-size:calc(10px * var(--mochi-interface-scale,1));
-  line-height:18px
+  flex:var(--mochi-v2-message-heading-time-flex,none);
+  font-size:var(--mochi-v2-message-heading-time-font-size,calc(10px * var(--mochi-interface-scale,1)));
+  line-height:var(--mochi-v2-message-heading-time-line-height,18px)
 }
 .mochi-message-avatar {
-  margin-top:8px
+  margin-top:var(--mochi-v2-message-avatar-margin-top,8px)
 }
 .mochi-message-body {
-  gap:4px
+  gap:var(--mochi-v2-message-body-gap,4px)
 }
 .mochi-thread {
   gap:var(--mochi-space-lg);
-  padding-top:12px
+  padding-top:var(--mochi-v2-thread-padding-top,12px)
 }
 .mochi-message-meta,.mochi-message[data-grouped=true] .mochi-message-meta {
   width:100%;
-  min-height:16px;
+  min-height:var(--mochi-v2-message-meta-min-height,16px);
   gap:var(--mochi-space-xs);
-  padding-right:38px;
-  justify-content:flex-start
+  padding-right:var(--mochi-v2-message-meta-padding-right,38px);
+  justify-content:var(--mochi-v2-message-meta-justify-content,flex-start)
 }
 .mochi-message[data-role=user] .mochi-message-meta {
-  justify-content:flex-start
+  justify-content:var(--mochi-v2-message-data-role-user-message-meta-justify-content,flex-start)
 }
 .mochi-message-meta small {
-  font-size:calc(10px * var(--mochi-interface-scale,1));
-  line-height:16px
+  font-size:var(--mochi-v2-message-meta-small-font-size,calc(10px * var(--mochi-interface-scale,1)));
+  line-height:var(--mochi-v2-message-meta-small-line-height,16px)
 }
 .mochi-view .mochi-message-actions {
-  top:-14px;
-  right:-6px
+  top:var(--mochi-v2-message-actions-top,-14px);
+  right:var(--mochi-v2-message-actions-right,-6px)
 }
 .mochi-message[data-grouped=true] {
-  margin-top:-12px
+  margin-top:var(--mochi-v2-message-data-grouped-true-margin-top,-12px)
 }
 .mochi-message[data-grouped=true] .mochi-message-heading {
   padding-top:0;
-  justify-content:flex-end
+  justify-content:var(--mochi-v2-message-data-grouped-true-message-heading-justify-content,flex-end)
 }
 .mochi-message[data-grouped=true] .mochi-message-avatar {
   visibility:hidden
 }
 /* Final messenger composition; temporary presence visuals carry no state. */
 .mochi-wordmark-i::before {
-  font-size:calc(14px * var(--mochi-interface-scale,1));
-  top:-5px
+  font-size:var(--mochi-v2-wordmark-i-before-font-size,calc(14px * var(--mochi-interface-scale,1)));
+  top:var(--mochi-v2-wordmark-i-before-top,-5px)
 }
 .mochi-view .mochi-room-header {
-  grid-template-columns:minmax(0,1fr) 96px;
-  align-items:start
+  grid-template-columns:var(--mochi-v2-room-header-grid-template-columns,minmax(0,1fr) 96px);
+  align-items:var(--mochi-v2-room-header-align-items,start)
 }
 .mochi-room-header>.mochi-actions {
-  padding-top:2px
+  padding-top:var(--mochi-v2-room-header-actions-padding-top,2px)
 }
 .mochi-room-select {
   position:relative;
@@ -1238,48 +1263,48 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 .mochi-room-select-icon {
   position:absolute;
-  left:12px;
-  top:13px;
+  left:var(--mochi-v2-room-select-icon-left,12px);
+  top:var(--mochi-v2-room-select-icon-top,13px);
   pointer-events:none;
   color:var(--mochi-accent)
 }
 .mochi-room-select-icon svg {
-  width:20px;
-  height:20px
+  width:var(--mochi-v2-room-select-icon-svg-width,20px);
+  height:var(--mochi-v2-room-select-icon-svg-height,20px)
 }
 .mochi-view .mochi-room-selector {
-  font-size:calc(14px * var(--mochi-interface-scale,1));
-  font-weight:500;
-  padding-left:40px;
-  padding-right:24px;
-  border-radius:24px
+  font-size:var(--mochi-v2-room-selector-font-size,calc(14px * var(--mochi-interface-scale,1)));
+  font-weight:var(--mochi-v2-room-selector-font-weight,500);
+  padding-left:var(--mochi-v2-room-selector-padding-left,40px);
+  padding-right:var(--mochi-v2-room-selector-padding-right,24px);
+  border-radius:var(--mochi-v2-room-selector-border-radius,24px)
 }
 .mochi-room-info {
-  gap:8px
+  gap:var(--mochi-v2-room-info-gap,8px)
 }
 .mochi-room-meta {
   display:flex;
-  align-items:center;
-  gap:7px;
-  font-size:calc(11px * var(--mochi-interface-scale,1));
-  color:var(--lp-muted,#a9a3b5);
-  min-height:18px;
-  white-space:nowrap
+  align-items:var(--mochi-v2-room-meta-align-items,center);
+  gap:var(--mochi-v2-room-meta-gap,7px);
+  font-size:var(--mochi-v2-room-meta-font-size,calc(11px * var(--mochi-interface-scale,1)));
+  color:var(--mochi-v2-room-meta-color,var(--lp-muted,#a9a3b5));
+  min-height:var(--mochi-v2-room-meta-min-height,18px);
+  white-space:var(--mochi-v2-room-meta-white-space,nowrap)
 }
 .mochi-room-meta::before {
-  content:'';
-  width:8px;
-  height:8px;
-  flex:none;
-  border-radius:50%;
-  background:#58d998
+  content:var(--mochi-v2-room-meta-before-content,'');
+  width:var(--mochi-v2-room-meta-before-width,8px);
+  height:var(--mochi-v2-room-meta-before-height,8px);
+  flex:var(--mochi-v2-room-meta-before-flex,none);
+  border-radius:var(--mochi-v2-room-meta-before-border-radius,50%);
+  background:var(--mochi-v2-room-meta-before-background,#58d998)
 }
 .mochi-avatar-frame {
   position:relative;
-  flex:none;
+  flex:var(--mochi-v2-avatar-frame-flex,none);
   width:var(--mochi-avatar-size);
   height:var(--mochi-avatar-size);
-  margin-top:5px
+  margin-top:var(--mochi-v2-avatar-frame-margin-top,5px)
 }
 .mochi-avatar-frame .mochi-message-avatar {
   width:var(--mochi-avatar-size);
@@ -1288,29 +1313,29 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 .mochi-presence-dot {
   position:absolute;
-  right:-1px;
-  bottom:-1px;
-  width:12px;
-  height:12px;
-  border:2px solid var(--mochi-surface);
-  border-radius:50%;
-  background:#58d998
+  right:var(--mochi-v2-presence-dot-right,-1px);
+  bottom:var(--mochi-v2-presence-dot-bottom,-1px);
+  width:var(--mochi-v2-presence-dot-width,12px);
+  height:var(--mochi-v2-presence-dot-height,12px);
+  border:var(--mochi-v2-presence-dot-border,2px solid var(--mochi-surface));
+  border-radius:var(--mochi-v2-presence-dot-border-radius,50%);
+  background:var(--mochi-v2-presence-dot-background,#58d998)
 }
 .mochi-message-body {
-  max-width:min(var(--mochi-bubble-max-width),calc(100% - var(--mochi-avatar-size) - 9px));
-  gap:4px
+  max-width:var(--mochi-v2-message-body-max-width,min(var(--mochi-bubble-max-width),calc(100% - var(--mochi-avatar-size) - 9px)));
+  gap:var(--mochi-v2-message-body-gap,4px)
 }
 .mochi-message-name {
-  font-size:calc(11px * var(--mochi-interface-scale,1));
-  font-weight:600
+  font-size:var(--mochi-v2-message-name-font-size,calc(11px * var(--mochi-interface-scale,1)));
+  font-weight:var(--mochi-v2-message-name-font-weight,600)
 }
 .mochi-message-heading {
-  gap:7px;
-  padding-top:6px
+  gap:var(--mochi-v2-message-heading-gap,7px);
+  padding-top:var(--mochi-v2-message-heading-padding-top,6px)
 }
 .mochi-thread {
-  gap:20px;
-  padding-top:14px;
+  gap:var(--mochi-v2-thread-gap,20px);
+  padding-top:var(--mochi-v2-thread-padding-top,14px);
   border-top:0
 }
 .mochi-message-meta,.mochi-message[data-grouped=true] .mochi-message-meta {
@@ -1319,11 +1344,11 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   padding:0
 }
 .mochi-view .mochi-message-actions {
-  top:-21px;
-  right:-5px
+  top:var(--mochi-v2-message-actions-top,-21px);
+  right:var(--mochi-v2-message-actions-right,-5px)
 }
 .mochi-message[data-grouped=true] {
-  margin-top:-17px
+  margin-top:var(--mochi-v2-message-data-grouped-true-margin-top,-17px)
 }
 .mochi-message[data-grouped=true] .mochi-avatar-frame {
   visibility:hidden
@@ -1333,7 +1358,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 .mochi-bubble {
   border-radius:var(--mochi-bubble-radius);
-  padding:var(--mochi-bubble-padding-y) var(--mochi-bubble-padding-x)
+  padding:var(--mochi-v2-bubble-padding,var(--mochi-bubble-padding-y) var(--mochi-bubble-padding-x))
 }
 .mochi-message[data-role=assistant] .mochi-bubble {
   border-top-left-radius:var(--mochi-bubble-corner-radius)
@@ -1342,222 +1367,222 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   border-top-right-radius:var(--mochi-bubble-corner-radius)
 }
 .mochi-sheet .lp-sheet-panel {
-  border-radius:22px;
-  border:1px solid var(--lp-border);
-  background:var(--lp-bg);
-  box-shadow:0 14px 42px #0003;
-  padding:18px
+  border-radius:var(--mochi-v2-sheet-sheet-panel-border-radius,22px);
+  border:var(--mochi-v2-sheet-sheet-panel-border,1px solid var(--lp-border));
+  background:var(--mochi-v2-sheet-sheet-panel-background,var(--lp-bg));
+  box-shadow:var(--mochi-v2-sheet-sheet-panel-box-shadow,0 14px 42px #0003);
+  padding:var(--mochi-v2-sheet-sheet-panel-padding,18px)
 }
 .mochi-sheet .mochi-action-panel {
-  gap:5px
+  gap:var(--mochi-v2-sheet-action-panel-gap,5px)
 }
 .mochi-action-context {
-  font-size:calc(11px * var(--mochi-interface-scale,1));
-  line-height:1.5;
-  color:var(--lp-muted);
-  overflow-wrap:anywhere;
-  margin:0 0 8px
+  font-size:var(--mochi-v2-action-context-font-size,calc(11px * var(--mochi-interface-scale,1)));
+  line-height:var(--mochi-v2-action-context-line-height,1.5);
+  color:var(--mochi-v2-action-context-color,var(--lp-muted));
+  overflow-wrap:var(--mochi-v2-action-context-overflow-wrap,anywhere);
+  margin:var(--mochi-v2-action-context-margin,0 0 8px)
 }
 .mochi-sheet .mochi-action-panel>.lp-button {
-  justify-content:flex-start;
-  min-height:48px;
-  padding:12px 14px;
+  justify-content:var(--mochi-v2-sheet-action-panel-button-justify-content,flex-start);
+  min-height:var(--mochi-v2-sheet-action-panel-button-min-height,48px);
+  padding:var(--mochi-v2-sheet-action-panel-button-padding,12px 14px);
   border:0;
   border-radius:var(--mochi-radius-card);
-  background:color-mix(in srgb,var(--lp-text) 4%,var(--lp-bg));
-  font-size:calc(13px * var(--mochi-interface-scale,1))
+  background:var(--mochi-v2-sheet-action-panel-button-background,color-mix(in srgb,var(--lp-text) 4%,var(--lp-bg)));
+  font-size:var(--mochi-v2-sheet-action-panel-button-font-size,calc(13px * var(--mochi-interface-scale,1)))
 }
 .mochi-sheet .mochi-action-panel>.lp-button:hover {
-  background:color-mix(in srgb,var(--lp-accent) 12%,var(--lp-bg))
+  background:var(--mochi-v2-sheet-action-panel-button-hover-background,color-mix(in srgb,var(--lp-accent) 12%,var(--lp-bg)))
 }
 .mochi-sheet .mochi-action-panel>[aria-label="Delete message"],.mochi-sheet .mochi-action-panel>[aria-label="Confirm delete"] {
-  color:var(--lp-destructive,#d9677d)
+  color:var(--mochi-v2-sheet-action-panel-aria-label-delete-message-color,var(--lp-destructive,#d9677d))
 }
 .mochi-sheet .lp-sheet-close {
-  border-radius:99px;
-  min-height:44px
+  border-radius:var(--mochi-v2-sheet-sheet-close-border-radius,99px);
+  min-height:var(--mochi-v2-sheet-sheet-close-min-height,44px)
 }
 .mochi-sheet :is(button,textarea):focus-visible {
-  outline:2px solid var(--lp-accent);
-  outline-offset:2px
+  outline:var(--mochi-v2-sheet-is-button-outline,2px solid var(--lp-accent));
+  outline-offset:var(--mochi-v2-sheet-is-button-outline-offset,2px)
 }
 .mochi-action-context {
   display:grid;
-  gap:3px;
+  gap:var(--mochi-v2-action-context-gap,3px);
   min-width:0
 }
 .mochi-action-author {
-  color:var(--lp-text);
-  font-size:calc(12px * var(--mochi-interface-scale,1));
-  font-weight:600;
+  color:var(--mochi-v2-action-author-color,var(--lp-text));
+  font-size:var(--mochi-v2-action-author-font-size,calc(12px * var(--mochi-interface-scale,1)));
+  font-weight:var(--mochi-v2-action-author-font-weight,600);
   overflow:hidden;
-  white-space:nowrap;
-  text-overflow:ellipsis
+  white-space:var(--mochi-v2-action-author-white-space,nowrap);
+  text-overflow:var(--mochi-v2-action-author-text-overflow,ellipsis)
 }
 .mochi-action-context small {
-  font-size:calc(11px * var(--mochi-interface-scale,1));
-  font-weight:400
+  font-size:var(--mochi-v2-action-context-small-font-size,calc(11px * var(--mochi-interface-scale,1)));
+  font-weight:var(--mochi-v2-action-context-small-font-weight,400)
 }
 .mochi-account-list {
   display:grid;
-  gap:10px;
+  gap:var(--mochi-v2-account-list-gap,10px);
   min-width:0
 }
 .mochi-account-list .mochi-card {
   width:100%;
-  text-align:left
+  text-align:var(--mochi-v2-account-list-card-text-align,left)
 }
 .mochi-account-actions,.mochi-inbox-actions,.mochi-profile-actions {
   display:flex;
-  flex-wrap:wrap;
+  flex-wrap:var(--mochi-v2-account-actions-flex-wrap,wrap);
   gap:var(--mochi-space-sm);
-  align-items:center
+  align-items:var(--mochi-v2-account-actions-align-items,center)
 }
 .mochi-account-actions>.lp-button,.mochi-profile-actions>.lp-button {
-  flex:1 1 140px
+  flex:var(--mochi-v2-account-actions-button-flex,1 1 140px)
 }
 .mochi-view .mochi-secondary-action {
-  align-self:flex-start;
-  width:auto;
-  min-height:44px;
-  padding:8px 0;
+  align-self:var(--mochi-v2-secondary-action-align-self,flex-start);
+  width:var(--mochi-v2-secondary-action-width,auto);
+  min-height:var(--mochi-v2-secondary-action-min-height,44px);
+  padding:var(--mochi-v2-secondary-action-padding,8px 0);
   border:0;
-  background:transparent;
-  color:var(--lp-muted);
-  font-size:calc(11px * var(--mochi-interface-scale,1));
-  font-weight:500
+  background:var(--mochi-v2-secondary-action-background,transparent);
+  color:var(--mochi-v2-secondary-action-color,var(--lp-muted));
+  font-size:var(--mochi-v2-secondary-action-font-size,calc(11px * var(--mochi-interface-scale,1)));
+  font-weight:var(--mochi-v2-secondary-action-font-weight,500)
 }
 .mochi-view .mochi-legacy-action {
   margin-top:0;
-  padding-top:12px;
-  border-top:1px solid var(--mochi-border);
+  padding-top:var(--mochi-v2-legacy-action-padding-top,12px);
+  border-top:var(--mochi-v2-legacy-action-border-top,1px solid var(--mochi-border));
   border-radius:0
 }
 .mochi-inbox-actions>.lp-button {
-  font-size:calc(11px * var(--mochi-interface-scale,1));
-  padding:8px 10px
+  font-size:var(--mochi-v2-inbox-actions-button-font-size,calc(11px * var(--mochi-interface-scale,1)));
+  padding:var(--mochi-v2-inbox-actions-button-padding,8px 10px)
 }
 .mochi-profile-preview {
   overflow:hidden;
-  border:1px solid var(--mochi-border);
-  border-radius:14px;
-  background:color-mix(in srgb,var(--mochi-accent) 8%,var(--mochi-surface))
+  border:var(--mochi-v2-profile-preview-border,1px solid var(--mochi-border));
+  border-radius:var(--mochi-v2-profile-preview-border-radius,14px);
+  background:var(--mochi-v2-profile-preview-background,color-mix(in srgb,var(--mochi-accent) 8%,var(--mochi-surface)))
 }
 .mochi-profile-banner {
-  height:72px;
-  background:linear-gradient(120deg,color-mix(in srgb,var(--mochi-accent) 35%,var(--mochi-surface)),color-mix(in srgb,var(--mochi-accent) 10%,var(--mochi-surface)))
+  height:var(--mochi-v2-profile-banner-height,72px);
+  background:var(--mochi-v2-profile-banner-background,linear-gradient(120deg,color-mix(in srgb,var(--mochi-accent) 35%,var(--mochi-surface)),color-mix(in srgb,var(--mochi-accent) 10%,var(--mochi-surface))))
 }
 .mochi-profile-preview-body {
   position:relative;
   display:grid;
-  gap:5px;
-  padding:42px 16px 18px;
+  gap:var(--mochi-v2-profile-preview-body-gap,5px);
+  padding:var(--mochi-v2-profile-preview-body-padding,42px 16px 18px);
   min-width:0
 }
 .mochi-profile-preview .mochi-profile-portrait {
   position:absolute;
-  top:-32px;
-  left:12px;
-  width:64px;
-  height:64px;
-  border:4px solid var(--mochi-surface);
-  font-size:calc(24px * var(--mochi-interface-scale,1))
+  top:var(--mochi-v2-profile-preview-profile-portrait-top,-32px);
+  left:var(--mochi-v2-profile-preview-profile-portrait-left,12px);
+  width:var(--mochi-v2-profile-preview-profile-portrait-width,64px);
+  height:var(--mochi-v2-profile-preview-profile-portrait-height,64px);
+  border:var(--mochi-v2-profile-preview-profile-portrait-border,4px solid var(--mochi-surface));
+  font-size:var(--mochi-v2-profile-preview-profile-portrait-font-size,calc(24px * var(--mochi-interface-scale,1)))
 }
 .mochi-profile-preview-name {
-  font-size:calc(20px * var(--mochi-interface-scale,1));
-  line-height:1.3;
-  overflow-wrap:anywhere
+  font-size:var(--mochi-v2-profile-preview-name-font-size,calc(20px * var(--mochi-interface-scale,1)));
+  line-height:var(--mochi-v2-profile-preview-name-line-height,1.3);
+  overflow-wrap:var(--mochi-v2-profile-preview-name-overflow-wrap,anywhere)
 }
 .mochi-profile-fields {
   margin:0;
-  padding:16px;
+  padding:var(--mochi-v2-profile-fields-padding,16px);
   min-width:0;
-  border:1px solid var(--mochi-border);
+  border:var(--mochi-v2-profile-fields-border,1px solid var(--mochi-border));
   border-radius:var(--mochi-radius-card);
   display:grid;
-  gap:14px
+  gap:var(--mochi-v2-profile-fields-gap,14px)
 }
 .mochi-profile-fields legend {
-  padding:0 6px;
-  font-size:calc(11px * var(--mochi-interface-scale,1));
-  font-weight:650;
-  color:var(--lp-muted);
-  letter-spacing:.04em
+  padding:var(--mochi-v2-profile-fields-legend-padding,0 6px);
+  font-size:var(--mochi-v2-profile-fields-legend-font-size,calc(11px * var(--mochi-interface-scale,1)));
+  font-weight:var(--mochi-v2-profile-fields-legend-font-weight,650);
+  color:var(--mochi-v2-profile-fields-legend-color,var(--lp-muted));
+  letter-spacing:var(--mochi-v2-profile-fields-legend-letter-spacing,.04em)
 }
 .mochi-profile-fields input[type=file] {
-  font-size:calc(11px * var(--mochi-interface-scale,1))
+  font-size:var(--mochi-v2-profile-fields-input-type-file-font-size,calc(11px * var(--mochi-interface-scale,1)))
 }
 .mochi-room-connection {
-  color:var(--lp-muted);
-  font-size:calc(10px * var(--mochi-interface-scale,1));
+  color:var(--mochi-v2-room-connection-color,var(--lp-muted));
+  font-size:var(--mochi-v2-room-connection-font-size,calc(10px * var(--mochi-interface-scale,1)));
   overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap
+  text-overflow:var(--mochi-v2-room-connection-text-overflow,ellipsis);
+  white-space:var(--mochi-v2-room-connection-white-space,nowrap)
 }
 .mochi-view .mochi-connection-indicator {
   display:block;
-  min-height:32px;
-  padding:4px 0;
+  min-height:var(--mochi-v2-connection-indicator-min-height,32px);
+  padding:var(--mochi-v2-connection-indicator-padding,4px 0);
   max-width:100%;
   min-width:0;
   overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
+  text-overflow:var(--mochi-v2-connection-indicator-text-overflow,ellipsis);
+  white-space:var(--mochi-v2-connection-indicator-white-space,nowrap);
   border:0;
-  background:transparent;
+  background:var(--mochi-v2-connection-indicator-background,transparent);
   color:var(--mochi-accent);
-  font-size:calc(10px * var(--mochi-interface-scale,1));
-  text-align:left
+  font-size:var(--mochi-v2-connection-indicator-font-size,calc(10px * var(--mochi-interface-scale,1)));
+  text-align:var(--mochi-v2-connection-indicator-text-align,left)
 }
 .mochi-connection-indicator:hover {
-  text-decoration:underline
+  text-decoration:var(--mochi-v2-connection-indicator-hover-text-decoration,underline)
 }
 .mochi-sheet .mochi-action-panel>[aria-label="Discard changes"] {
-  color:var(--lp-destructive,#d9677d)
+  color:var(--mochi-v2-sheet-action-panel-aria-label-discard-changes-color,var(--lp-destructive,#d9677d))
 }
 /* Compact room chrome and grouped settings. */
 .mochi-view[data-surface=chat] .mochi-room-info {
   gap:0
 }
 .mochi-view[data-surface=chat] .mochi-room-selector {
-  min-height:28px;
-  padding-block:2px;
-  font-size:calc(14px * var(--mochi-interface-scale,1))
+  min-height:var(--mochi-v2-data-surface-chat-room-selector-min-height,28px);
+  padding-block:var(--mochi-v2-data-surface-chat-room-selector-padding-block,2px);
+  font-size:var(--mochi-v2-data-surface-chat-room-selector-font-size,calc(14px * var(--mochi-interface-scale,1)))
 }
 .mochi-view[data-surface=chat] .mochi-room-meta {
-  margin:1px 0;
-  font-size:calc(10px * var(--mochi-interface-scale,1));
-  line-height:16px;
-  min-height:16px
+  margin:var(--mochi-v2-data-surface-chat-room-meta-margin,1px 0);
+  font-size:var(--mochi-v2-data-surface-chat-room-meta-font-size,calc(10px * var(--mochi-interface-scale,1)));
+  line-height:var(--mochi-v2-data-surface-chat-room-meta-line-height,16px);
+  min-height:var(--mochi-v2-data-surface-chat-room-meta-min-height,16px)
 }
 .mochi-room-meta::before {
-  width:6px;
-  height:6px
+  width:var(--mochi-v2-room-meta-before-width,6px);
+  height:var(--mochi-v2-room-meta-before-height,6px)
 }
 .mochi-connection-status {
   display:block;
   max-width:100%;
   overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-  color:var(--lp-muted);
-  font-size:calc(10px * var(--mochi-interface-scale,1));
-  line-height:16px
+  text-overflow:var(--mochi-v2-connection-status-text-overflow,ellipsis);
+  white-space:var(--mochi-v2-connection-status-white-space,nowrap);
+  color:var(--mochi-v2-connection-status-color,var(--lp-muted));
+  font-size:var(--mochi-v2-connection-status-font-size,calc(10px * var(--mochi-interface-scale,1)));
+  line-height:var(--mochi-v2-connection-status-line-height,16px)
 }
 .mochi-view[data-surface=chat] .mochi-room-header {
-  align-items:start;
-  padding-bottom:10px;
-  gap:8px
+  align-items:var(--mochi-v2-data-surface-chat-room-header-align-items,start);
+  padding-bottom:var(--mochi-v2-data-surface-chat-room-header-padding-bottom,10px);
+  gap:var(--mochi-v2-data-surface-chat-room-header-gap,8px)
 }
 .mochi-view[data-surface=chat] .mochi-room-header>.mochi-actions {
   padding:0
 }
 .mochi-view[data-surface=chat] .mochi-room-header .mochi-icon-button {
-  width:40px;
-  min-width:40px;
-  height:40px;
-  min-height:40px;
-  background:transparent;
+  width:var(--mochi-v2-data-surface-chat-room-header-icon-button-width,40px);
+  min-width:var(--mochi-v2-data-surface-chat-room-header-icon-button-min-width,40px);
+  height:var(--mochi-v2-data-surface-chat-room-header-icon-button-height,40px);
+  min-height:var(--mochi-v2-data-surface-chat-room-header-icon-button-min-height,40px);
+  background:var(--mochi-v2-data-surface-chat-room-header-icon-button-background,transparent);
   border:0
 }
 .mochi-settings-section {
@@ -1565,20 +1590,20 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   gap:var(--mochi-space-md);
   min-width:0;
   margin:0;
-  padding:14px;
-  border:1px solid var(--mochi-border);
-  border-radius:12px
+  padding:var(--mochi-v2-settings-section-padding,14px);
+  border:var(--mochi-v2-settings-section-border,1px solid var(--mochi-border));
+  border-radius:var(--mochi-v2-settings-section-border-radius,12px)
 }
 .mochi-settings-section>legend {
-  font-size:calc(11px * var(--mochi-interface-scale,1));
-  font-weight:650;
-  color:var(--lp-muted);
-  padding:0 5px
+  font-size:var(--mochi-v2-settings-section-legend-font-size,calc(11px * var(--mochi-interface-scale,1)));
+  font-weight:var(--mochi-v2-settings-section-legend-font-weight,650);
+  color:var(--mochi-v2-settings-section-legend-color,var(--lp-muted));
+  padding:var(--mochi-v2-settings-section-legend-padding,0 5px)
 }
 .mochi-settings-section>p {
   margin:0;
-  font-weight:400;
-  line-height:1.5
+  font-weight:var(--mochi-v2-settings-section-p-font-weight,400);
+  line-height:var(--mochi-v2-settings-section-p-line-height,1.5)
 }
 .mochi-view details.mochi-settings-section {
   display:block;
@@ -1586,99 +1611,99 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   overflow:hidden
 }
 .mochi-settings-section>summary {
-  padding:14px;
-  cursor:pointer;
-  font-size:calc(12px * var(--mochi-interface-scale,1));
-  font-weight:600;
-  min-height:44px;
+  padding:var(--mochi-v2-settings-section-summary-padding,14px);
+  cursor:var(--mochi-v2-settings-section-summary-cursor,pointer);
+  font-size:var(--mochi-v2-settings-section-summary-font-size,calc(12px * var(--mochi-interface-scale,1)));
+  font-weight:var(--mochi-v2-settings-section-summary-font-weight,600);
+  min-height:var(--mochi-v2-settings-section-summary-min-height,44px);
   box-sizing:border-box
 }
 .mochi-settings-section>summary:focus-visible {
-  outline:2px solid var(--mochi-accent);
-  outline-offset:-3px
+  outline:var(--mochi-v2-settings-section-summary-focus-visible-outline,2px solid var(--mochi-accent));
+  outline-offset:var(--mochi-v2-settings-section-summary-focus-visible-outline-offset,-3px)
 }
 .mochi-settings-section[open]>summary {
-  border-bottom:1px solid var(--mochi-border);
-  margin-bottom:14px
+  border-bottom:var(--mochi-v2-settings-section-open-summary-border-bottom,1px solid var(--mochi-border));
+  margin-bottom:var(--mochi-v2-settings-section-open-summary-margin-bottom,14px)
 }
 .mochi-settings-section[open]>:not(summary) {
-  margin-left:14px;
-  margin-right:14px;
-  margin-bottom:14px
+  margin-left:var(--mochi-v2-settings-section-open-margin-left,14px);
+  margin-right:var(--mochi-v2-settings-section-open-margin-right,14px);
+  margin-bottom:var(--mochi-v2-settings-section-open-margin-bottom,14px)
 }
 .mochi-view .mochi-settings-section .mochi-toggle {
-  background:transparent;
+  background:var(--mochi-v2-settings-section-toggle-background,transparent);
   border:0;
   border-radius:0;
-  padding:4px 0;
-  min-height:36px;
-  font-size:calc(11px * var(--mochi-interface-scale,1));
-  font-weight:500
+  padding:var(--mochi-v2-settings-section-toggle-padding,4px 0);
+  min-height:var(--mochi-v2-settings-section-toggle-min-height,36px);
+  font-size:var(--mochi-v2-settings-section-toggle-font-size,calc(11px * var(--mochi-interface-scale,1)));
+  font-weight:var(--mochi-v2-settings-section-toggle-font-weight,500)
 }
 .mochi-settings-section .mochi-picker {
-  grid-template-columns:repeat(auto-fill,minmax(72px,1fr));
-  gap:8px
+  grid-template-columns:var(--mochi-v2-settings-section-picker-grid-template-columns,repeat(auto-fill,minmax(72px,1fr)));
+  gap:var(--mochi-v2-settings-section-picker-gap,8px)
 }
 .mochi-settings-section .mochi-choice {
-  font-size:calc(11px * var(--mochi-interface-scale,1));
-  padding:8px 4px
+  font-size:var(--mochi-v2-settings-section-choice-font-size,calc(11px * var(--mochi-interface-scale,1)));
+  padding:var(--mochi-v2-settings-section-choice-padding,8px 4px)
 }
 .mochi-settings-section .mochi-assignment {
-  gap:12px
+  gap:var(--mochi-v2-settings-section-assignment-gap,12px)
 }
 .mochi-settings-section .mochi-assignment h4 {
   display:none
 }
 .mochi-room-header .lp-conversation-menu>summary {
   display:grid;
-  place-items:center;
-  width:36px;
-  min-width:36px;
-  min-height:36px;
+  place-items:var(--mochi-v2-room-header-conversation-menu-summary-place-items,center);
+  width:var(--mochi-v2-room-header-conversation-menu-summary-width,36px);
+  min-width:var(--mochi-v2-room-header-conversation-menu-summary-min-width,36px);
+  min-height:var(--mochi-v2-room-header-conversation-menu-summary-min-height,36px);
   padding:0;
-  background:transparent;
+  background:var(--mochi-v2-room-header-conversation-menu-summary-background,transparent);
   border:0;
-  border-radius:50%;
-  font-size:calc(22px * var(--mochi-interface-scale,1))
+  border-radius:var(--mochi-v2-room-header-conversation-menu-summary-border-radius,50%);
+  font-size:var(--mochi-v2-room-header-conversation-menu-summary-font-size,calc(22px * var(--mochi-interface-scale,1)))
 }
 .mochi-room-header .lp-conversation-menu-action {
-  min-height:40px;
-  font-size:calc(12px * var(--mochi-interface-scale,1))
+  min-height:var(--mochi-v2-room-header-conversation-menu-action-min-height,40px);
+  font-size:var(--mochi-v2-room-header-conversation-menu-action-font-size,calc(12px * var(--mochi-interface-scale,1)))
 }
 .mochi-room-header .lp-conversation-menu>summary:focus-visible {
-  outline:2px solid var(--mochi-accent);
-  outline-offset:2px
+  outline:var(--mochi-v2-room-header-conversation-menu-summary-focus-visible-outline,2px solid var(--mochi-accent));
+  outline-offset:var(--mochi-v2-room-header-conversation-menu-summary-focus-visible-outline-offset,2px)
 }
 .mochi-model-picker {
   min-width:0
 }
 .mochi-model-picker-row {
   display:flex;
-  align-items:end;
-  flex-wrap:wrap;
-  gap:8px
+  align-items:var(--mochi-v2-model-picker-row-align-items,end);
+  flex-wrap:var(--mochi-v2-model-picker-row-flex-wrap,wrap);
+  gap:var(--mochi-v2-model-picker-row-gap,8px)
 }
 .mochi-model-picker-row>label {
-  flex:1 1 180px
+  flex:var(--mochi-v2-model-picker-row-label-flex,1 1 180px)
 }
 .mochi-model-picker-row>button {
-  min-height:44px;
-  font-size:calc(11px * var(--mochi-interface-scale,1));
-  padding:8px 10px
+  min-height:var(--mochi-v2-model-picker-row-button-min-height,44px);
+  font-size:var(--mochi-v2-model-picker-row-button-font-size,calc(11px * var(--mochi-interface-scale,1)));
+  padding:var(--mochi-v2-model-picker-row-button-padding,8px 10px)
 }
 .mochi-model-picker>p {
-  margin:6px 0 0;
-  font-size:calc(11px * var(--mochi-interface-scale,1));
-  font-weight:400
+  margin:var(--mochi-v2-model-picker-p-margin,6px 0 0);
+  font-size:var(--mochi-v2-model-picker-p-font-size,calc(11px * var(--mochi-interface-scale,1)));
+  font-weight:var(--mochi-v2-model-picker-p-font-weight,400)
 }
 @container(max-width:600px) {
   .mochi-desktop-main .mochi-view .mochi-room-header,.mochi-sidebar[data-mobile-messenger] .mochi-view .mochi-room-header {
-    grid-template-columns:minmax(0,1fr);
-    gap:6px
+    grid-template-columns:var(--mochi-v2-room-header-container-max-width-600px-grid-template-columns,minmax(0,1fr));
+    gap:var(--mochi-v2-room-header-container-max-width-600px-gap,6px)
   }
   .mochi-desktop-main .mochi-view .mochi-room-header>.mochi-actions,.mochi-sidebar[data-mobile-messenger] .mochi-view .mochi-room-header>.mochi-actions {
-    justify-content:flex-start;
-    flex-wrap:wrap;
+    justify-content:var(--mochi-v2-room-header-actions-container-max-width-600px-justify-content,flex-start);
+    flex-wrap:var(--mochi-v2-room-header-actions-container-max-width-600px-flex-wrap,wrap);
     max-width:100%
   }
 }
@@ -1686,87 +1711,87 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   display:block;
   width:var(--mochi-wordmark-width);
   max-width:100%;
-  height:auto;
-  object-fit:contain
+  height:var(--mochi-v2-wordmark-image-height,auto);
+  object-fit:var(--mochi-v2-wordmark-image-object-fit,contain)
 }
 
 /* Compact conversation toolbar. Long saved labels scroll without moving More. */
 .mochi-view[data-surface] .mochi-room-header {
   display:flex;
-  flex-direction:column;
-  align-items:stretch;
-  gap:8px
+  flex-direction:var(--mochi-v2-data-surface-room-header-flex-direction,column);
+  align-items:var(--mochi-v2-data-surface-room-header-align-items,stretch);
+  gap:var(--mochi-v2-data-surface-room-header-gap,8px)
 }
 
 .mochi-view[data-surface] .mochi-room-header>.mochi-custom-toolbar {
   display:flex;
-  flex-wrap:nowrap;
-  align-items:center;
-  gap:4px;
+  flex-wrap:var(--mochi-v2-data-surface-room-header-custom-toolbar-flex-wrap,nowrap);
+  align-items:var(--mochi-v2-data-surface-room-header-custom-toolbar-align-items,center);
+  gap:var(--mochi-v2-data-surface-room-header-custom-toolbar-gap,4px);
   width:100%;
-  max-width:none;
+  max-width:var(--mochi-v2-data-surface-room-header-custom-toolbar-max-width,none);
   min-width:0;
   position:relative
 }
 
 .mochi-view .mochi-toolbar-shortcuts {
   display:flex;
-  flex:1 1 auto;
+  flex:var(--mochi-v2-toolbar-shortcuts-flex,1 1 auto);
   min-width:0;
-  gap:2px;
+  gap:var(--mochi-v2-toolbar-shortcuts-gap,2px);
   overflow-x:auto;
-  scrollbar-width:thin;
-  align-items:center
+  scrollbar-width:var(--mochi-v2-toolbar-shortcuts-scrollbar-width,thin);
+  align-items:var(--mochi-v2-toolbar-shortcuts-align-items,center)
 }
 
 .mochi-view .mochi-room-header .mochi-custom-toolbar .mochi-icon-button,.mochi-view .mochi-room-header .mochi-custom-toolbar .lp-nav-action {
   display:inline-flex;
-  flex:0 0 auto;
-  align-items:center;
-  justify-content:center;
-  width:auto;
-  min-width:40px;
-  min-height:40px;
-  height:40px;
-  padding:8px;
+  flex:var(--mochi-v2-room-header-custom-toolbar-icon-button-flex,0 0 auto);
+  align-items:var(--mochi-v2-room-header-custom-toolbar-icon-button-align-items,center);
+  justify-content:var(--mochi-v2-room-header-custom-toolbar-icon-button-justify-content,center);
+  width:var(--mochi-v2-room-header-custom-toolbar-icon-button-width,auto);
+  min-width:var(--mochi-v2-room-header-custom-toolbar-icon-button-min-width,40px);
+  min-height:var(--mochi-v2-room-header-custom-toolbar-icon-button-min-height,40px);
+  height:var(--mochi-v2-room-header-custom-toolbar-icon-button-height,40px);
+  padding:var(--mochi-v2-room-header-custom-toolbar-icon-button-padding,8px);
   margin:0;
-  border:1px solid transparent;
-  border-radius:8px;
-  background:transparent;
-  color:var(--lp-muted,var(--lumiverse-text-muted,inherit));
-  box-shadow:none;
-  cursor:pointer
+  border:var(--mochi-v2-room-header-custom-toolbar-icon-button-border,1px solid transparent);
+  border-radius:var(--mochi-v2-room-header-custom-toolbar-icon-button-border-radius,8px);
+  background:var(--mochi-v2-room-header-custom-toolbar-icon-button-background,transparent);
+  color:var(--mochi-v2-room-header-custom-toolbar-icon-button-color,var(--lp-muted,var(--lumiverse-text-muted,inherit)));
+  box-shadow:var(--mochi-v2-room-header-custom-toolbar-icon-button-box-shadow,none);
+  cursor:var(--mochi-v2-room-header-custom-toolbar-icon-button-cursor,pointer)
 }
 
 .mochi-view .mochi-room-header .mochi-custom-toolbar svg {
-  width:18px;
-  height:18px;
+  width:var(--mochi-v2-room-header-custom-toolbar-svg-width,18px);
+  height:var(--mochi-v2-room-header-custom-toolbar-svg-height,18px);
   display:block
 }
 
 .mochi-view .mochi-room-header .mochi-custom-toolbar .mochi-toolbar-label {
   display:inline;
-  font-size:calc(12px * var(--mochi-interface-scale,1));
-  white-space:nowrap
+  font-size:var(--mochi-v2-room-header-custom-toolbar-toolbar-label-font-size,calc(12px * var(--mochi-interface-scale,1)));
+  white-space:var(--mochi-v2-room-header-custom-toolbar-toolbar-label-white-space,nowrap)
 }
 
 .mochi-view .mochi-room-header .mochi-custom-toolbar button:hover,.mochi-view .mochi-room-header .mochi-custom-toolbar summary:hover,.mochi-view .mochi-room-header .mochi-custom-toolbar [aria-expanded=true] {
-  background:color-mix(in srgb,var(--lp-accent,#b7a0e8) 12%,transparent);
-  color:var(--lp-text,var(--lumiverse-text,inherit))
+  background:var(--mochi-v2-room-header-custom-toolbar-button-hover-background,color-mix(in srgb,var(--lp-accent,#b7a0e8) 12%,transparent));
+  color:var(--mochi-v2-room-header-custom-toolbar-button-hover-color,var(--lp-text,var(--lumiverse-text,inherit)))
 }
 
 .mochi-view .mochi-room-header .mochi-custom-toolbar :is(button,summary):focus-visible {
-  outline:2px solid var(--lp-accent,#b7a0e8);
-  outline-offset:-2px
+  outline:var(--mochi-v2-room-header-custom-toolbar-is-button-outline,2px solid var(--lp-accent,#b7a0e8));
+  outline-offset:var(--mochi-v2-room-header-custom-toolbar-is-button-outline-offset,-2px)
 }
 
 .mochi-view .mochi-room-header .mochi-custom-toolbar .lp-conversation-menu {
   position:static;
-  flex:0 0 auto
+  flex:var(--mochi-v2-room-header-custom-toolbar-conversation-menu-flex,0 0 auto)
 }
 
 .mochi-view .mochi-room-header .mochi-custom-toolbar summary {
-  list-style:none
+  list-style:var(--mochi-v2-room-header-custom-toolbar-summary-list-style,none)
 }
 
 .mochi-view .mochi-room-header .mochi-custom-toolbar summary::-webkit-details-marker {
@@ -1775,70 +1800,70 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 
 .mochi-view .mochi-room-header .mochi-custom-toolbar .lp-conversation-menu-sheet {
   position:absolute;
-  inset:calc(100% + 4px) 0 auto auto;
-  width:min(224px,100%);
+  inset:var(--mochi-v2-room-header-custom-toolbar-conversation-menu-sheet-inset,calc(100% + 4px) 0 auto auto);
+  width:var(--mochi-v2-room-header-custom-toolbar-conversation-menu-sheet-width,min(224px,100%));
   max-width:100%;
-  max-height:min(300px,45dvh);
+  max-height:var(--mochi-v2-room-header-custom-toolbar-conversation-menu-sheet-max-height,min(300px,45dvh));
   overflow:auto;
-  z-index:50
+  z-index:var(--mochi-v2-room-header-custom-toolbar-conversation-menu-sheet-z-index,50)
 }
 
 
 
 .mochi-view .mochi-room-header .mochi-custom-toolbar .lp-conversation-menu[data-direction=up] .lp-conversation-menu-sheet {
-  inset: auto 0 calc(100% + 4px) auto;
+  inset: var(--mochi-v2-room-header-custom-toolbar-conversation-menu-data-direction-up-conversation-menu-sheet-inset,auto 0 calc(100% + 4px) auto);
 }
 
 /* Compact account picker uses the same messenger controls. */
-.mochi-view .mochi-account-picker { gap: 10px; padding: 12px; }
-.mochi-view .mochi-account-list { display: grid; gap: 6px; }
-.mochi-view .mochi-account-picker .mochi-card { min-height: 56px; padding: 8px 10px; gap: 10px; border-radius: 10px; }
-.mochi-view .mochi-account-picker .mochi-avatar { width: 34px; height: 34px; }
-.mochi-view .mochi-account-picker .lp-button { min-height: 40px; padding: 6px 10px; border-radius: 8px; }
+.mochi-view .mochi-account-picker { gap: var(--mochi-v2-account-picker-gap,10px); padding: var(--mochi-v2-account-picker-padding,12px); }
+.mochi-view .mochi-account-list { display: grid; gap: var(--mochi-v2-account-list-gap,6px); }
+.mochi-view .mochi-account-picker .mochi-card { min-height: var(--mochi-v2-account-picker-card-min-height,56px); padding: var(--mochi-v2-account-picker-card-padding,8px 10px); gap: var(--mochi-v2-account-picker-card-gap,10px); border-radius: var(--mochi-v2-account-picker-card-border-radius,10px); }
+.mochi-view .mochi-account-picker .mochi-avatar { width: var(--mochi-v2-account-picker-avatar-width,34px); height: var(--mochi-v2-account-picker-avatar-height,34px); }
+.mochi-view .mochi-account-picker .lp-button { min-height: var(--mochi-v2-account-picker-button-min-height,40px); padding: var(--mochi-v2-account-picker-button-padding,6px 10px); border-radius: var(--mochi-v2-account-picker-button-border-radius,8px); }
 .mochi-view .mochi-form label[hidden] { display: none; }
 
 /* Refresh 01: bottom tools and inline responder. */
 .mochi-composer-dock {
-  flex: none;
-  margin-top: auto;
+  flex: var(--mochi-v2-composer-dock-flex,none);
+  margin-top: var(--mochi-v2-composer-dock-margin-top,auto);
   min-width: 0;
   position: relative;
-  z-index: 6;
+  z-index: var(--mochi-v2-composer-dock-z-index,6);
 }
 
 .mochi-view .mochi-bottom-toolbar {
   display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  gap: 4px;
+  flex-wrap: var(--mochi-v2-bottom-toolbar-flex-wrap,nowrap);
+  align-items: var(--mochi-v2-bottom-toolbar-align-items,center);
+  gap: var(--mochi-v2-bottom-toolbar-gap,4px);
   position: relative;
-  padding: 5px 8px;
-  border-top: 1px solid var(--mochi-border);
+  padding: var(--mochi-v2-bottom-toolbar-padding,5px 8px);
+  border-top: var(--mochi-v2-bottom-toolbar-border-top,1px solid var(--mochi-border));
   min-width: 0;
   width: 100%;
 }
 
 .mochi-view .mochi-bottom-toolbar>.mochi-toolbar-shortcuts {
-  flex: 1;
+  flex: var(--mochi-v2-bottom-toolbar-toolbar-shortcuts-flex,1);
   min-width: 0;
 }
 
 .mochi-view .mochi-bottom-toolbar :is(.mochi-icon-button,.lp-nav-action) {
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
+  align-items: var(--mochi-v2-bottom-toolbar-is-icon-button-align-items,center);
+  justify-content: var(--mochi-v2-bottom-toolbar-is-icon-button-justify-content,center);
+  flex: var(--mochi-v2-bottom-toolbar-is-icon-button-flex,none);
   min-width: var(--mochi-messenger-control-size);
-  width: auto;
+  width: var(--mochi-v2-bottom-toolbar-is-icon-button-width,auto);
   height: var(--mochi-messenger-control-size);
   min-height: var(--mochi-messenger-control-size);
-  padding: 8px;
+  padding: var(--mochi-v2-bottom-toolbar-is-icon-button-padding,8px);
   border: 0;
   border-radius: var(--mochi-control-radius);
-  background: transparent;
-  color: var(--lp-muted,inherit);
-  box-shadow: none;
-  cursor: pointer;
+  background: var(--mochi-v2-bottom-toolbar-is-icon-button-background,transparent);
+  color: var(--mochi-v2-bottom-toolbar-is-icon-button-color,var(--lp-muted,inherit));
+  box-shadow: var(--mochi-v2-bottom-toolbar-is-icon-button-box-shadow,none);
+  cursor: var(--mochi-v2-bottom-toolbar-is-icon-button-cursor,pointer);
 }
 
 .mochi-view .mochi-bottom-toolbar svg,.mochi-header-controls svg {
@@ -1849,27 +1874,27 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 
 .mochi-view .mochi-bottom-toolbar .mochi-toolbar-label {
   display: inline;
-  white-space: nowrap;
-  font-size:calc(12px * var(--mochi-interface-scale,1));
+  white-space: var(--mochi-v2-bottom-toolbar-toolbar-label-white-space,nowrap);
+  font-size:var(--mochi-v2-bottom-toolbar-toolbar-label-font-size,calc(12px * var(--mochi-interface-scale,1)));
 }
 
 .mochi-view .mochi-bottom-toolbar :is(button,summary):is(:hover,:focus-visible) {
   color: var(--mochi-text);
-  background: color-mix(in srgb,var(--mochi-accent) 14%,transparent);
+  background: var(--mochi-v2-bottom-toolbar-is-button-background,color-mix(in srgb,var(--mochi-accent) 14%,transparent));
 }
 
 .mochi-view :is(.mochi-bottom-toolbar,.mochi-header-controls) :is(button,summary):focus-visible {
-  outline: 2px solid var(--mochi-accent);
-  outline-offset: -2px;
+  outline: var(--mochi-v2-is-bottom-toolbar-outline,2px solid var(--mochi-accent));
+  outline-offset: var(--mochi-v2-is-bottom-toolbar-outline-offset,-2px);
 }
 
 .mochi-view .mochi-bottom-toolbar .lp-conversation-menu {
   position: static;
-  flex: none;
+  flex: var(--mochi-v2-bottom-toolbar-conversation-menu-flex,none);
 }
 
 .mochi-view .mochi-bottom-toolbar summary {
-  list-style: none;
+  list-style: var(--mochi-v2-bottom-toolbar-summary-list-style,none);
 }
 
 .mochi-view .mochi-bottom-toolbar summary::-webkit-details-marker {
@@ -1878,15 +1903,15 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 
 .mochi-view .mochi-bottom-toolbar .lp-conversation-menu-sheet {
   position: absolute;
-  inset: auto 4px calc(100% + 4px) auto;
-  width: min(224px,calc(100% - 8px));
-  max-height: min(300px,50dvh);
+  inset: var(--mochi-v2-bottom-toolbar-conversation-menu-sheet-inset,auto 4px calc(100% + 4px) auto);
+  width: var(--mochi-v2-bottom-toolbar-conversation-menu-sheet-width,min(224px,calc(100% - 8px)));
+  max-height: var(--mochi-v2-bottom-toolbar-conversation-menu-sheet-max-height,min(300px,50dvh));
   overflow: auto;
-  z-index: 30;
+  z-index: var(--mochi-v2-bottom-toolbar-conversation-menu-sheet-z-index,30);
   background: var(--mochi-surface);
-  border: 1px solid var(--mochi-border);
+  border: var(--mochi-v2-bottom-toolbar-conversation-menu-sheet-border,1px solid var(--mochi-border));
   border-radius: var(--mochi-radius-card);
-  box-shadow: 0 10px 28px #0004;
+  box-shadow: var(--mochi-v2-bottom-toolbar-conversation-menu-sheet-box-shadow,0 10px 28px #0004);
 }
 
 .mochi-view .mochi-bottom-toolbar .lp-conversation-menu:not([open])>.lp-conversation-menu-sheet {
@@ -1896,55 +1921,55 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 .mochi-view .mochi-composer {
   margin: 0;
   border-top: 0;
-  padding: 0 8px max(8px,env(safe-area-inset-bottom,0px));
+  padding: var(--mochi-v2-composer-padding,0 8px max(8px,env(safe-area-inset-bottom,0px)));
 }
 
 .mochi-view .mochi-composer-row {
   display: flex;
-  align-items: flex-end;
-  gap: 4px;
-  padding: 4px;
+  align-items: var(--mochi-v2-composer-row-align-items,flex-end);
+  gap: var(--mochi-v2-composer-row-gap,4px);
+  padding: var(--mochi-v2-composer-row-padding,4px);
   border-radius: var(--mochi-radius-field);
-  border: 1px solid var(--mochi-border);
-  background: color-mix(in srgb,var(--mochi-text) 3%,var(--mochi-surface));
+  border: var(--mochi-v2-composer-row-border,1px solid var(--mochi-border));
+  background: var(--mochi-v2-composer-row-background,color-mix(in srgb,var(--mochi-text) 3%,var(--mochi-surface)));
   min-height: var(--mochi-composer-min-height);
 }
 
 .mochi-view .mochi-composer-row:focus-within {
-  outline: 1px solid var(--mochi-accent);
+  outline: var(--mochi-v2-composer-row-focus-within-outline,1px solid var(--mochi-accent));
 }
 
 .mochi-view .mochi-composer-row textarea {
-  flex: 1;
+  flex: var(--mochi-v2-composer-row-textarea-flex,1);
   min-width: 0;
   border: 0;
   border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  outline: none;
-  padding: 9px 8px;
+  background: var(--mochi-v2-composer-row-textarea-background,transparent);
+  box-shadow: var(--mochi-v2-composer-row-textarea-box-shadow,none);
+  outline: var(--mochi-v2-composer-row-textarea-outline,none);
+  padding: var(--mochi-v2-composer-row-textarea-padding,9px 8px);
 }
 
 .mochi-view .mochi-composer-row .mochi-icon-button {
-  min-width: 40px;
-  width: 40px;
-  min-height: 40px;
-  height: 40px;
+  min-width: var(--mochi-v2-composer-row-icon-button-min-width,40px);
+  width: var(--mochi-v2-composer-row-icon-button-width,40px);
+  min-height: var(--mochi-v2-composer-row-icon-button-min-height,40px);
+  height: var(--mochi-v2-composer-row-icon-button-height,40px);
   border-radius: var(--mochi-control-radius);
 }
 
 .mochi-view .mochi-responder-popup {
   position: relative;
-  flex: 0 0 40px;
-  width: 40px;
-  min-width: 40px;
-  max-width: 40px;
-  min-height: 40px;
-  height: 40px;
+  flex: var(--mochi-v2-responder-popup-flex,0 0 40px);
+  width: var(--mochi-v2-responder-popup-width,40px);
+  min-width: var(--mochi-v2-responder-popup-min-width,40px);
+  max-width: var(--mochi-v2-responder-popup-max-width,40px);
+  min-height: var(--mochi-v2-responder-popup-min-height,40px);
+  height: var(--mochi-v2-responder-popup-height,40px);
   border: 0;
   padding: 0;
   border-radius: var(--mochi-control-radius);
-  background: transparent;
+  background: var(--mochi-v2-responder-popup-background,transparent);
 }
 
 .mochi-view .mochi-responder-popup::after {
@@ -1953,12 +1978,12 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 
 .mochi-view .mochi-responder-popup>summary {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  cursor: pointer;
-  list-style: none;
+  align-items: var(--mochi-v2-responder-popup-summary-align-items,center);
+  justify-content: var(--mochi-v2-responder-popup-summary-justify-content,center);
+  width: var(--mochi-v2-responder-popup-summary-width,40px);
+  height: var(--mochi-v2-responder-popup-summary-height,40px);
+  cursor: var(--mochi-v2-responder-popup-summary-cursor,pointer);
+  list-style: var(--mochi-v2-responder-popup-summary-list-style,none);
 }
 
 .mochi-responder-popup>summary::-webkit-details-marker {
@@ -1970,8 +1995,8 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 
 .mochi-view .mochi-responder-identity>.mochi-avatar {
-  width: 25px;
-  height: 25px;
+  width: var(--mochi-v2-responder-identity-avatar-width,25px);
+  height: var(--mochi-v2-responder-identity-avatar-height,25px);
 }
 
 .mochi-view .mochi-responder-popup select[hidden] {
@@ -1980,17 +2005,17 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 
 .mochi-responder-choices {
   position: absolute;
-  bottom: calc(100% + 8px);
-  right: -44px;
-  width: min(240px,75cqw);
-  max-height: 240px;
+  bottom: var(--mochi-v2-responder-choices-bottom,calc(100% + 8px));
+  right: var(--mochi-v2-responder-choices-right,-44px);
+  width: var(--mochi-v2-responder-choices-width,min(240px,75cqw));
+  max-height: var(--mochi-v2-responder-choices-max-height,240px);
   overflow: auto;
   background: var(--mochi-surface);
-  border: 1px solid var(--mochi-border);
+  border: var(--mochi-v2-responder-choices-border,1px solid var(--mochi-border));
   border-radius: var(--mochi-radius-card);
-  box-shadow: 0 10px 30px #0004;
-  padding: 4px;
-  z-index: 40;
+  box-shadow: var(--mochi-v2-responder-choices-box-shadow,0 10px 30px #0004);
+  padding: var(--mochi-v2-responder-choices-padding,4px);
+  z-index: var(--mochi-v2-responder-choices-z-index,40);
 }
 
 .mochi-responder-popup:not([open])>.mochi-responder-choices {
@@ -2000,25 +2025,25 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 .mochi-view .mochi-responder-choice {
   display: block;
   width: 100%;
-  min-height: 40px;
-  padding: 7px 10px;
+  min-height: var(--mochi-v2-responder-choice-min-height,40px);
+  padding: var(--mochi-v2-responder-choice-padding,7px 10px);
   border: 0;
   border-radius: var(--mochi-control-radius);
-  text-align: left;
-  background: transparent;
+  text-align: var(--mochi-v2-responder-choice-text-align,left);
+  background: var(--mochi-v2-responder-choice-background,transparent);
   color: inherit;
-  cursor: pointer;
+  cursor: var(--mochi-v2-responder-choice-cursor,pointer);
   font: inherit;
 }
 
 .mochi-view .mochi-responder-choice:is(:hover,[aria-pressed=true]) {
-  background: color-mix(in srgb,var(--mochi-accent) 16%,transparent);
+  background: var(--mochi-v2-responder-choice-is-hover-background,color-mix(in srgb,var(--mochi-accent) 16%,transparent));
 }
 
 .mochi-edited-label {
-  font-size:calc(10px * var(--mochi-interface-scale,1));
-  opacity: .7;
-  white-space: nowrap;
+  font-size:var(--mochi-v2-edited-label-font-size,calc(10px * var(--mochi-interface-scale,1)));
+  opacity: var(--mochi-v2-edited-label-opacity,.7);
+  white-space: var(--mochi-v2-edited-label-white-space,nowrap);
 }
 
 .mochi-desktop .mochi-message-meta { display:none; }
@@ -2033,32 +2058,32 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 
 .mochi-view .mochi-message .mochi-bubble {
-  transition: transform var(--mochi-action-duration),box-shadow var(--mochi-action-duration);
+  transition: var(--mochi-v2-message-bubble-transition,transform var(--mochi-action-duration),box-shadow var(--mochi-action-duration));
 }
 
 .mochi-view .mochi-message[data-selected=true] {
-  z-index: 8;
+  z-index: var(--mochi-v2-message-data-selected-true-z-index,8);
 }
 
 .mochi-view .mochi-message[data-selected=true] .mochi-bubble {
-  transform: translateY(var(--mochi-action-lift));
-  box-shadow: 0 4px 14px #0003,0 0 0 1px var(--mochi-accent);
+  transform: var(--mochi-v2-message-data-selected-true-bubble-transform,translateY(var(--mochi-action-lift)));
+  box-shadow: var(--mochi-v2-message-data-selected-true-bubble-box-shadow,0 4px 14px #0003,0 0 0 1px var(--mochi-accent));
 }
 
 .mochi-action-strip {
   position: absolute;
-  bottom: calc(100% + 3px);
+  bottom: var(--mochi-v2-action-strip-bottom,calc(100% + 3px));
   right: 0;
   display: flex;
-  width: max-content;
-  max-width: calc(100cqw - 24px);
-  z-index: 15;
-  padding: 2px;
-  border: 1px solid var(--mochi-border);
+  width: var(--mochi-v2-action-strip-width,max-content);
+  max-width: var(--mochi-v2-action-strip-max-width,calc(100cqw - 24px));
+  z-index: var(--mochi-v2-action-strip-z-index,15);
+  padding: var(--mochi-v2-action-strip-padding,2px);
+  border: var(--mochi-v2-action-strip-border,1px solid var(--mochi-border));
   border-radius: var(--mochi-control-radius);
   background: var(--mochi-surface);
-  box-shadow: 0 3px 12px #0003;
-  background: color-mix(in srgb,var(--mochi-accent) 5%,var(--mochi-surface));
+  box-shadow: var(--mochi-v2-action-strip-box-shadow,0 3px 12px #0003);
+  background: var(--mochi-v2-action-strip-background,color-mix(in srgb,var(--mochi-accent) 5%,var(--mochi-surface)));
 }
 
 .mochi-message:not([data-selected=true]) .mochi-action-strip {
@@ -2066,21 +2091,21 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 
 .mochi-view .mochi-action-strip .mochi-icon-button {
-  flex: none;
-  min-width: 32px;
-  width: 32px;
-  height: 32px;
-  min-height: 32px;
-  padding: 7px;
+  flex: var(--mochi-v2-action-strip-icon-button-flex,none);
+  min-width: var(--mochi-v2-action-strip-icon-button-min-width,32px);
+  width: var(--mochi-v2-action-strip-icon-button-width,32px);
+  height: var(--mochi-v2-action-strip-icon-button-height,32px);
+  min-height: var(--mochi-v2-action-strip-icon-button-min-height,32px);
+  padding: var(--mochi-v2-action-strip-icon-button-padding,7px);
   border: 0;
-  border-radius: 6px;
-  background: transparent;
+  border-radius: var(--mochi-v2-action-strip-icon-button-border-radius,6px);
+  background: var(--mochi-v2-action-strip-icon-button-background,transparent);
   color: inherit;
-  animation: mochi-action-bounce var(--mochi-action-duration) both;
+  animation: var(--mochi-v2-action-strip-icon-button-animation,mochi-action-bounce var(--mochi-action-duration) both);
 }
 
 .mochi-view .mochi-action-strip .mochi-icon-button:nth-last-child(1) {
-  animation-delay: 0ms;
+  animation-delay: var(--mochi-v2-action-strip-icon-button-nth-last-child-1-animation-delay,0ms);
 }
 
 .mochi-view .mochi-action-strip .mochi-icon-button:nth-last-child(2) {
@@ -2088,44 +2113,44 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 
 .mochi-view .mochi-action-strip .mochi-icon-button:nth-last-child(3) {
-  animation-delay: calc(var(--mochi-action-stagger) * 2);
+  animation-delay: var(--mochi-v2-action-strip-icon-button-nth-last-child-3-animation-delay,calc(var(--mochi-action-stagger) * 2));
 }
 
 .mochi-view .mochi-action-strip .mochi-icon-button:nth-last-child(4) {
-  animation-delay: calc(var(--mochi-action-stagger) * 3);
+  animation-delay: var(--mochi-v2-action-strip-icon-button-nth-last-child-4-animation-delay,calc(var(--mochi-action-stagger) * 3));
 }
 
 .mochi-view .mochi-action-strip .mochi-icon-button:nth-last-child(5) {
-  animation-delay: calc(var(--mochi-action-stagger) * 4);
+  animation-delay: var(--mochi-v2-action-strip-icon-button-nth-last-child-5-animation-delay,calc(var(--mochi-action-stagger) * 4));
 }
 
 .mochi-view .mochi-action-strip .mochi-icon-button:nth-last-child(6) {
-  animation-delay: calc(var(--mochi-action-stagger) * 5);
+  animation-delay: var(--mochi-v2-action-strip-icon-button-nth-last-child-6-animation-delay,calc(var(--mochi-action-stagger) * 5));
 }
 
 .mochi-action-strip svg {
-  width: 16px;
-  height: 16px;
+  width: var(--mochi-v2-action-strip-svg-width,16px);
+  height: var(--mochi-v2-action-strip-svg-height,16px);
   display: block;
 }
 
 .mochi-view .mochi-action-strip button:is(:hover,:focus-visible) {
-  background: color-mix(in srgb,var(--mochi-accent) 18%,transparent);
-  outline: 1px solid var(--mochi-accent);
+  background: var(--mochi-v2-action-strip-button-is-hover-background,color-mix(in srgb,var(--mochi-accent) 18%,transparent));
+  outline: var(--mochi-v2-action-strip-button-is-hover-outline,1px solid var(--mochi-accent));
 }
 
 @keyframes mochi-action-bounce {
   0% {
   opacity: 0;
-  transform: translateY(8px) scale(.82);
+  transform: var(--mochi-v2-0-keyframes-mochi-action-bounce-transform,translateY(8px) scale(.82));
 }
  65% {
-  opacity: 1;
-  transform: translateY(-2px) scale(1.05);
+  opacity: var(--mochi-v2-65-keyframes-mochi-action-bounce-opacity,1);
+  transform: var(--mochi-v2-65-keyframes-mochi-action-bounce-transform,translateY(-2px) scale(1.05));
 }
  100% {
-  opacity: 1;
-  transform: translateY(0) scale(1);
+  opacity: var(--mochi-v2-100-keyframes-mochi-action-bounce-opacity,1);
+  transform: var(--mochi-v2-100-keyframes-mochi-action-bounce-transform,translateY(0) scale(1));
 }
 
 }
@@ -2145,104 +2170,104 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 /* @mochi-section mochi-reply-styles */
 .mochi-view .mochi-quote {
   display:flex;
-  flex-direction:column;
-  gap:3px;
+  flex-direction:var(--mochi-v2-quote-flex-direction,column);
+  gap:var(--mochi-v2-quote-gap,3px);
   min-width:0;
   max-width:100%;
-  text-align:left;
+  text-align:var(--mochi-v2-quote-text-align,left);
   font:inherit;
   color:inherit;
-  padding:7px 10px;
+  padding:var(--mochi-v2-quote-padding,7px 10px);
   border:0;
-  border-left:3px solid var(--mochi-accent);
-  border-radius:6px;
-  background:var(--lp-surface-2,#ffffff0c);
+  border-left:var(--mochi-v2-quote-border-left,3px solid var(--mochi-accent));
+  border-radius:var(--mochi-v2-quote-border-radius,6px);
+  background:var(--mochi-v2-quote-background,var(--lp-surface-2,#ffffff0c));
   overflow:hidden
 }
 .mochi-quote strong {
-  font-size:calc(11px * var(--mochi-interface-scale,1));
-  overflow-wrap:anywhere
+  font-size:var(--mochi-v2-quote-strong-font-size,calc(11px * var(--mochi-interface-scale,1)));
+  overflow-wrap:var(--mochi-v2-quote-strong-overflow-wrap,anywhere)
 }
 .mochi-quote span {
-  font-size:calc(12px * var(--mochi-interface-scale,1));
-  white-space:normal;
-  overflow-wrap:anywhere;
+  font-size:var(--mochi-v2-quote-span-font-size,calc(12px * var(--mochi-interface-scale,1)));
+  white-space:var(--mochi-v2-quote-span-white-space,normal);
+  overflow-wrap:var(--mochi-v2-quote-span-overflow-wrap,anywhere);
   display:-webkit-box;
-  -webkit-line-clamp:2;
-  -webkit-box-orient:vertical;
+  -webkit-line-clamp:var(--mochi-v2-quote-span--webkit-line-clamp,2);
+  -webkit-box-orient:var(--mochi-v2-quote-span--webkit-box-orient,vertical);
   overflow:hidden
 }
 .mochi-view button.mochi-quote {
-  cursor:pointer;
-  min-height:44px
+  cursor:var(--mochi-v2-buttonquote-cursor,pointer);
+  min-height:var(--mochi-v2-buttonquote-min-height,44px)
 }
 .mochi-view button.mochi-quote:focus-visible,.mochi-message:focus-visible {
-  outline:2px solid var(--mochi-accent);
-  outline-offset:2px
+  outline:var(--mochi-v2-buttonquote-focus-visible-outline,2px solid var(--mochi-accent));
+  outline-offset:var(--mochi-v2-buttonquote-focus-visible-outline-offset,2px)
 }
 .mochi-view .mochi-reply-preview {
   display:flex;
-  align-items:center;
-  gap:6px;
+  align-items:var(--mochi-v2-reply-preview-align-items,center);
+  gap:var(--mochi-v2-reply-preview-gap,6px);
   min-width:0
 }
 .mochi-reply-preview>.mochi-quote {
-  flex:1
+  flex:var(--mochi-v2-reply-preview-quote-flex,1)
 }
 .mochi-reply-preview>button {
-  flex:none
+  flex:var(--mochi-v2-reply-preview-button-flex,none)
 }
 
 /* @mochi-section mochi-reaction-styles */
 .mochi-view .mochi-reactions,.mochi-view .mochi-reaction-palette,.mochi-sheet .mochi-reaction-palette {
   display:flex;
-  flex-wrap:wrap;
-  gap:5px;
+  flex-wrap:var(--mochi-v2-reactions-flex-wrap,wrap);
+  gap:var(--mochi-v2-reactions-gap,5px);
   min-width:0;
   max-width:100%;
-  margin-top:5px
+  margin-top:var(--mochi-v2-reactions-margin-top,5px)
 }
 .mochi-view .mochi-reactions:empty {
   display:none
 }
 .mochi-view .mochi-reaction {
   font:inherit;
-  font-size:calc(12px * var(--mochi-interface-scale,1));
+  font-size:var(--mochi-v2-reaction-font-size,calc(12px * var(--mochi-interface-scale,1)));
   color:inherit;
-  min-height:32px;
-  padding:4px 8px;
-  border:1px solid var(--mochi-border);
+  min-height:var(--mochi-v2-reaction-min-height,32px);
+  padding:var(--mochi-v2-reaction-padding,4px 8px);
+  border:var(--mochi-v2-reaction-border,1px solid var(--mochi-border));
   border-radius:var(--mochi-radius-card);
-  background:var(--lp-surface-2,#ffffff0c);
-  cursor:pointer;
+  background:var(--mochi-v2-reaction-background,var(--lp-surface-2,#ffffff0c));
+  cursor:var(--mochi-v2-reaction-cursor,pointer);
   max-width:100%
 }
 .mochi-view .mochi-reaction-palette .mochi-reaction {
-  min-width:44px;
-  min-height:44px;
-  font-size:calc(20px * var(--mochi-interface-scale,1))
+  min-width:var(--mochi-v2-reaction-palette-reaction-min-width,44px);
+  min-height:var(--mochi-v2-reaction-palette-reaction-min-height,44px);
+  font-size:var(--mochi-v2-reaction-palette-reaction-font-size,calc(20px * var(--mochi-interface-scale,1)))
 }
 .mochi-view .mochi-reaction[aria-pressed=true] {
   border-color:var(--mochi-accent);
-  background:var(--lp-surface-2,#ffffff18)
+  background:var(--mochi-v2-reaction-aria-pressed-true-background,var(--lp-surface-2,#ffffff18))
 }
 .mochi-view .mochi-reaction:focus-visible {
-  outline:2px solid var(--mochi-accent);
-  outline-offset:2px
+  outline:var(--mochi-v2-reaction-focus-visible-outline,2px solid var(--mochi-accent));
+  outline-offset:var(--mochi-v2-reaction-focus-visible-outline-offset,2px)
 }
 .mochi-sheet .mochi-reaction {
-  min-width:44px;
-  min-height:44px;
-  font-size:calc(20px * var(--mochi-interface-scale,1));
+  min-width:var(--mochi-v2-sheet-reaction-min-width,44px);
+  min-height:var(--mochi-v2-sheet-reaction-min-height,44px);
+  font-size:var(--mochi-v2-sheet-reaction-font-size,calc(20px * var(--mochi-interface-scale,1)));
   border-radius:var(--mochi-radius-card);
-  border:1px solid var(--mochi-border);
-  background:var(--lp-surface-2,#ffffff0c);
+  border:var(--mochi-v2-sheet-reaction-border,1px solid var(--mochi-border));
+  background:var(--mochi-v2-sheet-reaction-background,var(--lp-surface-2,#ffffff0c));
   color:inherit;
-  cursor:pointer
+  cursor:var(--mochi-v2-sheet-reaction-cursor,pointer)
 }
 .mochi-sheet .mochi-reaction:focus-visible {
-  outline:2px solid var(--mochi-accent);
-  outline-offset:2px
+  outline:var(--mochi-v2-sheet-reaction-focus-visible-outline,2px solid var(--mochi-accent));
+  outline-offset:var(--mochi-v2-sheet-reaction-focus-visible-outline-offset,2px)
 }
 .mochi-sheet .mochi-reaction[aria-pressed=true] {
   border-color:var(--mochi-accent)
@@ -2251,94 +2276,94 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 /* @mochi-section mochi-pin-styles */
 .mochi-sheet .mochi-pins-panel {
   display:grid;
-  gap:10px;
+  gap:var(--mochi-v2-sheet-pins-panel-gap,10px);
   min-width:0;
-  overflow-wrap:anywhere
+  overflow-wrap:var(--mochi-v2-sheet-pins-panel-overflow-wrap,anywhere)
 }
 .mochi-sheet .mochi-pin-row {
   display:flex;
-  align-items:center;
+  align-items:var(--mochi-v2-sheet-pin-row-align-items,center);
   gap:var(--mochi-space-sm);
   min-width:0
 }
 .mochi-sheet .mochi-pin-jump {
-  flex:1;
+  flex:var(--mochi-v2-sheet-pin-jump-flex,1);
   min-width:0;
-  text-align:left;
-  white-space:normal;
-  overflow-wrap:anywhere;
-  background:var(--lp-surface-2,#ffffff0c);
+  text-align:var(--mochi-v2-sheet-pin-jump-text-align,left);
+  white-space:var(--mochi-v2-sheet-pin-jump-white-space,normal);
+  overflow-wrap:var(--mochi-v2-sheet-pin-jump-overflow-wrap,anywhere);
+  background:var(--mochi-v2-sheet-pin-jump-background,var(--lp-surface-2,#ffffff0c));
   color:inherit;
-  border:1px solid var(--mochi-border);
-  border-radius:10px;
-  padding:10px;
-  cursor:pointer
+  border:var(--mochi-v2-sheet-pin-jump-border,1px solid var(--mochi-border));
+  border-radius:var(--mochi-v2-sheet-pin-jump-border-radius,10px);
+  padding:var(--mochi-v2-sheet-pin-jump-padding,10px);
+  cursor:var(--mochi-v2-sheet-pin-jump-cursor,pointer)
 }
 .mochi-sheet .mochi-note-editor {
   display:grid;
-  gap:10px;
+  gap:var(--mochi-v2-sheet-note-editor-gap,10px);
   min-width:0
 }
 .mochi-sheet .mochi-note-editor label {
   display:grid;
-  gap:5px
+  gap:var(--mochi-v2-sheet-note-editor-label-gap,5px)
 }
 .mochi-sheet .mochi-note-editor input:not([type=checkbox]),.mochi-sheet .mochi-note-editor textarea {
   box-sizing:border-box;
   width:100%;
   min-width:0;
-  background:var(--lp-surface-2,#ffffff0c);
+  background:var(--mochi-v2-sheet-note-editor-input-background,var(--lp-surface-2,#ffffff0c));
   color:inherit;
-  border:1px solid var(--mochi-border);
+  border:var(--mochi-v2-sheet-note-editor-input-border,1px solid var(--mochi-border));
   border-radius:var(--mochi-radius-field);
-  padding:8px;
+  padding:var(--mochi-v2-sheet-note-editor-input-padding,8px);
   font:inherit
 }
 .mochi-sheet .mochi-note-row {
   display:flex;
-  flex-wrap:wrap;
+  flex-wrap:var(--mochi-v2-sheet-note-row-flex-wrap,wrap);
   gap:var(--mochi-space-sm);
-  border:1px solid var(--mochi-border);
-  border-radius:10px;
-  padding:10px;
+  border:var(--mochi-v2-sheet-note-row-border,1px solid var(--mochi-border));
+  border-radius:var(--mochi-v2-sheet-note-row-border-radius,10px);
+  padding:var(--mochi-v2-sheet-note-row-padding,10px);
   min-width:0
 }
 .mochi-sheet .mochi-note-row p {
   width:100%;
   margin:0;
-  overflow-wrap:anywhere
+  overflow-wrap:var(--mochi-v2-sheet-note-row-p-overflow-wrap,anywhere)
 }
 .mochi-sheet .mochi-pins-panel button {
-  min-height:40px
+  min-height:var(--mochi-v2-sheet-pins-panel-button-min-height,40px)
 }
 .mochi-sheet .mochi-pins-panel :focus-visible {
-  outline:2px solid var(--mochi-accent);
-  outline-offset:2px
+  outline:var(--mochi-v2-sheet-pins-panel-focus-visible-outline,2px solid var(--mochi-accent));
+  outline-offset:var(--mochi-v2-sheet-pins-panel-focus-visible-outline-offset,2px)
 }
 .mochi-view .mochi-pin-indicator {
-  font-size:calc(11px * var(--mochi-interface-scale,1));
-  color:var(--lp-text-secondary);
-  margin-left:6px
+  font-size:var(--mochi-v2-pin-indicator-font-size,calc(11px * var(--mochi-interface-scale,1)));
+  color:var(--mochi-v2-pin-indicator-color,var(--lp-text-secondary));
+  margin-left:var(--mochi-v2-pin-indicator-margin-left,6px)
 }
 
 /* @mochi-section mochi-search-styles */
 .mochi-view .mochi-search-panel {
-  flex:0 1 auto;
+  flex:var(--mochi-v2-search-panel-flex,0 1 auto);
   min-height:0;
-  max-height:40%;
+  max-height:var(--mochi-v2-search-panel-max-height,40%);
   overflow:auto;
-  border-bottom:1px solid var(--mochi-border);
-  padding:10px;
+  border-bottom:var(--mochi-v2-search-panel-border-bottom,1px solid var(--mochi-border));
+  padding:var(--mochi-v2-search-panel-padding,10px);
   min-width:0
 }
 .mochi-view .mochi-search-controls {
   display:flex;
-  flex-wrap:wrap;
-  gap:6px;
+  flex-wrap:var(--mochi-v2-search-controls-flex-wrap,wrap);
+  gap:var(--mochi-v2-search-controls-gap,6px);
   min-width:0
 }
 .mochi-view .mochi-search-controls input {
-  flex:1 1 160px;
+  flex:var(--mochi-v2-search-controls-input-flex,1 1 160px);
   min-width:0
 }
 .mochi-view .mochi-search-controls select {
@@ -2347,16 +2372,16 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 .mochi-view .mochi-search-controls input,.mochi-view .mochi-search-controls select {
   box-sizing:border-box;
-  background:var(--lp-surface-2,#ffffff0c);
+  background:var(--mochi-v2-search-controls-input-background,var(--lp-surface-2,#ffffff0c));
   color:inherit;
-  border:1px solid var(--mochi-border);
+  border:var(--mochi-v2-search-controls-input-border,1px solid var(--mochi-border));
   border-radius:var(--mochi-radius-field);
-  padding:8px;
+  padding:var(--mochi-v2-search-controls-input-padding,8px);
   font:inherit
 }
 .mochi-view .mochi-search-results {
   display:grid;
-  gap:6px;
+  gap:var(--mochi-v2-search-results-gap,6px);
   min-width:0
 }
 .mochi-view .mochi-search-result {
@@ -2364,36 +2389,36 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   gap:var(--mochi-space-xs);
   min-width:0;
   max-width:100%;
-  text-align:left;
-  overflow-wrap:anywhere;
-  white-space:normal;
-  background:var(--lp-surface-2,#ffffff0c);
+  text-align:var(--mochi-v2-search-result-text-align,left);
+  overflow-wrap:var(--mochi-v2-search-result-overflow-wrap,anywhere);
+  white-space:var(--mochi-v2-search-result-white-space,normal);
+  background:var(--mochi-v2-search-result-background,var(--lp-surface-2,#ffffff0c));
   color:inherit;
-  border:1px solid var(--mochi-border);
-  border-radius:10px;
-  padding:10px;
-  cursor:pointer
+  border:var(--mochi-v2-search-result-border,1px solid var(--mochi-border));
+  border-radius:var(--mochi-v2-search-result-border-radius,10px);
+  padding:var(--mochi-v2-search-result-padding,10px);
+  cursor:var(--mochi-v2-search-result-cursor,pointer)
 }
 .mochi-view .mochi-search-result strong {
   min-width:0;
   overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap
+  text-overflow:var(--mochi-v2-search-result-strong-text-overflow,ellipsis);
+  white-space:var(--mochi-v2-search-result-strong-white-space,nowrap)
 }
 .mochi-view .mochi-search-result small {
-  font-size:calc(11px * var(--mochi-interface-scale,1))
+  font-size:var(--mochi-v2-search-result-small-font-size,calc(11px * var(--mochi-interface-scale,1)))
 }
 .mochi-view .mochi-search-paging {
   display:flex;
-  gap:6px;
-  flex-wrap:wrap
+  gap:var(--mochi-v2-search-paging-gap,6px);
+  flex-wrap:var(--mochi-v2-search-paging-flex-wrap,wrap)
 }
 .mochi-view .mochi-search-panel button {
-  min-height:40px
+  min-height:var(--mochi-v2-search-panel-button-min-height,40px)
 }
 .mochi-view .mochi-search-panel :focus-visible {
-  outline:2px solid var(--mochi-accent);
-  outline-offset:2px
+  outline:var(--mochi-v2-search-panel-focus-visible-outline,2px solid var(--mochi-accent));
+  outline-offset:var(--mochi-v2-search-panel-focus-visible-outline-offset,2px)
 }
 
 /* @mochi-section mochi-texting-styles */
@@ -2401,15 +2426,15 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   min-width:0;
   display:grid;
   gap:var(--mochi-space-sm);
-  border:1px solid var(--mochi-border);
-  border-radius:10px;
-  padding:10px
+  border:var(--mochi-v2-texting-controls-border,1px solid var(--mochi-border));
+  border-radius:var(--mochi-v2-texting-controls-border-radius,10px);
+  padding:var(--mochi-v2-texting-controls-padding,10px)
 }
 .mochi-view .mochi-texting-controls label {
   min-width:0;
   display:grid;
   gap:var(--mochi-space-xs);
-  overflow-wrap:anywhere
+  overflow-wrap:var(--mochi-v2-texting-controls-label-overflow-wrap,anywhere)
 }
 .mochi-view .mochi-texting-controls select,.mochi-view .mochi-texting-controls textarea {
   box-sizing:border-box;
@@ -2418,64 +2443,64 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   max-width:100%
 }
 .mochi-view .mochi-texting-controls :focus-visible {
-  outline:2px solid var(--mochi-accent);
-  outline-offset:2px
+  outline:var(--mochi-v2-texting-controls-focus-visible-outline,2px solid var(--mochi-accent));
+  outline-offset:var(--mochi-v2-texting-controls-focus-visible-outline-offset,2px)
 }
 
 /* @mochi-section mochi-preview-styles */
 .mochi-view .mochi-preview-panel {
   min-width:0;
   min-height:0;
-  max-height:40%;
+  max-height:var(--mochi-v2-preview-panel-max-height,40%);
   overflow:auto;
-  flex:0 1 auto;
-  padding:10px;
-  border-bottom:1px solid var(--mochi-border);
-  overflow-wrap:anywhere
+  flex:var(--mochi-v2-preview-panel-flex,0 1 auto);
+  padding:var(--mochi-v2-preview-panel-padding,10px);
+  border-bottom:var(--mochi-v2-preview-panel-border-bottom,1px solid var(--mochi-border));
+  overflow-wrap:var(--mochi-v2-preview-panel-overflow-wrap,anywhere)
 }
 .mochi-view .mochi-preview-controls {
   display:flex;
-  flex-wrap:wrap;
-  gap:6px;
+  flex-wrap:var(--mochi-v2-preview-controls-flex-wrap,wrap);
+  gap:var(--mochi-v2-preview-controls-gap,6px);
   min-width:0
 }
 .mochi-view .mochi-preview-controls select {
   max-width:100%;
   min-width:0;
-  background:var(--lp-surface-2,#ffffff0c);
+  background:var(--mochi-v2-preview-controls-select-background,var(--lp-surface-2,#ffffff0c));
   color:inherit;
-  border:1px solid var(--mochi-border);
-  padding:8px;
-  border-radius:8px
+  border:var(--mochi-v2-preview-controls-select-border,1px solid var(--mochi-border));
+  padding:var(--mochi-v2-preview-controls-select-padding,8px);
+  border-radius:var(--mochi-v2-preview-controls-select-border-radius,8px)
 }
 .mochi-view .mochi-preview-panel button {
-  min-height:40px
+  min-height:var(--mochi-v2-preview-panel-button-min-height,40px)
 }
 .mochi-view .mochi-preview-text {
-  white-space:pre-wrap;
-  overflow-wrap:anywhere;
+  white-space:var(--mochi-v2-preview-text-white-space,pre-wrap);
+  overflow-wrap:var(--mochi-v2-preview-text-overflow-wrap,anywhere);
   font:inherit;
   max-width:100%
 }
 .mochi-view .mochi-preview-panel :focus-visible {
-  outline:2px solid var(--mochi-accent);
-  outline-offset:2px
+  outline:var(--mochi-v2-preview-panel-focus-visible-outline,2px solid var(--mochi-accent));
+  outline-offset:var(--mochi-v2-preview-panel-focus-visible-outline-offset,2px)
 }
 
 /* @mochi-section mochi-preset-styles */
 .mochi-view .mochi-preset-panel {
   min-width:0;
   min-height:0;
-  max-height:45%;
+  max-height:var(--mochi-v2-preset-panel-max-height,45%);
   overflow:auto;
-  flex:0 1 auto;
-  padding:10px;
-  border-bottom:1px solid var(--mochi-border);
-  overflow-wrap:anywhere
+  flex:var(--mochi-v2-preset-panel-flex,0 1 auto);
+  padding:var(--mochi-v2-preset-panel-padding,10px);
+  border-bottom:var(--mochi-v2-preset-panel-border-bottom,1px solid var(--mochi-border));
+  overflow-wrap:var(--mochi-v2-preset-panel-overflow-wrap,anywhere)
 }
 .mochi-view .mochi-preset-panel button {
-  min-height:40px;
-  margin:3px
+  min-height:var(--mochi-v2-preset-panel-button-min-height,40px);
+  margin:var(--mochi-v2-preset-panel-button-margin,3px)
 }
 .mochi-view .mochi-preset-panel select {
   max-width:100%;
@@ -2496,21 +2521,21 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   width:100%;
   min-width:0;
   font:inherit;
-  background:color-mix(in srgb,currentColor 3%,var(--mochi-surface));
+  background:var(--mochi-v2-preset-editor-input-background,color-mix(in srgb,currentColor 3%,var(--mochi-surface)));
   color:inherit;
-  border:1px solid var(--mochi-border);
+  border:var(--mochi-v2-preset-editor-input-border,1px solid var(--mochi-border));
   border-radius:var(--mochi-radius-field);
-  padding:8px
+  padding:var(--mochi-v2-preset-editor-input-padding,8px)
 }
 .mochi-view .mochi-preset-entry {
-  border:1px solid var(--mochi-border);
-  border-radius:10px;
-  padding:8px;
-  margin-top:8px
+  border:var(--mochi-v2-preset-entry-border,1px solid var(--mochi-border));
+  border-radius:var(--mochi-v2-preset-entry-border-radius,10px);
+  padding:var(--mochi-v2-preset-entry-padding,8px);
+  margin-top:var(--mochi-v2-preset-entry-margin-top,8px)
 }
 .mochi-view .mochi-preset-panel :focus-visible {
-  outline:2px solid var(--mochi-accent);
-  outline-offset:2px
+  outline:var(--mochi-v2-preset-panel-focus-visible-outline,2px solid var(--mochi-accent));
+  outline-offset:var(--mochi-v2-preset-panel-focus-visible-outline-offset,2px)
 }
 
 /* @mochi-section block-editor */
@@ -2519,123 +2544,123 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 .mochi-view .mochi-block-toolbar {
   display:flex;
-  align-items:center;
-  justify-content:space-between;
+  align-items:var(--mochi-v2-block-toolbar-align-items,center);
+  justify-content:var(--mochi-v2-block-toolbar-justify-content,space-between);
   gap:var(--mochi-space-sm);
-  margin:12px 0
+  margin:var(--mochi-v2-block-toolbar-margin,12px 0)
 }
 .mochi-view .mochi-block-category {
-  border:1px solid var(--mochi-border);
-  border-radius:9px;
-  margin:8px 0;
+  border:var(--mochi-v2-block-category-border,1px solid var(--mochi-border));
+  border-radius:var(--mochi-v2-block-category-border-radius,9px);
+  margin:var(--mochi-v2-block-category-margin,8px 0);
   background:var(--mochi-surface)
 }
 .mochi-view .mochi-block-category>summary {
-  cursor:pointer;
-  min-height:44px;
-  padding:0 12px;
-  line-height:44px;
-  font-size:calc(13px * var(--mochi-interface-scale,1))
+  cursor:var(--mochi-v2-block-category-summary-cursor,pointer);
+  min-height:var(--mochi-v2-block-category-summary-min-height,44px);
+  padding:var(--mochi-v2-block-category-summary-padding,0 12px);
+  line-height:var(--mochi-v2-block-category-summary-line-height,44px);
+  font-size:var(--mochi-v2-block-category-summary-font-size,calc(13px * var(--mochi-interface-scale,1)))
 }
 .mochi-view .mochi-block-category>summary>button {
-  float:right;
+  float:var(--mochi-v2-block-category-summary-button-float,right);
   margin:0;
   border:0;
-  min-width:44px
+  min-width:var(--mochi-v2-block-category-summary-button-min-width,44px)
 }
 .mochi-view .mochi-block-count {
-  margin-left:10px;
-  font-size:calc(11px * var(--mochi-interface-scale,1));
-  opacity:.65
+  margin-left:var(--mochi-v2-block-count-margin-left,10px);
+  font-size:var(--mochi-v2-block-count-font-size,calc(11px * var(--mochi-interface-scale,1)));
+  opacity:var(--mochi-v2-block-count-opacity,.65)
 }
 .mochi-view .mochi-category-tools {
-  padding:8px 12px;
+  padding:var(--mochi-v2-category-tools-padding,8px 12px);
   display:flex;
-  flex-wrap:wrap;
-  gap:6px;
-  border-bottom:1px solid var(--mochi-border)
+  flex-wrap:var(--mochi-v2-category-tools-flex-wrap,wrap);
+  gap:var(--mochi-v2-category-tools-gap,6px);
+  border-bottom:var(--mochi-v2-category-tools-border-bottom,1px solid var(--mochi-border))
 }
 .mochi-view .mochi-category-tools[hidden] {
   display:none
 }
 .mochi-view .mochi-category-tools>input {
-  flex:1 1 160px
+  flex:var(--mochi-v2-category-tools-input-flex,1 1 160px)
 }
 .mochi-view .mochi-prompt-block {
-  padding:2px 10px;
-  border-top:1px solid var(--mochi-border)
+  padding:var(--mochi-v2-prompt-block-padding,2px 10px);
+  border-top:var(--mochi-v2-prompt-block-border-top,1px solid var(--mochi-border))
 }
 .mochi-view .mochi-prompt-block[data-enabled=false] .mochi-block-title {
-  opacity:.55
+  opacity:var(--mochi-v2-prompt-block-data-enabled-false-block-title-opacity,.55)
 }
 .mochi-view .mochi-block-row {
   display:flex;
-  align-items:center;
-  gap:10px;
-  min-height:48px;
+  align-items:var(--mochi-v2-block-row-align-items,center);
+  gap:var(--mochi-v2-block-row-gap,10px);
+  min-height:var(--mochi-v2-block-row-min-height,48px);
   min-width:0
 }
 .mochi-view .mochi-block-title {
-  flex:1;
+  flex:var(--mochi-v2-block-title-flex,1);
   min-width:0;
-  font-size:calc(13px * var(--mochi-interface-scale,1));
+  font-size:var(--mochi-v2-block-title-font-size,calc(13px * var(--mochi-interface-scale,1)));
   overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap
+  text-overflow:var(--mochi-v2-block-title-text-overflow,ellipsis);
+  white-space:var(--mochi-v2-block-title-white-space,nowrap)
 }
 .mochi-view .mochi-block-row small {
-  font-size:calc(11px * var(--mochi-interface-scale,1));
-  opacity:.65
+  font-size:var(--mochi-v2-block-row-small-font-size,calc(11px * var(--mochi-interface-scale,1)));
+  opacity:var(--mochi-v2-block-row-small-opacity,.65)
 }
 .mochi-view .mochi-block-drag {
-  cursor:grab;
-  opacity:.5
+  cursor:var(--mochi-v2-block-drag-cursor,grab);
+  opacity:var(--mochi-v2-block-drag-opacity,.5)
 }
 .mochi-view .mochi-block-action {
   font:inherit;
-  min-height:40px;
-  padding:7px 10px;
-  border:1px solid var(--mochi-border);
-  border-radius:7px;
+  min-height:var(--mochi-v2-block-action-min-height,40px);
+  padding:var(--mochi-v2-block-action-padding,7px 10px);
+  border:var(--mochi-v2-block-action-border,1px solid var(--mochi-border));
+  border-radius:var(--mochi-v2-block-action-border-radius,7px);
   color:inherit;
-  background:transparent;
-  cursor:pointer;
-  font-size:calc(12px * var(--mochi-interface-scale,1))
+  background:var(--mochi-v2-block-action-background,transparent);
+  cursor:var(--mochi-v2-block-action-cursor,pointer);
+  font-size:var(--mochi-v2-block-action-font-size,calc(12px * var(--mochi-interface-scale,1)))
 }
 .mochi-view .mochi-block-action:disabled {
-  opacity:.45;
-  cursor:default
+  opacity:var(--mochi-v2-block-action-disabled-opacity,.45);
+  cursor:var(--mochi-v2-block-action-disabled-cursor,default)
 }
 .mochi-view .mochi-block-action:hover:not(:disabled) {
-  background:color-mix(in srgb,currentColor 5%,var(--mochi-surface))
+  background:var(--mochi-v2-block-action-hover-background,color-mix(in srgb,currentColor 5%,var(--mochi-surface)))
 }
 .mochi-view .mochi-block-name {
-  border-color:transparent
+  border-color:var(--mochi-v2-block-name-border-color,transparent)
 }
 .mochi-view .mochi-block-overflow {
   position:relative;
-  flex:none
+  flex:var(--mochi-v2-block-overflow-flex,none)
 }
 .mochi-view .mochi-block-overflow>summary {
-  list-style:none;
-  cursor:pointer;
-  min-width:36px;
-  min-height:44px;
+  list-style:var(--mochi-v2-block-overflow-summary-list-style,none);
+  cursor:var(--mochi-v2-block-overflow-summary-cursor,pointer);
+  min-width:var(--mochi-v2-block-overflow-summary-min-width,36px);
+  min-height:var(--mochi-v2-block-overflow-summary-min-height,44px);
   display:grid;
-  place-items:center
+  place-items:var(--mochi-v2-block-overflow-summary-place-items,center)
 }
 .mochi-view .mochi-block-row-actions {
   position:absolute;
   right:0;
   top:100%;
-  z-index:4;
+  z-index:var(--mochi-v2-block-row-actions-z-index,4);
   background:var(--mochi-surface);
-  border:1px solid var(--mochi-border);
+  border:var(--mochi-v2-block-row-actions-border,1px solid var(--mochi-border));
   border-radius:var(--mochi-radius-field);
-  padding:5px;
+  padding:var(--mochi-v2-block-row-actions-padding,5px);
   display:grid;
-  min-width:150px;
-  box-shadow:0 5px 15px color-mix(in srgb,currentColor 12%,transparent)
+  min-width:var(--mochi-v2-block-row-actions-min-width,150px);
+  box-shadow:var(--mochi-v2-block-row-actions-box-shadow,0 5px 15px color-mix(in srgb,currentColor 12%,transparent))
 }
 .mochi-view .mochi-block-overflow:not([open])>.mochi-block-row-actions {
   display:none
@@ -2643,10 +2668,10 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 .mochi-view .mochi-block-detail {
   min-width:0;
   display:grid;
-  gap:12px
+  gap:var(--mochi-v2-block-detail-gap,12px)
 }
 .mochi-view .mochi-block-detail>button:first-child {
-  justify-self:start
+  justify-self:var(--mochi-v2-block-detail-button-first-child-justify-self,start)
 }
 .mochi-view .mochi-block-detail label {
   border:0;
@@ -2654,381 +2679,381 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 .mochi-view .mochi-block-detail label:has(input[type=checkbox]) {
   display:flex;
-  align-items:center;
-  gap:10px;
-  font-size:calc(12px * var(--mochi-interface-scale,1))
+  align-items:var(--mochi-v2-block-detail-label-has-input-type-checkbox-align-items,center);
+  gap:var(--mochi-v2-block-detail-label-has-input-type-checkbox-gap,10px);
+  font-size:var(--mochi-v2-block-detail-label-has-input-type-checkbox-font-size,calc(12px * var(--mochi-interface-scale,1)))
 }
 .mochi-view .mochi-block-detail textarea {
-  min-height:clamp(280px,45vh,650px);
+  min-height:var(--mochi-v2-block-detail-textarea-min-height,clamp(280px,45vh,650px));
   resize:vertical;
-  line-height:1.65;
-  font-family:ui-monospace,monospace
+  line-height:var(--mochi-v2-block-detail-textarea-line-height,1.65);
+  font-family:var(--mochi-v2-block-detail-textarea-font-family,ui-monospace,monospace)
 }
 .mochi-view .mochi-block-settings {
-  border-top:1px solid var(--mochi-border);
-  padding-top:6px
+  border-top:var(--mochi-v2-block-settings-border-top,1px solid var(--mochi-border));
+  padding-top:var(--mochi-v2-block-settings-padding-top,6px)
 }
 .mochi-view .mochi-block-settings[open] {
   display:flex;
-  flex-wrap:wrap;
-  gap:12px
+  flex-wrap:var(--mochi-v2-block-settings-open-flex-wrap,wrap);
+  gap:var(--mochi-v2-block-settings-open-gap,12px)
 }
 .mochi-view .mochi-block-settings>summary {
   width:100%
 }
 .mochi-view .mochi-block-settings>label {
-  flex:1 1 180px
+  flex:var(--mochi-v2-block-settings-label-flex,1 1 180px)
 }
 .mochi-view .mochi-block-settings select {
   width:100%
 }
 .mochi-view .mochi-block-picker {
-  padding:0 12px
+  padding:var(--mochi-v2-block-picker-padding,0 12px)
 }
 .mochi-view .mochi-block-picker>summary,.mochi-view .mochi-block-detail summary {
-  min-height:44px;
+  min-height:var(--mochi-v2-block-picker-summary-min-height,44px);
   display:flex;
-  align-items:center;
-  cursor:pointer;
-  font-size:calc(12px * var(--mochi-interface-scale,1))
+  align-items:var(--mochi-v2-block-picker-summary-align-items,center);
+  cursor:var(--mochi-v2-block-picker-summary-cursor,pointer);
+  font-size:var(--mochi-v2-block-picker-summary-font-size,calc(12px * var(--mochi-interface-scale,1)))
 }
 .mochi-view .mochi-block-picker[open] {
   display:grid;
   gap:var(--mochi-space-sm);
-  padding-bottom:12px
+  padding-bottom:var(--mochi-v2-block-picker-open-padding-bottom,12px)
 }
 .mochi-view .mochi-macro-browser {
-  border:1px solid var(--mochi-border);
-  padding:12px;
+  border:var(--mochi-v2-macro-browser-border,1px solid var(--mochi-border));
+  padding:var(--mochi-v2-macro-browser-padding,12px);
   border-radius:var(--mochi-radius-field);
   display:grid;
-  gap:8px
+  gap:var(--mochi-v2-macro-browser-gap,8px)
 }
 .mochi-view .mochi-macro-item {
-  padding:12px 0;
-  border-bottom:1px solid var(--mochi-border);
+  padding:var(--mochi-v2-macro-item-padding,12px 0);
+  border-bottom:var(--mochi-v2-macro-item-border-bottom,1px solid var(--mochi-border));
   display:grid;
-  gap:5px
+  gap:var(--mochi-v2-macro-item-gap,5px)
 }
 .mochi-view .mochi-macro-item code {
-  overflow-wrap:anywhere;
-  white-space:pre-wrap
+  overflow-wrap:var(--mochi-v2-macro-item-code-overflow-wrap,anywhere);
+  white-space:var(--mochi-v2-macro-item-code-white-space,pre-wrap)
 }
 .mochi-view .mochi-block-editor :focus-visible {
-  outline:2px solid var(--mochi-accent);
-  outline-offset:2px
+  outline:var(--mochi-v2-block-editor-focus-visible-outline,2px solid var(--mochi-accent));
+  outline-offset:var(--mochi-v2-block-editor-focus-visible-outline-offset,2px)
 }
 .mochi-view .mochi-block-editor input[type=checkbox] {
-  width:20px;
-  height:20px;
-  min-height:20px;
-  flex:none;
+  width:var(--mochi-v2-block-editor-input-type-checkbox-width,20px);
+  height:var(--mochi-v2-block-editor-input-type-checkbox-height,20px);
+  min-height:var(--mochi-v2-block-editor-input-type-checkbox-min-height,20px);
+  flex:var(--mochi-v2-block-editor-input-type-checkbox-flex,none);
   accent-color:var(--mochi-accent)
 }
 @container(max-width:550px) {
   .mochi-view .mochi-block-row {
-    gap:5px;
-    flex-wrap:wrap;
-    padding:4px 0
+    gap:var(--mochi-v2-block-row-container-max-width-550px-gap,5px);
+    flex-wrap:var(--mochi-v2-block-row-container-max-width-550px-flex-wrap,wrap);
+    padding:var(--mochi-v2-block-row-container-max-width-550px-padding,4px 0)
   }
   .mochi-view .mochi-block-row small {
-    order:2;
+    order:var(--mochi-v2-block-row-small-container-max-width-550px-order,2);
     flex-basis:100%;
-    padding-left:38px
+    padding-left:var(--mochi-v2-block-row-small-container-max-width-550px-padding-left,38px)
   }
   .mochi-view .mochi-block-drag {
     display:none
   }
   .mochi-view .mochi-block-category>summary {
-    padding:0 8px
+    padding:var(--mochi-v2-block-category-summary-container-max-width-550px-padding,0 8px)
   }
   .mochi-view .mochi-prompt-block {
-    padding:2px 8px
+    padding:var(--mochi-v2-prompt-block-container-max-width-550px-padding,2px 8px)
   }
   .mochi-view .mochi-block-action {
-    min-height:44px
+    min-height:var(--mochi-v2-block-action-container-max-width-550px-min-height,44px)
   }
 }
 
 /* @mochi-section preset-workspace-base */
 .mochi-view .mochi-preset-panel {
-  max-height:70%;
+  max-height:var(--mochi-v2-preset-panel-max-height,70%);
   container-type:inline-size;
   background:var(--mochi-surface);
-  border:1px solid var(--mochi-border);
+  border:var(--mochi-v2-preset-panel-border,1px solid var(--mochi-border));
   border-radius:var(--mochi-radius-card);
-  margin:6px
+  margin:var(--mochi-v2-preset-panel-margin,6px)
 }
 .mochi-view .mochi-preset-workspace {
   display:grid;
   gap:var(--mochi-space-md);
-  margin-top:12px;
+  margin-top:var(--mochi-v2-preset-workspace-margin-top,12px);
   min-width:0
 }
 .mochi-view .mochi-preset-library,.mochi-view .mochi-preset-edit-pane {
   min-width:0;
-  border:1px solid var(--mochi-border);
-  border-radius:10px;
-  padding:10px;
-  background:color-mix(in srgb,currentColor 3%,var(--mochi-surface))
+  border:var(--mochi-v2-preset-library-border,1px solid var(--mochi-border));
+  border-radius:var(--mochi-v2-preset-library-border-radius,10px);
+  padding:var(--mochi-v2-preset-library-padding,10px);
+  background:var(--mochi-v2-preset-library-background,color-mix(in srgb,currentColor 3%,var(--mochi-surface)))
 }
 .mochi-view .mochi-preset-library {
   display:grid;
-  align-content:start;
-  gap:6px;
-  max-height:220px;
+  align-content:var(--mochi-v2-preset-library-align-content,start);
+  gap:var(--mochi-v2-preset-library-gap,6px);
+  max-height:var(--mochi-v2-preset-library-max-height,220px);
   overflow:auto
 }
 .mochi-view .mochi-preset-library-item {
   font:inherit;
   min-width:0;
-  text-align:left;
-  white-space:normal;
-  overflow-wrap:anywhere;
-  border:1px solid var(--mochi-border);
+  text-align:var(--mochi-v2-preset-library-item-text-align,left);
+  white-space:var(--mochi-v2-preset-library-item-white-space,normal);
+  overflow-wrap:var(--mochi-v2-preset-library-item-overflow-wrap,anywhere);
+  border:var(--mochi-v2-preset-library-item-border,1px solid var(--mochi-border));
   border-radius:var(--mochi-radius-field);
-  background:transparent;
+  background:var(--mochi-v2-preset-library-item-background,transparent);
   color:inherit;
-  padding:8px
+  padding:var(--mochi-v2-preset-library-item-padding,8px)
 }
 .mochi-view .mochi-preset-library-item[aria-pressed=true] {
   border-color:var(--mochi-accent);
-  background:color-mix(in srgb,var(--mochi-accent) 8%,var(--mochi-surface))
+  background:var(--mochi-v2-preset-library-item-aria-pressed-true-background,color-mix(in srgb,var(--mochi-accent) 8%,var(--mochi-surface)))
 }
 .mochi-view .mochi-preset-binding {
-  border:1px solid var(--mochi-border);
-  padding:8px;
-  border-radius:10px
+  border:var(--mochi-v2-preset-binding-border,1px solid var(--mochi-border));
+  padding:var(--mochi-v2-preset-binding-padding,8px);
+  border-radius:var(--mochi-v2-preset-binding-border-radius,10px)
 }
 .mochi-view .mochi-preset-binding>summary {
-  min-height:44px;
-  padding:10px 0;
-  cursor:pointer
+  min-height:var(--mochi-v2-preset-binding-summary-min-height,44px);
+  padding:var(--mochi-v2-preset-binding-summary-padding,10px 0);
+  cursor:var(--mochi-v2-preset-binding-summary-cursor,pointer)
 }
 .mochi-view .mochi-preset-panel h3,.mochi-view .mochi-preset-panel h4 {
-  margin:0 0 10px;
-  font-weight:600
+  margin:var(--mochi-v2-preset-panel-h3-margin,0 0 10px);
+  font-weight:var(--mochi-v2-preset-panel-h3-font-weight,600)
 }
 .mochi-view .mochi-preset-editor label {
-  padding:8px;
-  border:1px solid var(--mochi-border);
-  border-radius:8px
+  padding:var(--mochi-v2-preset-editor-label-padding,8px);
+  border:var(--mochi-v2-preset-editor-label-border,1px solid var(--mochi-border));
+  border-radius:var(--mochi-v2-preset-editor-label-border-radius,8px)
 }
 .mochi-view .mochi-placement-row {
-  border:1px solid var(--mochi-border);
+  border:var(--mochi-v2-placement-row-border,1px solid var(--mochi-border));
   border-radius:var(--mochi-radius-field);
-  padding:10px;
-  margin:8px 0;
+  padding:var(--mochi-v2-placement-row-padding,10px);
+  margin:var(--mochi-v2-placement-row-margin,8px 0);
   min-width:0
 }
 .mochi-view .mochi-placement-row-head {
   display:flex;
-  flex-wrap:wrap;
-  align-items:center;
-  gap:5px
+  flex-wrap:var(--mochi-v2-placement-row-head-flex-wrap,wrap);
+  align-items:var(--mochi-v2-placement-row-head-align-items,center);
+  gap:var(--mochi-v2-placement-row-head-gap,5px)
 }
 .mochi-view .mochi-preset-panel pre {
-  white-space:pre-wrap;
-  overflow-wrap:anywhere
+  white-space:var(--mochi-v2-preset-panel-pre-white-space,pre-wrap);
+  overflow-wrap:var(--mochi-v2-preset-panel-pre-overflow-wrap,anywhere)
 }
 .mochi-view .mochi-placement-editor select {
   max-width:100%;
-  background:color-mix(in srgb,currentColor 3%,var(--mochi-surface));
+  background:var(--mochi-v2-placement-editor-select-background,color-mix(in srgb,currentColor 3%,var(--mochi-surface)));
   color:inherit;
-  border:1px solid var(--mochi-border);
-  padding:8px
+  border:var(--mochi-v2-placement-editor-select-border,1px solid var(--mochi-border));
+  padding:var(--mochi-v2-placement-editor-select-padding,8px)
 }
 .mochi-view .mochi-preview-panel {
-  border:1px solid var(--mochi-border);
+  border:var(--mochi-v2-preview-panel-border,1px solid var(--mochi-border));
   border-radius:var(--mochi-radius-card);
-  margin:6px;
+  margin:var(--mochi-v2-preview-panel-margin,6px);
   background:var(--mochi-surface)
 }
 .mochi-view .mochi-preview-panel>details {
-  border:1px solid var(--mochi-border);
+  border:var(--mochi-v2-preview-panel-details-border,1px solid var(--mochi-border));
   border-radius:var(--mochi-radius-field);
-  padding:10px;
-  margin-top:8px;
-  background:color-mix(in srgb,currentColor 3%,var(--mochi-surface))
+  padding:var(--mochi-v2-preview-panel-details-padding,10px);
+  margin-top:var(--mochi-v2-preview-panel-details-margin-top,8px);
+  background:var(--mochi-v2-preview-panel-details-background,color-mix(in srgb,currentColor 3%,var(--mochi-surface)))
 }
 .mochi-view .mochi-preview-panel summary {
-  cursor:pointer;
-  font-weight:600;
-  min-height:32px
+  cursor:var(--mochi-v2-preview-panel-summary-cursor,pointer);
+  font-weight:var(--mochi-v2-preview-panel-summary-font-weight,600);
+  min-height:var(--mochi-v2-preview-panel-summary-min-height,32px)
 }
 .mochi-view .mochi-preview-text {
-  max-height:320px;
+  max-height:var(--mochi-v2-preview-text-max-height,320px);
   overflow:auto;
-  padding:8px;
-  border-left:2px solid var(--mochi-border)
+  padding:var(--mochi-v2-preview-text-padding,8px);
+  border-left:var(--mochi-v2-preview-text-border-left,2px solid var(--mochi-border))
 }
 .mochi-view .mochi-preview-warning {
-  border-left:3px solid var(--mochi-accent);
-  padding:6px 10px
+  border-left:var(--mochi-v2-preview-warning-border-left,3px solid var(--mochi-accent));
+  padding:var(--mochi-v2-preview-warning-padding,6px 10px)
 }
 .mochi-view .mochi-preview-identity {
-  font-weight:600
+  font-weight:var(--mochi-v2-preview-identity-font-weight,600)
 }
 @container(min-width:600px) {
   .mochi-view .mochi-preset-workspace {
-    grid-template-columns:minmax(115px,155px) minmax(0,1fr)
+    grid-template-columns:var(--mochi-v2-preset-workspace-container-min-width-600px-grid-template-columns,minmax(115px,155px) minmax(0,1fr))
   }
   .mochi-view .mochi-preset-library {
-    max-height:none
+    max-height:var(--mochi-v2-preset-library-container-min-width-600px-max-height,none)
   }
 }
 
 /* @mochi-section mochi-preset-dedicated-styles */
 .mochi-view[data-preset-workspace=true] {
   display:flex!important;
-  flex-direction:column;
+  flex-direction:var(--mochi-v2-data-preset-workspace-true-flex-direction,column);
   min-height:0;
   height:100%;
   overflow:hidden;
   padding:0
 }
 .mochi-desktop[data-preset-workspace=true] {
-  grid-template-columns:minmax(0,1fr)!important
+  grid-template-columns:var(--mochi-v2-desktop-data-preset-workspace-true-grid-template-columns,minmax(0,1fr))!important
 }
 .mochi-desktop[data-preset-workspace=true]>.mochi-desktop-list,.mochi-desktop[data-preset-workspace=true]>.mochi-profile-panel,.mochi-desktop[data-preset-workspace=true] .mochi-desktop-back,.mochi-desktop[data-preset-workspace=true] .mochi-shell-notifications {
   display:none!important
 }
 .mochi-view .mochi-preset-panel {
-  flex:1 1 auto;
-  max-height:none;
+  flex:var(--mochi-v2-preset-panel-flex,1 1 auto);
+  max-height:var(--mochi-v2-preset-panel-max-height,none);
   height:100%;
   box-sizing:border-box;
   margin:0;
   border:0;
   border-radius:0;
-  padding:24px clamp(14px,4vw,64px);
+  padding:var(--mochi-v2-preset-panel-padding,24px clamp(14px,4vw,64px));
   overflow:auto;
   background:var(--mochi-surface);
   container-type:inline-size
 }
 .mochi-view .mochi-preset-panel>h3 {
-  font-size:calc(19px * var(--mochi-interface-scale,1));
-  margin:0 0 6px
+  font-size:var(--mochi-v2-preset-panel-h3-font-size,calc(19px * var(--mochi-interface-scale,1)));
+  margin:var(--mochi-v2-preset-panel-h3-margin,0 0 6px)
 }
 .mochi-view .mochi-preset-panel>.mochi-muted {
-  font-size:calc(12px * var(--mochi-interface-scale,1));
-  margin:6px 0
+  font-size:var(--mochi-v2-preset-panel-muted-font-size,calc(12px * var(--mochi-interface-scale,1)));
+  margin:var(--mochi-v2-preset-panel-muted-margin,6px 0)
 }
 .mochi-view .mochi-preset-workspace {
   display:block;
-  margin-top:16px
+  margin-top:var(--mochi-v2-preset-workspace-margin-top,16px)
 }
 .mochi-view .mochi-preset-library {
   display:block;
-  max-height:none;
+  max-height:var(--mochi-v2-preset-library-max-height,none);
   border:0;
-  border-bottom:1px solid var(--mochi-border);
+  border-bottom:var(--mochi-v2-preset-library-border-bottom,1px solid var(--mochi-border));
   border-radius:0;
-  padding:0 0 8px;
-  margin-bottom:16px;
-  background:transparent
+  padding:var(--mochi-v2-preset-library-padding,0 0 8px);
+  margin-bottom:var(--mochi-v2-preset-library-margin-bottom,16px);
+  background:var(--mochi-v2-preset-library-background,transparent)
 }
 .mochi-view .mochi-preset-library>summary {
-  cursor:pointer;
-  min-height:44px;
-  font-size:calc(13px * var(--mochi-interface-scale,1));
-  line-height:44px
+  cursor:var(--mochi-v2-preset-library-summary-cursor,pointer);
+  min-height:var(--mochi-v2-preset-library-summary-min-height,44px);
+  font-size:var(--mochi-v2-preset-library-summary-font-size,calc(13px * var(--mochi-interface-scale,1)));
+  line-height:var(--mochi-v2-preset-library-summary-line-height,44px)
 }
 .mochi-view .mochi-preset-library-item {
-  margin:4px;
-  font-size:calc(12px * var(--mochi-interface-scale,1))
+  margin:var(--mochi-v2-preset-library-item-margin,4px);
+  font-size:var(--mochi-v2-preset-library-item-font-size,calc(12px * var(--mochi-interface-scale,1)))
 }
 .mochi-view .mochi-preset-edit-pane {
   border:0;
   padding:0;
-  background:transparent
+  background:var(--mochi-v2-preset-edit-pane-background,transparent)
 }
 .mochi-view .mochi-preset-editor {
-  gap:12px
+  gap:var(--mochi-v2-preset-editor-gap,12px)
 }
 .mochi-view .mochi-preset-editor>label {
   border:0;
   padding:0
 }
 .mochi-view .mochi-preset-editor>button {
-  justify-self:start
+  justify-self:var(--mochi-v2-preset-editor-button-justify-self,start)
 }
 .mochi-view .mochi-preset-editor>button[type=submit] {
   border-color:var(--mochi-accent);
-  font-weight:600
+  font-weight:var(--mochi-v2-preset-editor-button-type-submit-font-weight,600)
 }
 .mochi-view .mochi-preset-binding {
-  border-width:0 0 1px;
+  border-width:var(--mochi-v2-preset-binding-border-width,0 0 1px);
   border-radius:0;
   padding:0;
-  background:transparent
+  background:var(--mochi-v2-preset-binding-background,transparent)
 }
 .mochi-view .mochi-preset-binding>summary {
-  font-size:calc(12px * var(--mochi-interface-scale,1))
+  font-size:var(--mochi-v2-preset-binding-summary-font-size,calc(12px * var(--mochi-interface-scale,1)))
 }
 .mochi-view .mochi-preset-binding[open] {
-  padding-bottom:12px
+  padding-bottom:var(--mochi-v2-preset-binding-open-padding-bottom,12px)
 }
 .mochi-view .mochi-preset-panel[data-block-editing=true]>h3,.mochi-view .mochi-preset-panel[data-block-editing=true]>p {
   display:none
 }
 .mochi-view .mochi-preset-panel[data-block-editing=true]>.mochi-preset-workspace {
-  margin-top:14px
+  margin-top:var(--mochi-v2-preset-panel-data-block-editing-true-preset-workspace-margin-top,14px)
 }
 .mochi-view[data-preset-workspace=true]>.mochi-preview-panel {
-  flex:1;
-  max-height:none;
+  flex:var(--mochi-v2-data-preset-workspace-true-preview-panel-flex,1);
+  max-height:var(--mochi-v2-data-preset-workspace-true-preview-panel-max-height,none);
   overflow:auto;
   margin:0;
   border:0;
   border-radius:0;
-  padding:24px
+  padding:var(--mochi-v2-data-preset-workspace-true-preview-panel-padding,24px)
 }
 .mochi-view .mochi-preset-panel pre {
-  white-space:pre-wrap;
-  overflow-wrap:anywhere
+  white-space:var(--mochi-v2-preset-panel-pre-white-space,pre-wrap);
+  overflow-wrap:var(--mochi-v2-preset-panel-pre-overflow-wrap,anywhere)
 }
 @container(max-width:550px) {
   .mochi-view .mochi-preset-panel {
-    padding:14px
+    padding:var(--mochi-v2-preset-panel-container-max-width-550px-padding,14px)
   }
   .mochi-view .mochi-preset-panel button {
     max-width:100%;
-    white-space:normal
+    white-space:var(--mochi-v2-preset-panel-button-container-max-width-550px-white-space,normal)
   }
   .mochi-view .mochi-preset-panel>h3 {
-    font-size:calc(17px * var(--mochi-interface-scale,1))
+    font-size:var(--mochi-v2-preset-panel-h3-container-max-width-550px-font-size,calc(17px * var(--mochi-interface-scale,1)))
   }
 }
 
 /* @mochi-section mochi-preset-chrome-styles */
 .mochi-view .mochi-preset-heading {
   display:flex;
-  align-items:center;
+  align-items:var(--mochi-v2-preset-heading-align-items,center);
   gap:var(--mochi-space-md);
-  flex-wrap:wrap;
-  margin-bottom:8px
+  flex-wrap:var(--mochi-v2-preset-heading-flex-wrap,wrap);
+  margin-bottom:var(--mochi-v2-preset-heading-margin-bottom,8px)
 }
 .mochi-view .mochi-preset-heading h3 {
-  flex:1;
+  flex:var(--mochi-v2-preset-heading-h3-flex,1);
   margin:0;
-  font-size:calc(18px * var(--mochi-interface-scale,1))
+  font-size:var(--mochi-v2-preset-heading-h3-font-size,calc(18px * var(--mochi-interface-scale,1)))
 }
 .mochi-view .mochi-preset-heading button {
-  font-size:calc(12px * var(--mochi-interface-scale,1))
+  font-size:var(--mochi-v2-preset-heading-button-font-size,calc(12px * var(--mochi-interface-scale,1)))
 }
 .mochi-view .mochi-preset-panel>.mochi-preset-heading+p {
-  margin:0 0 8px
+  margin:var(--mochi-v2-preset-panel-preset-heading-p-margin,0 0 8px)
 }
 .mochi-view .mochi-preset-panel>.mochi-preset-workspace {
-  margin-top:4px
+  margin-top:var(--mochi-v2-preset-panel-preset-workspace-margin-top,4px)
 }
 .mochi-view .mochi-preset-panel>.mochi-preset-workspace>.mochi-preset-library {
-  margin-bottom:10px;
+  margin-bottom:var(--mochi-v2-preset-panel-preset-workspace-preset-library-margin-bottom,10px);
   padding-bottom:0
 }
 .mochi-view .mochi-preset-panel[data-block-editing=true]>.mochi-preset-heading {
-  justify-content:flex-end
+  justify-content:var(--mochi-v2-preset-panel-data-block-editing-true-preset-heading-justify-content,flex-end)
 }
 .mochi-view .mochi-preset-panel[data-block-editing=true]>.mochi-preset-heading>h3 {
   display:none
@@ -3037,7 +3062,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   display:none
 }
 .mochi-view .mochi-preset-panel[data-block-editing=true] .mochi-block-detail>h4 {
-  font-size:calc(20px * var(--mochi-interface-scale,1))
+  font-size:var(--mochi-v2-preset-panel-data-block-editing-true-block-detail-h4-font-size,calc(20px * var(--mochi-interface-scale,1)))
 }
 .mochi-view .mochi-preset-panel[data-block-editing=true] .mochi-block-detail>p {
   margin:0
@@ -3054,13 +3079,13 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 .mochi-view .mochi-block-switches {
   display:flex;
   gap:var(--mochi-space-xl);
-  flex-wrap:wrap
+  flex-wrap:var(--mochi-v2-block-switches-flex-wrap,wrap)
 }
 .mochi-view .mochi-preset-editor .mochi-block-switches label {
-  flex-direction:row;
-  min-height:32px;
-  justify-content:flex-start;
-  gap:10px
+  flex-direction:var(--mochi-v2-preset-editor-block-switches-label-flex-direction,row);
+  min-height:var(--mochi-v2-preset-editor-block-switches-label-min-height,32px);
+  justify-content:var(--mochi-v2-preset-editor-block-switches-label-justify-content,flex-start);
+  gap:var(--mochi-v2-preset-editor-block-switches-label-gap,10px)
 }
 .mochi-view .mochi-preset-editor .mochi-block-switches input {
   margin:0
@@ -3069,17 +3094,17 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   margin:0
 }
 .mochi-view .mochi-block-detail {
-  gap:10px
+  gap:var(--mochi-v2-block-detail-gap,10px)
 }
 .mochi-view .mochi-preset-navigation {
   display:flex;
-  flex-wrap:wrap;
-  gap:8px 24px;
-  border-bottom:1px solid var(--mochi-border);
-  margin-bottom:12px
+  flex-wrap:var(--mochi-v2-preset-navigation-flex-wrap,wrap);
+  gap:var(--mochi-v2-preset-navigation-gap,8px 24px);
+  border-bottom:var(--mochi-v2-preset-navigation-border-bottom,1px solid var(--mochi-border));
+  margin-bottom:var(--mochi-v2-preset-navigation-margin-bottom,12px)
 }
 .mochi-view .mochi-preset-navigation>details {
-  flex:1 1 220px;
+  flex:var(--mochi-v2-preset-navigation-details-flex,1 1 220px);
   border:0;
   margin:0;
   padding:0
@@ -3088,12 +3113,12 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   flex-basis:100%
 }
 .mochi-view .mochi-preset-navigation>details>summary {
-  min-height:40px;
+  min-height:var(--mochi-v2-preset-navigation-details-summary-min-height,40px);
   padding:0;
-  line-height:40px
+  line-height:var(--mochi-v2-preset-navigation-details-summary-line-height,40px)
 }
 .mochi-view .mochi-preset-panel {
-  padding-top:16px
+  padding-top:var(--mochi-v2-preset-panel-padding-top,16px)
 }
 .mochi-view .mochi-preset-editor label:has(input[readonly]) {
   display:none
@@ -3103,24 +3128,24 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 .mochi-view .mochi-memory-panel {
   min-width:0;
   min-height:0;
-  max-height:70%;
+  max-height:var(--mochi-v2-memory-panel-max-height,70%);
   overflow:auto;
-  flex:0 1 auto;
-  border:1px solid var(--mochi-border);
+  flex:var(--mochi-v2-memory-panel-flex,0 1 auto);
+  border:var(--mochi-v2-memory-panel-border,1px solid var(--mochi-border));
   border-radius:var(--mochi-radius-card);
-  margin:6px;
-  padding:10px;
-  background:var(--lp-surface-1,transparent);
-  overflow-wrap:anywhere
+  margin:var(--mochi-v2-memory-panel-margin,6px);
+  padding:var(--mochi-v2-memory-panel-padding,10px);
+  background:var(--mochi-v2-memory-panel-background,var(--lp-surface-1,transparent));
+  overflow-wrap:var(--mochi-v2-memory-panel-overflow-wrap,anywhere)
 }
 .mochi-view .mochi-memory-editor {
   display:grid;
-  gap:10px;
+  gap:var(--mochi-v2-memory-editor-gap,10px);
   min-width:0
 }
 .mochi-view .mochi-memory-editor label {
   display:grid;
-  gap:5px;
+  gap:var(--mochi-v2-memory-editor-label-gap,5px);
   min-width:0
 }
 .mochi-view .mochi-memory-panel textarea,.mochi-view .mochi-memory-panel input[type=number] {
@@ -3130,53 +3155,53 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   max-width:100%;
   font:inherit;
   color:inherit;
-  background:var(--lp-surface-2,#ffffff0c);
-  border:1px solid var(--mochi-border);
+  background:var(--mochi-v2-memory-panel-textarea-background,var(--lp-surface-2,#ffffff0c));
+  border:var(--mochi-v2-memory-panel-textarea-border,1px solid var(--mochi-border));
   border-radius:var(--mochi-radius-field);
-  padding:8px
+  padding:var(--mochi-v2-memory-panel-textarea-padding,8px)
 }
 .mochi-view .mochi-memory-panel button {
-  min-height:40px;
+  min-height:var(--mochi-v2-memory-panel-button-min-height,40px);
   max-width:100%;
-  white-space:normal;
-  margin:3px
+  white-space:var(--mochi-v2-memory-panel-button-white-space,normal);
+  margin:var(--mochi-v2-memory-panel-button-margin,3px)
 }
 .mochi-view .mochi-memory-text {
-  white-space:pre-wrap;
-  overflow-wrap:anywhere;
+  white-space:var(--mochi-v2-memory-text-white-space,pre-wrap);
+  overflow-wrap:var(--mochi-v2-memory-text-overflow-wrap,anywhere);
   font:inherit;
-  max-height:240px;
+  max-height:var(--mochi-v2-memory-text-max-height,240px);
   overflow:auto
 }
 .mochi-view .mochi-memory-version {
-  border:1px solid var(--mochi-border);
+  border:var(--mochi-v2-memory-version-border,1px solid var(--mochi-border));
   border-radius:var(--mochi-radius-field);
-  padding:8px;
-  margin:8px 0
+  padding:var(--mochi-v2-memory-version-padding,8px);
+  margin:var(--mochi-v2-memory-version-margin,8px 0)
 }
 .mochi-view .mochi-memory-panel :focus-visible {
-  outline:2px solid var(--mochi-accent);
-  outline-offset:2px
+  outline:var(--mochi-v2-memory-panel-focus-visible-outline,2px solid var(--mochi-accent));
+  outline-offset:var(--mochi-v2-memory-panel-focus-visible-outline-offset,2px)
 }
 
 /* @mochi-section settings-workspace-styles */
 .mochi-view[data-settings-workspace=true] {
   display:flex;
-  flex-direction:column;
+  flex-direction:var(--mochi-v2-data-settings-workspace-true-flex-direction,column);
   height:100%;
   min-height:0;
   padding:0;
   overflow:hidden
 }
 .mochi-desktop[data-settings-workspace=true] {
-  grid-template-columns:minmax(0,1fr)!important
+  grid-template-columns:var(--mochi-v2-desktop-data-settings-workspace-true-grid-template-columns,minmax(0,1fr))!important
 }
 .mochi-desktop[data-settings-workspace=true]>.mochi-desktop-list,.mochi-desktop[data-settings-workspace=true]>.mochi-profile-panel,.mochi-desktop[data-settings-workspace=true] .mochi-desktop-back {
   display:none!important
 }
 .mochi-settings-workspace {
   display:flex;
-  flex-direction:column;
+  flex-direction:var(--mochi-v2-settings-workspace-flex-direction,column);
   min-height:0;
   height:100%;
   overflow:hidden;
@@ -3186,70 +3211,70 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 .mochi-settings-heading {
   display:flex;
-  align-items:center;
-  justify-content:space-between;
+  align-items:var(--mochi-v2-settings-heading-align-items,center);
+  justify-content:var(--mochi-v2-settings-heading-justify-content,space-between);
   gap:var(--mochi-space-md);
-  padding:16px 20px;
-  border-bottom:1px solid var(--mochi-border)
+  padding:var(--mochi-v2-settings-heading-padding,16px 20px);
+  border-bottom:var(--mochi-v2-settings-heading-border-bottom,1px solid var(--mochi-border))
 }
 .mochi-settings-heading h3 {
   margin:0;
-  font-size:calc(17px * var(--mochi-interface-scale,1))
+  font-size:var(--mochi-v2-settings-heading-h3-font-size,calc(17px * var(--mochi-interface-scale,1)))
 }
 .mochi-settings-tabs,.mochi-settings-categories {
   display:flex;
-  flex-wrap:wrap;
-  gap:8px;
-  padding:12px 20px;
-  border-bottom:1px solid var(--mochi-border);
-  flex:none
+  flex-wrap:var(--mochi-v2-settings-tabs-flex-wrap,wrap);
+  gap:var(--mochi-v2-settings-tabs-gap,8px);
+  padding:var(--mochi-v2-settings-tabs-padding,12px 20px);
+  border-bottom:var(--mochi-v2-settings-tabs-border-bottom,1px solid var(--mochi-border));
+  flex:var(--mochi-v2-settings-tabs-flex,none)
 }
 .mochi-settings-categories {
   display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(130px,1fr))
+  grid-template-columns:var(--mochi-v2-settings-categories-grid-template-columns,repeat(auto-fit,minmax(130px,1fr)))
 }
 .mochi-settings-workspace button {
-  min-height:44px;
+  min-height:var(--mochi-v2-settings-workspace-button-min-height,44px);
   font:inherit;
   color:inherit;
-  font-size:calc(13px * var(--mochi-interface-scale,1))
+  font-size:var(--mochi-v2-settings-workspace-button-font-size,calc(13px * var(--mochi-interface-scale,1)))
 }
 .mochi-settings-workspace button[aria-pressed=true] {
   border-color:var(--mochi-accent);
-  box-shadow:inset 0 -2px var(--mochi-accent)
+  box-shadow:var(--mochi-v2-settings-workspace-button-aria-pressed-true-box-shadow,inset 0 -2px var(--mochi-accent))
 }
 .mochi-settings-workspace>.mochi-muted {
   margin:0;
-  padding:10px 20px;
-  font-size:calc(12px * var(--mochi-interface-scale,1));
-  line-height:1.5
+  padding:var(--mochi-v2-settings-workspace-muted-padding,10px 20px);
+  font-size:var(--mochi-v2-settings-workspace-muted-font-size,calc(12px * var(--mochi-interface-scale,1)));
+  line-height:var(--mochi-v2-settings-workspace-muted-line-height,1.5)
 }
 .mochi-view .mochi-organized-settings {
   display:flex;
-  flex:1;
-  flex-direction:column;
+  flex:var(--mochi-v2-organized-settings-flex,1);
+  flex-direction:var(--mochi-v2-organized-settings-flex-direction,column);
   min-height:0;
   overflow:hidden;
   gap:0;
   padding:0
 }
 .mochi-settings-scroll,.mochi-personal-scroll {
-  flex:1;
+  flex:var(--mochi-v2-settings-scroll-flex,1);
   min-height:0;
   overflow:auto;
-  padding:20px;
+  padding:var(--mochi-v2-settings-scroll-padding,20px);
   overscroll-behavior:contain
 }
 .mochi-organized-settings>.mochi-actions {
-  flex:none;
-  gap:10px;
-  padding:12px 20px;
-  border-top:1px solid var(--mochi-border);
+  flex:var(--mochi-v2-organized-settings-actions-flex,none);
+  gap:var(--mochi-v2-organized-settings-actions-gap,10px);
+  padding:var(--mochi-v2-organized-settings-actions-padding,12px 20px);
+  border-top:var(--mochi-v2-organized-settings-actions-border-top,1px solid var(--mochi-border));
   background:var(--mochi-surface)
 }
 .mochi-view .mochi-settings-category {
   display:grid;
-  align-content:start;
+  align-content:var(--mochi-v2-settings-category-align-content,start);
   gap:var(--mochi-space-md);
   min-width:0
 }
@@ -3257,14 +3282,14 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   border:0;
   border-radius:0;
   padding:0;
-  background:transparent
+  background:var(--mochi-v2-settings-category-settings-section-background,transparent)
 }
 .mochi-view .mochi-settings-scroll .mochi-settings-section>summary {
-  padding:8px 0;
+  padding:var(--mochi-v2-settings-scroll-settings-section-summary-padding,8px 0);
   border:0
 }
 .mochi-view .mochi-settings-scroll .mochi-settings-section[open]>:not(summary) {
-  margin:0 0 12px
+  margin:var(--mochi-v2-settings-scroll-settings-section-open-margin,0 0 12px)
 }
 .mochi-view .mochi-settings-category label,.mochi-view .mochi-personal-scroll label {
   min-width:0
@@ -3275,192 +3300,192 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 .mochi-character-settings-row {
   display:flex;
-  align-items:center;
-  gap:10px;
-  min-height:64px;
-  padding:8px 0;
-  border-bottom:1px solid var(--mochi-border)
+  align-items:var(--mochi-v2-character-settings-row-align-items,center);
+  gap:var(--mochi-v2-character-settings-row-gap,10px);
+  min-height:var(--mochi-v2-character-settings-row-min-height,64px);
+  padding:var(--mochi-v2-character-settings-row-padding,8px 0);
+  border-bottom:var(--mochi-v2-character-settings-row-border-bottom,1px solid var(--mochi-border))
 }
 .mochi-character-settings-row>div {
   display:grid;
-  gap:3px;
-  flex:1;
+  gap:var(--mochi-v2-character-settings-row-div-gap,3px);
+  flex:var(--mochi-v2-character-settings-row-div-flex,1);
   min-width:0
 }
 .mochi-character-settings-row strong {
-  overflow-wrap:anywhere;
-  font-size:calc(13px * var(--mochi-interface-scale,1))
+  overflow-wrap:var(--mochi-v2-character-settings-row-strong-overflow-wrap,anywhere);
+  font-size:var(--mochi-v2-character-settings-row-strong-font-size,calc(13px * var(--mochi-interface-scale,1)))
 }
 .mochi-character-settings-row small {
-  font-size:calc(11px * var(--mochi-interface-scale,1))
+  font-size:var(--mochi-v2-character-settings-row-small-font-size,calc(11px * var(--mochi-interface-scale,1)))
 }
 .mochi-character-settings-row>.mochi-avatar {
-  width:36px;
-  height:36px;
-  flex:none
+  width:var(--mochi-v2-character-settings-row-avatar-width,36px);
+  height:var(--mochi-v2-character-settings-row-avatar-height,36px);
+  flex:var(--mochi-v2-character-settings-row-avatar-flex,none)
 }
 .mochi-toolbar-preference {
   display:flex;
-  gap:6px;
-  align-items:center;
-  border-bottom:1px solid var(--mochi-border);
-  padding:6px 0
+  gap:var(--mochi-v2-toolbar-preference-gap,6px);
+  align-items:var(--mochi-v2-toolbar-preference-align-items,center);
+  border-bottom:var(--mochi-v2-toolbar-preference-border-bottom,1px solid var(--mochi-border));
+  padding:var(--mochi-v2-toolbar-preference-padding,6px 0)
 }
 .mochi-toolbar-preference>label {
-  flex:1;
+  flex:var(--mochi-v2-toolbar-preference-label-flex,1);
   display:flex;
-  flex-direction:row;
-  align-items:center;
-  justify-content:space-between;
-  gap:8px
+  flex-direction:var(--mochi-v2-toolbar-preference-label-flex-direction,row);
+  align-items:var(--mochi-v2-toolbar-preference-label-align-items,center);
+  justify-content:var(--mochi-v2-toolbar-preference-label-justify-content,space-between);
+  gap:var(--mochi-v2-toolbar-preference-label-gap,8px)
 }
 .mochi-toolbar-preference input[type=checkbox] {
-  width:20px;
-  height:20px;
-  min-height:20px;
+  width:var(--mochi-v2-toolbar-preference-input-type-checkbox-width,20px);
+  height:var(--mochi-v2-toolbar-preference-input-type-checkbox-height,20px);
+  min-height:var(--mochi-v2-toolbar-preference-input-type-checkbox-min-height,20px);
   accent-color:var(--mochi-accent)
 }
 .mochi-personal-presentation {
   display:grid;
   gap:var(--mochi-space-md);
-  max-width:780px
+  max-width:var(--mochi-v2-personal-presentation-max-width,780px)
 }
 .mochi-personal-presentation>button {
-  justify-self:start
+  justify-self:var(--mochi-v2-personal-presentation-button-justify-self,start)
 }
 .mochi-profile-dock {
   display:flex;
-  align-items:center;
+  align-items:var(--mochi-v2-profile-dock-align-items,center);
   gap:var(--mochi-space-sm);
   min-width:0
 }
 .mochi-profile-dock>.mochi-avatar {
-  width:36px;
-  height:36px;
-  flex:none
+  width:var(--mochi-v2-profile-dock-avatar-width,36px);
+  height:var(--mochi-v2-profile-dock-avatar-height,36px);
+  flex:var(--mochi-v2-profile-dock-avatar-flex,none)
 }
 .mochi-profile-dock>div {
   min-width:0;
-  flex:1;
+  flex:var(--mochi-v2-profile-dock-div-flex,1);
   display:grid
 }
 .mochi-profile-dock select {
   max-width:100%;
   min-width:0;
-  font-size:calc(12px * var(--mochi-interface-scale,1))
+  font-size:var(--mochi-v2-profile-dock-select-font-size,calc(12px * var(--mochi-interface-scale,1)))
 }
 .mochi-profile-dock small {
-  font-size:calc(10px * var(--mochi-interface-scale,1));
+  font-size:var(--mochi-v2-profile-dock-small-font-size,calc(10px * var(--mochi-interface-scale,1)));
   overflow:hidden;
-  text-overflow:ellipsis
+  text-overflow:var(--mochi-v2-profile-dock-small-text-overflow,ellipsis)
 }
 .mochi-profile-dock[data-compact=true] .mochi-dock-username {
   display:none
 }
 .mochi-toolbar-label {
-  font-size:calc(11px * var(--mochi-interface-scale,1))
+  font-size:var(--mochi-v2-toolbar-label-font-size,calc(11px * var(--mochi-interface-scale,1)))
 }
 .mochi-view .mochi-custom-toolbar {
-  flex-wrap:wrap;
-  justify-content:flex-end;
-  gap:2px
+  flex-wrap:var(--mochi-v2-custom-toolbar-flex-wrap,wrap);
+  justify-content:var(--mochi-v2-custom-toolbar-justify-content,flex-end);
+  gap:var(--mochi-v2-custom-toolbar-gap,2px)
 }
 .mochi-view .mochi-custom-toolbar button {
-  min-height:44px;
-  min-width:40px;
-  padding:6px
+  min-height:var(--mochi-v2-custom-toolbar-button-min-height,44px);
+  min-width:var(--mochi-v2-custom-toolbar-button-min-width,40px);
+  padding:var(--mochi-v2-custom-toolbar-button-padding,6px)
 }
 .mochi-custom-toolbar .mochi-toolbar-label {
-  margin-left:4px
+  margin-left:var(--mochi-v2-custom-toolbar-toolbar-label-margin-left,4px)
 }
 .mochi-settings-workspace :focus-visible {
-  outline:2px solid var(--mochi-accent);
-  outline-offset:2px
+  outline:var(--mochi-v2-settings-workspace-focus-visible-outline,2px solid var(--mochi-accent));
+  outline-offset:var(--mochi-v2-settings-workspace-focus-visible-outline-offset,2px)
 }
 .mochi-settings-workspace select,.mochi-settings-workspace input,.mochi-settings-workspace textarea {
   max-width:100%;
   box-sizing:border-box
 }
 .mochi-view .mochi-settings-workspace .mochi-settings-category>button {
-  justify-self:start
+  justify-self:var(--mochi-v2-settings-workspace-settings-category-button-justify-self,start)
 }
 .mochi-view[data-conversation=true] .mochi-room-header {
-  grid-template-columns:minmax(140px,1fr) minmax(0,auto)
+  grid-template-columns:var(--mochi-v2-data-conversation-true-room-header-grid-template-columns,minmax(140px,1fr) minmax(0,auto))
 }
 .mochi-view .mochi-room-header .mochi-custom-toolbar {
-  max-width:650px
+  max-width:var(--mochi-v2-room-header-custom-toolbar-max-width,650px)
 }
 .mochi-view .mochi-room-header .mochi-custom-toolbar button {
   display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  flex:none
+  align-items:var(--mochi-v2-room-header-custom-toolbar-button-align-items,center);
+  justify-content:var(--mochi-v2-room-header-custom-toolbar-button-justify-content,center);
+  flex:var(--mochi-v2-room-header-custom-toolbar-button-flex,none)
 }
 .mochi-view .mochi-room-header .mochi-custom-toolbar[data-presentation=labels] button:has(.mochi-toolbar-label) {
-  width:auto;
-  height:auto;
+  width:var(--mochi-v2-room-header-custom-toolbar-data-presentation-labels-button-has-toolbar-label-width,auto);
+  height:var(--mochi-v2-room-header-custom-toolbar-data-presentation-labels-button-has-toolbar-label-height,auto);
   border-radius:var(--mochi-radius-card);
-  padding:8px;
+  padding:var(--mochi-v2-room-header-custom-toolbar-data-presentation-labels-button-has-toolbar-label-padding,8px);
   gap:var(--mochi-space-xs);
-  white-space:nowrap
+  white-space:var(--mochi-v2-room-header-custom-toolbar-data-presentation-labels-button-has-toolbar-label-white-space,nowrap)
 }
 .mochi-view .mochi-custom-toolbar button>span:first-child {
   display:inline-flex;
-  flex:none
+  flex:var(--mochi-v2-custom-toolbar-button-span-first-child-flex,none)
 }
 .mochi-view .mochi-custom-toolbar svg {
-  width:18px;
-  height:18px;
-  flex:none
+  width:var(--mochi-v2-custom-toolbar-svg-width,18px);
+  height:var(--mochi-v2-custom-toolbar-svg-height,18px);
+  flex:var(--mochi-v2-custom-toolbar-svg-flex,none)
 }
 .mochi-view .mochi-custom-toolbar .mochi-toolbar-label {
   margin:0
 }
 .mochi-presentation-actions {
   display:flex;
-  flex-wrap:wrap;
+  flex-wrap:var(--mochi-v2-presentation-actions-flex-wrap,wrap);
   gap:var(--mochi-space-sm);
-  flex:none;
-  padding:8px 20px;
-  border-top:1px solid var(--mochi-border);
+  flex:var(--mochi-v2-presentation-actions-flex,none);
+  padding:var(--mochi-v2-presentation-actions-padding,8px 20px);
+  border-top:var(--mochi-v2-presentation-actions-border-top,1px solid var(--mochi-border));
   background:var(--mochi-surface)
 }
 .mochi-character-detail-nav {
   display:flex;
-  flex-wrap:wrap;
+  flex-wrap:var(--mochi-v2-character-detail-nav-flex-wrap,wrap);
   gap:var(--mochi-space-sm);
-  margin-bottom:12px
+  margin-bottom:var(--mochi-v2-character-detail-nav-margin-bottom,12px)
 }
 .mochi-character-fields {
   display:grid;
-  gap:12px
+  gap:var(--mochi-v2-character-fields-gap,12px)
 }
 .mochi-view .mochi-presentation-actions button {
-  min-height:44px
+  min-height:var(--mochi-v2-presentation-actions-button-min-height,44px)
 }
 .mochi-view .mochi-settings-workspace .mochi-personal-scroll {
-  overflow-wrap:anywhere
+  overflow-wrap:var(--mochi-v2-settings-workspace-personal-scroll-overflow-wrap,anywhere)
 }
 @container(max-width:550px) {
   .mochi-settings-heading {
-    padding:10px 12px
+    padding:var(--mochi-v2-settings-heading-container-max-width-550px-padding,10px 12px)
   }
   .mochi-settings-heading h3 {
-    font-size:calc(15px * var(--mochi-interface-scale,1))
+    font-size:var(--mochi-v2-settings-heading-h3-container-max-width-550px-font-size,calc(15px * var(--mochi-interface-scale,1)))
   }
   .mochi-settings-tabs,.mochi-settings-categories {
-    padding:6px 12px;
-    gap:4px
+    padding:var(--mochi-v2-settings-tabs-container-max-width-550px-padding,6px 12px);
+    gap:var(--mochi-v2-settings-tabs-container-max-width-550px-gap,4px)
   }
   .mochi-settings-scroll,.mochi-personal-scroll {
-    padding:12px
+    padding:var(--mochi-v2-settings-scroll-container-max-width-550px-padding,12px)
   }
   .mochi-settings-categories>button {
-    flex:1 1 40%;
-    white-space:normal
+    flex:var(--mochi-v2-settings-categories-button-container-max-width-550px-flex,1 1 40%);
+    white-space:var(--mochi-v2-settings-categories-button-container-max-width-550px-white-space,normal)
   }
   .mochi-organized-settings>.mochi-actions {
-    padding:8px 12px
+    padding:var(--mochi-v2-organized-settings-actions-container-max-width-550px-padding,8px 12px)
   }
   .mochi-view .mochi-custom-toolbar {
     max-width:100%
@@ -3472,64 +3497,64 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 
 
 /* Part 2B: two scopes, focused category workspace and native structural surfaces. */
-.mochi-view .mochi-category-workspace {display:grid;grid-template-columns:200px minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;flex:1;min-height:0;overflow:hidden;gap:0;padding:0}
-.mochi-category-workspace>.mochi-settings-categories {grid-column:1;grid-row:1;display:flex;flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:4px;padding:12px;background:var(--mochi-drawer-bg);border-right:1px solid var(--mochi-border);border-bottom:0;overflow:auto}
-.mochi-category-workspace>.mochi-settings-scroll {grid-column:2;grid-row:1;min-width:0;padding:20px clamp(12px,3vw,32px);background:var(--mochi-surface)}
-.mochi-category-workspace>.mochi-actions,.mochi-category-workspace>.mochi-presentation-actions {grid-column:1/-1;grid-row:2;display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px;border-top:1px solid var(--mochi-border);background:var(--mochi-elevated-bg);margin:0}
+.mochi-view .mochi-category-workspace {display:grid;grid-template-columns:var(--mochi-v2-category-workspace-grid-template-columns,200px minmax(0,1fr));grid-template-rows:var(--mochi-v2-category-workspace-grid-template-rows,minmax(0,1fr) auto);flex:var(--mochi-v2-category-workspace-flex,1);min-height:0;overflow:hidden;gap:0;padding:0}
+.mochi-category-workspace>.mochi-settings-categories {grid-column:var(--mochi-v2-category-workspace-settings-categories-grid-column,1);grid-row:var(--mochi-v2-category-workspace-settings-categories-grid-row,1);display:flex;flex-direction:var(--mochi-v2-category-workspace-settings-categories-flex-direction,column);flex-wrap:var(--mochi-v2-category-workspace-settings-categories-flex-wrap,nowrap);align-items:var(--mochi-v2-category-workspace-settings-categories-align-items,stretch);gap:var(--mochi-v2-category-workspace-settings-categories-gap,4px);padding:var(--mochi-v2-category-workspace-settings-categories-padding,12px);background:var(--mochi-drawer-bg);border-right:var(--mochi-v2-category-workspace-settings-categories-border-right,1px solid var(--mochi-border));border-bottom:0;overflow:auto}
+.mochi-category-workspace>.mochi-settings-scroll {grid-column:var(--mochi-v2-category-workspace-settings-scroll-grid-column,2);grid-row:var(--mochi-v2-category-workspace-settings-scroll-grid-row,1);min-width:0;padding:var(--mochi-v2-category-workspace-settings-scroll-padding,20px clamp(12px,3vw,32px));background:var(--mochi-surface)}
+.mochi-category-workspace>.mochi-actions,.mochi-category-workspace>.mochi-presentation-actions {grid-column:var(--mochi-v2-category-workspace-actions-grid-column,1/-1);grid-row:var(--mochi-v2-category-workspace-actions-grid-row,2);display:flex;flex-wrap:var(--mochi-v2-category-workspace-actions-flex-wrap,wrap);gap:var(--mochi-v2-category-workspace-actions-gap,8px);padding:var(--mochi-v2-category-workspace-actions-padding,12px 16px);border-top:var(--mochi-v2-category-workspace-actions-border-top,1px solid var(--mochi-border));background:var(--mochi-elevated-bg);margin:0}
 .mochi-view .mochi-settings-workspace {background:var(--mochi-surface)}
-.mochi-view .mochi-settings-workspace button {background:var(--mochi-control-bg);color:var(--mochi-text);border:1px solid var(--mochi-border);padding:8px 10px;min-height:36px;height:auto;border-radius:var(--mochi-radius-button);font-size:calc(13px * var(--mochi-interface-scale));white-space:normal;overflow-wrap:anywhere}
-.mochi-view .mochi-settings-categories button {text-align:left;justify-content:flex-start;background:transparent;border:1px solid transparent;padding:9px 10px}
-.mochi-view .mochi-settings-categories button[aria-pressed=true] {background:var(--mochi-selected-bg);border-color:var(--mochi-accent);border-inline-start-width:4px;font-weight:700;box-shadow:none}
-.mochi-view .mochi-settings-categories button[aria-pressed=true]::after {content:'✓';margin-inline-start:auto;padding-inline-start:6px}
+.mochi-view .mochi-settings-workspace button {background:var(--mochi-control-bg);color:var(--mochi-text);border:var(--mochi-v2-settings-workspace-button-border,1px solid var(--mochi-border));padding:var(--mochi-v2-settings-workspace-button-padding,8px 10px);min-height:var(--mochi-v2-settings-workspace-button-min-height,36px);height:var(--mochi-v2-settings-workspace-button-height,auto);border-radius:var(--mochi-radius-button);font-size:var(--mochi-v2-settings-workspace-button-font-size,calc(13px * var(--mochi-interface-scale)));white-space:var(--mochi-v2-settings-workspace-button-white-space,normal);overflow-wrap:var(--mochi-v2-settings-workspace-button-overflow-wrap,anywhere)}
+.mochi-view .mochi-settings-categories button {text-align:var(--mochi-v2-settings-categories-button-text-align,left);justify-content:var(--mochi-v2-settings-categories-button-justify-content,flex-start);background:var(--mochi-v2-settings-categories-button-background,transparent);border:var(--mochi-v2-settings-categories-button-border,1px solid transparent);padding:var(--mochi-v2-settings-categories-button-padding,9px 10px)}
+.mochi-view .mochi-settings-categories button[aria-pressed=true] {background:var(--mochi-selected-bg);border-color:var(--mochi-accent);border-inline-start-width:var(--mochi-v2-settings-categories-button-aria-pressed-true-border-inline-start-width,4px);font-weight:var(--mochi-v2-settings-categories-button-aria-pressed-true-font-weight,700);box-shadow:var(--mochi-v2-settings-categories-button-aria-pressed-true-box-shadow,none)}
+.mochi-view .mochi-settings-categories button[aria-pressed=true]::after {content:var(--mochi-v2-settings-categories-button-aria-pressed-true-after-content,'✓');margin-inline-start:var(--mochi-v2-settings-categories-button-aria-pressed-true-after-margin-inline-start,auto);padding-inline-start:var(--mochi-v2-settings-categories-button-aria-pressed-true-after-padding-inline-start,6px)}
 .mochi-view .mochi-category-back {display:none}
-.mochi-settings-scroll>h4 {font-size:calc(18px * var(--mochi-interface-scale));margin:0 0 16px}
-.mochi-settings-scroll>.mochi-settings-category,.mochi-settings-scroll>label,.mochi-settings-scroll>.mochi-character-defaults {max-width:760px}
-.mochi-view .mochi-settings-workspace label {display:flex;flex-direction:column;align-items:stretch;gap:6px;font-size:calc(13px * var(--mochi-interface-scale));margin:12px 0}
-.mochi-view .mochi-settings-workspace label.mochi-toggle {flex-direction:row;align-items:center;flex-wrap:wrap}
-.mochi-view .mochi-settings-workspace input:not([type=checkbox]):not([type=range]),.mochi-view .mochi-settings-workspace select,.mochi-view .mochi-settings-workspace textarea,.mochi-character-defaults textarea {background:var(--mochi-input-bg);color:var(--mochi-text);border:1px solid var(--mochi-input-border);border-radius:var(--mochi-radius-field);padding:8px 10px;width:100%;max-width:100%;min-width:0;font:inherit;box-sizing:border-box}
+.mochi-settings-scroll>h4 {font-size:var(--mochi-v2-settings-scroll-h4-font-size,calc(18px * var(--mochi-interface-scale)));margin:var(--mochi-v2-settings-scroll-h4-margin,0 0 16px)}
+.mochi-settings-scroll>.mochi-settings-category,.mochi-settings-scroll>label,.mochi-settings-scroll>.mochi-character-defaults {max-width:var(--mochi-v2-settings-scroll-settings-category-max-width,760px)}
+.mochi-view .mochi-settings-workspace label {display:flex;flex-direction:var(--mochi-v2-settings-workspace-label-flex-direction,column);align-items:var(--mochi-v2-settings-workspace-label-align-items,stretch);gap:var(--mochi-v2-settings-workspace-label-gap,6px);font-size:var(--mochi-v2-settings-workspace-label-font-size,calc(13px * var(--mochi-interface-scale)));margin:var(--mochi-v2-settings-workspace-label-margin,12px 0)}
+.mochi-view .mochi-settings-workspace label.mochi-toggle {flex-direction:var(--mochi-v2-settings-workspace-labeltoggle-flex-direction,row);align-items:var(--mochi-v2-settings-workspace-labeltoggle-align-items,center);flex-wrap:var(--mochi-v2-settings-workspace-labeltoggle-flex-wrap,wrap)}
+.mochi-view .mochi-settings-workspace input:not([type=checkbox]):not([type=range]),.mochi-view .mochi-settings-workspace select,.mochi-view .mochi-settings-workspace textarea,.mochi-character-defaults textarea {background:var(--mochi-input-bg);color:var(--mochi-text);border:var(--mochi-v2-settings-workspace-input-border,1px solid var(--mochi-input-border));border-radius:var(--mochi-radius-field);padding:var(--mochi-v2-settings-workspace-input-padding,8px 10px);width:100%;max-width:100%;min-width:0;font:inherit;box-sizing:border-box}
 .mochi-view .mochi-settings-workspace button:not(.mochi-primary):hover {background:var(--mochi-hover-bg);border-color:var(--mochi-border-hover)}
-.mochi-view .mochi-settings-workspace .mochi-primary,.mochi-view .mochi-character-defaults .mochi-primary {background:var(--mochi-accent);color:var(--mochi-on-accent);border:1px solid var(--mochi-accent)}
-.mochi-view :is(button,input,select,textarea,summary):focus-visible {outline:2px solid var(--mochi-focus);outline-offset:3px}
-.mochi-participant-chips {display:flex;flex-wrap:wrap;gap:6px}
-.mochi-character-picker {border:1px solid var(--mochi-border);border-radius:var(--mochi-radius-panel);padding:10px;background:var(--mochi-section-bg)}
-.mochi-character-picker summary {cursor:pointer;padding:6px;font-weight:600}
-.mochi-character-picker .mochi-picker {display:flex;flex-direction:column;max-height:280px;overflow:auto;margin-top:8px}
-.mochi-character-picker .mochi-choice {display:flex;align-items:center;gap:8px;justify-content:flex-start;padding:6px;width:100%}
-.mochi-character-picker .mochi-choice .mochi-avatar {width:28px;height:28px}
-.mochi-character-picker .mochi-choice[aria-pressed=true]::after {content:'✓';margin-left:auto}
-.mochi-toolbar-choice-group {padding:8px 0;border-bottom:1px solid var(--mochi-border);max-width:650px}
-.mochi-toolbar-choice-group h5 {font-size:inherit;margin:8px 0}
-.mochi-view .mochi-toolbar-preference {display:grid;grid-template-columns:minmax(0,1fr) 36px 36px;gap:6px;padding:5px 0;background:transparent;border:0}
-.mochi-toolbar-live-preview {display:flex;flex-wrap:wrap;gap:12px;padding:12px;border:1px solid var(--mochi-border);background:var(--mochi-elevated-bg);border-radius:var(--mochi-radius-panel);max-width:650px}
-.mochi-toolbar-live-preview span {width:24px;height:24px;display:inline-flex}
+.mochi-view .mochi-settings-workspace .mochi-primary,.mochi-view .mochi-character-defaults .mochi-primary {background:var(--mochi-accent);color:var(--mochi-on-accent);border:var(--mochi-v2-settings-workspace-primary-border,1px solid var(--mochi-accent))}
+.mochi-view :is(button,input,select,textarea,summary):focus-visible {outline:var(--mochi-v2-is-button-outline,2px solid var(--mochi-focus));outline-offset:var(--mochi-v2-is-button-outline-offset,3px)}
+.mochi-participant-chips {display:flex;flex-wrap:var(--mochi-v2-participant-chips-flex-wrap,wrap);gap:var(--mochi-v2-participant-chips-gap,6px)}
+.mochi-character-picker {border:var(--mochi-v2-character-picker-border,1px solid var(--mochi-border));border-radius:var(--mochi-radius-panel);padding:var(--mochi-v2-character-picker-padding,10px);background:var(--mochi-section-bg)}
+.mochi-character-picker summary {cursor:var(--mochi-v2-character-picker-summary-cursor,pointer);padding:var(--mochi-v2-character-picker-summary-padding,6px);font-weight:var(--mochi-v2-character-picker-summary-font-weight,600)}
+.mochi-character-picker .mochi-picker {display:flex;flex-direction:var(--mochi-v2-character-picker-picker-flex-direction,column);max-height:var(--mochi-v2-character-picker-picker-max-height,280px);overflow:auto;margin-top:var(--mochi-v2-character-picker-picker-margin-top,8px)}
+.mochi-character-picker .mochi-choice {display:flex;align-items:var(--mochi-v2-character-picker-choice-align-items,center);gap:var(--mochi-v2-character-picker-choice-gap,8px);justify-content:var(--mochi-v2-character-picker-choice-justify-content,flex-start);padding:var(--mochi-v2-character-picker-choice-padding,6px);width:100%}
+.mochi-character-picker .mochi-choice .mochi-avatar {width:var(--mochi-v2-character-picker-choice-avatar-width,28px);height:var(--mochi-v2-character-picker-choice-avatar-height,28px)}
+.mochi-character-picker .mochi-choice[aria-pressed=true]::after {content:var(--mochi-v2-character-picker-choice-aria-pressed-true-after-content,'✓');margin-left:var(--mochi-v2-character-picker-choice-aria-pressed-true-after-margin-left,auto)}
+.mochi-toolbar-choice-group {padding:var(--mochi-v2-toolbar-choice-group-padding,8px 0);border-bottom:var(--mochi-v2-toolbar-choice-group-border-bottom,1px solid var(--mochi-border));max-width:var(--mochi-v2-toolbar-choice-group-max-width,650px)}
+.mochi-toolbar-choice-group h5 {font-size:inherit;margin:var(--mochi-v2-toolbar-choice-group-h5-margin,8px 0)}
+.mochi-view .mochi-toolbar-preference {display:grid;grid-template-columns:var(--mochi-v2-toolbar-preference-grid-template-columns,minmax(0,1fr) 36px 36px);gap:var(--mochi-v2-toolbar-preference-gap,6px);padding:var(--mochi-v2-toolbar-preference-padding,5px 0);background:var(--mochi-v2-toolbar-preference-background,transparent);border:0}
+.mochi-toolbar-live-preview {display:flex;flex-wrap:var(--mochi-v2-toolbar-live-preview-flex-wrap,wrap);gap:var(--mochi-v2-toolbar-live-preview-gap,12px);padding:var(--mochi-v2-toolbar-live-preview-padding,12px);border:var(--mochi-v2-toolbar-live-preview-border,1px solid var(--mochi-border));background:var(--mochi-elevated-bg);border-radius:var(--mochi-radius-panel);max-width:var(--mochi-v2-toolbar-live-preview-max-width,650px)}
+.mochi-toolbar-live-preview span {width:var(--mochi-v2-toolbar-live-preview-span-width,24px);height:var(--mochi-v2-toolbar-live-preview-span-height,24px);display:inline-flex}
 .mochi-toolbar-live-preview svg {width:100%;height:100%}
-.mochi-scale-control {max-width:550px}
-.mochi-scale-control output {font-weight:700}
-.mochi-scale-control input[type=range] {accent-color:var(--mochi-accent);width:100%;min-height:36px}
-.mochi-accessibility-preview {border:1px solid var(--mochi-input-border);border-radius:var(--mochi-radius-panel);padding:16px;background:var(--mochi-elevated-bg);max-width:650px}
-.mochi-scale-message {font-size:var(--mochi-chat-font-size);background:var(--mochi-selected-bg);padding:12px;border-radius:var(--mochi-bubble-radius);overflow-wrap:anywhere}
-.mochi-character-defaults {border-top:1px solid var(--mochi-border);padding:12px 0;min-width:0}
-.mochi-character-defaults label {display:grid;gap:6px;margin:10px 0}
-.mochi-character-defaults textarea {min-height:90px;resize:vertical}
-.mochi-character-defaults .mochi-actions {display:flex;flex-wrap:wrap;gap:6px}
-.mochi-character-defaults button {max-width:100%;white-space:normal;overflow-wrap:anywhere}
-.mochi-view .mochi-profile-panel .mochi-character-defaults {font-size:calc(13px * var(--mochi-interface-scale));overflow-wrap:anywhere}
-.mochi-profile-about p {white-space:pre-wrap;overflow-wrap:anywhere}
-.mochi-shared-setup {border:1px solid var(--mochi-input-border);background:var(--mochi-elevated-bg);border-radius:var(--mochi-radius-panel);padding:12px;display:grid;gap:8px;margin-bottom:16px}
-.mochi-view[data-density=compact] .mochi-desktop-room {padding-block:5px;min-height:48px}
+.mochi-scale-control {max-width:var(--mochi-v2-scale-control-max-width,550px)}
+.mochi-scale-control output {font-weight:var(--mochi-v2-scale-control-output-font-weight,700)}
+.mochi-scale-control input[type=range] {accent-color:var(--mochi-accent);width:100%;min-height:var(--mochi-v2-scale-control-input-type-range-min-height,36px)}
+.mochi-accessibility-preview {border:var(--mochi-v2-accessibility-preview-border,1px solid var(--mochi-input-border));border-radius:var(--mochi-radius-panel);padding:var(--mochi-v2-accessibility-preview-padding,16px);background:var(--mochi-elevated-bg);max-width:var(--mochi-v2-accessibility-preview-max-width,650px)}
+.mochi-scale-message {font-size:var(--mochi-chat-font-size);background:var(--mochi-selected-bg);padding:var(--mochi-v2-scale-message-padding,12px);border-radius:var(--mochi-bubble-radius);overflow-wrap:var(--mochi-v2-scale-message-overflow-wrap,anywhere)}
+.mochi-character-defaults {border-top:var(--mochi-v2-character-defaults-border-top,1px solid var(--mochi-border));padding:var(--mochi-v2-character-defaults-padding,12px 0);min-width:0}
+.mochi-character-defaults label {display:grid;gap:var(--mochi-v2-character-defaults-label-gap,6px);margin:var(--mochi-v2-character-defaults-label-margin,10px 0)}
+.mochi-character-defaults textarea {min-height:var(--mochi-v2-character-defaults-textarea-min-height,90px);resize:vertical}
+.mochi-character-defaults .mochi-actions {display:flex;flex-wrap:var(--mochi-v2-character-defaults-actions-flex-wrap,wrap);gap:var(--mochi-v2-character-defaults-actions-gap,6px)}
+.mochi-character-defaults button {max-width:100%;white-space:var(--mochi-v2-character-defaults-button-white-space,normal);overflow-wrap:var(--mochi-v2-character-defaults-button-overflow-wrap,anywhere)}
+.mochi-view .mochi-profile-panel .mochi-character-defaults {font-size:var(--mochi-v2-profile-panel-character-defaults-font-size,calc(13px * var(--mochi-interface-scale)));overflow-wrap:var(--mochi-v2-profile-panel-character-defaults-overflow-wrap,anywhere)}
+.mochi-profile-about p {white-space:var(--mochi-v2-profile-about-p-white-space,pre-wrap);overflow-wrap:var(--mochi-v2-profile-about-p-overflow-wrap,anywhere)}
+.mochi-shared-setup {border:var(--mochi-v2-shared-setup-border,1px solid var(--mochi-input-border));background:var(--mochi-elevated-bg);border-radius:var(--mochi-radius-panel);padding:var(--mochi-v2-shared-setup-padding,12px);display:grid;gap:var(--mochi-v2-shared-setup-gap,8px);margin-bottom:var(--mochi-v2-shared-setup-margin-bottom,16px)}
+.mochi-view[data-density=compact] .mochi-desktop-room {padding-block:var(--mochi-v2-data-density-compact-desktop-room-padding-block,5px);min-height:var(--mochi-v2-data-density-compact-desktop-room-min-height,48px)}
 @container(max-width:650px) {
- .mochi-view .mochi-category-workspace {grid-template-columns:minmax(0,1fr)}
- .mochi-category-workspace>.mochi-settings-categories {grid-column:1;border-right:0;padding:12px}
- .mochi-category-workspace>.mochi-settings-scroll {grid-column:1;padding:14px}
+ .mochi-view .mochi-category-workspace {grid-template-columns:var(--mochi-v2-category-workspace-container-max-width-650px-grid-template-columns,minmax(0,1fr))}
+ .mochi-category-workspace>.mochi-settings-categories {grid-column:var(--mochi-v2-category-workspace-settings-categories-container-max-width-650px-grid-column,1);border-right:0;padding:var(--mochi-v2-category-workspace-settings-categories-container-max-width-650px-padding,12px)}
+ .mochi-category-workspace>.mochi-settings-scroll {grid-column:var(--mochi-v2-category-workspace-settings-scroll-container-max-width-650px-grid-column,1);padding:var(--mochi-v2-category-workspace-settings-scroll-container-max-width-650px-padding,14px)}
  .mochi-category-workspace[data-category-open=false]>.mochi-settings-scroll,.mochi-category-workspace[data-category-open=false]>.mochi-actions,.mochi-category-workspace[data-category-open=false]>.mochi-presentation-actions,.mochi-category-workspace[data-category-open=true]>.mochi-settings-categories {display:none}
- .mochi-view .mochi-category-back {display:block;margin-bottom:14px}
- .mochi-settings-categories>button {flex:0 0 auto;min-height:44px}
+ .mochi-view .mochi-category-back {display:block;margin-bottom:var(--mochi-v2-category-back-container-max-width-650px-margin-bottom,14px)}
+ .mochi-settings-categories>button {flex:var(--mochi-v2-settings-categories-button-container-max-width-650px-flex,0 0 auto);min-height:var(--mochi-v2-settings-categories-button-container-max-width-650px-min-height,44px)}
  .mochi-view .mochi-settings-workspace button {min-height:var(--mochi-mobile-control-size)}
- .mochi-settings-heading {padding:10px;gap:8px;flex-wrap:wrap}
- .mochi-settings-tabs {padding:8px 12px}
- .mochi-settings-workspace>.mochi-muted {padding:8px 12px}
- .mochi-view .mochi-toolbar-preference {grid-template-columns:minmax(0,1fr) 44px 44px}
- .mochi-category-workspace>.mochi-actions,.mochi-category-workspace>.mochi-presentation-actions {padding:8px;gap:6px;max-height:none;overflow:visible}
+ .mochi-settings-heading {padding:var(--mochi-v2-settings-heading-container-max-width-650px-padding,10px);gap:var(--mochi-v2-settings-heading-container-max-width-650px-gap,8px);flex-wrap:var(--mochi-v2-settings-heading-container-max-width-650px-flex-wrap,wrap)}
+ .mochi-settings-tabs {padding:var(--mochi-v2-settings-tabs-container-max-width-650px-padding,8px 12px)}
+ .mochi-settings-workspace>.mochi-muted {padding:var(--mochi-v2-settings-workspace-muted-container-max-width-650px-padding,8px 12px)}
+ .mochi-view .mochi-toolbar-preference {grid-template-columns:var(--mochi-v2-toolbar-preference-container-max-width-650px-grid-template-columns,minmax(0,1fr) 44px 44px)}
+ .mochi-category-workspace>.mochi-actions,.mochi-category-workspace>.mochi-presentation-actions {padding:var(--mochi-v2-category-workspace-actions-container-max-width-650px-padding,8px);gap:var(--mochi-v2-category-workspace-actions-container-max-width-650px-gap,6px);max-height:var(--mochi-v2-category-workspace-actions-container-max-width-650px-max-height,none);overflow:visible}
 }
 
 /* @mochi-section mochi-disclosure-styles */
@@ -3537,129 +3562,129 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   min-width:0;
   max-width:100%;
   box-sizing:border-box;
-  border:1px solid var(--mochi-border);
+  border:var(--mochi-v2-detailsdisclosure-border,1px solid var(--mochi-border));
   border-radius:var(--mochi-radius-card);
   padding:0;
-  margin:6px 0;
-  background:var(--lp-surface-2,#ffffff06);
+  margin:var(--mochi-v2-detailsdisclosure-margin,6px 0);
+  background:var(--mochi-v2-detailsdisclosure-background,var(--lp-surface-2,#ffffff06));
   overflow:hidden
 }
 .mochi-view details.mochi-disclosure>summary,.mochi-view .mochi-preset-navigation>details.mochi-disclosure>summary,.mochi-view .mochi-settings-scroll details.mochi-disclosure>summary {
   display:block;
   position:relative;
   box-sizing:border-box;
-  min-height:44px;
+  min-height:var(--mochi-v2-detailsdisclosure-summary-min-height,44px);
   max-width:100%;
-  padding:12px 36px 12px 12px;
+  padding:var(--mochi-v2-detailsdisclosure-summary-padding,12px 36px 12px 12px);
   margin:0;
-  line-height:20px;
-  font-size:calc(13px * var(--mochi-interface-scale,1));
-  font-weight:600;
-  white-space:nowrap;
+  line-height:var(--mochi-v2-detailsdisclosure-summary-line-height,20px);
+  font-size:var(--mochi-v2-detailsdisclosure-summary-font-size,calc(13px * var(--mochi-interface-scale,1)));
+  font-weight:var(--mochi-v2-detailsdisclosure-summary-font-weight,600);
+  white-space:var(--mochi-v2-detailsdisclosure-summary-white-space,nowrap);
   overflow:hidden;
-  text-overflow:ellipsis;
-  list-style:none;
-  cursor:pointer;
+  text-overflow:var(--mochi-v2-detailsdisclosure-summary-text-overflow,ellipsis);
+  list-style:var(--mochi-v2-detailsdisclosure-summary-list-style,none);
+  cursor:var(--mochi-v2-detailsdisclosure-summary-cursor,pointer);
   border:0;
-  border-radius:11px;
+  border-radius:var(--mochi-v2-detailsdisclosure-summary-border-radius,11px);
   color:inherit
 }
 .mochi-view details.mochi-disclosure>summary::-webkit-details-marker {
   display:none
 }
 .mochi-view details.mochi-disclosure>summary::after {
-  content:'';
+  content:var(--mochi-v2-detailsdisclosure-summary-after-content,'');
   position:absolute;
-  right:16px;
-  top:17px;
-  width:7px;
-  height:7px;
-  border-right:2px solid var(--lp-muted,currentColor);
-  border-bottom:2px solid var(--lp-muted,currentColor);
-  transform:rotate(-45deg)
+  right:var(--mochi-v2-detailsdisclosure-summary-after-right,16px);
+  top:var(--mochi-v2-detailsdisclosure-summary-after-top,17px);
+  width:var(--mochi-v2-detailsdisclosure-summary-after-width,7px);
+  height:var(--mochi-v2-detailsdisclosure-summary-after-height,7px);
+  border-right:var(--mochi-v2-detailsdisclosure-summary-after-border-right,2px solid var(--lp-muted,currentColor));
+  border-bottom:var(--mochi-v2-detailsdisclosure-summary-after-border-bottom,2px solid var(--lp-muted,currentColor));
+  transform:var(--mochi-v2-detailsdisclosure-summary-after-transform,rotate(-45deg))
 }
 .mochi-view details.mochi-disclosure[open]>summary::after {
-  transform:rotate(45deg);
-  top:15px
+  transform:var(--mochi-v2-detailsdisclosure-open-summary-after-transform,rotate(45deg));
+  top:var(--mochi-v2-detailsdisclosure-open-summary-after-top,15px)
 }
 .mochi-view details.mochi-disclosure[open]>summary {
-  border-bottom:1px solid var(--mochi-border);
-  border-radius:11px 11px 0 0
+  border-bottom:var(--mochi-v2-detailsdisclosure-open-summary-border-bottom,1px solid var(--mochi-border));
+  border-radius:var(--mochi-v2-detailsdisclosure-open-summary-border-radius,11px 11px 0 0)
 }
 .mochi-view details.mochi-disclosure>summary:hover {
-  background:color-mix(in srgb,var(--mochi-accent) 8%,transparent)
+  background:var(--mochi-v2-detailsdisclosure-summary-hover-background,color-mix(in srgb,var(--mochi-accent) 8%,transparent))
 }
 .mochi-view details.mochi-disclosure>summary:focus-visible {
-  outline:2px solid var(--mochi-accent);
-  outline-offset:-3px
+  outline:var(--mochi-v2-detailsdisclosure-summary-focus-visible-outline,2px solid var(--mochi-accent));
+  outline-offset:var(--mochi-v2-detailsdisclosure-summary-focus-visible-outline-offset,-3px)
 }
 .mochi-view details.mochi-disclosure>:not(summary) {
-  margin:10px 12px;
-  max-width:calc(100% - 24px);
+  margin:var(--mochi-v2-detailsdisclosure-margin,10px 12px);
+  max-width:var(--mochi-v2-detailsdisclosure-max-width,calc(100% - 24px));
   box-sizing:border-box;
   min-width:0;
-  overflow-wrap:anywhere
+  overflow-wrap:var(--mochi-v2-detailsdisclosure-overflow-wrap,anywhere)
 }
 .mochi-view .mochi-settings-scroll details.mochi-disclosure[open]>:not(summary) {
-  margin:12px;
-  max-width:calc(100% - 24px)
+  margin:var(--mochi-v2-settings-scroll-detailsdisclosure-open-margin,12px);
+  max-width:var(--mochi-v2-settings-scroll-detailsdisclosure-open-max-width,calc(100% - 24px))
 }
 .mochi-view .mochi-preset-navigation {
   border:0;
-  gap:8px
+  gap:var(--mochi-v2-preset-navigation-gap,8px)
 }
 .mochi-view .mochi-preset-navigation>details.mochi-disclosure {
-  flex:1 1 240px;
-  align-self:start
+  flex:var(--mochi-v2-preset-navigation-detailsdisclosure-flex,1 1 240px);
+  align-self:var(--mochi-v2-preset-navigation-detailsdisclosure-align-self,start)
 }
 .mochi-view .mochi-preview-overview {
   display:flex;
-  flex-wrap:wrap;
-  gap:6px 16px;
-  padding:10px 0
+  flex-wrap:var(--mochi-v2-preview-overview-flex-wrap,wrap);
+  gap:var(--mochi-v2-preview-overview-gap,6px 16px);
+  padding:var(--mochi-v2-preview-overview-padding,10px 0)
 }
 .mochi-view .mochi-preview-overview>span {
-  font-size:calc(12px * var(--mochi-interface-scale,1))
+  font-size:var(--mochi-v2-preview-overview-span-font-size,calc(12px * var(--mochi-interface-scale,1)))
 }
 .mochi-view .mochi-preview-group {
   min-width:0
 }
 .mochi-view .mochi-preview-warning {
-  border-left:3px solid var(--mochi-accent);
-  padding:8px 12px;
-  background:color-mix(in srgb,var(--mochi-accent) 7%,transparent)
+  border-left:var(--mochi-v2-preview-warning-border-left,3px solid var(--mochi-accent));
+  padding:var(--mochi-v2-preview-warning-padding,8px 12px);
+  background:var(--mochi-v2-preview-warning-background,color-mix(in srgb,var(--mochi-accent) 7%,transparent))
 }
 .mochi-view .mochi-preview-panel pre {
-  white-space:pre-wrap;
-  overflow-wrap:anywhere;
+  white-space:var(--mochi-v2-preview-panel-pre-white-space,pre-wrap);
+  overflow-wrap:var(--mochi-v2-preview-panel-pre-overflow-wrap,anywhere);
   max-width:100%;
   font:inherit
 }
 .mochi-view .mochi-preview-identity {
-  font-size:calc(13px * var(--mochi-interface-scale,1));
-  margin:6px 0
+  font-size:var(--mochi-v2-preview-identity-font-size,calc(13px * var(--mochi-interface-scale,1)));
+  margin:var(--mochi-v2-preview-identity-margin,6px 0)
 }
 .mochi-view .mochi-preset-entry {
   min-width:0
 }
 .mochi-view .mochi-preview-controls select {
-  width:auto;
-  flex:1 1 200px
+  width:var(--mochi-v2-preview-controls-select-width,auto);
+  flex:var(--mochi-v2-preview-controls-select-flex,1 1 200px)
 }
 .mochi-view .mochi-preview-controls button {
-  flex:0 0 auto
+  flex:var(--mochi-v2-preview-controls-button-flex,0 0 auto)
 }
 @container(max-width:550px) {
   .mochi-view .mochi-preset-heading h3 {
-    flex:1 0 100%;
+    flex:var(--mochi-v2-preset-heading-h3-container-max-width-550px-flex,1 0 100%);
     min-width:0;
-    overflow-wrap:normal
+    overflow-wrap:var(--mochi-v2-preset-heading-h3-container-max-width-550px-overflow-wrap,normal)
   }
   .mochi-view .mochi-preset-heading {
-    gap:8px
+    gap:var(--mochi-v2-preset-heading-container-max-width-550px-gap,8px)
   }
   .mochi-view .mochi-preset-heading button {
-    flex:0 1 auto
+    flex:var(--mochi-v2-preset-heading-button-container-max-width-550px-flex,0 1 auto)
   }
 }
 
@@ -3669,7 +3694,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 .mochi-desktop.mochi-view {
   display:grid;
-  grid-template-columns:minmax(var(--mochi-sidebar-min-width),var(--mochi-sidebar-width)) minmax(0,1fr);
+  grid-template-columns:var(--mochi-v2-desktop-grid-template-columns,minmax(var(--mochi-sidebar-min-width),var(--mochi-sidebar-width)) minmax(0,1fr));
   gap:0;
   padding:0;
   overflow:hidden;
@@ -3678,291 +3703,291 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 .mochi-desktop-list {
   display:flex;
-  flex-direction:column;
+  flex-direction:var(--mochi-v2-desktop-list-flex-direction,column);
   min-height:0;
   min-width:0;
-  border-right:1px solid var(--lp-border,#ffffff26);
+  border-right:var(--mochi-v2-desktop-list-border-right,1px solid var(--lp-border,#ffffff26));
   background:var(--mochi-surface)
 }
 .mochi-desktop-list-head {
-  padding:16px 14px 8px;
-  flex:none;
+  padding:var(--mochi-v2-desktop-list-head-padding,16px 14px 8px);
+  flex:var(--mochi-v2-desktop-list-head-flex,none);
   display:grid;
-  gap:12px
+  gap:var(--mochi-v2-desktop-list-head-gap,12px)
 }
 .mochi-desktop-list-head h3 {
   margin:0;
-  font-size:calc(14px * var(--mochi-interface-scale,1))
+  font-size:var(--mochi-v2-desktop-list-head-h3-font-size,calc(14px * var(--mochi-interface-scale,1)))
 }
 .mochi-desktop-account {
-  font-size:calc(12px * var(--mochi-interface-scale,1));
+  font-size:var(--mochi-v2-desktop-account-font-size,calc(12px * var(--mochi-interface-scale,1)));
   overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap
+  text-overflow:var(--mochi-v2-desktop-account-text-overflow,ellipsis);
+  white-space:var(--mochi-v2-desktop-account-white-space,nowrap)
 }
 .mochi-shell-account-row {
   display:flex;
-  align-items:center;
-  gap:10px;
+  align-items:var(--mochi-v2-shell-account-row-align-items,center);
+  gap:var(--mochi-v2-shell-account-row-gap,10px);
   min-width:0
 }
 .mochi-shell-account-row .mochi-desktop-account {
-  flex:1;
+  flex:var(--mochi-v2-shell-account-row-desktop-account-flex,1);
   min-width:0;
   box-sizing:border-box;
-  padding-right:34px;
-  font-weight:600
+  padding-right:var(--mochi-v2-shell-account-row-desktop-account-padding-right,34px);
+  font-weight:var(--mochi-v2-shell-account-row-desktop-account-font-weight,600)
 }
 .mochi-shell-account-row button {
-  flex:none;
-  width:40px;
-  height:44px;
-  min-height:44px;
-  padding:8px;
-  background:transparent;
-  border-color:transparent
+  flex:var(--mochi-v2-shell-account-row-button-flex,none);
+  width:var(--mochi-v2-shell-account-row-button-width,40px);
+  height:var(--mochi-v2-shell-account-row-button-height,44px);
+  min-height:var(--mochi-v2-shell-account-row-button-min-height,44px);
+  padding:var(--mochi-v2-shell-account-row-button-padding,8px);
+  background:var(--mochi-v2-shell-account-row-button-background,transparent);
+  border-color:var(--mochi-v2-shell-account-row-button-border-color,transparent)
 }
 .mochi-shell-tools {
   display:flex;
-  gap:6px;
+  gap:var(--mochi-v2-shell-tools-gap,6px);
   min-width:0
 }
 .mochi-shell-tools>button:first-child {
-  flex:1;
-  justify-content:center;
-  font-size:calc(12px * var(--mochi-interface-scale,1));
+  flex:var(--mochi-v2-shell-tools-button-first-child-flex,1);
+  justify-content:var(--mochi-v2-shell-tools-button-first-child-justify-content,center);
+  font-size:var(--mochi-v2-shell-tools-button-first-child-font-size,calc(12px * var(--mochi-interface-scale,1)));
   min-width:0;
-  padding:8px;
-  min-height:40px;
-  background:transparent
+  padding:var(--mochi-v2-shell-tools-button-first-child-padding,8px);
+  min-height:var(--mochi-v2-shell-tools-button-first-child-min-height,40px);
+  background:var(--mochi-v2-shell-tools-button-first-child-background,transparent)
 }
 .mochi-shell-tools>button:last-child:not(:first-child) {
-  flex:none;
-  width:44px
+  flex:var(--mochi-v2-shell-tools-button-last-child-flex,none);
+  width:var(--mochi-v2-shell-tools-button-last-child-width,44px)
 }
 .mochi-shell-tools svg {
-  width:18px;
-  height:18px
+  width:var(--mochi-v2-shell-tools-svg-width,18px);
+  height:var(--mochi-v2-shell-tools-svg-height,18px)
 }
 .mochi-conversation-filters {
   display:grid;
-  grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) minmax(0,1.2fr) auto;
-  align-items:center;
-  gap:6px
+  grid-template-columns:var(--mochi-v2-conversation-filters-grid-template-columns,minmax(0,1fr) minmax(0,1.2fr) minmax(0,1.2fr) auto);
+  align-items:var(--mochi-v2-conversation-filters-align-items,center);
+  gap:var(--mochi-v2-conversation-filters-gap,6px)
 }
 .mochi-conversation-filters>.lp-button {
   min-width:0;
-  min-height:40px;
-  padding:6px 10px;
-  font-size:calc(12px * var(--mochi-interface-scale,1));
-  line-height:1.2;
+  min-height:var(--mochi-v2-conversation-filters-button-min-height,40px);
+  padding:var(--mochi-v2-conversation-filters-button-padding,6px 10px);
+  font-size:var(--mochi-v2-conversation-filters-button-font-size,calc(12px * var(--mochi-interface-scale,1)));
+  line-height:var(--mochi-v2-conversation-filters-button-line-height,1.2);
   border:0;
   border-radius:var(--mochi-radius-field);
-  background:transparent;
-  white-space:nowrap;
-  justify-content:center
+  background:var(--mochi-v2-conversation-filters-button-background,transparent);
+  white-space:var(--mochi-v2-conversation-filters-button-white-space,nowrap);
+  justify-content:var(--mochi-v2-conversation-filters-button-justify-content,center)
 }
 .mochi-conversation-filters button[aria-pressed=true] {
-  background:var(--lp-surface-2,#ffffff12);
-  box-shadow:inset 0 -2px var(--mochi-accent)
+  background:var(--mochi-v2-conversation-filters-button-aria-pressed-true-background,var(--lp-surface-2,#ffffff12));
+  box-shadow:var(--mochi-v2-conversation-filters-button-aria-pressed-true-box-shadow,inset 0 -2px var(--mochi-accent))
 }
 .mochi-shell-notifications {
   display:flex;
-  justify-content:flex-end;
-  padding:6px 12px;
-  border-bottom:1px solid var(--mochi-border)
+  justify-content:var(--mochi-v2-shell-notifications-justify-content,flex-end);
+  padding:var(--mochi-v2-shell-notifications-padding,6px 12px);
+  border-bottom:var(--mochi-v2-shell-notifications-border-bottom,1px solid var(--mochi-border))
 }
 .mochi-activity-snapshot {
-  padding:12px 0;
-  border-top:1px solid var(--mochi-border)
+  padding:var(--mochi-v2-activity-snapshot-padding,12px 0);
+  border-top:var(--mochi-v2-activity-snapshot-border-top,1px solid var(--mochi-border))
 }
 .mochi-activity-snapshot h4 {
-  font-size:calc(12px * var(--mochi-interface-scale,1));
-  font-weight:600;
-  margin:0 0 6px
+  font-size:var(--mochi-v2-activity-snapshot-h4-font-size,calc(12px * var(--mochi-interface-scale,1)));
+  font-weight:var(--mochi-v2-activity-snapshot-h4-font-weight,600);
+  margin:var(--mochi-v2-activity-snapshot-h4-margin,0 0 6px)
 }
 .mochi-desktop-rooms {
-  flex:1;
+  flex:var(--mochi-v2-desktop-rooms-flex,1);
   min-height:0;
   overflow:auto;
-  padding:8px 10px;
+  padding:var(--mochi-v2-desktop-rooms-padding,8px 10px);
   display:flex;
-  flex-direction:column;
-  gap:6px
+  flex-direction:var(--mochi-v2-desktop-rooms-flex-direction,column);
+  gap:var(--mochi-v2-desktop-rooms-gap,6px)
 }
 .mochi-desktop .mochi-desktop-room {
   display:flex;
-  align-items:center;
+  align-items:var(--mochi-v2-desktop-desktop-room-align-items,center);
   gap:var(--mochi-space-sm);
   width:100%;
-  text-align:left;
-  padding:12px;
+  text-align:var(--mochi-v2-desktop-desktop-room-text-align,left);
+  padding:var(--mochi-v2-desktop-desktop-room-padding,12px);
   border-radius:var(--mochi-radius-field);
-  border:1px solid transparent;
-  background:transparent;
+  border:var(--mochi-v2-desktop-desktop-room-border,1px solid transparent);
+  background:var(--mochi-v2-desktop-desktop-room-background,transparent);
   color:inherit;
   min-width:0
 }
 .mochi-desktop-room[aria-current=true] {
-  background:var(--lp-surface-2,#ffffff12);
+  background:var(--mochi-v2-desktop-room-aria-current-true-background,var(--lp-surface-2,#ffffff12));
   border-color:var(--mochi-accent)!important
 }
 .mochi-desktop-room:hover {
-  background:var(--lp-surface-2,#ffffff12)
+  background:var(--mochi-v2-desktop-room-hover-background,var(--lp-surface-2,#ffffff12))
 }
 .mochi-desktop-room-copy {
-  flex:1;
+  flex:var(--mochi-v2-desktop-room-copy-flex,1);
   min-width:0;
   display:grid;
-  gap:3px
+  gap:var(--mochi-v2-desktop-room-copy-gap,3px)
 }
 .mochi-desktop-room-copy strong,.mochi-desktop-room-copy small {
   overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap
+  text-overflow:var(--mochi-v2-desktop-room-copy-strong-text-overflow,ellipsis);
+  white-space:var(--mochi-v2-desktop-room-copy-strong-white-space,nowrap)
 }
 .mochi-desktop-room-copy strong {
-  font-size:calc(14px * var(--mochi-interface-scale,1))
+  font-size:var(--mochi-v2-desktop-room-copy-strong-font-size,calc(14px * var(--mochi-interface-scale,1)))
 }
 .mochi-desktop-room-copy small {
-  font-size:calc(12px * var(--mochi-interface-scale,1));
-  opacity:.75
+  font-size:var(--mochi-v2-desktop-room-copy-small-font-size,calc(12px * var(--mochi-interface-scale,1)));
+  opacity:var(--mochi-v2-desktop-room-copy-small-opacity,.75)
 }
 .mochi-desktop-room .mochi-room-avatars {
-  flex:none;
+  flex:var(--mochi-v2-desktop-room-room-avatars-flex,none);
   display:flex;
-  align-items:center
+  align-items:var(--mochi-v2-desktop-room-room-avatars-align-items,center)
 }
 .mochi-desktop-room .mochi-avatar {
-  width:34px;
-  height:34px
+  width:var(--mochi-v2-desktop-room-avatar-width,34px);
+  height:var(--mochi-v2-desktop-room-avatar-height,34px)
 }
 .mochi-desktop-unread {
-  flex:none;
-  font-size:calc(11px * var(--mochi-interface-scale,1));
-  border-radius:99px;
-  padding:2px 6px;
+  flex:var(--mochi-v2-desktop-unread-flex,none);
+  font-size:var(--mochi-v2-desktop-unread-font-size,calc(11px * var(--mochi-interface-scale,1)));
+  border-radius:var(--mochi-v2-desktop-unread-border-radius,99px);
+  padding:var(--mochi-v2-desktop-unread-padding,2px 6px);
   background:var(--mochi-accent);
   color:var(--mochi-surface)
 }
 .mochi-desktop-main {
   display:flex;
-  flex-direction:column;
+  flex-direction:var(--mochi-v2-surface-flex-direction,column);
   min-width:0;
   min-height:0;
   overflow:hidden
 }
 .mochi-desktop-main>.mochi-view {
-  flex:1;
+  flex:var(--mochi-v2-surface-flex,1);
   min-height:0;
   overflow:auto;
   border:0;
   border-radius:0;
-  padding:12px
+  padding:var(--mochi-v2-surface-padding,12px)
 }
 .mochi-desktop-main>.mochi-view[data-conversation=true] {
   display:flex;
-  flex-direction:column;
+  flex-direction:var(--mochi-v2-data-conversation-true-flex-direction,column);
   overflow:hidden
 }
 .mochi-desktop-main .mochi-room-header,.mochi-desktop-main .mochi-composer,.mochi-desktop-main .mochi-view>header {
-  flex:none
+  flex:var(--mochi-v2-room-header-flex,none)
 }
 .mochi-desktop-main .mochi-thread {
-  flex:1;
+  flex:var(--mochi-v2-thread-flex,1);
   min-height:0;
   overflow:auto;
   overscroll-behavior:contain
 }
 .mochi-desktop-main .mochi-composer {
-  margin-top:auto
+  margin-top:var(--mochi-v2-composer-margin-top,auto)
 }
 .mochi-desktop-main .mochi-thread:focus-visible {
-  outline:2px solid var(--mochi-accent);
-  outline-offset:-2px
+  outline:var(--mochi-v2-thread-focus-visible-outline,2px solid var(--mochi-accent));
+  outline-offset:var(--mochi-v2-thread-focus-visible-outline-offset,-2px)
 }
 .mochi-desktop-back {
-  flex:none;
-  padding:6px 12px;
-  border-bottom:1px solid var(--lp-border,#ffffff26)
+  flex:var(--mochi-v2-desktop-back-flex,none);
+  padding:var(--mochi-v2-desktop-back-padding,6px 12px);
+  border-bottom:var(--mochi-v2-desktop-back-border-bottom,1px solid var(--lp-border,#ffffff26))
 }
 .mochi-desktop-back button {
   font:inherit;
   color:inherit;
-  background:transparent;
+  background:var(--mochi-v2-desktop-back-button-background,transparent);
   border:0;
-  min-height:32px;
-  cursor:pointer
+  min-height:var(--mochi-v2-desktop-back-button-min-height,32px);
+  cursor:var(--mochi-v2-desktop-back-button-cursor,pointer)
 }
 .mochi-desktop[data-mode=account] {
-  grid-template-columns:minmax(0,1fr)
+  grid-template-columns:var(--mochi-v2-desktop-data-mode-account-grid-template-columns,minmax(0,1fr))
 }
 .mochi-desktop[data-mode=account]>.mochi-desktop-list {
   display:none
 }
 .mochi-shell-brand {
   display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:4px 2px 8px
+  align-items:var(--mochi-v2-shell-brand-align-items,center);
+  justify-content:var(--mochi-v2-shell-brand-justify-content,space-between);
+  padding:var(--mochi-v2-shell-brand-padding,4px 2px 8px)
 }
 .mochi-shell-brand h2 {
   display:flex;
-  align-items:center;
+  align-items:var(--mochi-v2-shell-brand-h2-align-items,center);
   margin:0;
   line-height:0;
-  font-size:calc(27px * var(--mochi-interface-scale,1));
-  font-weight:800;
-  letter-spacing:-1px
+  font-size:var(--mochi-v2-shell-brand-h2-font-size,calc(27px * var(--mochi-interface-scale,1)));
+  font-weight:var(--mochi-v2-shell-brand-h2-font-weight,800);
+  letter-spacing:var(--mochi-v2-shell-brand-h2-letter-spacing,-1px)
 }
 .mochi-shell-mascot {
   display:flex;
-  align-items:center;
-  justify-content:center;
-  flex:0 0 40px;
-  width:40px;
-  height:36px;
+  align-items:var(--mochi-v2-shell-mascot-align-items,center);
+  justify-content:var(--mochi-v2-shell-mascot-justify-content,center);
+  flex:var(--mochi-v2-shell-mascot-flex,0 0 40px);
+  width:var(--mochi-v2-shell-mascot-width,40px);
+  height:var(--mochi-v2-shell-mascot-height,36px);
   line-height:0;
   color:var(--mochi-accent);
   pointer-events:none
 }
 .mochi-shell-mascot svg {
   display:block;
-  width:40px;
-  height:36px
+  width:var(--mochi-v2-shell-mascot-svg-width,40px);
+  height:var(--mochi-v2-shell-mascot-svg-height,36px)
 }
 .mochi-conversation-filter {
   font:inherit;
-  font-size:calc(12px * var(--mochi-interface-scale,1));
-  padding:10px 12px;
+  font-size:var(--mochi-v2-conversation-filter-font-size,calc(12px * var(--mochi-interface-scale,1)));
+  padding:var(--mochi-v2-conversation-filter-padding,10px 12px);
   min-width:0;
   width:100%;
-  border:1px solid var(--lp-border,#ffffff26);
-  border-radius:10px;
-  background:var(--lp-bg,transparent);
+  border:var(--mochi-v2-conversation-filter-border,1px solid var(--lp-border,#ffffff26));
+  border-radius:var(--mochi-v2-conversation-filter-border-radius,10px);
+  background:var(--mochi-v2-conversation-filter-background,var(--lp-bg,transparent));
   color:inherit;
-  min-height:42px
+  min-height:var(--mochi-v2-conversation-filter-min-height,42px)
 }
 .mochi-desktop-room[hidden],.mochi-desktop-rooms p[hidden] {
   display:none!important
 }
 .mochi-desktop .mochi-conversation-title {
-  font-size:calc(16px * var(--mochi-interface-scale,1));
-  font-weight:600;
+  font-size:var(--mochi-v2-desktop-conversation-title-font-size,calc(16px * var(--mochi-interface-scale,1)));
+  font-weight:var(--mochi-v2-desktop-conversation-title-font-weight,600);
   overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
+  text-overflow:var(--mochi-v2-desktop-conversation-title-text-overflow,ellipsis);
+  white-space:var(--mochi-v2-desktop-conversation-title-white-space,nowrap);
   min-width:0
 }
 .mochi-desktop-main .mochi-room-header {
-  grid-template-columns:minmax(0,1fr) auto;
-  align-items:center;
-  padding:12px 0 16px;
-  border-bottom:1px solid var(--lp-border,#ffffff26)
+  grid-template-columns:var(--mochi-v2-room-header-grid-template-columns,minmax(0,1fr) auto);
+  align-items:var(--mochi-v2-room-header-align-items,center);
+  padding:var(--mochi-v2-room-header-padding,12px 0 16px);
+  border-bottom:var(--mochi-v2-room-header-border-bottom,1px solid var(--lp-border,#ffffff26))
 }
 .mochi-desktop-main .mochi-room-header>.mochi-actions {
-  gap:8px;
-  align-items:center;
+  gap:var(--mochi-v2-room-header-actions-gap,8px);
+  align-items:var(--mochi-v2-room-header-actions-align-items,center);
   padding:0
 }
 .mochi-profile-panel {
@@ -3971,145 +3996,145 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   min-height:0;
   overflow:auto;
   overscroll-behavior:contain;
-  padding:16px;
-  border-left:1px solid var(--lp-border,#ffffff26);
+  padding:var(--mochi-v2-profile-panel-padding,16px);
+  border-left:var(--mochi-v2-profile-panel-border-left,1px solid var(--lp-border,#ffffff26));
   background:var(--mochi-surface)
 }
 .mochi-profile-heading {
   display:flex;
-  align-items:center;
-  justify-content:space-between;
+  align-items:var(--mochi-v2-profile-heading-align-items,center);
+  justify-content:var(--mochi-v2-profile-heading-justify-content,space-between);
   gap:var(--mochi-space-sm);
-  margin-bottom:24px
+  margin-bottom:var(--mochi-v2-profile-heading-margin-bottom,24px)
 }
 .mochi-profile-heading h3 {
-  font-size:calc(12px * var(--mochi-interface-scale,1));
-  font-weight:500;
-  color:var(--lp-muted,inherit)
+  font-size:var(--mochi-v2-profile-heading-h3-font-size,calc(12px * var(--mochi-interface-scale,1)));
+  font-weight:var(--mochi-v2-profile-heading-h3-font-weight,500);
+  color:var(--mochi-v2-profile-heading-h3-color,var(--lp-muted,inherit))
 }
 .mochi-profile-heading button {
-  width:auto!important;
-  padding:6px 10px;
-  background:transparent;
-  border-color:transparent;
-  font-size:calc(12px * var(--mochi-interface-scale,1))
+  width:var(--mochi-v2-profile-heading-button-width,auto)!important;
+  padding:var(--mochi-v2-profile-heading-button-padding,6px 10px);
+  background:var(--mochi-v2-profile-heading-button-background,transparent);
+  border-color:var(--mochi-v2-profile-heading-button-border-color,transparent);
+  font-size:var(--mochi-v2-profile-heading-button-font-size,calc(12px * var(--mochi-interface-scale,1)))
 }
 .mochi-profile-person {
   display:grid;
-  justify-items:start;
+  justify-items:var(--mochi-v2-profile-person-justify-items,start);
   gap:var(--mochi-space-sm);
-  margin-bottom:20px
+  margin-bottom:var(--mochi-v2-profile-person-margin-bottom,20px)
 }
 .mochi-profile-person h4 {
-  font-size:calc(18px * var(--mochi-interface-scale,1));
+  font-size:var(--mochi-v2-profile-person-h4-font-size,calc(18px * var(--mochi-interface-scale,1)));
   margin:0;
-  overflow-wrap:anywhere
+  overflow-wrap:var(--mochi-v2-profile-person-h4-overflow-wrap,anywhere)
 }
 .mochi-profile-person>.mochi-avatar {
-  height:72px;
-  width:72px
+  height:var(--mochi-v2-profile-person-avatar-height,72px);
+  width:var(--mochi-v2-profile-person-avatar-width,72px)
 }
 .mochi-profile-panel[data-kind=direct] .mochi-profile-person {
-  justify-items:center;
-  text-align:center;
-  padding:12px 0 24px
+  justify-items:var(--mochi-v2-profile-panel-data-kind-direct-profile-person-justify-items,center);
+  text-align:var(--mochi-v2-profile-panel-data-kind-direct-profile-person-text-align,center);
+  padding:var(--mochi-v2-profile-panel-data-kind-direct-profile-person-padding,12px 0 24px)
 }
 .mochi-profile-panel[data-kind=group] .mochi-profile-person {
-  grid-template-columns:36px minmax(0,1fr);
-  column-gap:10px;
-  row-gap:2px;
-  align-items:center;
-  margin-bottom:16px
+  grid-template-columns:var(--mochi-v2-profile-panel-data-kind-group-profile-person-grid-template-columns,36px minmax(0,1fr));
+  column-gap:var(--mochi-v2-profile-panel-data-kind-group-profile-person-column-gap,10px);
+  row-gap:var(--mochi-v2-profile-panel-data-kind-group-profile-person-row-gap,2px);
+  align-items:var(--mochi-v2-profile-panel-data-kind-group-profile-person-align-items,center);
+  margin-bottom:var(--mochi-v2-profile-panel-data-kind-group-profile-person-margin-bottom,16px)
 }
 .mochi-profile-panel[data-kind=group] .mochi-avatar {
-  width:36px;
-  height:36px;
-  grid-row:span 2
+  width:var(--mochi-v2-profile-panel-data-kind-group-avatar-width,36px);
+  height:var(--mochi-v2-profile-panel-data-kind-group-avatar-height,36px);
+  grid-row:var(--mochi-v2-profile-panel-data-kind-group-avatar-grid-row,span 2)
 }
 .mochi-profile-panel[data-kind=group] h4 {
-  font-size:calc(13px * var(--mochi-interface-scale,1))
+  font-size:var(--mochi-v2-profile-panel-data-kind-group-h4-font-size,calc(13px * var(--mochi-interface-scale,1)))
 }
 .mochi-profile-panel p {
-  font-size:calc(12px * var(--mochi-interface-scale,1));
-  line-height:1.5;
+  font-size:var(--mochi-v2-profile-panel-p-font-size,calc(12px * var(--mochi-interface-scale,1)));
+  line-height:var(--mochi-v2-profile-panel-p-line-height,1.5);
   margin:0;
-  overflow-wrap:anywhere;
-  color:var(--lp-muted,inherit)
+  overflow-wrap:var(--mochi-v2-profile-panel-p-overflow-wrap,anywhere);
+  color:var(--mochi-v2-profile-panel-p-color,var(--lp-muted,inherit))
 }
 .mochi-profile-panel button {
-  white-space:normal;
-  min-height:44px;
+  white-space:var(--mochi-v2-profile-panel-button-white-space,normal);
+  min-height:var(--mochi-v2-profile-panel-button-min-height,44px);
   width:100%
 }
 .mochi-profile-panel .mochi-profile-settings {
-  margin-top:12px;
-  border-width:1px 0 0;
+  margin-top:var(--mochi-v2-profile-panel-profile-settings-margin-top,12px);
+  border-width:var(--mochi-v2-profile-panel-profile-settings-border-width,1px 0 0);
   border-radius:0;
-  background:transparent;
-  font-size:calc(12px * var(--mochi-interface-scale,1));
-  color:var(--lp-muted,inherit)
+  background:var(--mochi-v2-profile-panel-profile-settings-background,transparent);
+  font-size:var(--mochi-v2-profile-panel-profile-settings-font-size,calc(12px * var(--mochi-interface-scale,1)));
+  color:var(--mochi-v2-profile-panel-profile-settings-color,var(--lp-muted,inherit))
 }
 .mochi-desktop-main .mochi-search-panel {
-  padding:8px 0;
-  max-height:35%;
+  padding:var(--mochi-v2-search-panel-padding,8px 0);
+  max-height:var(--mochi-v2-search-panel-max-height,35%);
   border-top:0
 }
 .mochi-desktop-main .mochi-search-controls {
   display:grid;
-  grid-template-columns:minmax(0,1fr) minmax(72px,110px) auto auto 40px;
-  align-items:center;
-  gap:5px
+  grid-template-columns:var(--mochi-v2-search-controls-grid-template-columns,minmax(0,1fr) minmax(72px,110px) auto auto 40px);
+  align-items:var(--mochi-v2-search-controls-align-items,center);
+  gap:var(--mochi-v2-search-controls-gap,5px)
 }
 .mochi-desktop-main .mochi-search-controls :is(input,select) {
   width:100%;
-  min-height:40px;
-  padding:7px;
-  font-size:calc(12px * var(--mochi-interface-scale,1))
+  min-height:var(--mochi-v2-search-controls-is-input-min-height,40px);
+  padding:var(--mochi-v2-search-controls-is-input-padding,7px);
+  font-size:var(--mochi-v2-search-controls-is-input-font-size,calc(12px * var(--mochi-interface-scale,1)))
 }
 .mochi-desktop-main .mochi-search-controls button {
-  width:auto;
-  padding:7px 9px;
-  min-height:40px;
-  font-size:calc(12px * var(--mochi-interface-scale,1))
+  width:var(--mochi-v2-search-controls-button-width,auto);
+  padding:var(--mochi-v2-search-controls-button-padding,7px 9px);
+  min-height:var(--mochi-v2-search-controls-button-min-height,40px);
+  font-size:var(--mochi-v2-search-controls-button-font-size,calc(12px * var(--mochi-interface-scale,1)))
 }
 .mochi-desktop-main .mochi-search-secondary {
-  background:transparent;
-  border-color:transparent;
-  color:var(--lp-muted,inherit)
+  background:var(--mochi-v2-search-secondary-background,transparent);
+  border-color:var(--mochi-v2-search-secondary-border-color,transparent);
+  color:var(--mochi-v2-search-secondary-color,var(--lp-muted,inherit))
 }
 .mochi-desktop-main .mochi-search-panel>[role=status] {
-  font-size:calc(11px * var(--mochi-interface-scale,1));
-  margin-top:4px
+  font-size:var(--mochi-v2-search-panel-role-status-font-size,calc(11px * var(--mochi-interface-scale,1)));
+  margin-top:var(--mochi-v2-search-panel-role-status-margin-top,4px)
 }
 .mochi-desktop-main .mochi-search-results {
-  margin-top:6px
+  margin-top:var(--mochi-v2-search-results-margin-top,6px)
 }
 .mochi-desktop-main .mochi-search-results:empty {
   display:none
 }
 .mochi-desktop :is(button,input,summary):focus-visible {
-  outline:2px solid var(--mochi-accent);
-  outline-offset:2px
+  outline:var(--mochi-v2-desktop-is-button-outline,2px solid var(--mochi-accent));
+  outline-offset:var(--mochi-v2-desktop-is-button-outline-offset,2px)
 }
 .mochi-desktop-main .lp-conversation-menu-action {
-  min-height:44px;
-  white-space:normal
+  min-height:var(--mochi-v2-conversation-menu-action-min-height,44px);
+  white-space:var(--mochi-v2-conversation-menu-action-white-space,normal)
 }
 .mochi-desktop-main .lp-conversation-menu-sheet {
-  max-height:min(70vh,440px);
+  max-height:var(--mochi-v2-conversation-menu-sheet-max-height,min(70vh,440px));
   overflow:auto;
-  max-width:min(280px,85cqw)
+  max-width:var(--mochi-v2-conversation-menu-sheet-max-width,min(280px,85cqw))
 }
 .mochi-desktop-main .lp-conversation-menu-action:nth-of-type(3),.mochi-desktop-main .lp-conversation-menu-action:nth-of-type(4),.mochi-desktop-main .lp-conversation-menu-action:last-child {
-  border-top:1px solid var(--lp-border,#ffffff26)
+  border-top:var(--mochi-v2-conversation-menu-action-nth-of-type-3-border-top,1px solid var(--lp-border,#ffffff26))
 }
 .mochi-desktop .lp-conversation-menu {
   position:relative;
-  z-index:30
+  z-index:var(--mochi-v2-desktop-conversation-menu-z-index,30)
 }
 .mochi-desktop .lp-conversation-menu>summary {
-  list-style:none;
-  cursor:pointer
+  list-style:var(--mochi-v2-desktop-conversation-menu-summary-list-style,none);
+  cursor:var(--mochi-v2-desktop-conversation-menu-summary-cursor,pointer)
 }
 .mochi-desktop .lp-conversation-menu>summary::-webkit-details-marker {
   display:none
@@ -4117,52 +4142,52 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 .mochi-desktop .lp-conversation-menu-sheet {
   position:absolute;
   right:0;
-  top:calc(100% + 6px);
-  z-index:50;
-  width:224px;
-  max-width:85cqw;
-  max-height:300px;
-  padding:8px;
+  top:var(--mochi-v2-desktop-conversation-menu-sheet-top,calc(100% + 6px));
+  z-index:var(--mochi-v2-desktop-conversation-menu-sheet-z-index,50);
+  width:var(--mochi-v2-desktop-conversation-menu-sheet-width,224px);
+  max-width:var(--mochi-v2-desktop-conversation-menu-sheet-max-width,85cqw);
+  max-height:var(--mochi-v2-desktop-conversation-menu-sheet-max-height,300px);
+  padding:var(--mochi-v2-desktop-conversation-menu-sheet-padding,8px);
   display:grid;
-  gap:3px;
+  gap:var(--mochi-v2-desktop-conversation-menu-sheet-gap,3px);
   overflow:auto;
   overscroll-behavior:contain;
   background:var(--mochi-surface,#17151d);
   color:var(--mochi-text);
-  border:1px solid var(--mochi-border,#777);
+  border:var(--mochi-v2-desktop-conversation-menu-sheet-border,1px solid var(--mochi-border,#777));
   border-radius:var(--mochi-radius-card);
-  box-shadow:0 12px 32px #0006
+  box-shadow:var(--mochi-v2-desktop-conversation-menu-sheet-box-shadow,0 12px 32px #0006)
 }
 .mochi-desktop .lp-conversation-menu-action {
-  appearance:none;
+  appearance:var(--mochi-v2-desktop-conversation-menu-action-appearance,none);
   display:block;
   width:100%;
-  text-align:left;
-  padding:9px 10px;
+  text-align:var(--mochi-v2-desktop-conversation-menu-action-text-align,left);
+  padding:var(--mochi-v2-desktop-conversation-menu-action-padding,9px 10px);
   border:0;
-  border-radius:7px;
+  border-radius:var(--mochi-v2-desktop-conversation-menu-action-border-radius,7px);
   color:inherit;
-  background:transparent;
+  background:var(--mochi-v2-desktop-conversation-menu-action-background,transparent);
   font:inherit;
-  font-size:calc(12px * var(--mochi-interface-scale,1));
-  min-height:44px;
-  cursor:pointer
+  font-size:var(--mochi-v2-desktop-conversation-menu-action-font-size,calc(12px * var(--mochi-interface-scale,1)));
+  min-height:var(--mochi-v2-desktop-conversation-menu-action-min-height,44px);
+  cursor:var(--mochi-v2-desktop-conversation-menu-action-cursor,pointer)
 }
 .mochi-desktop .lp-conversation-menu-action:is(:hover,:focus-visible) {
-  background:var(--lp-surface-2,#ffffff18);
-  outline:2px solid var(--mochi-accent);
-  outline-offset:-2px
+  background:var(--mochi-v2-desktop-conversation-menu-action-is-hover-background,var(--lp-surface-2,#ffffff18));
+  outline:var(--mochi-v2-desktop-conversation-menu-action-is-hover-outline,2px solid var(--mochi-accent));
+  outline-offset:var(--mochi-v2-desktop-conversation-menu-action-is-hover-outline-offset,-2px)
 }
 .mochi-desktop .lp-conversation-menu-action:active {
-  box-shadow:inset 0 0 0 1px var(--mochi-accent)
+  box-shadow:var(--mochi-v2-desktop-conversation-menu-action-active-box-shadow,inset 0 0 0 1px var(--mochi-accent))
 }
 .mochi-desktop .mochi-room-header {
   position:relative;
-  z-index:5
+  z-index:var(--mochi-v2-desktop-room-header-z-index,5)
 }
 @container (min-width:1000px) {
   .mochi-desktop[data-desktop-details=open] {
-    grid-template-columns:minmax(var(--mochi-sidebar-details-min-width),var(--mochi-sidebar-details-width)) minmax(0,1fr) var(--mochi-profile-panel-width)
+    grid-template-columns:var(--mochi-v2-desktop-data-desktop-details-open-container-min-width-1000px-grid-template-columns,minmax(var(--mochi-sidebar-details-min-width),var(--mochi-sidebar-details-width)) minmax(0,1fr) var(--mochi-profile-panel-width))
   }
   .mochi-desktop[data-desktop-details=open]>.mochi-profile-panel {
     display:block
@@ -4176,14 +4201,14 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   .mochi-desktop[data-details=true]>.mochi-desktop-main {
     visibility:hidden;
     pointer-events:none;
-    grid-column:2;
-    grid-row:1
+    grid-column:var(--mochi-v2-desktop-data-details-true-container-max-width-999px-grid-column,2);
+    grid-row:var(--mochi-v2-desktop-data-details-true-container-max-width-999px-grid-row,1)
   }
   .mochi-desktop[data-details=true]>.mochi-profile-panel {
     display:block;
-    grid-column:2;
-    grid-row:1;
-    z-index:1
+    grid-column:var(--mochi-v2-desktop-data-details-true-profile-panel-container-max-width-999px-grid-column,2);
+    grid-row:var(--mochi-v2-desktop-data-details-true-profile-panel-container-max-width-999px-grid-row,1);
+    z-index:var(--mochi-v2-desktop-data-details-true-profile-panel-container-max-width-999px-z-index,1)
   }
   .mochi-profile-panel {
     border-left:0
@@ -4196,7 +4221,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 @container (max-width:639px) {
   .mochi-desktop.mochi-view {
-    grid-template-columns:minmax(0,1fr)
+    grid-template-columns:var(--mochi-v2-desktop-container-max-width-639px-grid-template-columns,minmax(0,1fr))
   }
   .mochi-desktop[data-mode=list]>.mochi-desktop-main {
     display:none
@@ -4210,34 +4235,34 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 @container (max-width:639px) {
   .mochi-desktop[data-details=true]>.mochi-desktop-main,.mochi-desktop[data-details=true]>.mochi-profile-panel {
-    grid-column:1;
-    grid-row:1
+    grid-column:var(--mochi-v2-desktop-data-details-true-container-max-width-639px-grid-column,1);
+    grid-row:var(--mochi-v2-desktop-data-details-true-container-max-width-639px-grid-row,1)
   }
 }
 @container (max-width:639px) {
   .mochi-desktop-main .mochi-search-controls {
-    grid-template-columns:minmax(0,1fr) auto 40px
+    grid-template-columns:var(--mochi-v2-search-controls-container-max-width-639px-grid-template-columns,minmax(0,1fr) auto 40px)
   }
   .mochi-desktop-main .mochi-search-controls input {
-    grid-column:1 / 3
+    grid-column:var(--mochi-v2-search-controls-input-container-max-width-639px-grid-column,1 / 3)
   }
   .mochi-desktop-main .mochi-search-controls select {
-    grid-column:1;
-    grid-row:2
+    grid-column:var(--mochi-v2-search-controls-select-container-max-width-639px-grid-column,1);
+    grid-row:var(--mochi-v2-search-controls-select-container-max-width-639px-grid-row,2)
   }
   .mochi-desktop-main .mochi-search-controls button[type=submit] {
-    grid-column:2;
-    grid-row:2
+    grid-column:var(--mochi-v2-search-controls-button-type-submit-container-max-width-639px-grid-column,2);
+    grid-row:var(--mochi-v2-search-controls-button-type-submit-container-max-width-639px-grid-row,2)
   }
   .mochi-desktop-main .mochi-search-controls button:last-child {
-    grid-column:3;
-    grid-row:1
+    grid-column:var(--mochi-v2-search-controls-button-last-child-container-max-width-639px-grid-column,3);
+    grid-row:var(--mochi-v2-search-controls-button-last-child-container-max-width-639px-grid-row,1)
   }
   .mochi-desktop-main .mochi-search-controls .mochi-search-secondary:not(:last-child) {
-    grid-column:3;
-    grid-row:2;
-    padding:4px;
-    font-size:calc(11px * var(--mochi-interface-scale,1))
+    grid-column:var(--mochi-v2-search-controls-search-secondary-container-max-width-639px-grid-column,3);
+    grid-row:var(--mochi-v2-search-controls-search-secondary-container-max-width-639px-grid-row,2);
+    padding:var(--mochi-v2-search-controls-search-secondary-container-max-width-639px-padding,4px);
+    font-size:var(--mochi-v2-search-controls-search-secondary-container-max-width-639px-font-size,calc(11px * var(--mochi-interface-scale,1)))
   }
 }
 
@@ -4246,322 +4271,322 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   font-family: var(--mochi-messenger-font);
 }
 .mochi-desktop .mochi-desktop-list-head {
-  padding: 10px 10px 6px;
-  gap: 8px;
+  padding: var(--mochi-v2-desktop-desktop-list-head-padding,10px 10px 6px);
+  gap: var(--mochi-v2-desktop-desktop-list-head-gap,8px);
 }
 .mochi-desktop .mochi-shell-brand {
-  padding: 0 2px 4px;
+  padding: var(--mochi-v2-desktop-shell-brand-padding,0 2px 4px);
 }
 .mochi-desktop .mochi-wordmark-image {
   width: var(--mochi-wordmark-width);
 }
 .mochi-desktop .mochi-shell-account-row {
-  gap: 6px;
+  gap: var(--mochi-v2-desktop-shell-account-row-gap,6px);
 }
 .mochi-desktop .mochi-desktop-account {
-  gap: 7px;
-  padding: 4px 0;
+  gap: var(--mochi-v2-desktop-desktop-account-gap,7px);
+  padding: var(--mochi-v2-desktop-desktop-account-padding,4px 0);
 }
 .mochi-desktop .mochi-desktop-account>.mochi-avatar {
-  width: 30px;
-  height: 30px;
+  width: var(--mochi-v2-desktop-desktop-account-avatar-width,30px);
+  height: var(--mochi-v2-desktop-desktop-account-avatar-height,30px);
 }
 .mochi-desktop .mochi-desktop-account select {
-  font-size:calc(12px * var(--mochi-interface-scale,1));
-  min-height: 36px;
-  padding: 4px 22px 4px 6px;
+  font-size:var(--mochi-v2-desktop-desktop-account-select-font-size,calc(12px * var(--mochi-interface-scale,1)));
+  min-height: var(--mochi-v2-desktop-desktop-account-select-min-height,36px);
+  padding: var(--mochi-v2-desktop-desktop-account-select-padding,4px 22px 4px 6px);
 }
 .mochi-desktop .mochi-shell-account-row>.lp-button {
-  min-width: 36px;
-  min-height: 36px;
-  padding: 7px;
-  border-radius: 8px;
-  background: transparent;
-  border-color: transparent;
+  min-width: var(--mochi-v2-desktop-shell-account-row-button-min-width,36px);
+  min-height: var(--mochi-v2-desktop-shell-account-row-button-min-height,36px);
+  padding: var(--mochi-v2-desktop-shell-account-row-button-padding,7px);
+  border-radius: var(--mochi-v2-desktop-shell-account-row-button-border-radius,8px);
+  background: var(--mochi-v2-desktop-shell-account-row-button-background,transparent);
+  border-color: var(--mochi-v2-desktop-shell-account-row-button-border-color,transparent);
 }
 .mochi-desktop .mochi-conversation-filter {
-  min-height: 36px;
-  padding: 7px 10px;
+  min-height: var(--mochi-v2-desktop-conversation-filter-min-height,36px);
+  padding: var(--mochi-v2-desktop-conversation-filter-padding,7px 10px);
 }
 .mochi-desktop .mochi-conversation-filters {
   display: grid;
-  grid-template-columns: 1fr 1fr auto;
-  gap: 4px;
+  grid-template-columns: var(--mochi-v2-desktop-conversation-filters-grid-template-columns,1fr 1fr auto);
+  gap: var(--mochi-v2-desktop-conversation-filters-gap,4px);
   padding: 0;
 }
 .mochi-desktop .mochi-conversation-filters>.lp-button {
-  min-height: 36px;
-  padding: 5px 8px;
-  font-size:calc(12px * var(--mochi-interface-scale,1));
-  border-radius: 8px;
+  min-height: var(--mochi-v2-desktop-conversation-filters-button-min-height,36px);
+  padding: var(--mochi-v2-desktop-conversation-filters-button-padding,5px 8px);
+  font-size:var(--mochi-v2-desktop-conversation-filters-button-font-size,calc(12px * var(--mochi-interface-scale,1)));
+  border-radius: var(--mochi-v2-desktop-conversation-filters-button-border-radius,8px);
 }
 .mochi-desktop .mochi-desktop-rooms {
-  padding: 4px 6px;
-  gap: 3px;
+  padding: var(--mochi-v2-desktop-desktop-rooms-padding,4px 6px);
+  gap: var(--mochi-v2-desktop-desktop-rooms-gap,3px);
 }
 .mochi-desktop .mochi-desktop-room {
-  padding: 8px;
-  gap: 8px;
-  min-height: 58px;
-  border-radius: 10px;
+  padding: var(--mochi-v2-desktop-desktop-room-padding,8px);
+  gap: var(--mochi-v2-desktop-desktop-room-gap,8px);
+  min-height: var(--mochi-v2-desktop-desktop-room-min-height,58px);
+  border-radius: var(--mochi-v2-desktop-desktop-room-border-radius,10px);
 }
 .mochi-desktop .mochi-desktop-room .mochi-room-avatars {
   width: var(--mochi-list-avatar-size);
   height: var(--mochi-list-avatar-size);
-  flex: none;
+  flex: var(--mochi-v2-desktop-desktop-room-room-avatars-flex,none);
 }
 .mochi-desktop .mochi-desktop-room .mochi-avatar {
   width: var(--mochi-list-avatar-size);
   height: var(--mochi-list-avatar-size);
 }
 .mochi-desktop .mochi-desktop-room-copy strong {
-  font-size:calc(13px * var(--mochi-interface-scale,1));
+  font-size:var(--mochi-v2-desktop-desktop-room-copy-strong-font-size,calc(13px * var(--mochi-interface-scale,1)));
 }
 .mochi-desktop .mochi-desktop-room-copy small {
-  font-size:calc(11px * var(--mochi-interface-scale,1));
+  font-size:var(--mochi-v2-desktop-desktop-room-copy-small-font-size,calc(11px * var(--mochi-interface-scale,1)));
 }
 .mochi-group-portraits {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: var(--mochi-v2-group-portraits-grid-template-columns,1fr 1fr);
   overflow: hidden;
 }
 .mochi-group-portraits>span {
   min-width: 0;
   height: 100%;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  background: color-mix(in srgb,var(--mochi-accent) 15%,var(--mochi-surface));
+  align-items: var(--mochi-v2-group-portraits-span-align-items,center);
+  justify-content: var(--mochi-v2-group-portraits-span-justify-content,center);
+  background: var(--mochi-v2-group-portraits-span-background,color-mix(in srgb,var(--mochi-accent) 15%,var(--mochi-surface)));
 }
 .mochi-desktop-main .mochi-view[data-surface] .mochi-room-header {
   display: grid;
-  grid-template-columns: minmax(0,1fr) auto;
-  align-items: center;
-  padding: 8px 0 10px;
-  gap: 8px;
+  grid-template-columns: var(--mochi-v2-data-surface-room-header-grid-template-columns,minmax(0,1fr) auto);
+  align-items: var(--mochi-v2-data-surface-room-header-align-items,center);
+  padding: var(--mochi-v2-data-surface-room-header-padding,8px 0 10px);
+  gap: var(--mochi-v2-data-surface-room-header-gap,8px);
 }
 .mochi-desktop .mochi-room-info {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  align-items: var(--mochi-v2-desktop-room-info-align-items,center);
+  gap: var(--mochi-v2-desktop-room-info-gap,10px);
   min-width: 0;
 }
 .mochi-desktop .mochi-room-info>.mochi-chat-avatar {
   width: var(--mochi-header-avatar-size);
   height: var(--mochi-header-avatar-size);
-  flex: none;
+  flex: var(--mochi-v2-desktop-room-info-chat-avatar-flex,none);
 }
 .mochi-header-copy {
   min-width: 0;
 }
 .mochi-desktop .mochi-conversation-title {
   margin: 0;
-  font-size:calc(15px * var(--mochi-interface-scale,1));
-  font-weight: 650;
+  font-size:var(--mochi-v2-desktop-conversation-title-font-size,calc(15px * var(--mochi-interface-scale,1)));
+  font-weight: var(--mochi-v2-desktop-conversation-title-font-weight,650);
 }
 .mochi-desktop .mochi-room-meta {
-  font-size:calc(11px * var(--mochi-interface-scale,1));
-  margin: 3px 0 0;
+  font-size:var(--mochi-v2-desktop-room-meta-font-size,calc(11px * var(--mochi-interface-scale,1)));
+  margin: var(--mochi-v2-desktop-room-meta-margin,3px 0 0);
 }
 .mochi-chat-name {
   display: block;
-  font-size:calc(10px * var(--mochi-interface-scale,1));
-  color: var(--lp-muted,inherit);
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  font-size:var(--mochi-v2-chat-name-font-size,calc(10px * var(--mochi-interface-scale,1)));
+  color: var(--mochi-v2-chat-name-color,var(--lp-muted,inherit));
+  white-space: var(--mochi-v2-chat-name-white-space,nowrap);
+  text-overflow: var(--mochi-v2-chat-name-text-overflow,ellipsis);
   overflow: hidden;
-  margin-top: 2px;
+  margin-top: var(--mochi-v2-chat-name-margin-top,2px);
 }
 .mochi-desktop-main .mochi-view[data-surface] .mochi-room-header>.mochi-custom-toolbar {
-  width: auto;
-  max-width: 420px;
+  width: var(--mochi-v2-data-surface-room-header-custom-toolbar-width,auto);
+  max-width: var(--mochi-v2-data-surface-room-header-custom-toolbar-max-width,420px);
 }
 .mochi-desktop .mochi-room-header .mochi-custom-toolbar .mochi-icon-button,.mochi-desktop .mochi-room-header .mochi-custom-toolbar .lp-nav-action {
   min-width: var(--mochi-messenger-control-size);
   min-height: var(--mochi-messenger-control-size);
   height: var(--mochi-messenger-control-size);
-  padding: 7px;
+  padding: var(--mochi-v2-desktop-room-header-custom-toolbar-icon-button-padding,7px);
 }
 .mochi-desktop .mochi-avatar-frame,.mochi-desktop .mochi-avatar-frame .mochi-message-avatar {
   width: var(--mochi-message-avatar-size);
   height: var(--mochi-message-avatar-size);
 }
 .mochi-desktop .mochi-message-body {
-  max-width: min(80%,calc(100% - var(--mochi-message-avatar-size) - 10px));
+  max-width: var(--mochi-v2-desktop-message-body-max-width,min(80%,calc(100% - var(--mochi-message-avatar-size) - 10px)));
 }
 .mochi-desktop .mochi-bubble {
   font-family: var(--mochi-messenger-font);
-  padding: var(--mochi-bubble-padding-y) var(--mochi-bubble-padding-x);
-  line-height: 1.45;
+  padding: var(--mochi-v2-desktop-bubble-padding,var(--mochi-bubble-padding-y) var(--mochi-bubble-padding-x));
+  line-height: var(--mochi-v2-desktop-bubble-line-height,1.45);
 }
 .mochi-desktop-main .mochi-thread {
   gap: var(--mochi-message-gap);
-  justify-content: flex-start;
-  padding-top: 10px;
+  justify-content: var(--mochi-v2-thread-justify-content,flex-start);
+  padding-top: var(--mochi-v2-thread-padding-top,10px);
 }
 .mochi-desktop .mochi-message {
-  flex: 0 0 auto;
+  flex: var(--mochi-v2-desktop-message-flex,0 0 auto);
 }
 .mochi-desktop .mochi-message[data-grouped=true] {
-  margin-top: -6px;
+  margin-top: var(--mochi-v2-desktop-message-data-grouped-true-margin-top,-6px);
 }
 .mochi-desktop .mochi-message-heading {
-  padding-top: 2px;
+  padding-top: var(--mochi-v2-desktop-message-heading-padding-top,2px);
 }
 .mochi-desktop .mochi-presence-dot {
-  width: 9px;
-  height: 9px;
+  width: var(--mochi-v2-desktop-presence-dot-width,9px);
+  height: var(--mochi-v2-desktop-presence-dot-height,9px);
 }
 .mochi-desktop .mochi-profile-panel {
-  padding: 12px;
+  padding: var(--mochi-v2-desktop-profile-panel-padding,12px);
 }
 .mochi-desktop .mochi-profile-heading {
-  margin-bottom: 10px;
+  margin-bottom: var(--mochi-v2-desktop-profile-heading-margin-bottom,10px);
 }
 .mochi-desktop .mochi-profile-heading h3 {
-  font-size:calc(13px * var(--mochi-interface-scale,1));
+  font-size:var(--mochi-v2-desktop-profile-heading-h3-font-size,calc(13px * var(--mochi-interface-scale,1)));
 }
 .mochi-desktop .mochi-profile-heading button,.mochi-desktop .mochi-profile-panel button {
-  min-height: 40px;
-  padding: 6px 10px;
-  border-radius: 8px;
+  min-height: var(--mochi-v2-desktop-profile-heading-button-min-height,40px);
+  padding: var(--mochi-v2-desktop-profile-heading-button-padding,6px 10px);
+  border-radius: var(--mochi-v2-desktop-profile-heading-button-border-radius,8px);
 }
 .mochi-profile-cover {
-  height: 64px;
-  border-radius: 10px;
-  background: linear-gradient(120deg,color-mix(in srgb,var(--mochi-accent) 24%,var(--mochi-surface)),var(--mochi-surface));
+  height: var(--mochi-v2-profile-cover-height,64px);
+  border-radius: var(--mochi-v2-profile-cover-border-radius,10px);
+  background: var(--mochi-v2-profile-cover-background,linear-gradient(120deg,color-mix(in srgb,var(--mochi-accent) 24%,var(--mochi-surface)),var(--mochi-surface)));
 }
 .mochi-desktop .mochi-profile-panel[data-kind=direct] .mochi-profile-person {
-  text-align: center;
+  text-align: var(--mochi-v2-desktop-profile-panel-data-kind-direct-profile-person-text-align,center);
   padding: 0;
-  margin-top: -26px;
+  margin-top: var(--mochi-v2-desktop-profile-panel-data-kind-direct-profile-person-margin-top,-26px);
 }
 .mochi-desktop .mochi-profile-panel[data-kind=direct] .mochi-profile-person>.mochi-avatar {
   width: var(--mochi-profile-avatar-size);
   height: var(--mochi-profile-avatar-size);
-  margin: 0 auto 10px;
-  border: 3px solid var(--mochi-surface);
+  margin: var(--mochi-v2-desktop-profile-panel-data-kind-direct-profile-person-avatar-margin,0 auto 10px);
+  border: var(--mochi-v2-desktop-profile-panel-data-kind-direct-profile-person-avatar-border,3px solid var(--mochi-surface));
 }
 .mochi-desktop .mochi-profile-person h4,.mochi-profile-group h4 {
-  font-size:calc(17px * var(--mochi-interface-scale,1));
-  margin: 6px 0;
-  overflow-wrap: anywhere;
+  font-size:var(--mochi-v2-desktop-profile-person-h4-font-size,calc(17px * var(--mochi-interface-scale,1)));
+  margin: var(--mochi-v2-desktop-profile-person-h4-margin,6px 0);
+  overflow-wrap: var(--mochi-v2-desktop-profile-person-h4-overflow-wrap,anywhere);
 }
 .mochi-desktop .mochi-profile-panel p {
-  font-size:calc(12px * var(--mochi-interface-scale,1));
-  line-height: 1.5;
+  font-size:var(--mochi-v2-desktop-profile-panel-p-font-size,calc(12px * var(--mochi-interface-scale,1)));
+  line-height: var(--mochi-v2-desktop-profile-panel-p-line-height,1.5);
 }
 .mochi-profile-about {
-  text-align: left;
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid var(--mochi-border);
-  grid-column: 1 / -1;
+  text-align: var(--mochi-v2-profile-about-text-align,left);
+  margin-top: var(--mochi-v2-profile-about-margin-top,16px);
+  padding-top: var(--mochi-v2-profile-about-padding-top,12px);
+  border-top: var(--mochi-v2-profile-about-border-top,1px solid var(--mochi-border));
+  grid-column: var(--mochi-v2-profile-about-grid-column,1 / -1);
 }
 .mochi-profile-about h5 {
-  margin: 0 0 6px;
-  font-size:calc(12px * var(--mochi-interface-scale,1));
+  margin: var(--mochi-v2-profile-about-h5-margin,0 0 6px);
+  font-size:var(--mochi-v2-profile-about-h5-font-size,calc(12px * var(--mochi-interface-scale,1)));
 }
 .mochi-profile-about p {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
+  white-space: var(--mochi-v2-profile-about-p-white-space,pre-wrap);
+  overflow-wrap: var(--mochi-v2-profile-about-p-overflow-wrap,anywhere);
 }
 .mochi-profile-chat-name {
-  color: var(--lp-muted,inherit);
-  overflow-wrap: anywhere;
+  color: var(--mochi-v2-profile-chat-name-color,var(--lp-muted,inherit));
+  overflow-wrap: var(--mochi-v2-profile-chat-name-overflow-wrap,anywhere);
 }
 .mochi-profile-group {
-  text-align: center;
-  margin-top: -26px;
+  text-align: var(--mochi-v2-profile-group-text-align,center);
+  margin-top: var(--mochi-v2-profile-group-margin-top,-26px);
 }
 .mochi-desktop .mochi-profile-panel .mochi-profile-group>.mochi-chat-avatar {
   width: var(--mochi-profile-avatar-size);
   height: var(--mochi-profile-avatar-size);
-  margin: 0 auto;
-  font-size:calc(30px * var(--mochi-interface-scale,1));
+  margin: var(--mochi-v2-desktop-profile-panel-profile-group-chat-avatar-margin,0 auto);
+  font-size:var(--mochi-v2-desktop-profile-panel-profile-group-chat-avatar-font-size,calc(30px * var(--mochi-interface-scale,1)));
 }
 .mochi-desktop .mochi-profile-panel[data-kind=group] .mochi-profile-person {
-  margin-top: 12px;
-  padding: 10px 0;
-  border-top: 1px solid var(--mochi-border);
+  margin-top: var(--mochi-v2-desktop-profile-panel-data-kind-group-profile-person-margin-top,12px);
+  padding: var(--mochi-v2-desktop-profile-panel-data-kind-group-profile-person-padding,10px 0);
+  border-top: var(--mochi-v2-desktop-profile-panel-data-kind-group-profile-person-border-top,1px solid var(--mochi-border));
 }
 @container (max-width:639px) {
  .mochi-desktop-main .mochi-view[data-surface] .mochi-room-header {
-  grid-template-columns: minmax(0,1fr);
-  gap: 4px;
+  grid-template-columns: var(--mochi-v2-data-surface-room-header-container-max-width-639px-grid-template-columns,minmax(0,1fr));
+  gap: var(--mochi-v2-data-surface-room-header-container-max-width-639px-gap,4px);
 }
  .mochi-desktop-main .mochi-view[data-surface] .mochi-room-header>.mochi-custom-toolbar {
   width: 100%;
-  max-width: none;
+  max-width: var(--mochi-v2-data-surface-room-header-custom-toolbar-container-max-width-639px-max-width,none);
 }
 }
 
-.mochi-desktop-main .mochi-thread { padding-top: 44px; }
-@media (pointer:coarse) { .mochi-view .mochi-action-strip .mochi-icon-button { min-width:40px; width:40px; height:40px; min-height:40px; } }
+.mochi-desktop-main .mochi-thread { padding-top: var(--mochi-v2-thread-padding-top,44px); }
+@media (pointer:coarse) { .mochi-view .mochi-action-strip .mochi-icon-button { min-width:var(--mochi-v2-action-strip-icon-button-media-pointer-coarse-min-width,40px); width:var(--mochi-v2-action-strip-icon-button-media-pointer-coarse-width,40px); height:var(--mochi-v2-action-strip-icon-button-media-pointer-coarse-height,40px); min-height:var(--mochi-v2-action-strip-icon-button-media-pointer-coarse-min-height,40px); } }
 .mochi-desktop.mochi-view { border-radius:var(--mochi-panel-radius); }
 /* Refresh 01: balanced columns and exact header hierarchy. */
 .mochi-desktop .mochi-desktop-room {
-  min-height: 64px;
-  padding: 10px;
+  min-height: var(--mochi-v2-desktop-desktop-room-min-height,64px);
+  padding: var(--mochi-v2-desktop-desktop-room-padding,10px);
 }
 
 .mochi-desktop-main .mochi-view[data-surface] .mochi-room-header {
-  grid-template-columns: minmax(140px,1fr) minmax(0,1fr) auto;
-  gap: 10px;
-  padding: 12px 0;
+  grid-template-columns: var(--mochi-v2-data-surface-room-header-grid-template-columns,minmax(140px,1fr) minmax(0,1fr) auto);
+  gap: var(--mochi-v2-data-surface-room-header-gap,10px);
+  padding: var(--mochi-v2-data-surface-room-header-padding,12px 0);
 }
 
 .mochi-desktop .mochi-room-info.mochi-identity-button {
   padding: 0;
   border: 0;
   border-radius: var(--mochi-control-radius);
-  background: transparent;
+  background: var(--mochi-v2-desktop-room-infoidentity-button-background,transparent);
   color: inherit;
   font: inherit;
-  text-align: left;
-  cursor: pointer;
-  min-height: 48px;
+  text-align: var(--mochi-v2-desktop-room-infoidentity-button-text-align,left);
+  cursor: var(--mochi-v2-desktop-room-infoidentity-button-cursor,pointer);
+  min-height: var(--mochi-v2-desktop-room-infoidentity-button-min-height,48px);
 }
 
 .mochi-identity-button:focus-visible {
-  outline: 2px solid var(--mochi-accent);
-  outline-offset: 3px;
+  outline: var(--mochi-v2-identity-button-focus-visible-outline,2px solid var(--mochi-accent));
+  outline-offset: var(--mochi-v2-identity-button-focus-visible-outline-offset,3px);
 }
 
 .mochi-desktop .mochi-room-header>.mochi-chat-name {
-  text-align: center;
-  font-size:calc(13px * var(--mochi-interface-scale,1));
-  font-weight: 600;
+  text-align: var(--mochi-v2-desktop-room-header-chat-name-text-align,center);
+  font-size:var(--mochi-v2-desktop-room-header-chat-name-font-size,calc(13px * var(--mochi-interface-scale,1)));
+  font-weight: var(--mochi-v2-desktop-room-header-chat-name-font-weight,600);
   margin: 0;
 }
 
 .mochi-header-controls {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: var(--mochi-v2-header-controls-flex-wrap,nowrap);
   gap: 0;
 }
 
 .mochi-view .mochi-header-controls .mochi-icon-button {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  min-width: 40px;
-  width: 40px;
-  min-height: 40px;
-  height: 40px;
-  padding: 9px;
+  justify-content: var(--mochi-v2-header-controls-icon-button-justify-content,center);
+  align-items: var(--mochi-v2-header-controls-icon-button-align-items,center);
+  min-width: var(--mochi-v2-header-controls-icon-button-min-width,40px);
+  width: var(--mochi-v2-header-controls-icon-button-width,40px);
+  min-height: var(--mochi-v2-header-controls-icon-button-min-height,40px);
+  height: var(--mochi-v2-header-controls-icon-button-height,40px);
+  padding: var(--mochi-v2-header-controls-icon-button-padding,9px);
   border: 0;
   border-radius: var(--mochi-control-radius);
-  background: transparent;
-  color: var(--lp-muted,inherit);
+  background: var(--mochi-v2-header-controls-icon-button-background,transparent);
+  color: var(--mochi-v2-header-controls-icon-button-color,var(--lp-muted,inherit));
 }
 
 .mochi-header-controls button:hover {
-  background: color-mix(in srgb,var(--mochi-accent) 14%,transparent);
+  background: var(--mochi-v2-header-controls-button-hover-background,color-mix(in srgb,var(--mochi-accent) 14%,transparent));
 }
 
 .mochi-desktop .mochi-message-body {
-  max-width: min(var(--mochi-bubble-max-width),var(--mochi-bubble-line-length),calc(100% - var(--mochi-message-avatar-size) - 12px));
+  max-width: var(--mochi-v2-desktop-message-body-max-width,min(var(--mochi-bubble-max-width),var(--mochi-bubble-line-length),calc(100% - var(--mochi-message-avatar-size) - 12px)));
 }
 
 .mochi-desktop .mochi-bubble {
@@ -4569,7 +4594,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 
 .mochi-desktop .mochi-message[data-grouped=true] {
-  margin-top: -8px;
+  margin-top: var(--mochi-v2-desktop-message-data-grouped-true-margin-top,-8px);
 }
 
 .mochi-desktop .mochi-message[data-grouped=true] .mochi-message-heading {
@@ -4578,16 +4603,16 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 
 .mochi-desktop .mochi-profile-panel {
   border-radius: 0;
-  padding: 16px;
+  padding: var(--mochi-v2-desktop-profile-panel-padding,16px);
 }
 
 .mochi-desktop .mochi-profile-cover {
-  height: 72px;
+  height: var(--mochi-v2-desktop-profile-cover-height,72px);
   border-radius: var(--mochi-radius-card);
 }
 
 .mochi-desktop .mochi-profile-person h4 {
-  font-size:calc(19px * var(--mochi-interface-scale,1));
+  font-size:var(--mochi-v2-desktop-profile-person-h4-font-size,calc(19px * var(--mochi-interface-scale,1)));
 }
 
 @container (min-width:1000px) {
@@ -4596,13 +4621,13 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 
  .mochi-desktop[data-desktop-details=open] {
-  grid-template-columns: minmax(var(--mochi-sidebar-min-width),var(--mochi-sidebar-width)) minmax(0,1fr) var(--mochi-profile-panel-width);
+  grid-template-columns: var(--mochi-v2-desktop-data-desktop-details-open-container-min-width-1000px-grid-template-columns,minmax(var(--mochi-sidebar-min-width),var(--mochi-sidebar-width)) minmax(0,1fr) var(--mochi-profile-panel-width));
 }
 
 }
 @container (min-width:1280px) {
  .mochi-desktop[data-desktop-details=auto] {
-  grid-template-columns: minmax(var(--mochi-sidebar-min-width),var(--mochi-sidebar-width)) minmax(0,1fr) var(--mochi-profile-panel-width);
+  grid-template-columns: var(--mochi-v2-desktop-data-desktop-details-auto-container-min-width-1280px-grid-template-columns,minmax(var(--mochi-sidebar-min-width),var(--mochi-sidebar-width)) minmax(0,1fr) var(--mochi-profile-panel-width));
 }
 
  .mochi-desktop[data-desktop-details=auto]>.mochi-profile-panel {
@@ -4612,49 +4637,49 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 @container (max-width:600px) {
  .mochi-desktop-main .mochi-view[data-surface] .mochi-room-header {
-  grid-template-columns: minmax(0,1fr) auto;
-  column-gap: 6px;
+  grid-template-columns: var(--mochi-v2-data-surface-room-header-container-max-width-600px-grid-template-columns,minmax(0,1fr) auto);
+  column-gap: var(--mochi-v2-data-surface-room-header-container-max-width-600px-column-gap,6px);
 }
 
  .mochi-desktop .mochi-room-header>.mochi-chat-name {
-  grid-row: 2;
-  grid-column: 1;
-  text-align: left;
-  margin-left: 48px;
-  font-size:calc(11px * var(--mochi-interface-scale,1));
+  grid-row: var(--mochi-v2-desktop-room-header-chat-name-container-max-width-600px-grid-row,2);
+  grid-column: var(--mochi-v2-desktop-room-header-chat-name-container-max-width-600px-grid-column,1);
+  text-align: var(--mochi-v2-desktop-room-header-chat-name-container-max-width-600px-text-align,left);
+  margin-left: var(--mochi-v2-desktop-room-header-chat-name-container-max-width-600px-margin-left,48px);
+  font-size:var(--mochi-v2-desktop-room-header-chat-name-container-max-width-600px-font-size,calc(11px * var(--mochi-interface-scale,1)));
 }
 
  .mochi-header-controls {
-  grid-row: 1 / 3;
-  grid-column: 2;
+  grid-row: var(--mochi-v2-header-controls-container-max-width-600px-grid-row,1 / 3);
+  grid-column: var(--mochi-v2-header-controls-container-max-width-600px-grid-column,2);
 }
 
 }
 @container (max-width:639px) {
  .mochi-desktop-main .mochi-view[data-surface] .mochi-room-header {
-  padding: 8px 0;
+  padding: var(--mochi-v2-data-surface-room-header-container-max-width-639px-padding,8px 0);
 }
 
  .mochi-desktop .mochi-conversation-title {
-  font-size:calc(14px * var(--mochi-interface-scale,1));
+  font-size:var(--mochi-v2-desktop-conversation-title-container-max-width-639px-font-size,calc(14px * var(--mochi-interface-scale,1)));
 }
 
  .mochi-view .mochi-header-controls .mochi-icon-button {
-  min-width: 36px;
-  width: 36px;
+  min-width: var(--mochi-v2-header-controls-icon-button-container-max-width-639px-min-width,36px);
+  width: var(--mochi-v2-header-controls-icon-button-container-max-width-639px-width,36px);
 }
 
  .mochi-desktop .mochi-room-info {
-  gap: 7px;
+  gap: var(--mochi-v2-desktop-room-info-container-max-width-639px-gap,7px);
 }
 
  .mochi-desktop .mochi-room-info>.mochi-chat-avatar {
-  width: 34px;
-  height: 34px;
+  width: var(--mochi-v2-desktop-room-info-chat-avatar-container-max-width-639px-width,34px);
+  height: var(--mochi-v2-desktop-room-info-chat-avatar-container-max-width-639px-height,34px);
 }
 
  .mochi-desktop .mochi-room-header>.mochi-chat-name {
-  margin-left: 41px;
+  margin-left: var(--mochi-v2-desktop-room-header-chat-name-container-max-width-639px-margin-left,41px);
 }
 
 }
@@ -4664,45 +4689,45 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 
 .mochi-desktop-list { background:var(--mochi-sidebar-bg); }
-.mochi-account-dock { display:flex; align-items:center; gap:7px; flex-shrink:0; padding:8px; border-top:1px solid var(--mochi-border); background:var(--mochi-elevated-bg); color:var(--mochi-text); }
-.mochi-account-dock>div { display:grid; flex:1; min-width:0; gap:2px; }
-.mochi-account-dock :is(strong,small) { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.mochi-account-dock small { color:var(--mochi-muted); font-size:calc(11px * var(--mochi-interface-scale,1)); }
-.mochi-messenger-dock>.mochi-avatar { width:34px; height:34px; flex:0 0 34px; font-size:calc(14px * var(--mochi-interface-scale,1)); }
-.mochi-view .mochi-messenger-dock .mochi-icon-button { display:grid; place-items:center; width:36px; min-width:36px; height:36px; min-height:36px; padding:8px; border:0; border-radius:6px; background:transparent; color:var(--mochi-muted); }
-.mochi-messenger-dock svg { width:17px; height:17px; }
+.mochi-account-dock { display:flex; align-items:var(--mochi-v2-account-dock-align-items,center); gap:var(--mochi-v2-account-dock-gap,7px); flex-shrink:0; padding:var(--mochi-v2-account-dock-padding,8px); border-top:var(--mochi-v2-account-dock-border-top,1px solid var(--mochi-border)); background:var(--mochi-elevated-bg); color:var(--mochi-text); }
+.mochi-account-dock>div { display:grid; flex:var(--mochi-v2-account-dock-div-flex,1); min-width:0; gap:var(--mochi-v2-account-dock-div-gap,2px); }
+.mochi-account-dock :is(strong,small) { overflow:hidden; text-overflow:var(--mochi-v2-account-dock-is-strong-text-overflow,ellipsis); white-space:var(--mochi-v2-account-dock-is-strong-white-space,nowrap); }
+.mochi-account-dock small { color:var(--mochi-muted); font-size:var(--mochi-v2-account-dock-small-font-size,calc(11px * var(--mochi-interface-scale,1))); }
+.mochi-messenger-dock>.mochi-avatar { width:var(--mochi-v2-messenger-dock-avatar-width,34px); height:var(--mochi-v2-messenger-dock-avatar-height,34px); flex:var(--mochi-v2-messenger-dock-avatar-flex,0 0 34px); font-size:var(--mochi-v2-messenger-dock-avatar-font-size,calc(14px * var(--mochi-interface-scale,1))); }
+.mochi-view .mochi-messenger-dock .mochi-icon-button { display:grid; place-items:var(--mochi-v2-messenger-dock-icon-button-place-items,center); width:var(--mochi-v2-messenger-dock-icon-button-width,36px); min-width:var(--mochi-v2-messenger-dock-icon-button-min-width,36px); height:var(--mochi-v2-messenger-dock-icon-button-height,36px); min-height:var(--mochi-v2-messenger-dock-icon-button-min-height,36px); padding:var(--mochi-v2-messenger-dock-icon-button-padding,8px); border:0; border-radius:var(--mochi-v2-messenger-dock-icon-button-border-radius,6px); background:var(--mochi-v2-messenger-dock-icon-button-background,transparent); color:var(--mochi-muted); }
+.mochi-messenger-dock svg { width:var(--mochi-v2-messenger-dock-svg-width,17px); height:var(--mochi-v2-messenger-dock-svg-height,17px); }
 .mochi-view .mochi-messenger-dock button:hover { color:var(--mochi-text); background:var(--mochi-hover-bg); }
-.mochi-view .mochi-messenger-dock button:focus-visible { outline:2px solid var(--mochi-focus); outline-offset:-2px; }
-@container(max-width:639px) { .mochi-view .mochi-messenger-dock .mochi-icon-button { width:40px; min-width:40px; height:40px; min-height:40px; } }
+.mochi-view .mochi-messenger-dock button:focus-visible { outline:var(--mochi-v2-messenger-dock-button-focus-visible-outline,2px solid var(--mochi-focus)); outline-offset:var(--mochi-v2-messenger-dock-button-focus-visible-outline-offset,-2px); }
+@container(max-width:639px) { .mochi-view .mochi-messenger-dock .mochi-icon-button { width:var(--mochi-v2-messenger-dock-icon-button-container-max-width-639px-width,40px); min-width:var(--mochi-v2-messenger-dock-icon-button-container-max-width-639px-min-width,40px); height:var(--mochi-v2-messenger-dock-icon-button-container-max-width-639px-height,40px); min-height:var(--mochi-v2-messenger-dock-icon-button-container-max-width-639px-min-height,40px); } }
 /* @mochi-section mochi-sidebar-styles */
-.mochi-sidebar { height:100%; min-height:0; display:flex; flex-direction:column; color:var(--mochi-text); background:var(--mochi-drawer-bg); font:inherit; font-size:var(--mochi-accounts-font-13); }
+.mochi-sidebar { height:100%; min-height:0; display:flex; flex-direction:var(--mochi-v2-sidebar-flex-direction,column); color:var(--mochi-text); background:var(--mochi-drawer-bg); font:inherit; font-size:var(--mochi-accounts-font-13); }
 .mochi-sidebar * { box-sizing:border-box; }
-.mochi-sidebar-nav { display:flex; flex-wrap:wrap; gap:var(--mochi-accounts-nav-gap); padding:var(--mochi-accounts-nav-padding); flex-shrink:0; }
-.mochi-sidebar-picker { flex:1; min-height:0; overflow:auto; padding:var(--mochi-accounts-picker-padding); scrollbar-width:thin; }
-.mochi-sidebar-nav>button,.mochi-sidebar-picker button { font:inherit; color:var(--mochi-text); background:var(--mochi-control-bg); border:1px solid var(--mochi-border); border-radius:var(--mochi-editor-radius); min-height:var(--mochi-editor-control-height); padding:var(--mochi-accounts-button-padding); cursor:pointer; }
+.mochi-sidebar-nav { display:flex; flex-wrap:var(--mochi-v2-sidebar-nav-flex-wrap,wrap); gap:var(--mochi-accounts-nav-gap); padding:var(--mochi-accounts-nav-padding); flex-shrink:0; }
+.mochi-sidebar-picker { flex:var(--mochi-v2-sidebar-picker-flex,1); min-height:0; overflow:auto; padding:var(--mochi-accounts-picker-padding); scrollbar-width:var(--mochi-v2-sidebar-picker-scrollbar-width,thin); }
+.mochi-sidebar-nav>button,.mochi-sidebar-picker button { font:inherit; color:var(--mochi-text); background:var(--mochi-control-bg); border:var(--mochi-v2-sidebar-nav-button-border,1px solid var(--mochi-border)); border-radius:var(--mochi-editor-radius); min-height:var(--mochi-editor-control-height); padding:var(--mochi-accounts-button-padding); cursor:var(--mochi-v2-sidebar-nav-button-cursor,pointer); }
 .mochi-sidebar :is(button,summary):hover { background:var(--mochi-hover-bg); }
-.mochi-sidebar :is(button,input,textarea,select,summary):focus-visible { outline:2px solid var(--mochi-focus); outline-offset:2px; }
-.mochi-sidebar :is(button,input,select):disabled { opacity:var(--mochi-disabled-opacity); cursor:not-allowed; }
-.mochi-sidebar-avatar { display:grid; place-items:center; flex:var(--mochi-accounts-avatar-flex); width:var(--mochi-accounts-avatar-size); height:var(--mochi-accounts-avatar-size); border-radius:var(--mochi-accounts-avatar-radius); overflow:hidden; background:var(--mochi-input-bg); color:var(--mochi-text); }
-.mochi-sidebar-avatar img { width:100%; height:100%; object-fit:cover; }
-.mochi-sidebar-label { min-width:0; display:flex; flex-direction:column; gap:3px; }
-.mochi-sidebar-label :is(strong,small) { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%; }
+.mochi-sidebar :is(button,input,textarea,select,summary):focus-visible { outline:var(--mochi-v2-sidebar-is-button-outline,2px solid var(--mochi-focus)); outline-offset:var(--mochi-v2-sidebar-is-button-outline-offset,2px); }
+.mochi-sidebar :is(button,input,select):disabled { opacity:var(--mochi-disabled-opacity); cursor:var(--mochi-v2-sidebar-is-button-cursor,not-allowed); }
+.mochi-sidebar-avatar { display:grid; place-items:var(--mochi-v2-sidebar-avatar-place-items,center); flex:var(--mochi-accounts-avatar-flex); width:var(--mochi-accounts-avatar-size); height:var(--mochi-accounts-avatar-size); border-radius:var(--mochi-accounts-avatar-radius); overflow:hidden; background:var(--mochi-input-bg); color:var(--mochi-text); }
+.mochi-sidebar-avatar img { width:100%; height:100%; object-fit:var(--mochi-v2-sidebar-avatar-img-object-fit,cover); }
+.mochi-sidebar-label { min-width:0; display:flex; flex-direction:var(--mochi-v2-sidebar-label-flex-direction,column); gap:var(--mochi-v2-sidebar-label-gap,3px); }
+.mochi-sidebar-label :is(strong,small) { overflow:hidden; text-overflow:var(--mochi-v2-sidebar-label-is-strong-text-overflow,ellipsis); white-space:var(--mochi-v2-sidebar-label-is-strong-white-space,nowrap); max-width:100%; }
 .mochi-sidebar-label small,.mochi-sidebar-message { color:var(--mochi-muted); }
-.mochi-sidebar-message { margin:10px 0; font-size:var(--mochi-accounts-font-12); }
-.mochi-sidebar-body { flex:1; min-height:0; overflow:hidden; display:flex; flex-direction:column; }
+.mochi-sidebar-message { margin:var(--mochi-v2-sidebar-message-margin,10px 0); font-size:var(--mochi-accounts-font-12); }
+.mochi-sidebar-body { flex:var(--mochi-v2-sidebar-body-flex,1); min-height:0; overflow:hidden; display:flex; flex-direction:var(--mochi-v2-sidebar-body-flex-direction,column); }
 .mochi-sidebar [hidden] { display:none!important; }
 .mochi-mobile-surface .mochi-sidebar-nav {
-  padding:4px 8px;
-  justify-content:space-between
+  padding:var(--mochi-v2-mobile-surface-sidebar-nav-padding,4px 8px);
+  justify-content:var(--mochi-v2-mobile-surface-sidebar-nav-justify-content,space-between)
 }
 .mochi-sidebar[data-mobile-messenger] .mochi-workspace {
-  flex:1;
+  flex:var(--mochi-v2-sidebar-data-mobile-messenger-workspace-flex,1);
   min-height:0;
   overflow:hidden
 }
 .mochi-sidebar[data-mobile-messenger] .mochi-desktop.mochi-view {
-  grid-template-columns:minmax(0,1fr);
-  grid-template-rows:minmax(0,1fr);
+  grid-template-columns:var(--mochi-v2-sidebar-data-mobile-messenger-desktop-grid-template-columns,minmax(0,1fr));
+  grid-template-rows:var(--mochi-v2-sidebar-data-mobile-messenger-desktop-grid-template-rows,minmax(0,1fr));
   height:100%;
   overflow:hidden
 }
@@ -4713,8 +4738,8 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   display:none
 }
 .mochi-sidebar[data-mobile-messenger] .mochi-desktop-main,.mochi-sidebar[data-mobile-messenger] .mochi-profile-panel {
-  grid-column:1;
-  grid-row:1
+  grid-column:var(--mochi-v2-sidebar-data-mobile-messenger-grid-column,1);
+  grid-row:var(--mochi-v2-sidebar-data-mobile-messenger-grid-row,1)
 }
 .mochi-sidebar[data-mobile-messenger] .mochi-desktop[data-details=true]>.mochi-desktop-main {
   visibility:hidden;
@@ -4722,166 +4747,166 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 .mochi-sidebar[data-mobile-messenger] .mochi-desktop[data-details=true]>.mochi-profile-panel {
   display:block;
-  grid-column:1;
-  grid-row:1;
+  grid-column:var(--mochi-v2-sidebar-data-mobile-messenger-desktop-data-details-true-profile-panel-grid-column,1);
+  grid-row:var(--mochi-v2-sidebar-data-mobile-messenger-desktop-data-details-true-profile-panel-grid-row,1);
   border:0
 }
 .mochi-sidebar[data-mobile-messenger] .mochi-desktop-back {
   display:block;
-  padding:2px 8px;
-  flex:none
+  padding:var(--mochi-v2-sidebar-data-mobile-messenger-desktop-back-padding,2px 8px);
+  flex:var(--mochi-v2-sidebar-data-mobile-messenger-desktop-back-flex,none)
 }
 .mochi-sidebar[data-mobile-messenger] .mochi-desktop-back button {
-  min-height:40px
+  min-height:var(--mochi-v2-sidebar-data-mobile-messenger-desktop-back-button-min-height,40px)
 }
 .mochi-sidebar[data-mobile-messenger] .mochi-desktop-main>.mochi-view {
-  flex:1;
+  flex:var(--mochi-v2-sidebar-data-mobile-messenger-flex,1);
   min-height:0;
   min-width:0;
-  padding:8px;
+  padding:var(--mochi-v2-sidebar-data-mobile-messenger-padding,8px);
   overflow:auto
 }
 .mochi-sidebar[data-mobile-messenger] .mochi-desktop-main>.mochi-view[data-conversation=true] {
   overflow:hidden
 }
 .mochi-sidebar[data-mobile-messenger] .mochi-thread {
-  flex:1 1 0;
+  flex:var(--mochi-v2-sidebar-data-mobile-messenger-thread-flex,1 1 0);
   min-height:0;
-  max-height:none;
+  max-height:var(--mochi-v2-sidebar-data-mobile-messenger-thread-max-height,none);
   overflow:auto;
   overscroll-behavior:contain
 }
 .mochi-sidebar[data-mobile-messenger] .mochi-room-header {
-  grid-template-columns:minmax(0,1fr) auto;
-  gap:4px;
-  padding-bottom:6px;
-  flex:none
+  grid-template-columns:var(--mochi-v2-sidebar-data-mobile-messenger-room-header-grid-template-columns,minmax(0,1fr) auto);
+  gap:var(--mochi-v2-sidebar-data-mobile-messenger-room-header-gap,4px);
+  padding-bottom:var(--mochi-v2-sidebar-data-mobile-messenger-room-header-padding-bottom,6px);
+  flex:var(--mochi-v2-sidebar-data-mobile-messenger-room-header-flex,none)
 }
 .mochi-sidebar[data-mobile-messenger] .mochi-room-header>.mochi-actions {
   gap:0;
-  flex-wrap:nowrap
+  flex-wrap:var(--mochi-v2-sidebar-data-mobile-messenger-room-header-actions-flex-wrap,nowrap)
 }
 .mochi-sidebar[data-mobile-messenger] .mochi-room-header .mochi-icon-button {
-  width:36px;
-  min-width:36px;
-  height:40px;
-  min-height:40px;
-  padding:8px
+  width:var(--mochi-v2-sidebar-data-mobile-messenger-room-header-icon-button-width,36px);
+  min-width:var(--mochi-v2-sidebar-data-mobile-messenger-room-header-icon-button-min-width,36px);
+  height:var(--mochi-v2-sidebar-data-mobile-messenger-room-header-icon-button-height,40px);
+  min-height:var(--mochi-v2-sidebar-data-mobile-messenger-room-header-icon-button-min-height,40px);
+  padding:var(--mochi-v2-sidebar-data-mobile-messenger-room-header-icon-button-padding,8px)
 }
 .mochi-sidebar[data-mobile-messenger] .mochi-composer {
   position:static;
-  flex:none;
+  flex:var(--mochi-v2-sidebar-data-mobile-messenger-composer-flex,none);
   margin-top:0;
-  padding:6px 0 0;
-  gap:4px
+  padding:var(--mochi-v2-sidebar-data-mobile-messenger-composer-padding,6px 0 0);
+  gap:var(--mochi-v2-sidebar-data-mobile-messenger-composer-gap,4px)
 }
 .mochi-sidebar[data-mobile-messenger] .mochi-composer-row {
   min-width:0;
-  gap:4px
+  gap:var(--mochi-v2-sidebar-data-mobile-messenger-composer-row-gap,4px)
 }
 .mochi-sidebar[data-mobile-messenger] .mochi-composer textarea {
   min-width:0;
-  max-height:min(112px,25dvh);
+  max-height:var(--mochi-v2-sidebar-data-mobile-messenger-composer-textarea-max-height,min(112px,25dvh));
   font-size:var(--mochi-accounts-font-16)
 }
 .mochi-sidebar[data-mobile-messenger] .mochi-composer .mochi-icon-button {
-  flex:none;
-  width:44px;
-  min-width:44px;
-  padding:10px
+  flex:var(--mochi-v2-sidebar-data-mobile-messenger-composer-icon-button-flex,none);
+  width:var(--mochi-v2-sidebar-data-mobile-messenger-composer-icon-button-width,44px);
+  min-width:var(--mochi-v2-sidebar-data-mobile-messenger-composer-icon-button-min-width,44px);
+  padding:var(--mochi-v2-sidebar-data-mobile-messenger-composer-icon-button-padding,10px)
 }
 .mochi-sidebar[data-mobile-messenger] .mochi-bubble {
-  overflow-wrap:anywhere;
+  overflow-wrap:var(--mochi-v2-sidebar-data-mobile-messenger-bubble-overflow-wrap,anywhere);
   min-width:0
 }
 .mochi-sidebar[data-mobile-messenger] .lp-conversation-menu-sheet {
-  max-width:min(260px,85cqw);
-  max-height:min(300px,55dvh)
+  max-width:var(--mochi-v2-sidebar-data-mobile-messenger-conversation-menu-sheet-max-width,min(260px,85cqw));
+  max-height:var(--mochi-v2-sidebar-data-mobile-messenger-conversation-menu-sheet-max-height,min(300px,55dvh))
 }
 
 
 /* Native semantic roles: drawer backdrop, quiet sections, distinct fields/actions. */
-.mochi-sidebar-picker h3 { margin:8px 0; font-size:var(--mochi-accounts-font-16); }
-.mochi-sidebar .mochi-view { background:transparent; padding:0; gap:var(--mochi-editor-gap); height:auto; }
+.mochi-sidebar-picker h3 { margin:var(--mochi-v2-sidebar-picker-h3-margin,8px 0); font-size:var(--mochi-accounts-font-16); }
+.mochi-sidebar .mochi-view { background:var(--mochi-v2-sidebar-background,transparent); padding:0; gap:var(--mochi-editor-gap); height:var(--mochi-v2-sidebar-height,auto); }
 .mochi-sidebar .mochi-muted { color:var(--mochi-muted); }
-.mochi-sidebar-picker :is(input:not([type=checkbox]),textarea,select) { min-width:0; width:100%; color:var(--mochi-text); background:var(--mochi-input-bg); border:1px solid var(--mochi-border); border-radius:var(--mochi-editor-radius); min-height:var(--mochi-editor-control-height); padding:var(--mochi-accounts-field-padding); font:inherit; }
-.mochi-sidebar-picker :is(input,textarea,select):focus { border-color:var(--mochi-focus); box-shadow:0 0 0 3px var(--mochi-focus-bg); }
-.mochi-sidebar-picker input::placeholder,.mochi-sidebar-picker textarea::placeholder { color:var(--mochi-muted); opacity:1; }
-.mochi-account-tools { display:flex; align-items:center; gap:var(--mochi-accounts-tools-gap); margin:var(--mochi-accounts-tools-margin); }
-.mochi-account-tools>input { flex:1; }
-.mochi-account-tools>select { flex:1; width:80px; }
-.mochi-sidebar .mochi-account-icon { display:grid; place-items:center; width:var(--mochi-accounts-icon-control-size); min-width:var(--mochi-accounts-icon-control-size); height:var(--mochi-accounts-icon-control-size); min-height:var(--mochi-accounts-icon-control-size); padding:var(--mochi-accounts-icon-padding); border:1px solid transparent; background:transparent; border-radius:var(--mochi-accounts-icon-radius); }
+.mochi-sidebar-picker :is(input:not([type=checkbox]),textarea,select) { min-width:0; width:100%; color:var(--mochi-text); background:var(--mochi-input-bg); border:var(--mochi-v2-sidebar-picker-is-input-border,1px solid var(--mochi-border)); border-radius:var(--mochi-editor-radius); min-height:var(--mochi-editor-control-height); padding:var(--mochi-accounts-field-padding); font:inherit; }
+.mochi-sidebar-picker :is(input,textarea,select):focus { border-color:var(--mochi-focus); box-shadow:var(--mochi-v2-sidebar-picker-is-input-box-shadow,0 0 0 3px var(--mochi-focus-bg)); }
+.mochi-sidebar-picker input::placeholder,.mochi-sidebar-picker textarea::placeholder { color:var(--mochi-muted); opacity:var(--mochi-v2-sidebar-picker-input-placeholder-opacity,1); }
+.mochi-account-tools { display:flex; align-items:var(--mochi-v2-account-tools-align-items,center); gap:var(--mochi-accounts-tools-gap); margin:var(--mochi-accounts-tools-margin); }
+.mochi-account-tools>input { flex:var(--mochi-v2-account-tools-input-flex,1); }
+.mochi-account-tools>select { flex:var(--mochi-v2-account-tools-select-flex,1); width:var(--mochi-v2-account-tools-select-width,80px); }
+.mochi-sidebar .mochi-account-icon { display:grid; place-items:var(--mochi-v2-sidebar-account-icon-place-items,center); width:var(--mochi-accounts-icon-control-size); min-width:var(--mochi-accounts-icon-control-size); height:var(--mochi-accounts-icon-control-size); min-height:var(--mochi-accounts-icon-control-size); padding:var(--mochi-accounts-icon-padding); border:var(--mochi-v2-sidebar-account-icon-border,1px solid transparent); background:var(--mochi-v2-sidebar-account-icon-background,transparent); border-radius:var(--mochi-accounts-icon-radius); }
 .mochi-account-icon svg { width:var(--mochi-accounts-icon-size); height:var(--mochi-accounts-icon-size); }
 .mochi-sidebar .mochi-account-icon:hover { background:var(--mochi-hover-bg); color:var(--mochi-text); }
 .mochi-sidebar .mochi-account-icon[aria-pressed=true] { color:var(--mochi-text); border-color:var(--mochi-account-accent); background:var(--mochi-selected-bg); }
 .mochi-account-list { display:grid; gap:var(--mochi-accounts-list-gap); }
-.mochi-account-startup { display:grid; gap:5px; font-size:var(--mochi-accounts-font-12); color:var(--mochi-muted); margin-top:14px; }
-.mochi-account-row { display:flex; align-items:center; min-width:0; gap:2px; }
-.mochi-account-row>input { accent-color:var(--mochi-account-accent); width:18px; height:18px; }
-.mochi-sidebar .mochi-sidebar-account { display:flex; align-items:center; text-align:left; width:100%; margin:0; min-width:0; border:1px solid transparent; border-radius:var(--mochi-accounts-row-radius); background:transparent; padding:var(--mochi-accounts-row-padding); gap:var(--mochi-accounts-row-gap); }
+.mochi-account-startup { display:grid; gap:var(--mochi-v2-account-startup-gap,5px); font-size:var(--mochi-accounts-font-12); color:var(--mochi-muted); margin-top:var(--mochi-v2-account-startup-margin-top,14px); }
+.mochi-account-row { display:flex; align-items:var(--mochi-v2-account-row-align-items,center); min-width:0; gap:var(--mochi-v2-account-row-gap,2px); }
+.mochi-account-row>input { accent-color:var(--mochi-account-accent); width:var(--mochi-v2-account-row-input-width,18px); height:var(--mochi-v2-account-row-input-height,18px); }
+.mochi-sidebar .mochi-sidebar-account { display:flex; align-items:var(--mochi-v2-sidebar-sidebar-account-align-items,center); text-align:var(--mochi-v2-sidebar-sidebar-account-text-align,left); width:100%; margin:0; min-width:0; border:var(--mochi-v2-sidebar-sidebar-account-border,1px solid transparent); border-radius:var(--mochi-accounts-row-radius); background:var(--mochi-v2-sidebar-sidebar-account-background,transparent); padding:var(--mochi-accounts-row-padding); gap:var(--mochi-accounts-row-gap); }
 .mochi-sidebar .mochi-sidebar-account:hover { background:var(--mochi-hover-bg); }
 .mochi-sidebar .mochi-sidebar-account[aria-pressed=true] { border-color:var(--mochi-account-accent); background:var(--mochi-selected-bg); }
 .mochi-account-list[data-layout=grid] { grid-template-columns:var(--mochi-accounts-grid-columns); }
 .mochi-account-list[data-layout=grid] .mochi-account-row { position:relative; }
-.mochi-account-list[data-layout=grid] .mochi-account-row>.mochi-account-icon { position:absolute; right:2px; top:2px; }
-.mochi-account-list[data-layout=grid] .mochi-sidebar-account { flex-direction:column; text-align:center; min-height:var(--mochi-accounts-grid-row-height); padding-top:var(--mochi-accounts-grid-row-padding-top); }
+.mochi-account-list[data-layout=grid] .mochi-account-row>.mochi-account-icon { position:absolute; right:var(--mochi-v2-account-list-data-layout-grid-account-row-account-icon-right,2px); top:var(--mochi-v2-account-list-data-layout-grid-account-row-account-icon-top,2px); }
+.mochi-account-list[data-layout=grid] .mochi-sidebar-account { flex-direction:var(--mochi-v2-account-list-data-layout-grid-sidebar-account-flex-direction,column); text-align:var(--mochi-v2-account-list-data-layout-grid-sidebar-account-text-align,center); min-height:var(--mochi-accounts-grid-row-height); padding-top:var(--mochi-accounts-grid-row-padding-top); }
 .mochi-account-list[data-layout=grid] .mochi-sidebar-avatar { width:var(--mochi-accounts-grid-avatar-size); height:var(--mochi-accounts-grid-avatar-size); flex-basis:var(--mochi-accounts-grid-avatar-size); }
-.mochi-sidebar .mochi-profile-screen { display:flex; flex-direction:column; width:100%; gap:var(--mochi-editor-gap); padding:0; }
-.mochi-sidebar .mochi-profile-screen fieldset { min-width:0; padding:var(--mochi-accounts-section-padding); margin:0; border:0; border-top:1px solid var(--mochi-border); border-radius:0; background:transparent; gap:var(--mochi-accounts-section-gap); }
-.mochi-sidebar .mochi-profile-screen legend { padding:0 6px 0 0; font-size:var(--mochi-accounts-font-12); font-weight:650; color:var(--mochi-text); }
+.mochi-sidebar .mochi-profile-screen { display:flex; flex-direction:var(--mochi-v2-sidebar-profile-screen-flex-direction,column); width:100%; gap:var(--mochi-editor-gap); padding:0; }
+.mochi-sidebar .mochi-profile-screen fieldset { min-width:0; padding:var(--mochi-accounts-section-padding); margin:0; border:0; border-top:var(--mochi-v2-sidebar-profile-screen-fieldset-border-top,1px solid var(--mochi-border)); border-radius:0; background:var(--mochi-v2-sidebar-profile-screen-fieldset-background,transparent); gap:var(--mochi-accounts-section-gap); }
+.mochi-sidebar .mochi-profile-screen legend { padding:var(--mochi-v2-sidebar-profile-screen-legend-padding,0 6px 0 0); font-size:var(--mochi-accounts-font-12); font-weight:var(--mochi-v2-sidebar-profile-screen-legend-font-weight,650); color:var(--mochi-text); }
 .mochi-sidebar .mochi-profile-screen :is(label,textarea,pre) { min-width:0; max-width:100%; }
-.mochi-sidebar .mochi-profile-screen label { gap:4px; font-size:var(--mochi-accounts-font-12); color:var(--mochi-muted); }
-.mochi-sidebar .mochi-profile-screen :is(input:not([type=checkbox]),textarea,select) { min-height:var(--mochi-editor-control-height); border-radius:var(--mochi-editor-radius); border:1px solid var(--mochi-input-border); background:var(--mochi-input-bg); color:var(--mochi-text); padding:var(--mochi-accounts-field-padding); }
-.mochi-sidebar .mochi-profile-screen button { min-height:var(--mochi-editor-control-height); border-radius:var(--mochi-editor-radius); padding:6px 10px; background:var(--mochi-control-bg); color:var(--mochi-text); }
+.mochi-sidebar .mochi-profile-screen label { gap:var(--mochi-v2-sidebar-profile-screen-label-gap,4px); font-size:var(--mochi-accounts-font-12); color:var(--mochi-muted); }
+.mochi-sidebar .mochi-profile-screen :is(input:not([type=checkbox]),textarea,select) { min-height:var(--mochi-editor-control-height); border-radius:var(--mochi-editor-radius); border:var(--mochi-v2-sidebar-profile-screen-is-input-border,1px solid var(--mochi-input-border)); background:var(--mochi-input-bg); color:var(--mochi-text); padding:var(--mochi-accounts-field-padding); }
+.mochi-sidebar .mochi-profile-screen button { min-height:var(--mochi-editor-control-height); border-radius:var(--mochi-editor-radius); padding:var(--mochi-v2-sidebar-profile-screen-button-padding,6px 10px); background:var(--mochi-control-bg); color:var(--mochi-text); }
 .mochi-sidebar .mochi-profile-screen button:hover { background:var(--mochi-hover-bg); }
-.mochi-sidebar .mochi-profile-screen .mochi-primary { background:var(--mochi-accent); color:var(--mochi-on-accent); border-color:var(--mochi-accent); font-weight:650; }
-.mochi-sidebar .mochi-profile-screen .mochi-primary:hover { border-color:var(--mochi-border-hover); box-shadow:0 0 0 2px var(--mochi-focus-bg); }
-@supports (color:contrast-color(red)) { .mochi-sidebar .mochi-profile-screen .mochi-primary:hover { background:var(--mochi-accent-hover); color:contrast-color(var(--mochi-accent-hover)); } }
+.mochi-sidebar .mochi-profile-screen .mochi-primary { background:var(--mochi-accent); color:var(--mochi-on-accent); border-color:var(--mochi-accent); font-weight:var(--mochi-v2-sidebar-profile-screen-primary-font-weight,650); }
+.mochi-sidebar .mochi-profile-screen .mochi-primary:hover { border-color:var(--mochi-border-hover); box-shadow:var(--mochi-v2-sidebar-profile-screen-primary-hover-box-shadow,0 0 0 2px var(--mochi-focus-bg)); }
+@supports (color:contrast-color(red)) { .mochi-sidebar .mochi-profile-screen .mochi-primary:hover { background:var(--mochi-accent-hover); color:var(--mochi-v2-sidebar-profile-screen-primary-hover-supports-color-contrast-color-red-color,contrast-color(var(--mochi-accent-hover))); } }
 .mochi-sidebar .mochi-profile-screen .mochi-danger-action { border-color:var(--mochi-danger); background:var(--mochi-danger-bg); color:var(--mochi-text); }
-.mochi-sidebar .mochi-profile-screen .mochi-danger-action:hover { border-color:var(--mochi-danger-hover); background:color-mix(in srgb,var(--mochi-danger) 25%,var(--mochi-drawer-bg)); }
-.mochi-sidebar .mochi-profile-preview { background:var(--mochi-elevated-bg); border:1px solid var(--mochi-border); border-radius:var(--mochi-accounts-preview-radius); }
+.mochi-sidebar .mochi-profile-screen .mochi-danger-action:hover { border-color:var(--mochi-danger-hover); background:var(--mochi-v2-sidebar-profile-screen-danger-action-hover-background,color-mix(in srgb,var(--mochi-danger) 25%,var(--mochi-drawer-bg))); }
+.mochi-sidebar .mochi-profile-preview { background:var(--mochi-elevated-bg); border:var(--mochi-v2-sidebar-profile-preview-border,1px solid var(--mochi-border)); border-radius:var(--mochi-accounts-preview-radius); }
 .mochi-sidebar .mochi-profile-banner { display:none; }
-.mochi-sidebar .mochi-profile-preview-body { display:grid; grid-template-columns:var(--mochi-accounts-preview-columns); align-items:center; gap:var(--mochi-accounts-preview-gap); padding:var(--mochi-accounts-preview-padding); }
-.mochi-sidebar .mochi-profile-preview .mochi-profile-portrait { grid-row:1/3; position:static; margin:0; width:var(--mochi-accounts-preview-avatar-size); height:var(--mochi-accounts-preview-avatar-size); font-size:var(--mochi-accounts-font-18); border:1px solid var(--mochi-border); }
-.mochi-sidebar .mochi-profile-preview-name { font-size:var(--mochi-accounts-font-15); overflow-wrap:anywhere; }
-.mochi-sidebar .mochi-profile-actions { gap:6px; }
-.mochi-sidebar .mochi-profile-fields label:has(input[type=checkbox]) { display:flex; flex-direction:row; align-items:center; gap:8px; min-height:32px; color:var(--mochi-text); }
-.mochi-sidebar .mochi-profile-fields input[type=checkbox] { accent-color:var(--mochi-account-accent); width:18px; height:18px; min-height:18px; }
-.mochi-sidebar details>summary { cursor:pointer; min-height:30px; padding:6px; border-radius:6px; color:var(--mochi-text); }
-.mochi-persona-choices { display:grid; max-height:var(--mochi-accounts-persona-max-height); overflow:auto; gap:3px; margin-top:5px; }
-.mochi-persona-row { min-width:0; border-bottom:1px solid var(--mochi-border); }
-.mochi-sidebar .mochi-persona-choice { display:flex; align-items:center; gap:8px; padding:5px 7px; width:100%; text-align:left; border-color:transparent; }
-.mochi-persona-choice>span:last-child { display:grid; min-width:0; gap:2px; }
-.mochi-persona-choice :is(strong,small) { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mochi-sidebar .mochi-profile-preview-body { display:grid; grid-template-columns:var(--mochi-accounts-preview-columns); align-items:var(--mochi-v2-sidebar-profile-preview-body-align-items,center); gap:var(--mochi-accounts-preview-gap); padding:var(--mochi-accounts-preview-padding); }
+.mochi-sidebar .mochi-profile-preview .mochi-profile-portrait { grid-row:var(--mochi-v2-sidebar-profile-preview-profile-portrait-grid-row,1/3); position:static; margin:0; width:var(--mochi-accounts-preview-avatar-size); height:var(--mochi-accounts-preview-avatar-size); font-size:var(--mochi-accounts-font-18); border:var(--mochi-v2-sidebar-profile-preview-profile-portrait-border,1px solid var(--mochi-border)); }
+.mochi-sidebar .mochi-profile-preview-name { font-size:var(--mochi-accounts-font-15); overflow-wrap:var(--mochi-v2-sidebar-profile-preview-name-overflow-wrap,anywhere); }
+.mochi-sidebar .mochi-profile-actions { gap:var(--mochi-v2-sidebar-profile-actions-gap,6px); }
+.mochi-sidebar .mochi-profile-fields label:has(input[type=checkbox]) { display:flex; flex-direction:var(--mochi-v2-sidebar-profile-fields-label-has-input-type-checkbox-flex-direction,row); align-items:var(--mochi-v2-sidebar-profile-fields-label-has-input-type-checkbox-align-items,center); gap:var(--mochi-v2-sidebar-profile-fields-label-has-input-type-checkbox-gap,8px); min-height:var(--mochi-v2-sidebar-profile-fields-label-has-input-type-checkbox-min-height,32px); color:var(--mochi-text); }
+.mochi-sidebar .mochi-profile-fields input[type=checkbox] { accent-color:var(--mochi-account-accent); width:var(--mochi-v2-sidebar-profile-fields-input-type-checkbox-width,18px); height:var(--mochi-v2-sidebar-profile-fields-input-type-checkbox-height,18px); min-height:var(--mochi-v2-sidebar-profile-fields-input-type-checkbox-min-height,18px); }
+.mochi-sidebar details>summary { cursor:var(--mochi-v2-sidebar-details-summary-cursor,pointer); min-height:var(--mochi-v2-sidebar-details-summary-min-height,30px); padding:var(--mochi-v2-sidebar-details-summary-padding,6px); border-radius:var(--mochi-v2-sidebar-details-summary-border-radius,6px); color:var(--mochi-text); }
+.mochi-persona-choices { display:grid; max-height:var(--mochi-accounts-persona-max-height); overflow:auto; gap:var(--mochi-v2-persona-choices-gap,3px); margin-top:var(--mochi-v2-persona-choices-margin-top,5px); }
+.mochi-persona-row { min-width:0; border-bottom:var(--mochi-v2-persona-row-border-bottom,1px solid var(--mochi-border)); }
+.mochi-sidebar .mochi-persona-choice { display:flex; align-items:var(--mochi-v2-sidebar-persona-choice-align-items,center); gap:var(--mochi-v2-sidebar-persona-choice-gap,8px); padding:var(--mochi-v2-sidebar-persona-choice-padding,5px 7px); width:100%; text-align:var(--mochi-v2-sidebar-persona-choice-text-align,left); border-color:var(--mochi-v2-sidebar-persona-choice-border-color,transparent); }
+.mochi-persona-choice>span:last-child { display:grid; min-width:0; gap:var(--mochi-v2-persona-choice-span-last-child-gap,2px); }
+.mochi-persona-choice :is(strong,small) { overflow:hidden; text-overflow:var(--mochi-v2-persona-choice-is-strong-text-overflow,ellipsis); white-space:var(--mochi-v2-persona-choice-is-strong-white-space,nowrap); }
 .mochi-persona-choice .mochi-sidebar-avatar { width:var(--mochi-accounts-persona-avatar-size); height:var(--mochi-accounts-persona-avatar-size); flex-basis:var(--mochi-accounts-persona-avatar-size); }
 .mochi-sidebar .mochi-persona-choice[aria-pressed=true] { background:var(--mochi-selected-bg); border-color:var(--mochi-account-accent); }
-.mochi-source-details { font-size:var(--mochi-accounts-font-11); overflow-wrap:anywhere; }
+.mochi-source-details { font-size:var(--mochi-accounts-font-11); overflow-wrap:var(--mochi-v2-source-details-overflow-wrap,anywhere); }
 .mochi-source-details>summary { color:var(--mochi-muted); }
-.mochi-addon-group { display:grid; gap:4px; }
-.mochi-addon-group h4 { margin:5px 0; font-size:var(--mochi-accounts-font-11); color:var(--mochi-muted); text-transform:uppercase; letter-spacing:.04em; }
-.mochi-addon-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:0 6px; padding:5px 7px; background:var(--mochi-section-bg); border:1px solid var(--mochi-border); border-radius:8px; }
+.mochi-addon-group { display:grid; gap:var(--mochi-v2-addon-group-gap,4px); }
+.mochi-addon-group h4 { margin:var(--mochi-v2-addon-group-h4-margin,5px 0); font-size:var(--mochi-accounts-font-11); color:var(--mochi-muted); text-transform:var(--mochi-v2-addon-group-h4-text-transform,uppercase); letter-spacing:var(--mochi-v2-addon-group-h4-letter-spacing,.04em); }
+.mochi-addon-row { display:grid; grid-template-columns:var(--mochi-v2-addon-row-grid-template-columns,minmax(0,1fr) auto); gap:var(--mochi-v2-addon-row-gap,0 6px); padding:var(--mochi-v2-addon-row-padding,5px 7px); background:var(--mochi-section-bg); border:var(--mochi-v2-addon-row-border,1px solid var(--mochi-border)); border-radius:var(--mochi-v2-addon-row-border-radius,8px); }
 .mochi-addon-row[data-selected=true] { border-color:var(--mochi-account-accent); background:var(--mochi-selected-bg); }
-.mochi-addon-name { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.mochi-addon-status { align-self:center; color:var(--mochi-muted); font-size:var(--mochi-accounts-font-10); }
-.mochi-addon-details { grid-column:1/-1; min-width:0; }
-.mochi-addon-content,.mochi-sync-value { white-space:pre-wrap; overflow-wrap:anywhere; font:inherit; font-size:var(--mochi-accounts-font-12); max-height:var(--mochi-accounts-content-max-height); overflow:auto; padding:8px; color:var(--mochi-text); background:var(--mochi-input-bg); border-radius:6px; }
-@media(max-width:600px),(pointer:coarse) { .mochi-sidebar,.mochi-sidebar .mochi-view { --mochi-editor-control-height:40px; }.mochi-sidebar .mochi-account-icon { width:40px; min-width:40px; height:40px; min-height:40px; }.mochi-sidebar .mochi-profile-fields label:has(input[type=checkbox]),.mochi-sidebar details>summary { min-height:40px; } }
+.mochi-addon-name { min-width:0; overflow:hidden; text-overflow:var(--mochi-v2-addon-name-text-overflow,ellipsis); white-space:var(--mochi-v2-addon-name-white-space,nowrap); }
+.mochi-addon-status { align-self:var(--mochi-v2-addon-status-align-self,center); color:var(--mochi-muted); font-size:var(--mochi-accounts-font-10); }
+.mochi-addon-details { grid-column:var(--mochi-v2-addon-details-grid-column,1/-1); min-width:0; }
+.mochi-addon-content,.mochi-sync-value { white-space:var(--mochi-v2-addon-content-white-space,pre-wrap); overflow-wrap:var(--mochi-v2-addon-content-overflow-wrap,anywhere); font:inherit; font-size:var(--mochi-accounts-font-12); max-height:var(--mochi-accounts-content-max-height); overflow:auto; padding:var(--mochi-v2-addon-content-padding,8px); color:var(--mochi-text); background:var(--mochi-input-bg); border-radius:var(--mochi-v2-addon-content-border-radius,6px); }
+@media(max-width:600px),(pointer:coarse) { .mochi-sidebar,.mochi-sidebar .mochi-view { --mochi-editor-control-height:40px; }.mochi-sidebar .mochi-account-icon { width:var(--mochi-v2-sidebar-account-icon-media-max-width-600px-pointer-coarse-width,40px); min-width:var(--mochi-v2-sidebar-account-icon-media-max-width-600px-pointer-coarse-min-width,40px); height:var(--mochi-v2-sidebar-account-icon-media-max-width-600px-pointer-coarse-height,40px); min-height:var(--mochi-v2-sidebar-account-icon-media-max-width-600px-pointer-coarse-min-height,40px); }.mochi-sidebar .mochi-profile-fields label:has(input[type=checkbox]),.mochi-sidebar details>summary { min-height:var(--mochi-v2-sidebar-profile-fields-label-has-input-type-checkbox-media-max-width-600px-pointer-coarse-min-height,40px); } }
 /* @mochi-section launcher */
 .mochi-launcher-root {
   width:var(--mochi-launcher-frame-size);
   height:var(--mochi-launcher-frame-size);
   display:grid;
-  place-items:center
+  place-items:var(--mochi-v2-launcher-root-place-items,center)
 }
 .mochi-launcher {
   width:var(--mochi-launcher-size);
   height:var(--mochi-launcher-size);
   padding:var(--mochi-launcher-padding);
   background:var(--mochi-chrome-bg);
-  color:var(--lumiverse-primary,#a6a0d9);
-  border:1px solid var(--mochi-chrome-border);
+  color:var(--mochi-v2-launcher-color,var(--lumiverse-primary,#a6a0d9));
+  border:var(--mochi-v2-launcher-border,1px solid var(--mochi-chrome-border));
   border-radius:var(--mochi-launcher-radius);
-  cursor:pointer
+  cursor:var(--mochi-v2-launcher-cursor,pointer)
 }
 .mochi-launcher svg {
   width:100%;
@@ -4889,23 +4914,23 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   display:block
 }
 .mochi-launcher:focus-visible {
-  outline:2px solid currentColor;
-  outline-offset:2px
+  outline:var(--mochi-v2-launcher-focus-visible-outline,2px solid currentColor);
+  outline-offset:var(--mochi-v2-launcher-focus-visible-outline-offset,2px)
 }
 
 /* @mochi-section mobile-surface */
 .mochi-mobile-surface {
   display:flex;
-  flex-direction:column;
+  flex-direction:var(--mochi-v2-mobile-surface-flex-direction,column);
   overflow:hidden;
   box-sizing:border-box;
   background:var(--mochi-chrome-bg);
   color:var(--mochi-chrome-text);
-  padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);
+  padding:var(--mochi-v2-mobile-surface-padding,env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px));
   font:var(--mochi-mobile-font)
 }
 .mochi-mobile-surface>.mochi-sidebar {
-  flex:1;
+  flex:var(--mochi-v2-mobile-surface-sidebar-flex,1);
   min-width:0;
   min-height:0;
   width:100%;
@@ -4918,7 +4943,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 /* @mochi-section window */
 .mochi-window {
   display:flex;
-  flex-direction:column;
+  flex-direction:var(--mochi-v2-window-flex-direction,column);
   width:100%;
   height:100%;
   min-width:0;
@@ -4926,7 +4951,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
   position:relative;
   background:var(--mochi-chrome-bg);
   color:var(--mochi-chrome-text);
-  border:1px solid var(--mochi-chrome-border);
+  border:var(--mochi-v2-window-border,1px solid var(--mochi-chrome-border));
   border-radius:var(--mochi-window-radius);
   overflow:hidden;
   box-sizing:border-box;
@@ -4934,45 +4959,45 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 }
 .mochi-window-bar {
   display:flex;
-  align-items:center;
-  justify-content:space-between;
+  align-items:var(--mochi-v2-window-bar-align-items,center);
+  justify-content:var(--mochi-v2-window-bar-justify-content,space-between);
   padding:var(--mochi-window-bar-padding);
   min-height:var(--mochi-window-bar-height);
   flex-shrink:0;
-  cursor:move;
+  cursor:var(--mochi-v2-window-bar-cursor,move);
   touch-action:none;
   user-select:none
 }
 .mochi-window-body {
-  flex:1;
+  flex:var(--mochi-v2-window-body-flex,1);
   min-height:0;
   min-width:0;
   overflow:hidden
 }
 .mochi-window-close,.mochi-window-resize {
   color:inherit;
-  background:transparent;
+  background:var(--mochi-v2-window-close-background,transparent);
   border:0;
-  min-width:32px;
-  min-height:32px;
-  cursor:pointer
+  min-width:var(--mochi-v2-window-close-min-width,32px);
+  min-height:var(--mochi-v2-window-close-min-height,32px);
+  cursor:var(--mochi-v2-window-close-cursor,pointer)
 }
 .mochi-window-resize {
   position:absolute;
   right:0;
   bottom:0;
-  cursor:nwse-resize;
+  cursor:var(--mochi-v2-window-resize-cursor,nwse-resize);
   touch-action:none
 }
 .mochi-window button:focus-visible {
-  outline:2px solid var(--lumiverse-primary,#9399ab);
-  outline-offset:-3px
+  outline:var(--mochi-v2-window-button-focus-visible-outline,2px solid var(--lumiverse-primary,#9399ab));
+  outline-offset:var(--mochi-v2-window-button-focus-visible-outline-offset,-3px)
 }
 
 /* @mochi-section window-focus */
 .mochi-window-bar:focus-visible {
-  outline:2px solid var(--lumiverse-primary,#9399ab);
-  outline-offset:-2px
+  outline:var(--mochi-v2-window-bar-focus-visible-outline,2px solid var(--lumiverse-primary,#9399ab));
+  outline-offset:var(--mochi-v2-window-bar-focus-visible-outline-offset,-2px)
 }
 .mochi-window [hidden] {
   display:none!important
@@ -4981,7 +5006,7 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 /* @mochi-section workspace */
 .mochi-workspace {
   display:flex;
-  flex-direction:column;
+  flex-direction:var(--mochi-v2-workspace-flex-direction,column);
   width:100%;
   height:100%;
   min-width:0;
@@ -4999,30 +5024,30 @@ var mochi_default = `/* Mochi component CSS. Keep section markers: they preserve
 /* @mochi-section notifications */
 /* Toasts can appear outside the Mochi view, while another Pocket app is open. */
 .mochi-notification-toast.mochi-notification-toast {
-  max-width:calc(100% - 24px);
-  grid-template-columns:32px minmax(0,1fr);
+  max-width:var(--mochi-v2-notification-toastnotification-toast-max-width,calc(100% - 24px));
+  grid-template-columns:var(--mochi-v2-notification-toastnotification-toast-grid-template-columns,32px minmax(0,1fr));
 }
 .mochi-notification-toast .mochi-notification-avatar {
-  width:32px;
-  height:32px;
-  border-radius:50%;
+  width:var(--mochi-v2-notification-toast-notification-avatar-width,32px);
+  height:var(--mochi-v2-notification-toast-notification-avatar-height,32px);
+  border-radius:var(--mochi-v2-notification-toast-notification-avatar-border-radius,50%);
   overflow:hidden;
-  flex:none;
+  flex:var(--mochi-v2-notification-toast-notification-avatar-flex,none);
   display:grid;
-  place-items:center;
-  background:var(--lp-surface-2);
+  place-items:var(--mochi-v2-notification-toast-notification-avatar-place-items,center);
+  background:var(--mochi-v2-notification-toast-notification-avatar-background,var(--lp-surface-2));
 }
 .mochi-notification-toast .mochi-notification-avatar img {
   width:100%;
   height:100%;
-  object-fit:cover;
+  object-fit:var(--mochi-v2-notification-toast-notification-avatar-img-object-fit,cover);
 }
 .mochi-notification-toast>.lp-grow { min-width:0; }
-.mochi-notification-toast>.lp-grow>strong { overflow-wrap:anywhere; }
+.mochi-notification-toast>.lp-grow>strong { overflow-wrap:var(--mochi-v2-notification-toast-grow-strong-overflow-wrap,anywhere); }
 `;
 
 // src/mochi/ui/mochi-theme.css
-var mochi_theme_default = `/* Mochi public theme entry point, contract v1 (phase 1).
+var mochi_theme_default = `/* Mochi public theme entry point, contract v2 (whole-interface CSS).
  * Put scoped theme CSS here, then rebuild dist/frontend.js.
  * See THEME-CONTRACT.md and starter-theme.css. Empty preserves host defaults.
  * This file is embedded locally; it never loads a theme or asset over the network.
@@ -5201,6 +5226,12 @@ class CharacterEditor {
     root.append(actions);
     return root;
   }
+}
+
+// src/mochi/ui/geometry.ts
+function measureMochiComposer(input) {
+  input.style.setProperty("--mochi-measured-composer-height", "auto");
+  input.style.setProperty("--mochi-measured-composer-height", `${input.scrollHeight}px`);
 }
 
 // src/mochi/group-icons.ts
@@ -6539,11 +6570,11 @@ function disclosure(label, ...children) {
   root.append(el("summary", "", label), ...children);
   return root;
 }
-function showPocketSheet(anchor, title, content, surfaceRoot) {
+function showPocketSheet(anchor, title, content, surfaceRoot, className = "") {
   const parent = surfaceRoot || anchor.closest(".lumiphone-shell") || anchor.closest('[role="dialog"]') || anchor.parentElement;
   if (!parent)
     return;
-  const dialog = el("dialog", "lp-sheet");
+  const dialog = el("dialog", "lp-sheet" + (className ? " " + className : ""));
   const panel = el("div", "lp-sheet-panel");
   const heading = el("h2", "lp-title", title);
   dialog.setAttribute("aria-label", title);
@@ -6573,13 +6604,12 @@ function showPocketSheet(anchor, title, content, surfaceRoot) {
     const layoutWidth = parent.offsetWidth;
     const zoom = layoutWidth && bounds.width ? bounds.width / layoutWidth : 1;
     const layoutPx = (pixels) => pixels / zoom;
-    dialog.style.position = "fixed";
-    dialog.style.margin = "0";
-    dialog.style.left = `${layoutPx(bounds.left + 12)}px`;
-    dialog.style.top = "auto";
-    dialog.style.bottom = `${layoutPx(Math.max(12, window.innerHeight - bounds.bottom + 24))}px`;
-    dialog.style.width = `${layoutPx(Math.max(0, bounds.width - 24))}px`;
-    dialog.style.maxHeight = `${layoutPx(Math.max(120, bounds.height - 70))}px`;
+    const edge = cssPixelToken(dialog, "--mochi-dialog-edge", 12), gap = cssPixelToken(dialog, "--mochi-dialog-bottom-gap", 24), reserve = cssPixelToken(dialog, "--mochi-dialog-height-reserve", 70), minimum = cssPixelToken(dialog, "--mochi-dialog-min-height", 120);
+    dialog.dataset.pocketMeasured = "true";
+    dialog.style.setProperty("--pocket-measured-sheet-left", `${layoutPx(bounds.left + edge)}px`);
+    dialog.style.setProperty("--pocket-measured-sheet-bottom", `${layoutPx(Math.max(edge, window.innerHeight - bounds.bottom + gap))}px`);
+    dialog.style.setProperty("--pocket-measured-sheet-width", `${layoutPx(Math.max(0, bounds.width - edge * 2))}px`);
+    dialog.style.setProperty("--pocket-measured-sheet-max-height", `${layoutPx(Math.max(minimum, bounds.height - reserve))}px`);
   }
   dialog.showModal();
   return { dismiss };
@@ -10479,9 +10509,11 @@ class MochiView {
         if (!menu.open)
           return;
         const rect = controls.getBoundingClientRect(), height = document.documentElement.clientHeight;
-        const below = height - rect.bottom - 8, above = rect.top - 8, up = below < Math.min(300, menuSheet.scrollHeight) && above > below;
+        const edge = cssPixelToken(menuSheet, "--mochi-menu-viewport-gap", 8), limit = cssPixelToken(menuSheet, "--mochi-menu-max-height", 300);
+        const below = height - rect.bottom - edge, above = rect.top - edge, up = below < Math.min(limit, menuSheet.scrollHeight) && above > below;
         menu.dataset.direction = up ? "up" : "down";
-        menuSheet.style.maxHeight = `${Math.max(0, Math.min(300, up ? above : below))}px`;
+        menuSheet.dataset.mochiSlot = "conversation-menu";
+        menuSheet.style.setProperty("--mochi-measured-menu-height", `${Math.max(0, up ? above : below)}px`);
       });
       menu.addEventListener("keydown", (event) => {
         if (event.key === "Escape") {
@@ -11343,21 +11375,21 @@ class MochiView {
         row.dataset.selected = String(!selected);
         row.setAttribute("aria-expanded", String(!selected));
         if (!selected) {
-          strip.style.right = "0px";
-          strip.style.bottom = "calc(100% + 3px)";
+          strip.style.setProperty("--mochi-measured-action-right", "0px");
+          strip.style.setProperty("--mochi-measured-action-bottom", "100%");
           let first = row;
           while (first.dataset.grouped === "true" && first.previousElementSibling?.classList.contains("mochi-message"))
             first = first.previousElementSibling;
           const start = first.querySelector(".mochi-message-body");
           if (start) {
             const own = body.getBoundingClientRect(), top = start.getBoundingClientRect().top;
-            strip.style.bottom = `${own.height + own.top - top + 3}px`;
+            strip.style.setProperty("--mochi-measured-action-bottom", `${own.height + own.top - top}px`);
           }
-          const bounds = thread.getBoundingClientRect(), r = strip.getBoundingClientRect();
-          if (r.left < bounds.left + 4)
-            strip.style.right = `${r.left - bounds.left - 4}px`;
-          else if (r.right > bounds.right - 4)
-            strip.style.right = `${r.right - bounds.right + 4}px`;
+          const bounds = thread.getBoundingClientRect(), r = strip.getBoundingClientRect(), edge = cssPixelToken(strip, "--mochi-action-edge-inset", 4);
+          if (r.left < bounds.left + edge)
+            strip.style.setProperty("--mochi-measured-action-right", `${r.left - bounds.left - edge}px`);
+          else if (r.right > bounds.right - edge)
+            strip.style.setProperty("--mochi-measured-action-right", `${r.right - bounds.right + edge}px`);
         }
       };
       row.addEventListener("click", (event) => {
@@ -11417,7 +11449,7 @@ class MochiView {
     return thread;
   }
   sheet(anchor, title, content) {
-    const sheet = showPocketSheet(anchor, title, content, anchor.closest(".mochi-sidebar") || anchor.closest(".mochi-workspace") || this.presenceRoot?.closest(".mochi-workspace") || anchor.closest(".lumiphone-shell") || this.presenceRoot?.closest(".mochi-desktop") || this.presenceRoot || undefined);
+    const sheet = showPocketSheet(anchor, title, content, anchor.closest(".mochi-sidebar") || anchor.closest(".mochi-workspace") || this.presenceRoot?.closest(".mochi-workspace") || anchor.closest(".lumiphone-shell") || this.presenceRoot?.closest(".mochi-desktop") || this.presenceRoot || undefined, "mochi-sheet");
     if (sheet) {
       const dialog = content.closest("dialog");
       if (dialog)
@@ -11719,14 +11751,11 @@ class MochiView {
     input.title = guidance;
     input.oninput = () => {
       this.drafts.set(room.id, input.value);
-      input.style.height = "auto";
-      input.style.height = `${Math.min(input.scrollHeight, 112)}px`;
+      measureMochiComposer(input);
     };
     globalThis.requestAnimationFrame?.(() => {
-      if (input.isConnected && input.value) {
-        input.style.height = "auto";
-        input.style.height = `${Math.min(input.scrollHeight, 112)}px`;
-      }
+      if (input.isConnected && input.value)
+        measureMochiComposer(input);
     });
     input.onkeydown = (event) => {
       if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
@@ -13113,16 +13142,16 @@ var PORTAL_STYLES = `
 .mochi-view .mochi-wordmark{margin:0;line-height:1;width:88px;height:32px}.mochi-wordmark svg{display:block;width:88px;height:32px;overflow:visible}
 
 
-.pocket-portal{--lp-bg:var(--lumiverse-bg-elevated,#201e25);--lp-surface:var(--lumiverse-fill-subtle,#ffffff08);--lp-text:var(--lumiverse-text,#eee);--lp-muted:var(--lumiverse-text-muted,#aaa);--lp-border:var(--lumiverse-border,#ffffff14);--lp-accent:var(--lumiverse-primary,#a6a0d9);box-sizing:border-box;min-width:0;width:100%;min-height:100%;padding:18px 16px;color:var(--lp-text);font:400 13px/1.5 Inter,ui-sans-serif,system-ui,sans-serif}
-.pocket-portal *{box-sizing:border-box}.pocket-portal [hidden]{display:none!important}.pocket-portal-nav{display:flex;justify-content:space-between;align-items:center;padding-bottom:22px;font-size:10px;letter-spacing:.08em;color:var(--lp-muted)}.pocket-portal button{font:inherit;cursor:pointer}.pocket-portal-home{border:0;background:none;color:var(--lp-text);padding:6px 0;font-weight:650!important}.pocket-portal-eyebrow{font-size:9px;letter-spacing:.14em;color:var(--lp-muted);margin:8px 0}.pocket-portal h2{font-size:28px;line-height:1.15;letter-spacing:-.05em;font-weight:550;margin:0}.pocket-portal-intro{color:var(--lp-muted);margin:12px 0 24px}.pocket-portal-info{margin:0 0 18px;padding:10px 12px;border-left:2px solid var(--lp-accent);border-radius:0 6px 6px 0;background:var(--lp-surface);color:var(--lp-muted);font-size:11px;line-height:1.5}.pocket-portal-destinations{display:grid;gap:12px}.pocket-portal-destination{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 92px;gap:7px;text-align:left;align-items:start;width:100%;padding:18px 16px;border:1px solid var(--lp-border);border-radius:12px;background:var(--lp-surface);color:var(--lp-text)}.pocket-portal-destination small{grid-column:1;font-size:8px;letter-spacing:.12em;color:var(--lp-muted)}.pocket-portal-destination strong{grid-column:1;font-size:17px;line-height:1.25;letter-spacing:-.03em;font-weight:550}.pocket-portal-destination>span:not(.pocket-portal-art):not(.pocket-portal-arrow){grid-column:1/-1;color:var(--lp-muted);font-size:11px;max-width:30ch}.pocket-portal-art{grid-column:2;grid-row:1/3;align-self:center;color:var(--lp-accent)}.pocket-portal-art svg{display:block;width:92px;height:72px}.pocket-portal-arrow{position:absolute;right:16px;bottom:14px;color:var(--lp-accent)}.pocket-portal-destination:hover{background:color-mix(in srgb,var(--lp-accent) 8%,var(--lp-bg));border-color:color-mix(in srgb,var(--lp-accent) 35%,var(--lp-border))}.pocket-portal :is(button,input,textarea,select):focus-visible{outline:2px solid var(--lp-accent);outline-offset:3px}.pocket-portal .lumiphone-device-drawer{padding:0;min-height:0}.pocket-portal .lumiphone-device-footer{display:flex;flex-wrap:wrap;gap:8px}.pocket-portal .lumiphone-device-access{flex:1 1 128px;min-height:44px;padding:10px 12px;border:1px solid var(--lp-border);border-radius:8px;background:var(--lp-surface);color:var(--lp-text);font-size:11px;line-height:1.3;text-align:center}.pocket-portal .lumiphone-device-access:disabled{cursor:default;color:var(--lp-muted)}.pocket-portal .lumiphone-device-access:not(:disabled):hover{border-color:var(--lp-accent);background:color-mix(in srgb,var(--lp-accent) 8%,var(--lp-bg))}.pocket-portal .mochi-view{min-height:0;height:auto;padding:0;background:none;overflow:visible}.pocket-portal .mochi-view>header{display:flex;justify-content:space-between;align-items:center;min-height:46px;padding-bottom:10px}.pocket-portal .mochi-view>header>.mochi-actions{margin-left:auto}.pocket-portal .mochi-view>header .mochi-icon-button{background:transparent;border:0;min-width:36px;width:36px;height:36px;min-height:36px}.pocket-portal .mochi-view h2{font-size:20px;letter-spacing:-.03em}.pocket-portal .mochi-view .mochi-card{border-radius:10px}.pocket-portal .mochi-view>.lp-button{min-height:38px;padding:8px 12px;font-size:12px;background:transparent;border-color:var(--lp-border);justify-content:flex-start}.pocket-portal .mochi-view>.mochi-primary{background:var(--lp-surface);color:var(--lp-text)}
+.pocket-portal{--lp-bg:var(--lumiverse-bg-elevated,#201e25);--lp-surface:var(--lumiverse-fill-subtle,#ffffff08);--lp-text:var(--lumiverse-text,#eee);--lp-muted:var(--lumiverse-text-muted,#aaa);--lp-border:var(--lumiverse-border,#ffffff14);--lp-accent:var(--lumiverse-primary,#a6a0d9);box-sizing:border-box;min-width:0;width:100%;min-height:100%;padding:var(--mochi-v2-shared-pocket-portal-padding,18px 16px);color:var(--mochi-v2-shared-pocket-portal-color,var(--lp-text));font:var(--mochi-v2-shared-pocket-portal-font,400 13px/1.5 Inter,ui-sans-serif,system-ui,sans-serif)}
+.pocket-portal *{box-sizing:border-box}.pocket-portal [hidden]{display:none!important}.pocket-portal-nav{display:flex;justify-content:var(--mochi-v2-shared-pocket-portal-nav-justify-content,space-between);align-items:var(--mochi-v2-shared-pocket-portal-nav-align-items,center);padding-bottom:var(--mochi-v2-shared-pocket-portal-nav-padding-bottom,22px);font-size:var(--mochi-v2-shared-pocket-portal-nav-font-size,10px);letter-spacing:var(--mochi-v2-shared-pocket-portal-nav-letter-spacing,.08em);color:var(--mochi-v2-shared-pocket-portal-nav-color,var(--lp-muted))}.pocket-portal button{font:inherit;cursor:var(--mochi-v2-shared-pocket-portal-button-cursor,pointer)}.pocket-portal-home{border:0;background:var(--mochi-v2-shared-pocket-portal-home-background,none);color:var(--mochi-v2-shared-pocket-portal-home-color,var(--lp-text));padding:var(--mochi-v2-shared-pocket-portal-home-padding,6px 0);font-weight:var(--mochi-v2-shared-pocket-portal-home-font-weight,650)!important}.pocket-portal-eyebrow{font-size:var(--mochi-v2-shared-pocket-portal-eyebrow-font-size,9px);letter-spacing:var(--mochi-v2-shared-pocket-portal-eyebrow-letter-spacing,.14em);color:var(--mochi-v2-shared-pocket-portal-eyebrow-color,var(--lp-muted));margin:var(--mochi-v2-shared-pocket-portal-eyebrow-margin,8px 0)}.pocket-portal h2{font-size:var(--mochi-v2-shared-pocket-portal-h2-font-size,28px);line-height:var(--mochi-v2-shared-pocket-portal-h2-line-height,1.15);letter-spacing:var(--mochi-v2-shared-pocket-portal-h2-letter-spacing,-.05em);font-weight:var(--mochi-v2-shared-pocket-portal-h2-font-weight,550);margin:0}.pocket-portal-intro{color:var(--mochi-v2-shared-pocket-portal-intro-color,var(--lp-muted));margin:var(--mochi-v2-shared-pocket-portal-intro-margin,12px 0 24px)}.pocket-portal-info{margin:var(--mochi-v2-shared-pocket-portal-info-margin,0 0 18px);padding:var(--mochi-v2-shared-pocket-portal-info-padding,10px 12px);border-left:var(--mochi-v2-shared-pocket-portal-info-border-left,2px solid var(--lp-accent));border-radius:var(--mochi-v2-shared-pocket-portal-info-border-radius,0 6px 6px 0);background:var(--mochi-v2-shared-pocket-portal-info-background,var(--lp-surface));color:var(--mochi-v2-shared-pocket-portal-info-color,var(--lp-muted));font-size:var(--mochi-v2-shared-pocket-portal-info-font-size,11px);line-height:var(--mochi-v2-shared-pocket-portal-info-line-height,1.5)}.pocket-portal-destinations{display:grid;gap:var(--mochi-v2-shared-pocket-portal-destinations-gap,12px)}.pocket-portal-destination{position:relative;display:grid;grid-template-columns:var(--mochi-v2-shared-pocket-portal-destination-grid-template-columns,minmax(0,1fr) 92px);gap:var(--mochi-v2-shared-pocket-portal-destination-gap,7px);text-align:var(--mochi-v2-shared-pocket-portal-destination-text-align,left);align-items:var(--mochi-v2-shared-pocket-portal-destination-align-items,start);width:100%;padding:var(--mochi-v2-shared-pocket-portal-destination-padding,18px 16px);border:var(--mochi-v2-shared-pocket-portal-destination-border,1px solid var(--lp-border));border-radius:var(--mochi-v2-shared-pocket-portal-destination-border-radius,12px);background:var(--mochi-v2-shared-pocket-portal-destination-background,var(--lp-surface));color:var(--mochi-v2-shared-pocket-portal-destination-color,var(--lp-text))}.pocket-portal-destination small{grid-column:var(--mochi-v2-shared-pocket-portal-destination-small-grid-column,1);font-size:var(--mochi-v2-shared-pocket-portal-destination-small-font-size,8px);letter-spacing:var(--mochi-v2-shared-pocket-portal-destination-small-letter-spacing,.12em);color:var(--mochi-v2-shared-pocket-portal-destination-small-color,var(--lp-muted))}.pocket-portal-destination strong{grid-column:var(--mochi-v2-shared-pocket-portal-destination-strong-grid-column,1);font-size:var(--mochi-v2-shared-pocket-portal-destination-strong-font-size,17px);line-height:var(--mochi-v2-shared-pocket-portal-destination-strong-line-height,1.25);letter-spacing:var(--mochi-v2-shared-pocket-portal-destination-strong-letter-spacing,-.03em);font-weight:var(--mochi-v2-shared-pocket-portal-destination-strong-font-weight,550)}.pocket-portal-destination>span:not(.pocket-portal-art):not(.pocket-portal-arrow){grid-column:var(--mochi-v2-shared-pocket-portal-destination-span-grid-column,1/-1);color:var(--mochi-v2-shared-pocket-portal-destination-span-color,var(--lp-muted));font-size:var(--mochi-v2-shared-pocket-portal-destination-span-font-size,11px);max-width:var(--mochi-v2-shared-pocket-portal-destination-span-max-width,30ch)}.pocket-portal-art{grid-column:var(--mochi-v2-shared-pocket-portal-art-grid-column,2);grid-row:var(--mochi-v2-shared-pocket-portal-art-grid-row,1/3);align-self:var(--mochi-v2-shared-pocket-portal-art-align-self,center);color:var(--mochi-v2-shared-pocket-portal-art-color,var(--lp-accent))}.pocket-portal-art svg{display:block;width:var(--mochi-v2-shared-pocket-portal-art-svg-width,92px);height:var(--mochi-v2-shared-pocket-portal-art-svg-height,72px)}.pocket-portal-arrow{position:absolute;right:var(--mochi-v2-shared-pocket-portal-arrow-right,16px);bottom:var(--mochi-v2-shared-pocket-portal-arrow-bottom,14px);color:var(--mochi-v2-shared-pocket-portal-arrow-color,var(--lp-accent))}.pocket-portal-destination:hover{background:var(--mochi-v2-shared-pocket-portal-destination-hover-background,color-mix(in srgb,var(--lp-accent) 8%,var(--lp-bg)));border-color:var(--mochi-v2-shared-pocket-portal-destination-hover-border-color,color-mix(in srgb,var(--lp-accent) 35%,var(--lp-border)))}.pocket-portal :is(button,input,textarea,select):focus-visible{outline:var(--mochi-v2-shared-pocket-portal-is-button-outline,2px solid var(--lp-accent));outline-offset:var(--mochi-v2-shared-pocket-portal-is-button-outline-offset,3px)}.pocket-portal .lumiphone-device-drawer{padding:0;min-height:0}.pocket-portal .lumiphone-device-footer{display:flex;flex-wrap:var(--mochi-v2-shared-pocket-portal-lumiphone-device-footer-flex-wrap,wrap);gap:var(--mochi-v2-shared-pocket-portal-lumiphone-device-footer-gap,8px)}.pocket-portal .lumiphone-device-access{flex:var(--mochi-v2-shared-pocket-portal-lumiphone-device-access-flex,1 1 128px);min-height:var(--mochi-v2-shared-pocket-portal-lumiphone-device-access-min-height,44px);padding:var(--mochi-v2-shared-pocket-portal-lumiphone-device-access-padding,10px 12px);border:var(--mochi-v2-shared-pocket-portal-lumiphone-device-access-border,1px solid var(--lp-border));border-radius:var(--mochi-v2-shared-pocket-portal-lumiphone-device-access-border-radius,8px);background:var(--mochi-v2-shared-pocket-portal-lumiphone-device-access-background,var(--lp-surface));color:var(--mochi-v2-shared-pocket-portal-lumiphone-device-access-color,var(--lp-text));font-size:var(--mochi-v2-shared-pocket-portal-lumiphone-device-access-font-size,11px);line-height:var(--mochi-v2-shared-pocket-portal-lumiphone-device-access-line-height,1.3);text-align:var(--mochi-v2-shared-pocket-portal-lumiphone-device-access-text-align,center)}.pocket-portal .lumiphone-device-access:disabled{cursor:var(--mochi-v2-shared-pocket-portal-lumiphone-device-access-disabled-cursor,default);color:var(--mochi-v2-shared-pocket-portal-lumiphone-device-access-disabled-color,var(--lp-muted))}.pocket-portal .lumiphone-device-access:not(:disabled):hover{border-color:var(--mochi-v2-shared-pocket-portal-lumiphone-device-access-hover-border-color,var(--lp-accent));background:var(--mochi-v2-shared-pocket-portal-lumiphone-device-access-hover-background,color-mix(in srgb,var(--lp-accent) 8%,var(--lp-bg)))}.pocket-portal .mochi-view{min-height:0;height:var(--mochi-v2-shared-pocket-portal-height,auto);padding:0;background:var(--mochi-v2-shared-pocket-portal-background,none);overflow:visible}.pocket-portal .mochi-view>header{display:flex;justify-content:var(--mochi-v2-shared-pocket-portal-header-justify-content,space-between);align-items:var(--mochi-v2-shared-pocket-portal-header-align-items,center);min-height:var(--mochi-v2-shared-pocket-portal-header-min-height,46px);padding-bottom:var(--mochi-v2-shared-pocket-portal-header-padding-bottom,10px)}.pocket-portal .mochi-view>header>.mochi-actions{margin-left:var(--mochi-v2-shared-pocket-portal-header-actions-margin-left,auto)}.pocket-portal .mochi-view>header .mochi-icon-button{background:var(--mochi-v2-shared-pocket-portal-header-icon-button-background,transparent);border:0;min-width:var(--mochi-v2-shared-pocket-portal-header-icon-button-min-width,36px);width:var(--mochi-v2-shared-pocket-portal-header-icon-button-width,36px);height:var(--mochi-v2-shared-pocket-portal-header-icon-button-height,36px);min-height:var(--mochi-v2-shared-pocket-portal-header-icon-button-min-height,36px)}.pocket-portal .mochi-view h2{font-size:var(--mochi-v2-shared-pocket-portal-h2-font-size,20px);letter-spacing:var(--mochi-v2-shared-pocket-portal-h2-letter-spacing,-.03em)}.pocket-portal .mochi-view .mochi-card{border-radius:var(--mochi-v2-shared-pocket-portal-card-border-radius,10px)}.pocket-portal .mochi-view>.lp-button{min-height:var(--mochi-v2-shared-pocket-portal-button-min-height,38px);padding:var(--mochi-v2-shared-pocket-portal-button-padding,8px 12px);font-size:var(--mochi-v2-shared-pocket-portal-button-font-size,12px);background:var(--mochi-v2-shared-pocket-portal-button-background,transparent);border-color:var(--mochi-v2-shared-pocket-portal-button-border-color,var(--lp-border));justify-content:var(--mochi-v2-shared-pocket-portal-button-justify-content,flex-start)}.pocket-portal .mochi-view>.mochi-primary{background:var(--mochi-v2-shared-pocket-portal-primary-background,var(--lp-surface));color:var(--mochi-v2-shared-pocket-portal-primary-color,var(--lp-text))}
 .mochi-view>header{grid-template-columns:minmax(0,1fr) auto;min-height:36px}.mochi-brand h2{font-family:inherit;font-size:17px;line-height:1.3;font-weight:600;letter-spacing:-.02em}.mochi-view[data-surface=chat]>header{display:none}.mochi-view[data-surface=chat]{--mochi-accent:var(--lp-accent);--mochi-surface:var(--lp-bg);--mochi-border:var(--lp-border);gap:8px}.mochi-view[data-surface=chat] .mochi-room-header{grid-template-columns:minmax(0,1fr) auto;gap:12px;padding:0 0 8px;border-bottom:1px solid var(--lp-border)}.mochi-view[data-surface=chat] .mochi-room-header>.mochi-actions{flex-wrap:nowrap}.mochi-view[data-surface=chat] .mochi-room-selector{width:100%;min-width:0;max-width:100%;text-overflow:ellipsis;background:transparent;border:0;border-radius:0;padding-left:0;font-size:14px}.mochi-view[data-surface=chat] .mochi-room-select-icon{display:none}.mochi-view[data-surface=chat] .mochi-room-meta{font-size:10px}.mochi-view[data-surface=chat] .mochi-composer{padding:8px 14px 12px;background:var(--lp-bg);border-top:1px solid var(--lp-border)}.mochi-view[data-surface=chat] .mochi-composer-hint{display:none}.mochi-view[data-surface=chat] .mochi-responder{border:0;padding-block:3px;padding-right:8px;min-height:34px;background:transparent}.mochi-view[data-surface=chat] .mochi-responder::after{content:none}.mochi-view[data-surface=chat] .mochi-message-actions{right:0}.mochi-view[data-surface=chat] .mochi-thread{overflow-x:hidden}.mochi-view[data-surface=chat] .mochi-bubble{border-radius:14px;font-size:13px}
-@media(min-width:721px) and (min-height:541px){.pocket-portal-body{max-width:440px;margin-inline:auto}.pocket-portal .mochi-form{gap:14px}.pocket-portal .mochi-form .mochi-picker{grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}.pocket-portal .mochi-form .mochi-choice{padding:10px 6px}.mochi-view[data-surface=chat] .mochi-room-header{grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}.mochi-view[data-surface=chat] .mochi-room-header .mochi-actions{gap:4px}.mochi-view[data-surface=chat] .mochi-room-header .mochi-icon-button{width:32px;min-width:32px;height:32px;min-height:32px;padding:7px}.mochi-view[data-surface=chat] .mochi-room-meta{margin-top:0}.mochi-view[data-surface=chat] .mochi-room-selector{min-height:32px}.mochi-view[data-surface=chat] .mochi-room-header>.mochi-actions{padding:0}}
+@media(min-width:721px) and (min-height:541px){.pocket-portal-body{max-width:var(--mochi-v2-shared-pocket-portal-body-media-min-width-721px-and-min-height-541px-max-width,440px);margin-inline:var(--mochi-v2-shared-pocket-portal-body-media-min-width-721px-and-min-height-541px-margin-inline,auto)}.pocket-portal .mochi-form{gap:var(--mochi-v2-shared-pocket-portal-form-media-min-width-721px-and-min-height-541px-gap,14px)}.pocket-portal .mochi-form .mochi-picker{grid-template-columns:var(--mochi-v2-shared-pocket-portal-form-picker-media-min-width-721px-and-min-height-541px-grid-template-columns,repeat(auto-fill,minmax(96px,1fr)));gap:var(--mochi-v2-shared-pocket-portal-form-picker-media-min-width-721px-and-min-height-541px-gap,10px)}.pocket-portal .mochi-form .mochi-choice{padding:var(--mochi-v2-shared-pocket-portal-form-choice-media-min-width-721px-and-min-height-541px-padding,10px 6px)}.mochi-view[data-surface=chat] .mochi-room-header{grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}.mochi-view[data-surface=chat] .mochi-room-header .mochi-actions{gap:4px}.mochi-view[data-surface=chat] .mochi-room-header .mochi-icon-button{width:32px;min-width:32px;height:32px;min-height:32px;padding:7px}.mochi-view[data-surface=chat] .mochi-room-meta{margin-top:0}.mochi-view[data-surface=chat] .mochi-room-selector{min-height:32px}.mochi-view[data-surface=chat] .mochi-room-header>.mochi-actions{padding:0}}
 
-.pocket-portal-nav{gap:12px}.pocket-portal-nav>span{margin-left:auto}.pocket-portal-back{min-height:44px;padding:6px 0;border:0;background:transparent;color:var(--lp-text)}.pocket-portal .mochi-profile-screen{gap:18px}.pocket-portal .mochi-view .mochi-inbox-actions>.lp-button{width:auto;flex:1 1 auto}.pocket-portal .mochi-account-picker .mochi-secondary-action{width:auto}.pocket-portal .mochi-profile-actions .lp-button{font-size:12px}.pocket-portal .mochi-connection-indicator{min-height:44px}.pocket-portal .mochi-profile-fields input,.pocket-portal .mochi-profile-fields select,.pocket-portal .mochi-profile-fields textarea{font-size:13px;border-radius:8px}
+.pocket-portal-nav{gap:var(--mochi-v2-shared-pocket-portal-nav-gap,12px)}.pocket-portal-nav>span{margin-left:var(--mochi-v2-shared-pocket-portal-nav-span-margin-left,auto)}.pocket-portal-back{min-height:var(--mochi-v2-shared-pocket-portal-back-min-height,44px);padding:var(--mochi-v2-shared-pocket-portal-back-padding,6px 0);border:0;background:var(--mochi-v2-shared-pocket-portal-back-background,transparent);color:var(--mochi-v2-shared-pocket-portal-back-color,var(--lp-text))}.pocket-portal .mochi-profile-screen{gap:var(--mochi-v2-shared-pocket-portal-profile-screen-gap,18px)}.pocket-portal .mochi-view .mochi-inbox-actions>.lp-button{width:var(--mochi-v2-shared-pocket-portal-inbox-actions-button-width,auto);flex:var(--mochi-v2-shared-pocket-portal-inbox-actions-button-flex,1 1 auto)}.pocket-portal .mochi-account-picker .mochi-secondary-action{width:var(--mochi-v2-shared-pocket-portal-account-picker-secondary-action-width,auto)}.pocket-portal .mochi-profile-actions .lp-button{font-size:var(--mochi-v2-shared-pocket-portal-profile-actions-button-font-size,12px)}.pocket-portal .mochi-connection-indicator{min-height:var(--mochi-v2-shared-pocket-portal-connection-indicator-min-height,44px)}.pocket-portal .mochi-profile-fields input,.pocket-portal .mochi-profile-fields select,.pocket-portal .mochi-profile-fields textarea{font-size:var(--mochi-v2-shared-pocket-portal-profile-fields-input-font-size,13px);border-radius:var(--mochi-v2-shared-pocket-portal-profile-fields-input-border-radius,8px)}
 
-.pocket-portal .mochi-sheet{position:fixed;inset:var(--app-interactive-safe-top,0px) 0 0;margin:auto;max-height:calc(100dvh - var(--app-interactive-safe-top,0px) - 32px);font:400 13px/1.5 Inter,ui-sans-serif,system-ui,sans-serif;letter-spacing:normal;text-transform:none}.pocket-portal .mochi-sheet h2{font-size:18px;letter-spacing:-.02em}.mochi-unsaved-sheet .lp-sheet-close{display:none}
-.pocket-portal-destinations{grid-template-columns:repeat(2,minmax(0,1fr))}.pocket-portal-destination{grid-template-columns:minmax(0,1fr);padding:14px 12px;min-height:160px}.pocket-portal-art{grid-column:1;grid-row:auto;justify-self:start}.pocket-portal-art svg{width:40px;height:40px}.pocket-portal-destination small{font-size:13px;letter-spacing:0;font-weight:600}.pocket-portal-destination strong{font-size:12px;letter-spacing:0}.pocket-portal-destination>span:not(.pocket-portal-art):not(.pocket-portal-arrow){font-size:11px;overflow-wrap:anywhere}
-.pocket-portal[data-destination=mochi]{height:100%;min-height:0;display:flex;flex-direction:column}.pocket-portal[data-destination=mochi]>.pocket-portal-body{display:flex;flex-direction:column;flex:1;min-height:0;max-width:none;width:100%;overflow:hidden}.pocket-portal .mochi-sidebar{flex:1;min-height:0}.pocket-portal .mochi-workspace[data-presentation=messenger]>.mochi-view{height:100%;padding:0;overflow:hidden}.pocket-portal .mochi-workspace[data-presentation=messenger] .mochi-desktop-main>.mochi-view{padding:12px;overflow:auto}.pocket-portal .mochi-workspace[data-presentation=messenger] .mochi-desktop-main>.mochi-view[data-conversation=true]{overflow:hidden}
+.pocket-portal .mochi-sheet{position:fixed;inset:var(--mochi-v2-shared-pocket-portal-sheet-inset,var(--app-interactive-safe-top,0px) 0 0);margin:var(--mochi-v2-shared-pocket-portal-sheet-margin,auto);max-height:var(--mochi-v2-shared-pocket-portal-sheet-max-height,calc(100dvh - var(--app-interactive-safe-top,0px) - 32px));font:var(--mochi-v2-shared-pocket-portal-sheet-font,400 13px/1.5 Inter,ui-sans-serif,system-ui,sans-serif);letter-spacing:var(--mochi-v2-shared-pocket-portal-sheet-letter-spacing,normal);text-transform:var(--mochi-v2-shared-pocket-portal-sheet-text-transform,none)}.pocket-portal .mochi-sheet h2{font-size:var(--mochi-v2-shared-pocket-portal-sheet-h2-font-size,18px);letter-spacing:var(--mochi-v2-shared-pocket-portal-sheet-h2-letter-spacing,-.02em)}.mochi-unsaved-sheet .lp-sheet-close{display:none}
+.pocket-portal-destinations{grid-template-columns:var(--mochi-v2-shared-pocket-portal-destinations-grid-template-columns,repeat(2,minmax(0,1fr)))}.pocket-portal-destination{grid-template-columns:var(--mochi-v2-shared-pocket-portal-destination-grid-template-columns,minmax(0,1fr));padding:var(--mochi-v2-shared-pocket-portal-destination-padding,14px 12px);min-height:var(--mochi-v2-shared-pocket-portal-destination-min-height,160px)}.pocket-portal-art{grid-column:var(--mochi-v2-shared-pocket-portal-art-grid-column,1);grid-row:var(--mochi-v2-shared-pocket-portal-art-grid-row,auto);justify-self:var(--mochi-v2-shared-pocket-portal-art-justify-self,start)}.pocket-portal-art svg{width:var(--mochi-v2-shared-pocket-portal-art-svg-width,40px);height:var(--mochi-v2-shared-pocket-portal-art-svg-height,40px)}.pocket-portal-destination small{font-size:var(--mochi-v2-shared-pocket-portal-destination-small-font-size,13px);letter-spacing:0;font-weight:var(--mochi-v2-shared-pocket-portal-destination-small-font-weight,600)}.pocket-portal-destination strong{font-size:var(--mochi-v2-shared-pocket-portal-destination-strong-font-size,12px);letter-spacing:0}.pocket-portal-destination>span:not(.pocket-portal-art):not(.pocket-portal-arrow){font-size:var(--mochi-v2-shared-pocket-portal-destination-span-font-size,11px);overflow-wrap:var(--mochi-v2-shared-pocket-portal-destination-span-overflow-wrap,anywhere)}
+.pocket-portal[data-destination=mochi]{height:100%;min-height:0;display:flex;flex-direction:var(--mochi-v2-shared-pocket-portal-data-destination-mochi-flex-direction,column)}.pocket-portal[data-destination=mochi]>.pocket-portal-body{display:flex;flex-direction:var(--mochi-v2-shared-pocket-portal-data-destination-mochi-pocket-portal-body-flex-direction,column);flex:var(--mochi-v2-shared-pocket-portal-data-destination-mochi-pocket-portal-body-flex,1);min-height:0;max-width:var(--mochi-v2-shared-pocket-portal-data-destination-mochi-pocket-portal-body-max-width,none);width:100%;overflow:hidden}.pocket-portal .mochi-sidebar{flex:var(--mochi-v2-shared-pocket-portal-sidebar-flex,1);min-height:0}.pocket-portal .mochi-workspace[data-presentation=messenger]>.mochi-view{height:100%;padding:0;overflow:hidden}.pocket-portal .mochi-workspace[data-presentation=messenger] .mochi-desktop-main>.mochi-view{padding:var(--mochi-v2-shared-pocket-portal-workspace-data-presentation-messenger-padding,12px);overflow:auto}.pocket-portal .mochi-workspace[data-presentation=messenger] .mochi-desktop-main>.mochi-view[data-conversation=true]{overflow:hidden}
 `;
 
 // src/frontend/components/tts-connection.ts
@@ -23927,28 +23956,30 @@ var SURFACE_TOKENS = `
 // src/frontend/components/design-system.ts
 var POCKET_DESIGN_SYSTEM = `
 ${SURFACE_TOKENS}
+  /* Measured owner bounds; themes can override visuals without inline conflicts. */
+  .lp-sheet[data-pocket-measured=true] { position:fixed; margin:0; top:var(--mochi-v2-shared-sheet-data-pocket-measured-true-top,auto); left:var(--mochi-dialog-left,var(--pocket-measured-sheet-left)); bottom:var(--mochi-dialog-bottom,var(--pocket-measured-sheet-bottom)); width:var(--mochi-dialog-width,var(--pocket-measured-sheet-width)); max-height:var(--mochi-dialog-max-height,var(--pocket-measured-sheet-max-height)); }
   .lumiphone-shell { container-type:inline-size; }
   .lumiphone-shell :is(button,input,textarea,select,summary) { font-family:inherit; }
   .lumiphone-shell :is(button,input,textarea,select,summary):focus-visible,
-  .lp-sheet :is(button,input,textarea,select):focus-visible { outline:2px solid var(--lp-accent,#a99bff); outline-offset:3px; }
+  .lp-sheet :is(button,input,textarea,select):focus-visible { outline:var(--mochi-v2-shared-lumiphone-shell-is-button-outline,2px solid var(--lp-accent,#a99bff)); outline-offset:var(--mochi-v2-shared-lumiphone-shell-is-button-outline-offset,3px); }
   .lumiphone-shell .lp-nav { grid-template-columns:minmax(0,1fr) minmax(0,2fr) minmax(0,1fr); min-height:64px; gap:8px; padding:4px 12px; }
   .lumiphone-shell .lp-nav-title { white-space:normal; overflow-wrap:anywhere; font-size:15px; line-height:1.2; text-wrap:balance; }
   .lumiphone-shell .lp-nav-subtitle { font-size:10px; line-height:1.35; margin-top:4px; }
-  .lumiphone-shell .lp-nav-action { min-width:0; min-height:var(--lp-touch); font-size:12px; overflow-wrap:anywhere; }
+  .lumiphone-shell .lp-nav-action { min-width:0; min-height:var(--mochi-v2-shared-lumiphone-shell-nav-action-min-height,var(--lp-touch)); font-size:var(--mochi-v2-shared-lumiphone-shell-nav-action-font-size,12px); overflow-wrap:var(--mochi-v2-shared-lumiphone-shell-nav-action-overflow-wrap,anywhere); }
   .lumiphone-shell .lp-content { gap:var(--lp-space-3); padding:var(--lp-space-4); padding-bottom:calc(28px + env(safe-area-inset-bottom,0px)); }
   .lumiphone-shell .lp-card { border:0; border-radius:var(--lp-radius); box-shadow:none; padding:var(--lp-space-4); background:color-mix(in srgb,var(--lp-text) 5%,var(--lp-surface)); }
-  .lumiphone-shell .lp-title { font-size:var(--pocket-font-md); }
+  .lumiphone-shell .lp-title { font-size:var(--mochi-v2-shared-lumiphone-shell-title-font-size,var(--pocket-font-md)); }
   .lumiphone-shell .lp-copy { font-size:var(--pocket-font-sm); line-height:1.5; }
   .lumiphone-shell .lp-eyebrow { font-size:var(--pocket-font-xs); letter-spacing:.065em; line-height:1.4; }
   .lumiphone-shell .lp-fields { grid-template-columns:minmax(0,1fr); gap:var(--lp-space-4); }
-  .lumiphone-shell :is(.lp-input,.lp-select,.lp-textarea) { width:100%; min-width:0; min-height:var(--lp-touch); border:1px solid var(--lp-border); border-radius:var(--lp-radius-control); padding:12px; font-size:var(--pocket-font-md); background:color-mix(in srgb,var(--lp-text) 3%,var(--lp-bg)); scroll-margin-block:80px; }
-  .lumiphone-shell .lp-textarea { min-height:104px; resize:vertical; line-height:1.5; }
+  .lumiphone-shell :is(.lp-input,.lp-select,.lp-textarea) { width:100%; min-width:0; min-height:var(--mochi-v2-shared-lumiphone-shell-is-input-min-height,var(--lp-touch)); border:var(--mochi-v2-shared-lumiphone-shell-is-input-border,1px solid var(--lp-border)); border-radius:var(--mochi-v2-shared-lumiphone-shell-is-input-border-radius,var(--lp-radius-control)); padding:var(--mochi-v2-shared-lumiphone-shell-is-input-padding,12px); font-size:var(--mochi-v2-shared-lumiphone-shell-is-input-font-size,var(--pocket-font-md)); background:var(--mochi-v2-shared-lumiphone-shell-is-input-background,color-mix(in srgb,var(--lp-text) 3%,var(--lp-bg))); scroll-margin-block:var(--mochi-v2-shared-lumiphone-shell-is-input-scroll-margin-block,80px); }
+  .lumiphone-shell .lp-textarea { min-height:var(--mochi-v2-shared-lumiphone-shell-textarea-min-height,104px); resize:vertical; line-height:var(--mochi-v2-shared-lumiphone-shell-textarea-line-height,1.5); }
   .lumiphone-shell :is(.lp-field,.lp-label) { display:grid; gap:8px; min-width:0; font-size:12px; }
   .lumiphone-shell :is(.lp-field-label,.lp-control-label) { font-size:13px; font-weight:650; }
   .lumiphone-shell :is(.lp-field-help,.lp-control-help) { display:block; font-size:12px; line-height:1.45; margin-top:4px; }
-  .lumiphone-shell .lp-button { min-height:var(--lp-touch); font-size:12px; border-radius:var(--lp-radius-control); }
-  .lumiphone-shell .lp-button-quiet { background:transparent; border-color:transparent; }
-  .lumiphone-shell .lp-button-danger { color:var(--lp-destructive); }
+  .lumiphone-shell .lp-button { min-height:var(--mochi-v2-shared-lumiphone-shell-button-min-height,var(--lp-touch)); font-size:var(--mochi-v2-shared-lumiphone-shell-button-font-size,12px); border-radius:var(--mochi-v2-shared-lumiphone-shell-button-border-radius,var(--lp-radius-control)); }
+  .lumiphone-shell .lp-button-quiet { background:var(--mochi-v2-shared-lumiphone-shell-button-quiet-background,transparent); border-color:var(--mochi-v2-shared-lumiphone-shell-button-quiet-border-color,transparent); }
+  .lumiphone-shell .lp-button-danger { color:var(--mochi-v2-shared-lumiphone-shell-button-danger-color,var(--lp-destructive)); }
   .lumiphone-shell .lp-chip { min-height:36px; padding:8px 12px; font-size:11px; }
   .lumiphone-shell .lp-chipbar { gap:4px; flex-wrap:wrap; }
   .lumiphone-shell .lp-chip[aria-pressed="true"] { background:color-mix(in srgb,var(--lp-accent) 22%,var(--lp-surface)); color:var(--lp-text); border-color:transparent; }
@@ -23960,7 +23991,7 @@ ${SURFACE_TOKENS}
   .lumiphone-shell .lp-contact-check { display:grid; grid-template-columns:24px minmax(0,1fr); gap:4px 8px; align-items:center; padding:10px 0; min-height:44px; border-bottom:1px solid var(--lp-border); }
   .lp-contact-check input { grid-row:1 / 3; width:18px; height:18px; margin:0; }
   .lp-contact-check > .lp-copy { grid-column:2; }
-  .lumiphone-shell .lp-toggle { flex:0 0 40px; }
+  .lumiphone-shell .lp-toggle { flex:var(--mochi-v2-shared-lumiphone-shell-toggle-flex,0 0 40px); }
   .lumiphone-shell .lp-settings-list { gap:0; }
   .lumiphone-shell .lp-settings-category { min-height:var(--lp-row-height); border-radius:0; border-bottom:1px solid var(--lp-border); padding:14px 12px; }
   .lp-settings-category:first-child { border-radius:18px 18px 0 0; }
@@ -24018,12 +24049,12 @@ ${SURFACE_TOKENS}
   .lumiphone-shell .lp-group-message .lp-bubble { max-width:100%; margin-top:0; }
   .lumiphone-shell .lp-bubble-time { font-size:9px; opacity:.78; padding-right:30px; min-height:22px; margin-top:6px; }
   .lp-message-more { position:absolute; bottom:2px; right:2px; width:44px; height:44px; border:0; border-radius:50%; background:transparent; color:inherit; font-size:20px; cursor:pointer; }
-  .lp-sheet { box-sizing:border-box; width:min(440px,calc(100% - 24px)); max-height:calc(100dvh - 48px); border:1px solid var(--lp-border,#ffffff25); border-radius:calc(24px * var(--pocket-ui-scale,1)); padding:0; background:var(--lp-sheet-bg,#17151d); color:var(--lp-text,#f7f5ff); box-shadow:0 24px 80px #0008; }
-  .lp-sheet::backdrop { background:#0006; backdrop-filter:blur(4px); }
-  .lp-sheet-panel { display:grid; gap:calc(16px * var(--pocket-ui-scale,1)); padding:calc(20px * var(--pocket-ui-scale,1)); padding-bottom:max(calc(20px * var(--pocket-ui-scale,1)),env(safe-area-inset-bottom)); }
-  .lp-sheet-actions, .lp-sheet .lp-bubble-tools { display:grid; gap:calc(6px * var(--pocket-ui-scale,1)); margin:0; }
-  .lp-sheet .lp-bubble-action { width:100%; min-height:max(44px,calc(44px * var(--pocket-ui-scale,1))); opacity:1; font-size:calc(14px * var(--pocket-ui-scale,1)); border-radius:calc(12px * var(--pocket-ui-scale,1)); justify-content:start; padding:calc(12px * var(--pocket-ui-scale,1)); background:#ffffff09; }
-  .lp-sheet .lp-button { min-height:max(44px,calc(44px * var(--pocket-ui-scale,1))); }
+  .lp-sheet { box-sizing:border-box; width:var(--mochi-v2-shared-sheet-width,min(440px,calc(100% - 24px))); max-height:var(--mochi-v2-shared-sheet-max-height,calc(100dvh - 48px)); border:var(--mochi-v2-shared-sheet-border,1px solid var(--lp-border,#ffffff25)); border-radius:var(--mochi-v2-shared-sheet-border-radius,calc(24px * var(--pocket-ui-scale,1))); padding:0; background:var(--mochi-v2-shared-sheet-background,var(--lp-sheet-bg,#17151d)); color:var(--mochi-v2-shared-sheet-color,var(--lp-text,#f7f5ff)); box-shadow:var(--mochi-v2-shared-sheet-box-shadow,0 24px 80px #0008); }
+  .lp-sheet::backdrop { background:var(--mochi-v2-shared-sheet-backdrop-background,#0006); backdrop-filter:var(--mochi-v2-shared-sheet-backdrop-backdrop-filter,blur(4px)); }
+  .lp-sheet-panel { display:grid; gap:var(--mochi-v2-shared-sheet-panel-gap,calc(16px * var(--pocket-ui-scale,1))); padding:var(--mochi-v2-shared-sheet-panel-padding,calc(20px * var(--pocket-ui-scale,1))); padding-bottom:var(--mochi-v2-shared-sheet-panel-padding-bottom,max(calc(20px * var(--pocket-ui-scale,1)),env(safe-area-inset-bottom))); }
+  .lp-sheet-actions, .lp-sheet .lp-bubble-tools { display:grid; gap:var(--mochi-v2-shared-sheet-actions-gap,calc(6px * var(--pocket-ui-scale,1))); margin:0; }
+  .lp-sheet .lp-bubble-action { width:100%; min-height:var(--mochi-v2-shared-sheet-bubble-action-min-height,max(44px,calc(44px * var(--pocket-ui-scale,1)))); opacity:var(--mochi-v2-shared-sheet-bubble-action-opacity,1); font-size:var(--mochi-v2-shared-sheet-bubble-action-font-size,calc(14px * var(--pocket-ui-scale,1))); border-radius:var(--mochi-v2-shared-sheet-bubble-action-border-radius,calc(12px * var(--pocket-ui-scale,1))); justify-content:var(--mochi-v2-shared-sheet-bubble-action-justify-content,start); padding:var(--mochi-v2-shared-sheet-bubble-action-padding,calc(12px * var(--pocket-ui-scale,1))); background:var(--mochi-v2-shared-sheet-bubble-action-background,#ffffff09); }
+  .lp-sheet .lp-button { min-height:var(--mochi-v2-shared-sheet-button-min-height,max(44px,calc(44px * var(--pocket-ui-scale,1)))); }
   .lumiphone-shell .lp-notification-row { padding:0; border-radius:18px; }
   .lp-notification-open { gap:10px; align-items:flex-start; }
   .lp-notification-avatar { flex:0 0 32px; height:32px; border-radius:10px; background:var(--lp-incoming); display:grid!important; place-items:center; font-size:13px; }
@@ -24038,7 +24069,7 @@ ${SURFACE_TOKENS}
   .lumiphone-shell .lp-weather-hero { min-height:280px; border-radius:24px; padding:24px; }
   .lp-weather-note { margin:8px 4px; font-size:14px; line-height:1.7; color:var(--lp-muted); }
   .lumiphone-shell .lp-event[data-completed="true"] { opacity:1; }
-  .lumiphone-shell .lp-event[data-completed="true"] .lp-title { text-decoration:none; color:var(--lp-muted); }
+  .lumiphone-shell .lp-event[data-completed="true"] .lp-title { text-decoration:var(--mochi-v2-shared-lumiphone-shell-event-data-completed-true-title-text-decoration,none); color:var(--mochi-v2-shared-lumiphone-shell-event-data-completed-true-title-color,var(--lp-muted)); }
   .lp-event-card { width:100%; text-align:left; color:var(--lp-text); }
   .lp-event-card .lp-status-badge { margin-top:8px; }
   .lumiphone-shell .lp-status-badge { font-size:10px; }
@@ -24049,7 +24080,7 @@ ${SURFACE_TOKENS}
   .lp-camera .lp-disclosure > summary { color:#e9e7ef; }
   .lp-media-viewer { --lp-text:#f7f5ff; --lp-bg:#141319; --lp-muted:#b9b5c5; --lp-border:#ffffff22; }
   .lp-media-viewer .lp-gallery-actions { display:flex; flex-wrap:wrap; justify-content:space-around; gap:8px; padding:16px 0; }
-  .lp-media-viewer .lp-button { min-height:44px; font-size:13px; color:var(--lp-text); background:#ffffff0b; }
+  .lp-media-viewer .lp-button { min-height:var(--mochi-v2-shared-media-viewer-button-min-height,44px); font-size:var(--mochi-v2-shared-media-viewer-button-font-size,13px); color:var(--mochi-v2-shared-media-viewer-button-color,var(--lp-text)); background:var(--mochi-v2-shared-media-viewer-button-background,#ffffff0b); }
   .lp-bubble.lp-call-history { align-self:center; max-width:90%; border-radius:16px; background:var(--lp-surface); border:1px solid var(--lp-border); text-align:center; }
   @container (max-width:360px) {
     .lumiphone-shell .lp-content { padding-inline:12px; }
@@ -24098,9 +24129,9 @@ var PHONE_STYLES = `
   .lp-setup .lp-setup-status[data-ready="true"] { color:var(--lp-accent); border-color:color-mix(in srgb,var(--lp-accent) 30%,var(--lp-border)); }
   .lp-setup .lp-copy { font-size:12px; line-height:1.6; color:var(--lp-muted); margin:0; overflow-wrap:anywhere; }
   .lp-setup .lp-row { display:flex; flex-wrap:wrap; gap:8px; }
-  .lp-setup :is(.lp-select,.lp-input,.lp-textarea) { width:100%; min-width:0; min-height:42px; font:inherit; color:var(--lp-text); padding:10px; background:var(--lumiverse-fill-subtle,#ffffff05); border:1px solid var(--lp-border); border-radius:9px; }
-  .lp-setup .lp-button { appearance:none; border:1px solid var(--lp-border); border-radius:9px; min-height:40px; padding:9px 14px; font:600 12px/1.4 Inter,ui-sans-serif,system-ui,sans-serif; color:var(--lp-text); background:var(--lumiverse-fill,#ffffff08); cursor:pointer; white-space:normal; }
-  .lp-setup .lp-button:disabled { opacity:.45; cursor:default; }
+  .lp-setup :is(.lp-select,.lp-input,.lp-textarea) { width:100%; min-width:0; min-height:var(--mochi-v2-shared-setup-is-select-min-height,42px); font:inherit; color:var(--mochi-v2-shared-setup-is-select-color,var(--lp-text)); padding:var(--mochi-v2-shared-setup-is-select-padding,10px); background:var(--mochi-v2-shared-setup-is-select-background,var(--lumiverse-fill-subtle,#ffffff05)); border:var(--mochi-v2-shared-setup-is-select-border,1px solid var(--lp-border)); border-radius:var(--mochi-v2-shared-setup-is-select-border-radius,9px); }
+  .lp-setup .lp-button { appearance:var(--mochi-v2-shared-setup-button-appearance,none); border:var(--mochi-v2-shared-setup-button-border,1px solid var(--lp-border)); border-radius:var(--mochi-v2-shared-setup-button-border-radius,9px); min-height:var(--mochi-v2-shared-setup-button-min-height,40px); padding:var(--mochi-v2-shared-setup-button-padding,9px 14px); font:var(--mochi-v2-shared-setup-button-font,600 12px/1.4 Inter,ui-sans-serif,system-ui,sans-serif); color:var(--mochi-v2-shared-setup-button-color,var(--lp-text)); background:var(--mochi-v2-shared-setup-button-background,var(--lumiverse-fill,#ffffff08)); cursor:var(--mochi-v2-shared-setup-button-cursor,pointer); white-space:var(--mochi-v2-shared-setup-button-white-space,normal); }
+  .lp-setup .lp-button:disabled { opacity:var(--mochi-v2-shared-setup-button-disabled-opacity,.45); cursor:var(--mochi-v2-shared-setup-button-disabled-cursor,default); }
   .lp-setup :is(button,input,select,textarea):focus-visible { outline:2px solid var(--lp-accent); outline-offset:3px; }
   .lp-setup .lp-setup-modes { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
   .lp-setup .lp-setup-mode { display:flex; align-items:flex-start; gap:9px; border:1px solid var(--lp-border); border-radius:10px; padding:13px; cursor:pointer; background:var(--lumiverse-fill-subtle,#ffffff03); }
@@ -24118,12 +24149,12 @@ var PHONE_STYLES = `
   .lp-setup .lp-setup-connection-select [role="listbox"] { position:relative; top:auto; left:auto; right:auto; margin-top:6px; }
   .lumiphone-device-search { width:100%; min-height:38px; padding:8px 11px; margin:0 0 14px; border:1px solid var(--pocket-border,var(--lumiverse-border,#ffffff14)); border-radius:9px; background:var(--lumiverse-fill-subtle,#ffffff05); color:var(--lumiverse-text,#eee); font:inherit; }
   .lumiphone-device-row[hidden], .lumiphone-device-section[hidden] { display:none; }
-  .lumiphone-shell .lp-sheet .lp-bubble-tools { display:grid; grid-template-columns:1fr; gap:calc(6px * var(--pocket-ui-scale)); }
-  .lumiphone-shell .lp-sheet .lp-bubble-action { display:flex; align-items:center; justify-content:flex-start; gap:calc(12px * var(--pocket-ui-scale)); border:1px solid var(--lp-border); color:var(--lp-text); }
-  .lumiphone-shell .lp-sheet .lp-bubble-action::before { content:'↻'; font-size:calc(19px * var(--pocket-ui-scale)); width:calc(24px * var(--pocket-ui-scale)); text-align:center; color:var(--lp-accent); }
-  .lumiphone-shell .lp-sheet .lp-bubble-action[aria-label="Generation info"]::before { content:'ⓘ'; }
-  .lumiphone-shell .lp-sheet .lp-bubble-action[data-destructive="true"] { color:var(--lp-destructive); }
-  .lumiphone-shell .lp-sheet .lp-bubble-action[data-destructive="true"]::before { content:'×'; color:inherit; }
+  .lumiphone-shell .lp-sheet .lp-bubble-tools { display:grid; grid-template-columns:var(--mochi-v2-shared-lumiphone-shell-sheet-bubble-tools-grid-template-columns,1fr); gap:var(--mochi-v2-shared-lumiphone-shell-sheet-bubble-tools-gap,calc(6px * var(--pocket-ui-scale))); }
+  .lumiphone-shell .lp-sheet .lp-bubble-action { display:flex; align-items:var(--mochi-v2-shared-lumiphone-shell-sheet-bubble-action-align-items,center); justify-content:var(--mochi-v2-shared-lumiphone-shell-sheet-bubble-action-justify-content,flex-start); gap:var(--mochi-v2-shared-lumiphone-shell-sheet-bubble-action-gap,calc(12px * var(--pocket-ui-scale))); border:var(--mochi-v2-shared-lumiphone-shell-sheet-bubble-action-border,1px solid var(--lp-border)); color:var(--mochi-v2-shared-lumiphone-shell-sheet-bubble-action-color,var(--lp-text)); }
+  .lumiphone-shell .lp-sheet .lp-bubble-action::before { content:var(--mochi-v2-shared-lumiphone-shell-sheet-bubble-action-before-content,'↻'); font-size:var(--mochi-v2-shared-lumiphone-shell-sheet-bubble-action-before-font-size,calc(19px * var(--pocket-ui-scale))); width:var(--mochi-v2-shared-lumiphone-shell-sheet-bubble-action-before-width,calc(24px * var(--pocket-ui-scale))); text-align:var(--mochi-v2-shared-lumiphone-shell-sheet-bubble-action-before-text-align,center); color:var(--mochi-v2-shared-lumiphone-shell-sheet-bubble-action-before-color,var(--lp-accent)); }
+  .lumiphone-shell .lp-sheet .lp-bubble-action[aria-label="Generation info"]::before { content:var(--mochi-v2-shared-lumiphone-shell-sheet-bubble-action-aria-label-generation-info-before-content,'ⓘ'); }
+  .lumiphone-shell .lp-sheet .lp-bubble-action[data-destructive="true"] { color:var(--mochi-v2-shared-lumiphone-shell-sheet-bubble-action-data-destructive-true-color,var(--lp-destructive)); }
+  .lumiphone-shell .lp-sheet .lp-bubble-action[data-destructive="true"]::before { content:var(--mochi-v2-shared-lumiphone-shell-sheet-bubble-action-data-destructive-true-before-content,'×'); color:inherit; }
   .lumiphone-shell .lp-theme-preview::before { content:none; }
   .lp-theme-preview { position:relative; }
   .lp-theme-selected { display:none; position:absolute; top:10px; right:10px; width:22px; height:22px; border-radius:50%; background:var(--theme-color); color:#fff; font-size:14px; text-shadow:0 1px 3px #000; align-items:center; justify-content:center; }
@@ -24265,8 +24296,8 @@ var PHONE_STYLES = `
   .lp-nav { min-height:48px; padding:7px 12px 8px; display:grid; grid-template-columns:74px minmax(0,1fr) 74px; align-items:center; gap:4px; position:sticky; top:0; z-index:15; background:color-mix(in srgb,var(--lp-bg) 88%,transparent); border-bottom:1px solid var(--lp-border); backdrop-filter:blur(20px) saturate(1.25); }
   .lp-nav-title { min-width:0; text-align:center; font-size:14px; font-weight:780; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .lp-nav-subtitle { display:block; color:var(--lp-muted); font-size:9px; font-weight:550; margin-top:2px; }
-  .lp-nav-action { appearance:none; min-height:30px; padding:5px 4px; border:0; background:transparent; color:var(--lp-accent); font:inherit; font-size:11px; font-weight:680; cursor:pointer; text-align:left; }
-  .lp-nav-action:last-child { text-align:right; }
+  .lp-nav-action { appearance:var(--mochi-v2-shared-nav-action-appearance,none); min-height:var(--mochi-v2-shared-nav-action-min-height,30px); padding:var(--mochi-v2-shared-nav-action-padding,5px 4px); border:0; background:var(--mochi-v2-shared-nav-action-background,transparent); color:var(--mochi-v2-shared-nav-action-color,var(--lp-accent)); font:inherit; font-size:var(--mochi-v2-shared-nav-action-font-size,11px); font-weight:var(--mochi-v2-shared-nav-action-font-weight,680); cursor:var(--mochi-v2-shared-nav-action-cursor,pointer); text-align:var(--mochi-v2-shared-nav-action-text-align,left); }
+  .lp-nav-action:last-child { text-align:var(--mochi-v2-shared-nav-action-last-child-text-align,right); }
   .lp-content { padding:12px; display:grid; gap:10px; }
   .lp-card { padding:12px; border:1px solid var(--lp-border); border-radius:17px; background:var(--lp-surface); box-shadow:0 8px 24px rgba(0,0,0,.06); }
   .lp-card[data-clickable="true"] { cursor:pointer; transition:transform .18s ease,border-color .18s ease; }
@@ -24275,21 +24306,21 @@ var PHONE_STYLES = `
   .lp-row-between { display:flex; align-items:center; justify-content:space-between; gap:10px; min-width:0; }
   .lp-stack { display:grid; gap:8px; min-width:0; }
   .lp-grow { flex:1; min-width:0; }
-  .lp-title { margin:0; font-size:13px; font-weight:760; line-height:1.3; overflow-wrap:anywhere; }
+  .lp-title { margin:0; font-size:var(--mochi-v2-shared-title-font-size,13px); font-weight:var(--mochi-v2-shared-title-font-weight,760); line-height:var(--mochi-v2-shared-title-line-height,1.3); overflow-wrap:var(--mochi-v2-shared-title-overflow-wrap,anywhere); }
   .lp-copy { margin:0; color:var(--lp-muted); font-size:10px; line-height:1.5; overflow-wrap:anywhere; }
   .lp-eyebrow { color:var(--lp-muted); font-size:8px; line-height:1.2; font-weight:780; letter-spacing:.11em; text-transform:uppercase; }
   .lp-empty { min-height:190px; padding:32px 20px; display:grid; place-items:center; text-align:center; color:var(--lp-muted); }
   .lp-empty svg { width:44px; height:44px; margin-bottom:10px; color:var(--lp-accent); opacity:.8; }
-  .lp-button { appearance:none; min-height:34px; padding:7px 11px; border:1px solid var(--lp-border); border-radius:11px; background:var(--lp-surface-2); color:var(--lp-text); font:inherit; font-size:10px; font-weight:720; cursor:pointer; }
-  .lp-button:hover { border-color:color-mix(in srgb,var(--lp-accent) 45%,var(--lp-border)); }
-  .lp-button:disabled { cursor:not-allowed; opacity:.45; }
-  .lp-button-primary { border-color:transparent; background:var(--lp-accent); color:#fff; }
-  .lp-button-danger { color:#ff6f87; }
-  .lp-button-icon { width:34px; padding:6px; display:grid; place-items:center; }
-  .lp-button-icon svg { width:16px; height:16px; }
-  .lp-input, .lp-textarea, .lp-select { width:100%; min-height:38px; padding:9px 10px; border:1px solid var(--lp-border); border-radius:11px; outline:none; background:var(--lp-surface); color:var(--lp-text); font:inherit; font-size:11px; }
-  .lp-input:focus, .lp-textarea:focus, .lp-select:focus { border-color:color-mix(in srgb,var(--lp-accent) 58%,var(--lp-border)); box-shadow:0 0 0 2px color-mix(in srgb,var(--lp-accent) 16%,transparent); }
-  .lp-textarea { min-height:96px; resize:vertical; line-height:1.5; }
+  .lp-button { appearance:var(--mochi-v2-shared-button-appearance,none); min-height:var(--mochi-v2-shared-button-min-height,34px); padding:var(--mochi-v2-shared-button-padding,7px 11px); border:var(--mochi-v2-shared-button-border,1px solid var(--lp-border)); border-radius:var(--mochi-v2-shared-button-border-radius,11px); background:var(--mochi-v2-shared-button-background,var(--lp-surface-2)); color:var(--mochi-v2-shared-button-color,var(--lp-text)); font:inherit; font-size:var(--mochi-v2-shared-button-font-size,10px); font-weight:var(--mochi-v2-shared-button-font-weight,720); cursor:var(--mochi-v2-shared-button-cursor,pointer); }
+  .lp-button:hover { border-color:var(--mochi-v2-shared-button-hover-border-color,color-mix(in srgb,var(--lp-accent) 45%,var(--lp-border))); }
+  .lp-button:disabled { cursor:var(--mochi-v2-shared-button-disabled-cursor,not-allowed); opacity:var(--mochi-v2-shared-button-disabled-opacity,.45); }
+  .lp-button-primary { border-color:var(--mochi-v2-shared-button-primary-border-color,transparent); background:var(--mochi-v2-shared-button-primary-background,var(--lp-accent)); color:var(--mochi-v2-shared-button-primary-color,#fff); }
+  .lp-button-danger { color:var(--mochi-v2-shared-button-danger-color,#ff6f87); }
+  .lp-button-icon { width:var(--mochi-v2-shared-button-icon-width,34px); padding:var(--mochi-v2-shared-button-icon-padding,6px); display:grid; place-items:var(--mochi-v2-shared-button-icon-place-items,center); }
+  .lp-button-icon svg { width:var(--mochi-v2-shared-button-icon-svg-width,16px); height:var(--mochi-v2-shared-button-icon-svg-height,16px); }
+  .lp-input, .lp-textarea, .lp-select { width:100%; min-height:var(--mochi-v2-shared-input-min-height,38px); padding:var(--mochi-v2-shared-input-padding,9px 10px); border:var(--mochi-v2-shared-input-border,1px solid var(--lp-border)); border-radius:var(--mochi-v2-shared-input-border-radius,11px); outline:var(--mochi-v2-shared-input-outline,none); background:var(--mochi-v2-shared-input-background,var(--lp-surface)); color:var(--mochi-v2-shared-input-color,var(--lp-text)); font:inherit; font-size:var(--mochi-v2-shared-input-font-size,11px); }
+  .lp-input:focus, .lp-textarea:focus, .lp-select:focus { border-color:var(--mochi-v2-shared-input-focus-border-color,color-mix(in srgb,var(--lp-accent) 58%,var(--lp-border))); box-shadow:var(--mochi-v2-shared-input-focus-box-shadow,0 0 0 2px color-mix(in srgb,var(--lp-accent) 16%,transparent)); }
+  .lp-textarea { min-height:var(--mochi-v2-shared-textarea-min-height,96px); resize:vertical; line-height:var(--mochi-v2-shared-textarea-line-height,1.5); }
   .lp-label { display:grid; gap:5px; color:var(--lp-muted); font-size:9px; font-weight:680; }
   .lp-fields { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
   .lp-contact-toolbar { display:flex; align-items:center; flex-wrap:wrap; gap:calc(10px * var(--pocket-ui-scale)); }
@@ -24311,13 +24342,13 @@ var PHONE_STYLES = `
   .lp-thread .lp-nav { position:relative; }
   .lumiphone-app-view.lp-thread { overflow:hidden; }
   .lp-thread .lp-bubbles { overscroll-behavior:contain; }
-  .lp-conversation-menu { position:relative; justify-self:end; }
-  .lp-conversation-menu > summary { display:grid; place-items:center; min-width:30px; cursor:pointer; list-style:none; font-size:18px; line-height:1; }
+  .lp-conversation-menu { position:relative; justify-self:var(--mochi-v2-shared-conversation-menu-justify-self,end); }
+  .lp-conversation-menu > summary { display:grid; place-items:var(--mochi-v2-shared-conversation-menu-summary-place-items,center); min-width:var(--mochi-v2-shared-conversation-menu-summary-min-width,30px); cursor:var(--mochi-v2-shared-conversation-menu-summary-cursor,pointer); list-style:var(--mochi-v2-shared-conversation-menu-summary-list-style,none); font-size:var(--mochi-v2-shared-conversation-menu-summary-font-size,18px); line-height:var(--mochi-v2-shared-conversation-menu-summary-line-height,1); }
   .lp-conversation-menu > summary::-webkit-details-marker { display:none; }
-  .lp-conversation-menu-sheet { position:absolute; z-index:30; top:calc(100% + 5px); right:0; width:190px; padding:6px; display:grid; gap:2px; border:1px solid var(--lp-border); border-radius:13px; background:var(--lp-bg); box-shadow:0 16px 34px rgba(0,0,0,.28); }
-  .lp-conversation-menu-action { appearance:none; min-height:34px; padding:7px 9px; border:0; border-radius:8px; background:transparent; color:var(--lp-text); font:inherit; font-size:var(--pocket-font-sm); text-align:left; cursor:pointer; }
-  .lp-conversation-menu-action:hover { background:var(--lp-surface-2); }
-  .lp-conversation-menu-action:disabled { opacity:.42; cursor:not-allowed; }
+  .lp-conversation-menu-sheet { position:absolute; z-index:var(--mochi-v2-shared-conversation-menu-sheet-z-index,30); top:var(--mochi-v2-shared-conversation-menu-sheet-top,calc(100% + 5px)); right:0; width:var(--mochi-v2-shared-conversation-menu-sheet-width,190px); padding:var(--mochi-v2-shared-conversation-menu-sheet-padding,6px); display:grid; gap:var(--mochi-v2-shared-conversation-menu-sheet-gap,2px); border:var(--mochi-v2-shared-conversation-menu-sheet-border,1px solid var(--lp-border)); border-radius:var(--mochi-v2-shared-conversation-menu-sheet-border-radius,13px); background:var(--mochi-v2-shared-conversation-menu-sheet-background,var(--lp-bg)); box-shadow:var(--mochi-v2-shared-conversation-menu-sheet-box-shadow,0 16px 34px rgba(0,0,0,.28)); }
+  .lp-conversation-menu-action { appearance:var(--mochi-v2-shared-conversation-menu-action-appearance,none); min-height:var(--mochi-v2-shared-conversation-menu-action-min-height,34px); padding:var(--mochi-v2-shared-conversation-menu-action-padding,7px 9px); border:0; border-radius:var(--mochi-v2-shared-conversation-menu-action-border-radius,8px); background:var(--mochi-v2-shared-conversation-menu-action-background,transparent); color:var(--mochi-v2-shared-conversation-menu-action-color,var(--lp-text)); font:inherit; font-size:var(--mochi-v2-shared-conversation-menu-action-font-size,var(--pocket-font-sm)); text-align:var(--mochi-v2-shared-conversation-menu-action-text-align,left); cursor:var(--mochi-v2-shared-conversation-menu-action-cursor,pointer); }
+  .lp-conversation-menu-action:hover { background:var(--mochi-v2-shared-conversation-menu-action-hover-background,var(--lp-surface-2)); }
+  .lp-conversation-menu-action:disabled { opacity:var(--mochi-v2-shared-conversation-menu-action-disabled-opacity,.42); cursor:var(--mochi-v2-shared-conversation-menu-action-disabled-cursor,not-allowed); }
   .lp-reference-slot:empty { min-height:0; }
   .lp-reference-attachment { margin:7px 9px 0; padding:8px 9px; display:grid; gap:5px; border:1px solid color-mix(in srgb,var(--lp-accent) 35%,var(--lp-border)); border-radius:13px; background:color-mix(in srgb,var(--lp-surface) 94%,transparent); box-shadow:0 5px 16px rgba(0,0,0,.09); }
   .lp-reference-head { display:flex; align-items:center; gap:8px; }
@@ -24349,7 +24380,7 @@ var PHONE_STYLES = `
   .lp-event-invite-description { margin:6px 0 0; font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
   .lp-event-invite-people { margin:10px 0 0; font-size:10px; line-height:1.4; color:var(--lp-muted); }
   .lp-event-invite-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
-  .lp-event-invite-actions .lp-button { min-height:36px; padding:8px 14px; border-radius:10px; }
+  .lp-event-invite-actions .lp-button { min-height:var(--mochi-v2-shared-event-invite-actions-button-min-height,36px); padding:var(--mochi-v2-shared-event-invite-actions-button-padding,8px 14px); border-radius:var(--mochi-v2-shared-event-invite-actions-button-border-radius,10px); }
   .lp-event-invite[data-status="declined"] { opacity:.65; }
   .lp-bubbles { min-height:0; overflow:auto; padding:14px 12px; display:flex; flex-direction:column; gap:7px; }
   .lp-bubble { max-width:79%; padding:8px 10px; border-radius:16px; font-size:11px; line-height:1.42; white-space:pre-wrap; overflow-wrap:anywhere; box-shadow:0 3px 10px rgba(0,0,0,.08); }
@@ -24379,8 +24410,8 @@ var PHONE_STYLES = `
   .lp-speaker-sheet { position:absolute; z-index:4; left:9px; right:9px; bottom:calc(100% + 5px); max-height:220px; padding:9px; overflow:auto; display:grid; gap:4px; border:1px solid var(--lp-border); border-radius:14px; background:var(--lp-bg); box-shadow:0 14px 30px rgba(0,0,0,.26); }
   .lp-speaker-option { appearance:none; padding:7px 8px; border:0; border-radius:9px; background:transparent; color:var(--lp-text); text-align:left; font:inherit; cursor:pointer; }
   .lp-speaker-option:hover { background:var(--lp-surface-2); }
-  .lp-compose .lp-textarea { min-height:34px; max-height:96px; padding:8px 10px; resize:none; border-radius:17px; }
-  .lp-compose .lp-button-icon { border-radius:50%; }
+  .lp-compose .lp-textarea { min-height:var(--mochi-v2-shared-compose-textarea-min-height,34px); max-height:var(--mochi-v2-shared-compose-textarea-max-height,96px); padding:var(--mochi-v2-shared-compose-textarea-padding,8px 10px); resize:none; border-radius:var(--mochi-v2-shared-compose-textarea-border-radius,17px); }
+  .lp-compose .lp-button-icon { border-radius:var(--mochi-v2-shared-compose-button-icon-border-radius,50%); }
 
   .lp-operation-progress { padding:10px; display:grid; gap:7px; border:1px solid color-mix(in srgb,var(--lp-accent) 35%,var(--lp-border)); border-radius:12px; background:var(--lp-surface); font-size:10px; }
   .lp-indeterminate { display:block; height:4px; overflow:hidden; border-radius:99px; background:color-mix(in srgb,var(--lp-accent) 16%,var(--lp-surface-2)); position:relative; }
@@ -24401,10 +24432,10 @@ var PHONE_STYLES = `
   .lp-notification-open strong,.lp-notification-open span { overflow-wrap:anywhere; }
   .lp-notification-dismiss { appearance:none; width:38px; border:0; background:transparent; color:var(--lp-muted); font-size:20px; cursor:pointer; }
   .lp-notification-empty { margin:36px 12px; color:var(--lp-muted); font-size:10px; line-height:1.5; text-align:center; }
-  .lp-floating-notification { appearance:none; position:absolute; z-index:45; top:39px; left:10px; right:10px; min-height:54px; padding:8px 10px; border:1px solid color-mix(in srgb,var(--lp-accent) 35%,var(--lp-border)); border-radius:15px; display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:center; gap:8px; background:color-mix(in srgb,var(--lp-surface) 94%,transparent); color:var(--lp-text); backdrop-filter:blur(22px); box-shadow:0 14px 36px rgba(0,0,0,.28); text-align:left; cursor:pointer; }
-  .lp-floating-notification > span:first-child svg { width:20px; height:20px; }
-  .lp-floating-notification > .lp-grow { display:grid; gap:2px; }
-  .lp-floating-notification > .lp-grow span { color:var(--lp-muted); font-size:9px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .lp-floating-notification { appearance:var(--mochi-v2-shared-floating-notification-appearance,none); position:absolute; z-index:var(--mochi-v2-shared-floating-notification-z-index,45); top:var(--mochi-v2-shared-floating-notification-top,39px); left:var(--mochi-v2-shared-floating-notification-left,10px); right:var(--mochi-v2-shared-floating-notification-right,10px); min-height:var(--mochi-v2-shared-floating-notification-min-height,54px); padding:var(--mochi-v2-shared-floating-notification-padding,8px 10px); border:var(--mochi-v2-shared-floating-notification-border,1px solid color-mix(in srgb,var(--lp-accent) 35%,var(--lp-border))); border-radius:var(--mochi-v2-shared-floating-notification-border-radius,15px); display:grid; grid-template-columns:var(--mochi-v2-shared-floating-notification-grid-template-columns,auto minmax(0,1fr) auto); align-items:var(--mochi-v2-shared-floating-notification-align-items,center); gap:var(--mochi-v2-shared-floating-notification-gap,8px); background:var(--mochi-v2-shared-floating-notification-background,color-mix(in srgb,var(--lp-surface) 94%,transparent)); color:var(--mochi-v2-shared-floating-notification-color,var(--lp-text)); backdrop-filter:var(--mochi-v2-shared-floating-notification-backdrop-filter,blur(22px)); box-shadow:var(--mochi-v2-shared-floating-notification-box-shadow,0 14px 36px rgba(0,0,0,.28)); text-align:var(--mochi-v2-shared-floating-notification-text-align,left); cursor:var(--mochi-v2-shared-floating-notification-cursor,pointer); }
+  .lp-floating-notification > span:first-child svg { width:var(--mochi-v2-shared-floating-notification-span-first-child-svg-width,20px); height:var(--mochi-v2-shared-floating-notification-span-first-child-svg-height,20px); }
+  .lp-floating-notification > .lp-grow { display:grid; gap:var(--mochi-v2-shared-floating-notification-grow-gap,2px); }
+  .lp-floating-notification > .lp-grow span { color:var(--mochi-v2-shared-floating-notification-grow-span-color,var(--lp-muted)); font-size:var(--mochi-v2-shared-floating-notification-grow-span-font-size,9px); overflow:hidden; text-overflow:var(--mochi-v2-shared-floating-notification-grow-span-text-overflow,ellipsis); white-space:var(--mochi-v2-shared-floating-notification-grow-span-white-space,nowrap); }
   .lp-generation-effective,.lp-generation-run { padding:8px 9px; border:1px solid var(--lp-border); border-radius:10px; display:grid; gap:2px; }
   .lp-model-combobox { min-height:40px; }
   .lp-context-preview { border-top:1px solid var(--lp-border); padding-top:8px; }
@@ -24492,7 +24523,7 @@ var PHONE_STYLES = `
 
   .lp-gallery-pagination { justify-content:space-between; gap:8px; margin:10px 0; }
   .lp-npc-portrait-actions { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin:12px 0; }
-  .lp-npc-portrait-actions .lp-button { min-width:0; white-space:normal; }
+  .lp-npc-portrait-actions .lp-button { min-width:0; white-space:var(--mochi-v2-shared-npc-portrait-actions-button-white-space,normal); }
   .lp-gallery-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:3px; }
   .lp-gallery-item { appearance:none; aspect-ratio:1; padding:0; border:0; background:var(--lp-surface); cursor:pointer; overflow:hidden; position:relative; }
   .lp-gallery-item img { width:100%; height:100%; object-fit:cover; transition:transform .25s ease; }
@@ -24531,14 +24562,14 @@ var PHONE_STYLES = `
   .lp-event { position:relative; padding-left:34px; }
   .lp-event-dot { position:absolute; left:8px; top:15px; width:14px; height:14px; border:3px solid var(--lp-bg); border-radius:50%; background:var(--event-color,var(--lp-accent)); box-shadow:0 0 0 1px var(--lp-border); z-index:2; }
   .lp-event[data-completed="true"] { opacity:.52; }
-  .lp-event[data-completed="true"] .lp-title { text-decoration:line-through; }
+  .lp-event[data-completed="true"] .lp-title { text-decoration:var(--mochi-v2-shared-event-data-completed-true-title-text-decoration,line-through); }
   .lp-progress { height:7px; overflow:hidden; border-radius:99px; background:var(--lp-surface-2); }
   .lp-progress span { display:block; height:100%; width:var(--progress,0%); border-radius:inherit; background:var(--tracker-color,var(--lp-accent)); transition:width .5s ease; }
   .lp-rate { color:var(--lp-muted); font-size:8px; }
-  .lp-toggle { appearance:none; width:40px; height:23px; border:0; border-radius:99px; padding:2px; background:var(--lp-surface-2); cursor:pointer; transition:background .2s ease; }
-  .lp-toggle::after { content:""; display:block; width:19px; height:19px; border-radius:50%; background:#fff; box-shadow:0 2px 7px rgba(0,0,0,.28); transition:transform .2s ease; }
-  .lp-toggle[aria-pressed="true"] { background:var(--lp-accent); }
-  .lp-toggle[aria-pressed="true"]::after { transform:translateX(17px); }
+  .lp-toggle { appearance:var(--mochi-v2-shared-toggle-appearance,none); width:var(--mochi-v2-shared-toggle-width,40px); height:var(--mochi-v2-shared-toggle-height,23px); border:0; border-radius:var(--mochi-v2-shared-toggle-border-radius,99px); padding:var(--mochi-v2-shared-toggle-padding,2px); background:var(--mochi-v2-shared-toggle-background,var(--lp-surface-2)); cursor:var(--mochi-v2-shared-toggle-cursor,pointer); transition:var(--mochi-v2-shared-toggle-transition,background .2s ease); }
+  .lp-toggle::after { content:var(--mochi-v2-shared-toggle-after-content,""); display:block; width:var(--mochi-v2-shared-toggle-after-width,19px); height:var(--mochi-v2-shared-toggle-after-height,19px); border-radius:var(--mochi-v2-shared-toggle-after-border-radius,50%); background:var(--mochi-v2-shared-toggle-after-background,#fff); box-shadow:var(--mochi-v2-shared-toggle-after-box-shadow,0 2px 7px rgba(0,0,0,.28)); transition:var(--mochi-v2-shared-toggle-after-transition,transform .2s ease); }
+  .lp-toggle[aria-pressed="true"] { background:var(--mochi-v2-shared-toggle-aria-pressed-true-background,var(--lp-accent)); }
+  .lp-toggle[aria-pressed="true"]::after { transform:var(--mochi-v2-shared-toggle-aria-pressed-true-after-transform,translateX(17px)); }
   .lp-color-input { width:42px; height:31px; padding:2px; border:1px solid var(--lp-border); border-radius:9px; background:var(--lp-surface); cursor:pointer; }
   .lp-theme-dot { width:30px; height:30px; border-radius:50%; border:2px solid transparent; box-shadow:0 0 0 1px var(--lp-border); cursor:pointer; }
   .lp-theme-dot[aria-pressed="true"] { border-color:var(--lp-bg); box-shadow:0 0 0 2px var(--lp-accent); }
@@ -24656,17 +24687,17 @@ ${INLINE_BASE_STYLES}
   /* Density primitives. These participate in layout; Pocket never transform-scales its fullscreen surface. */
   .lumiphone-shell .lp-content { padding:calc(12px * var(--pocket-ui-scale)); gap:var(--pocket-gap); }
   .lumiphone-shell .lp-card { padding:calc(12px * var(--pocket-ui-scale)); border-radius:calc(17px * var(--pocket-ui-scale)); }
-  .lumiphone-shell .lp-title { font-size:var(--pocket-font-md); }
+  .lumiphone-shell .lp-title { font-size:var(--mochi-v2-shared-lumiphone-shell-title-font-size,var(--pocket-font-md)); }
   .lumiphone-shell .lp-copy { font-size:var(--pocket-font-sm); }
   .lumiphone-shell .lp-eyebrow { font-size:var(--pocket-font-xs); }
-  .lumiphone-shell .lp-button { min-height:calc(34px * var(--pocket-ui-scale)); padding:calc(7px * var(--pocket-ui-scale)) calc(11px * var(--pocket-ui-scale)); font-size:var(--pocket-font-sm); }
-  .lumiphone-shell .lp-button-icon { width:calc(34px * var(--pocket-ui-scale)); padding:calc(6px * var(--pocket-ui-scale)); }
-  .lumiphone-shell .lp-input,.lumiphone-shell .lp-textarea,.lumiphone-shell .lp-select { min-height:var(--pocket-control-h); padding:calc(9px * var(--pocket-ui-scale)) calc(10px * var(--pocket-ui-scale)); font-size:calc(11px * var(--pocket-ui-scale)); }
+  .lumiphone-shell .lp-button { min-height:var(--mochi-v2-shared-lumiphone-shell-button-min-height,calc(34px * var(--pocket-ui-scale))); padding:var(--mochi-v2-shared-lumiphone-shell-button-padding,calc(7px * var(--pocket-ui-scale)) calc(11px * var(--pocket-ui-scale))); font-size:var(--mochi-v2-shared-lumiphone-shell-button-font-size,var(--pocket-font-sm)); }
+  .lumiphone-shell .lp-button-icon { width:var(--mochi-v2-shared-lumiphone-shell-button-icon-width,calc(34px * var(--pocket-ui-scale))); padding:var(--mochi-v2-shared-lumiphone-shell-button-icon-padding,calc(6px * var(--pocket-ui-scale))); }
+  .lumiphone-shell .lp-input,.lumiphone-shell .lp-textarea,.lumiphone-shell .lp-select { min-height:var(--mochi-v2-shared-lumiphone-shell-input-min-height,var(--pocket-control-h)); padding:var(--mochi-v2-shared-lumiphone-shell-input-padding,calc(9px * var(--pocket-ui-scale)) calc(10px * var(--pocket-ui-scale))); font-size:var(--mochi-v2-shared-lumiphone-shell-input-font-size,calc(11px * var(--pocket-ui-scale))); }
   .lumiphone-shell .lp-label { gap:calc(5px * var(--pocket-ui-scale)); font-size:calc(9px * var(--pocket-ui-scale)); }
   .lumiphone-shell .lp-nav { min-height:calc(48px * var(--pocket-ui-scale)); padding:calc(7px * var(--pocket-ui-scale)) calc(12px * var(--pocket-ui-scale)); grid-template-columns:calc(74px * var(--pocket-ui-scale)) minmax(0,1fr) calc(74px * var(--pocket-ui-scale)); }
   .lumiphone-shell .lp-nav-title { font-size:calc(14px * var(--pocket-ui-scale)); }
   .lumiphone-shell .lp-nav-subtitle { font-size:calc(9px * var(--pocket-ui-scale)); }
-  .lumiphone-shell .lp-nav-action { min-height:calc(30px * var(--pocket-ui-scale)); font-size:calc(11px * var(--pocket-ui-scale)); }
+  .lumiphone-shell .lp-nav-action { min-height:var(--mochi-v2-shared-lumiphone-shell-nav-action-min-height,calc(30px * var(--pocket-ui-scale))); font-size:var(--mochi-v2-shared-lumiphone-shell-nav-action-font-size,calc(11px * var(--pocket-ui-scale))); }
   .lumiphone-shell .lp-app-grid { gap:calc(18px * var(--pocket-ui-scale)) calc(10px * var(--pocket-ui-scale)); }
   .lumiphone-shell .lp-app-icon-box { width:var(--pocket-icon); height:var(--pocket-icon); border-radius:calc(16px * var(--pocket-ui-scale)); }
   .lumiphone-shell .lp-app-icon-box svg { width:calc(27px * var(--pocket-ui-scale)); height:calc(27px * var(--pocket-ui-scale)); }
@@ -24675,7 +24706,7 @@ ${INLINE_BASE_STYLES}
   .lumiphone-shell .lp-bubbles { padding:calc(14px * var(--pocket-ui-scale)) calc(12px * var(--pocket-ui-scale)); gap:calc(7px * var(--pocket-ui-scale)); }
   .lumiphone-shell .lp-bubble { padding:calc(8px * var(--pocket-ui-scale)) calc(10px * var(--pocket-ui-scale)); border-radius:calc(16px * var(--pocket-ui-scale)); font-size:calc(11px * var(--pocket-ui-scale)); }
   .lumiphone-shell .lp-compose { padding:calc(8px * var(--pocket-ui-scale)) calc(9px * var(--pocket-ui-scale)) calc(10px * var(--pocket-ui-scale)); gap:calc(6px * var(--pocket-ui-scale)); grid-template-columns:auto minmax(0,1fr) auto; }
-  .lumiphone-shell .lp-compose .lp-textarea { min-height:calc(34px * var(--pocket-ui-scale)); max-height:calc(112px * var(--pocket-ui-scale)); border-radius:calc(17px * var(--pocket-ui-scale)); }
+  .lumiphone-shell .lp-compose .lp-textarea { min-height:var(--mochi-v2-shared-lumiphone-shell-compose-textarea-min-height,calc(34px * var(--pocket-ui-scale))); max-height:var(--mochi-v2-shared-lumiphone-shell-compose-textarea-max-height,calc(112px * var(--pocket-ui-scale))); border-radius:var(--mochi-v2-shared-lumiphone-shell-compose-textarea-border-radius,calc(17px * var(--pocket-ui-scale))); }
   .lp-conversation-status { align-self:center; max-width:92%; margin:5px 0; padding:6px 11px; border-top:1px solid var(--lp-border); border-bottom:1px solid var(--lp-border); color:var(--lp-muted); font-size:var(--pocket-font-sm); text-align:center; }
   .lp-arrival-status { display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap; }
   .lp-arrival-status .lp-handoff-action { min-height:24px; padding:4px 7px; }
@@ -24710,11 +24741,11 @@ ${INLINE_BASE_STYLES}
   .lp-settings-category { width:100%; display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:10px; color:var(--lp-text); text-align:left; cursor:pointer; }
   .lp-settings-category > span:first-child { display:grid; gap:2px; }
   .lp-settings-chevron { color:var(--lp-muted); font-size:22px; }
-  .lp-code-input { min-height:150px; font-family:ui-monospace,SFMono-Regular,Consolas,monospace; white-space:pre; }
+  .lp-code-input { min-height:var(--mochi-v2-shared-code-input-min-height,150px); font-family:var(--mochi-v2-shared-code-input-font-family,ui-monospace,SFMono-Regular,Consolas,monospace); white-space:var(--mochi-v2-shared-code-input-white-space,pre); }
   .lp-swarm-diagnostics { display:grid; gap:6px; }
   .lp-swarm-diagnostics summary { cursor:pointer; color:var(--lp-muted); font-size:var(--pocket-font-sm); }
   .lp-gallery-actions { margin-top:12px; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
-  .lp-gallery-actions .lp-select { grid-column:1 / -1; }
+  .lp-gallery-actions .lp-select { grid-column:var(--mochi-v2-shared-gallery-actions-select-grid-column,1 / -1); }
   .lp-wallpaper-control { display:grid; gap:9px; padding:10px 0; border-top:1px solid var(--lp-border); }
   .lp-wallpaper-control:first-of-type { border-top:0; }
   .lp-wallpaper-preview { min-height:120px; display:grid; place-items:center; border:1px solid var(--lp-border); border-radius:14px; background-color:var(--lp-bg); background-repeat:no-repeat; color:var(--lp-muted); font-size:var(--pocket-font-sm); overflow:hidden; }
@@ -24992,11 +25023,11 @@ ${INLINE_BASE_STYLES}
     gap:calc(7px * var(--pocket-ui-scale)); align-items:center;
   }
   .lp-compose .lp-button-icon,.lp-compose .lp-manual-reply {
-    width:calc(36px * var(--pocket-ui-scale)); height:calc(36px * var(--pocket-ui-scale));
-    min-height:calc(36px * var(--pocket-ui-scale)); padding:0; border-radius:50%;
-    display:grid; place-items:center;
+    width:var(--mochi-v2-shared-compose-button-icon-width,calc(36px * var(--pocket-ui-scale))); height:var(--mochi-v2-shared-compose-button-icon-height,calc(36px * var(--pocket-ui-scale)));
+    min-height:var(--mochi-v2-shared-compose-button-icon-min-height,calc(36px * var(--pocket-ui-scale))); padding:0; border-radius:var(--mochi-v2-shared-compose-button-icon-border-radius,50%);
+    display:grid; place-items:var(--mochi-v2-shared-compose-button-icon-place-items,center);
   }
-  .lp-compose .lp-textarea { min-height:calc(36px * var(--pocket-ui-scale)); padding:8px 11px; border-radius:calc(18px * var(--pocket-ui-scale)); }
+  .lp-compose .lp-textarea { min-height:var(--mochi-v2-shared-compose-textarea-min-height,calc(36px * var(--pocket-ui-scale))); padding:var(--mochi-v2-shared-compose-textarea-padding,8px 11px); border-radius:var(--mochi-v2-shared-compose-textarea-border-radius,calc(18px * var(--pocket-ui-scale))); }
   .lp-speaker-menu { padding:4px 9px 0; }
   .lp-speaker-menu summary { padding:3px 7px; font-size:var(--pocket-font-xs); opacity:.8; }
 
@@ -25041,7 +25072,7 @@ ${INLINE_FINISH_STYLES}
   .lp-tracker-preview small { grid-column:1/-1; color:var(--lp-muted); }
   .lp-band-list { display:grid; gap:8px; }
   .lp-band-editor { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,.65fr) minmax(0,.65fr) 28px 28px; gap:5px; align-items:center; }
-  .lp-band-editor .lp-input { min-width:0; padding:8px; }
+  .lp-band-editor .lp-input { min-width:0; padding:var(--mochi-v2-shared-band-editor-input-padding,8px); }
   .lp-band-editor .lp-color-input { width:28px; }
   .lp-tracker-config-fields { display:grid; gap:12px; }
   .lumiphone-shell .lp-tracker-card {
@@ -25057,7 +25088,7 @@ ${INLINE_FINISH_STYLES}
   .lp-tracker-top { display:flex; align-items:start; justify-content:space-between; gap:12px; min-width:0; }
   .lp-tracker-heading { min-width:0; display:grid; gap:2px; }
   .lp-tracker-heading .lp-eyebrow { color:var(--lp-muted); font-size:7.5px; font-weight:760; letter-spacing:.08em; line-height:1.45; text-transform:uppercase; }
-  .lp-tracker-heading .lp-title { margin:0; color:var(--lp-text); font-size:13px; line-height:1.25; letter-spacing:-.015em; overflow-wrap:anywhere; }
+  .lp-tracker-heading .lp-title { margin:0; color:var(--mochi-v2-shared-tracker-heading-title-color,var(--lp-text)); font-size:var(--mochi-v2-shared-tracker-heading-title-font-size,13px); line-height:var(--mochi-v2-shared-tracker-heading-title-line-height,1.25); letter-spacing:var(--mochi-v2-shared-tracker-heading-title-letter-spacing,-.015em); overflow-wrap:var(--mochi-v2-shared-tracker-heading-title-overflow-wrap,anywhere); }
   .lp-tracker-update { flex-shrink:0; color:color-mix(in srgb,var(--lp-muted) 88%,var(--tracker-color)); font-size:7.5px; font-weight:650; line-height:1.25; padding:4px 7px; border:1px solid color-mix(in srgb,var(--lp-text) 8%,var(--lp-border)); border-radius:999px; background:color-mix(in srgb,var(--lp-text) 4%,transparent); }
   .lp-tracker-reading { min-width:0; display:flex; justify-content:space-between; align-items:end; gap:10px; flex-wrap:wrap; }
   .lp-tracker-readout { min-width:0; color:var(--lp-text); font-size:31px; font-weight:780; line-height:.98; letter-spacing:-.055em; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
@@ -25161,7 +25192,7 @@ ${INLINE_FINISH_STYLES}
   .lp-state-choices .lp-chip[aria-pressed="true"] { opacity:1; background:color-mix(in srgb,var(--lp-accent) 25%,var(--lp-surface)); }
   .lp-tracker-manual { display:grid; }
   .lp-tracker-manual summary { cursor:pointer; color:var(--lp-muted); padding-block:8px; font-size:12px; }
-  .lp-tracker-manual .lp-input { margin-bottom:8px; }
+  .lp-tracker-manual .lp-input { margin-bottom:var(--mochi-v2-shared-tracker-manual-input-margin-bottom,8px); }
 
   .lumiphone-shell .lp-tracker-compact { min-height:72px; gap:7px; padding:12px 14px; border-radius:22px; }
   .lp-tracker-compact .lp-tracker-top { align-items:center; }
@@ -25184,7 +25215,7 @@ ${INLINE_FINISH_STYLES}
     .lp-tracker-readout { font-size:29px; }
   }
   .lp-contact-group .lp-actions,.lp-bank-profile .lp-actions { display:flex; gap:8px; flex-wrap:wrap; }
-  .lp-contact-group .lp-button,.lp-bank-profile .lp-button { flex:1 1 auto; }
+  .lp-contact-group .lp-button,.lp-bank-profile .lp-button { flex:var(--mochi-v2-shared-contact-group-button-flex,1 1 auto); }
   .lumiphone-shell .lp-npc-camera { height:100%; min-height:0; display:grid; grid-template-rows:auto minmax(0,1fr); background:#08080a; }
   .lumiphone-shell .lp-npc-camera .lp-nav { background:#08080a; border-color:#ffffff12; }
   .lumiphone-shell .lp-npc-camera .lp-content { min-height:0; padding:0; display:grid; grid-template-rows:36px minmax(320px,1fr) auto; gap:0; overflow:auto; background:#08080a; }
@@ -25194,8 +25225,8 @@ ${INLINE_FINISH_STYLES}
   .lp-camera-subject { position:absolute; inset:18px 22px 168px; display:flex; flex-direction:column; justify-content:center; align-items:center; min-height:0; }
   .lumiphone-shell .lp-camera-floating-brief { position:absolute; bottom:18px; left:18px; right:18px; padding:14px; gap:8px; border:1px solid #ffffff24; border-radius:20px; background:#15151bba; backdrop-filter:blur(18px); box-shadow:0 10px 32px #0005; }
   .lumiphone-shell .lp-camera-floating-brief .lp-field-label { color:#fffd; font-size:11px; }
-  .lumiphone-shell .lp-camera-floating-brief .lp-textarea { background:transparent; border:0; border-radius:0; padding:0; min-height:80px; max-height:130px; font-size:13px; color:#fff; resize:none; }
-  .lp-camera-floating-brief .lp-textarea::placeholder { color:#ffffff70; }
+  .lumiphone-shell .lp-camera-floating-brief .lp-textarea { background:var(--mochi-v2-shared-lumiphone-shell-camera-floating-brief-textarea-background,transparent); border:0; border-radius:0; padding:0; min-height:var(--mochi-v2-shared-lumiphone-shell-camera-floating-brief-textarea-min-height,80px); max-height:var(--mochi-v2-shared-lumiphone-shell-camera-floating-brief-textarea-max-height,130px); font-size:var(--mochi-v2-shared-lumiphone-shell-camera-floating-brief-textarea-font-size,13px); color:var(--mochi-v2-shared-lumiphone-shell-camera-floating-brief-textarea-color,#fff); resize:none; }
+  .lp-camera-floating-brief .lp-textarea::placeholder { color:var(--mochi-v2-shared-camera-floating-brief-textarea-placeholder-color,#ffffff70); }
   .lumiphone-shell .lp-camera.lp-npc-camera { min-height:0; color:#fff; }
   .lp-photo-viewfinder > img { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; }
   .lumiphone-shell .lp-camera-bottom-strip .lp-copy { color:#ffffff9e; }
@@ -25225,7 +25256,7 @@ ${INLINE_FINISH_STYLES}
   .lp-camera-accept { min-height:36px; font-size:12px; padding:8px 10px; border-radius:12px; }
   .lumiphone-shell .lp-camera-floating-brief { backdrop-filter:none; background:#1c1b20; border-radius:12px; box-shadow:0 6px 18px #0004; }
   .lumiphone-shell .lp-camera-floating-brief[hidden] { display:none; }
-  .lumiphone-shell .lp-camera-floating-brief .lp-textarea { min-height:56px; }
+  .lumiphone-shell .lp-camera-floating-brief .lp-textarea { min-height:var(--mochi-v2-shared-lumiphone-shell-camera-floating-brief-textarea-min-height,56px); }
   .lp-camera-album { display:grid; place-items:center; width:42px; height:42px; padding:0; overflow:hidden; border:1px solid #ffffff25; border-radius:9px; justify-self:start; }
   .lp-camera-album img { width:100%; height:100%; object-fit:cover; }
   .lp-camera-album svg { width:24px; height:24px; }
@@ -25270,7 +25301,7 @@ ${INLINE_FINISH_STYLES}
   .lp-weather-week-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:5px 5px 8px; }
   .lp-weather-week-heading { min-width:0; display:grid; gap:2px; }
   .lp-weather-week-heading .lp-eyebrow { color:var(--lp-muted); font-size:7.5px; font-weight:760; text-transform:uppercase; letter-spacing:.08em; }
-  .lp-weather-week-heading .lp-title { margin:0; color:var(--lp-text); font-size:14px; line-height:1.2; letter-spacing:-.02em; }
+  .lp-weather-week-heading .lp-title { margin:0; color:var(--mochi-v2-shared-weather-week-heading-title-color,var(--lp-text)); font-size:var(--mochi-v2-shared-weather-week-heading-title-font-size,14px); line-height:var(--mochi-v2-shared-weather-week-heading-title-line-height,1.2); letter-spacing:var(--mochi-v2-shared-weather-week-heading-title-letter-spacing,-.02em); }
   .lp-weather-week-badge { flex:none; padding:5px 8px; border-radius:999px; background:color-mix(in srgb,var(--lp-text) 5%,transparent); color:var(--lp-muted); font-size:7.5px; font-weight:650; }
   .lp-weather-empty { min-height:86px; display:flex; align-items:center; gap:12px; padding:14px; border-radius:20px; background:color-mix(in srgb,var(--lp-text) 4%,transparent); color:var(--lp-muted); font-size:10.5px; line-height:1.5; }
   .lp-weather-empty .lp-weather-glyph { width:34px; height:34px; color:var(--lp-accent); }
@@ -25316,7 +25347,7 @@ ${INLINE_FINISH_STYLES}
   .lp-timeline-overview strong:not(:first-child) { margin-left:16px; }
   .lp-timeline-section { position:relative; margin:12px 0 4px; padding:4px 0; background:var(--lp-bg); color:var(--lp-muted); font-size:11px; text-transform:uppercase; letter-spacing:.08em; }
   .lumiphone-shell .lp-event[data-completed="true"] { opacity:1; }
-  .lumiphone-shell .lp-event[data-completed="true"] .lp-title { text-decoration:none; color:var(--lp-muted); }
+  .lumiphone-shell .lp-event[data-completed="true"] .lp-title { text-decoration:var(--mochi-v2-shared-lumiphone-shell-event-data-completed-true-title-text-decoration,none); color:var(--mochi-v2-shared-lumiphone-shell-event-data-completed-true-title-color,var(--lp-muted)); }
   .lumiphone-shell .lp-event-card { width:100%; padding:16px; border:1px solid var(--lp-border); border-radius:12px; background:color-mix(in srgb,var(--lp-text) 5%,var(--lp-bg)); box-shadow:0 3px 10px #0002; }
   .lp-event-card .lp-copy { line-height:1.65; }
   .lp-wallpaper-library { display:grid; gap:14px; }

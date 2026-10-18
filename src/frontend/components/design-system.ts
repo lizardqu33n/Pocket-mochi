@@ -2,28 +2,30 @@ import { SURFACE_TOKENS } from './style-tokens.js'
 /** Shared Pocket surfaces. Static rules only; dynamic tokens stay on each handset. */
 export const POCKET_DESIGN_SYSTEM = `
 ${SURFACE_TOKENS}
+  /* Measured owner bounds; themes can override visuals without inline conflicts. */
+  .lp-sheet[data-pocket-measured=true] { position:fixed; margin:0; top:var(--mochi-v2-shared-sheet-data-pocket-measured-true-top,auto); left:var(--mochi-dialog-left,var(--pocket-measured-sheet-left)); bottom:var(--mochi-dialog-bottom,var(--pocket-measured-sheet-bottom)); width:var(--mochi-dialog-width,var(--pocket-measured-sheet-width)); max-height:var(--mochi-dialog-max-height,var(--pocket-measured-sheet-max-height)); }
   .lumiphone-shell { container-type:inline-size; }
   .lumiphone-shell :is(button,input,textarea,select,summary) { font-family:inherit; }
   .lumiphone-shell :is(button,input,textarea,select,summary):focus-visible,
-  .lp-sheet :is(button,input,textarea,select):focus-visible { outline:2px solid var(--lp-accent,#a99bff); outline-offset:3px; }
+  .lp-sheet :is(button,input,textarea,select):focus-visible { outline:var(--mochi-v2-shared-lumiphone-shell-is-button-outline,2px solid var(--lp-accent,#a99bff)); outline-offset:var(--mochi-v2-shared-lumiphone-shell-is-button-outline-offset,3px); }
   .lumiphone-shell .lp-nav { grid-template-columns:minmax(0,1fr) minmax(0,2fr) minmax(0,1fr); min-height:64px; gap:8px; padding:4px 12px; }
   .lumiphone-shell .lp-nav-title { white-space:normal; overflow-wrap:anywhere; font-size:15px; line-height:1.2; text-wrap:balance; }
   .lumiphone-shell .lp-nav-subtitle { font-size:10px; line-height:1.35; margin-top:4px; }
-  .lumiphone-shell .lp-nav-action { min-width:0; min-height:var(--lp-touch); font-size:12px; overflow-wrap:anywhere; }
+  .lumiphone-shell .lp-nav-action { min-width:0; min-height:var(--mochi-v2-shared-lumiphone-shell-nav-action-min-height,var(--lp-touch)); font-size:var(--mochi-v2-shared-lumiphone-shell-nav-action-font-size,12px); overflow-wrap:var(--mochi-v2-shared-lumiphone-shell-nav-action-overflow-wrap,anywhere); }
   .lumiphone-shell .lp-content { gap:var(--lp-space-3); padding:var(--lp-space-4); padding-bottom:calc(28px + env(safe-area-inset-bottom,0px)); }
   .lumiphone-shell .lp-card { border:0; border-radius:var(--lp-radius); box-shadow:none; padding:var(--lp-space-4); background:color-mix(in srgb,var(--lp-text) 5%,var(--lp-surface)); }
-  .lumiphone-shell .lp-title { font-size:var(--pocket-font-md); }
+  .lumiphone-shell .lp-title { font-size:var(--mochi-v2-shared-lumiphone-shell-title-font-size,var(--pocket-font-md)); }
   .lumiphone-shell .lp-copy { font-size:var(--pocket-font-sm); line-height:1.5; }
   .lumiphone-shell .lp-eyebrow { font-size:var(--pocket-font-xs); letter-spacing:.065em; line-height:1.4; }
   .lumiphone-shell .lp-fields { grid-template-columns:minmax(0,1fr); gap:var(--lp-space-4); }
-  .lumiphone-shell :is(.lp-input,.lp-select,.lp-textarea) { width:100%; min-width:0; min-height:var(--lp-touch); border:1px solid var(--lp-border); border-radius:var(--lp-radius-control); padding:12px; font-size:var(--pocket-font-md); background:color-mix(in srgb,var(--lp-text) 3%,var(--lp-bg)); scroll-margin-block:80px; }
-  .lumiphone-shell .lp-textarea { min-height:104px; resize:vertical; line-height:1.5; }
+  .lumiphone-shell :is(.lp-input,.lp-select,.lp-textarea) { width:100%; min-width:0; min-height:var(--mochi-v2-shared-lumiphone-shell-is-input-min-height,var(--lp-touch)); border:var(--mochi-v2-shared-lumiphone-shell-is-input-border,1px solid var(--lp-border)); border-radius:var(--mochi-v2-shared-lumiphone-shell-is-input-border-radius,var(--lp-radius-control)); padding:var(--mochi-v2-shared-lumiphone-shell-is-input-padding,12px); font-size:var(--mochi-v2-shared-lumiphone-shell-is-input-font-size,var(--pocket-font-md)); background:var(--mochi-v2-shared-lumiphone-shell-is-input-background,color-mix(in srgb,var(--lp-text) 3%,var(--lp-bg))); scroll-margin-block:var(--mochi-v2-shared-lumiphone-shell-is-input-scroll-margin-block,80px); }
+  .lumiphone-shell .lp-textarea { min-height:var(--mochi-v2-shared-lumiphone-shell-textarea-min-height,104px); resize:vertical; line-height:var(--mochi-v2-shared-lumiphone-shell-textarea-line-height,1.5); }
   .lumiphone-shell :is(.lp-field,.lp-label) { display:grid; gap:8px; min-width:0; font-size:12px; }
   .lumiphone-shell :is(.lp-field-label,.lp-control-label) { font-size:13px; font-weight:650; }
   .lumiphone-shell :is(.lp-field-help,.lp-control-help) { display:block; font-size:12px; line-height:1.45; margin-top:4px; }
-  .lumiphone-shell .lp-button { min-height:var(--lp-touch); font-size:12px; border-radius:var(--lp-radius-control); }
-  .lumiphone-shell .lp-button-quiet { background:transparent; border-color:transparent; }
-  .lumiphone-shell .lp-button-danger { color:var(--lp-destructive); }
+  .lumiphone-shell .lp-button { min-height:var(--mochi-v2-shared-lumiphone-shell-button-min-height,var(--lp-touch)); font-size:var(--mochi-v2-shared-lumiphone-shell-button-font-size,12px); border-radius:var(--mochi-v2-shared-lumiphone-shell-button-border-radius,var(--lp-radius-control)); }
+  .lumiphone-shell .lp-button-quiet { background:var(--mochi-v2-shared-lumiphone-shell-button-quiet-background,transparent); border-color:var(--mochi-v2-shared-lumiphone-shell-button-quiet-border-color,transparent); }
+  .lumiphone-shell .lp-button-danger { color:var(--mochi-v2-shared-lumiphone-shell-button-danger-color,var(--lp-destructive)); }
   .lumiphone-shell .lp-chip { min-height:36px; padding:8px 12px; font-size:11px; }
   .lumiphone-shell .lp-chipbar { gap:4px; flex-wrap:wrap; }
   .lumiphone-shell .lp-chip[aria-pressed="true"] { background:color-mix(in srgb,var(--lp-accent) 22%,var(--lp-surface)); color:var(--lp-text); border-color:transparent; }
@@ -35,7 +37,7 @@ ${SURFACE_TOKENS}
   .lumiphone-shell .lp-contact-check { display:grid; grid-template-columns:24px minmax(0,1fr); gap:4px 8px; align-items:center; padding:10px 0; min-height:44px; border-bottom:1px solid var(--lp-border); }
   .lp-contact-check input { grid-row:1 / 3; width:18px; height:18px; margin:0; }
   .lp-contact-check > .lp-copy { grid-column:2; }
-  .lumiphone-shell .lp-toggle { flex:0 0 40px; }
+  .lumiphone-shell .lp-toggle { flex:var(--mochi-v2-shared-lumiphone-shell-toggle-flex,0 0 40px); }
   .lumiphone-shell .lp-settings-list { gap:0; }
   .lumiphone-shell .lp-settings-category { min-height:var(--lp-row-height); border-radius:0; border-bottom:1px solid var(--lp-border); padding:14px 12px; }
   .lp-settings-category:first-child { border-radius:18px 18px 0 0; }
@@ -93,12 +95,12 @@ ${SURFACE_TOKENS}
   .lumiphone-shell .lp-group-message .lp-bubble { max-width:100%; margin-top:0; }
   .lumiphone-shell .lp-bubble-time { font-size:9px; opacity:.78; padding-right:30px; min-height:22px; margin-top:6px; }
   .lp-message-more { position:absolute; bottom:2px; right:2px; width:44px; height:44px; border:0; border-radius:50%; background:transparent; color:inherit; font-size:20px; cursor:pointer; }
-  .lp-sheet { box-sizing:border-box; width:min(440px,calc(100% - 24px)); max-height:calc(100dvh - 48px); border:1px solid var(--lp-border,#ffffff25); border-radius:calc(24px * var(--pocket-ui-scale,1)); padding:0; background:var(--lp-sheet-bg,#17151d); color:var(--lp-text,#f7f5ff); box-shadow:0 24px 80px #0008; }
-  .lp-sheet::backdrop { background:#0006; backdrop-filter:blur(4px); }
-  .lp-sheet-panel { display:grid; gap:calc(16px * var(--pocket-ui-scale,1)); padding:calc(20px * var(--pocket-ui-scale,1)); padding-bottom:max(calc(20px * var(--pocket-ui-scale,1)),env(safe-area-inset-bottom)); }
-  .lp-sheet-actions, .lp-sheet .lp-bubble-tools { display:grid; gap:calc(6px * var(--pocket-ui-scale,1)); margin:0; }
-  .lp-sheet .lp-bubble-action { width:100%; min-height:max(44px,calc(44px * var(--pocket-ui-scale,1))); opacity:1; font-size:calc(14px * var(--pocket-ui-scale,1)); border-radius:calc(12px * var(--pocket-ui-scale,1)); justify-content:start; padding:calc(12px * var(--pocket-ui-scale,1)); background:#ffffff09; }
-  .lp-sheet .lp-button { min-height:max(44px,calc(44px * var(--pocket-ui-scale,1))); }
+  .lp-sheet { box-sizing:border-box; width:var(--mochi-v2-shared-sheet-width,min(440px,calc(100% - 24px))); max-height:var(--mochi-v2-shared-sheet-max-height,calc(100dvh - 48px)); border:var(--mochi-v2-shared-sheet-border,1px solid var(--lp-border,#ffffff25)); border-radius:var(--mochi-v2-shared-sheet-border-radius,calc(24px * var(--pocket-ui-scale,1))); padding:0; background:var(--mochi-v2-shared-sheet-background,var(--lp-sheet-bg,#17151d)); color:var(--mochi-v2-shared-sheet-color,var(--lp-text,#f7f5ff)); box-shadow:var(--mochi-v2-shared-sheet-box-shadow,0 24px 80px #0008); }
+  .lp-sheet::backdrop { background:var(--mochi-v2-shared-sheet-backdrop-background,#0006); backdrop-filter:var(--mochi-v2-shared-sheet-backdrop-backdrop-filter,blur(4px)); }
+  .lp-sheet-panel { display:grid; gap:var(--mochi-v2-shared-sheet-panel-gap,calc(16px * var(--pocket-ui-scale,1))); padding:var(--mochi-v2-shared-sheet-panel-padding,calc(20px * var(--pocket-ui-scale,1))); padding-bottom:var(--mochi-v2-shared-sheet-panel-padding-bottom,max(calc(20px * var(--pocket-ui-scale,1)),env(safe-area-inset-bottom))); }
+  .lp-sheet-actions, .lp-sheet .lp-bubble-tools { display:grid; gap:var(--mochi-v2-shared-sheet-actions-gap,calc(6px * var(--pocket-ui-scale,1))); margin:0; }
+  .lp-sheet .lp-bubble-action { width:100%; min-height:var(--mochi-v2-shared-sheet-bubble-action-min-height,max(44px,calc(44px * var(--pocket-ui-scale,1)))); opacity:var(--mochi-v2-shared-sheet-bubble-action-opacity,1); font-size:var(--mochi-v2-shared-sheet-bubble-action-font-size,calc(14px * var(--pocket-ui-scale,1))); border-radius:var(--mochi-v2-shared-sheet-bubble-action-border-radius,calc(12px * var(--pocket-ui-scale,1))); justify-content:var(--mochi-v2-shared-sheet-bubble-action-justify-content,start); padding:var(--mochi-v2-shared-sheet-bubble-action-padding,calc(12px * var(--pocket-ui-scale,1))); background:var(--mochi-v2-shared-sheet-bubble-action-background,#ffffff09); }
+  .lp-sheet .lp-button { min-height:var(--mochi-v2-shared-sheet-button-min-height,max(44px,calc(44px * var(--pocket-ui-scale,1)))); }
   .lumiphone-shell .lp-notification-row { padding:0; border-radius:18px; }
   .lp-notification-open { gap:10px; align-items:flex-start; }
   .lp-notification-avatar { flex:0 0 32px; height:32px; border-radius:10px; background:var(--lp-incoming); display:grid!important; place-items:center; font-size:13px; }
@@ -113,7 +115,7 @@ ${SURFACE_TOKENS}
   .lumiphone-shell .lp-weather-hero { min-height:280px; border-radius:24px; padding:24px; }
   .lp-weather-note { margin:8px 4px; font-size:14px; line-height:1.7; color:var(--lp-muted); }
   .lumiphone-shell .lp-event[data-completed="true"] { opacity:1; }
-  .lumiphone-shell .lp-event[data-completed="true"] .lp-title { text-decoration:none; color:var(--lp-muted); }
+  .lumiphone-shell .lp-event[data-completed="true"] .lp-title { text-decoration:var(--mochi-v2-shared-lumiphone-shell-event-data-completed-true-title-text-decoration,none); color:var(--mochi-v2-shared-lumiphone-shell-event-data-completed-true-title-color,var(--lp-muted)); }
   .lp-event-card { width:100%; text-align:left; color:var(--lp-text); }
   .lp-event-card .lp-status-badge { margin-top:8px; }
   .lumiphone-shell .lp-status-badge { font-size:10px; }
@@ -124,7 +126,7 @@ ${SURFACE_TOKENS}
   .lp-camera .lp-disclosure > summary { color:#e9e7ef; }
   .lp-media-viewer { --lp-text:#f7f5ff; --lp-bg:#141319; --lp-muted:#b9b5c5; --lp-border:#ffffff22; }
   .lp-media-viewer .lp-gallery-actions { display:flex; flex-wrap:wrap; justify-content:space-around; gap:8px; padding:16px 0; }
-  .lp-media-viewer .lp-button { min-height:44px; font-size:13px; color:var(--lp-text); background:#ffffff0b; }
+  .lp-media-viewer .lp-button { min-height:var(--mochi-v2-shared-media-viewer-button-min-height,44px); font-size:var(--mochi-v2-shared-media-viewer-button-font-size,13px); color:var(--mochi-v2-shared-media-viewer-button-color,var(--lp-text)); background:var(--mochi-v2-shared-media-viewer-button-background,#ffffff0b); }
   .lp-bubble.lp-call-history { align-self:center; max-width:90%; border-radius:16px; background:var(--lp-surface); border:1px solid var(--lp-border); text-align:center; }
   @container (max-width:360px) {
     .lumiphone-shell .lp-content { padding-inline:12px; }

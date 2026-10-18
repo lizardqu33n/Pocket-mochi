@@ -1,0 +1,20 @@
+# mochi-search-styles
+
+[All surfaces](../UI-CUSTOMIZATION-MAP.md) · [Theme contract](../THEME-CONTRACT.md)
+
+Rules appear in cascade order. Conditions are part of the control. Scope shared selectors to a Mochi root.
+
+| Selector / condition | CSS controls and original fallback values | Source |
+|---|---|---|
+| `.mochi-view .mochi-search-panel` | `flex` → `--mochi-v2-search-panel-flex` = `0 1 auto`<br>`min-height` → selector only = `0`<br>`max-height` → `--mochi-v2-search-panel-max-height` = `40%`<br>`overflow` → selector only = `auto`<br>`border-bottom` → `--mochi-v2-search-panel-border-bottom` = `1px solid var(--mochi-border)`<br>`padding` → `--mochi-v2-search-panel-padding` = `10px`<br>`min-width` → selector only = `0` | src/mochi/ui/mochi.css:2093 |
+| `.mochi-view .mochi-search-controls` | `display` → selector only = `flex`<br>`flex-wrap` → `--mochi-v2-search-controls-flex-wrap` = `wrap`<br>`gap` → `--mochi-v2-search-controls-gap` = `6px`<br>`min-width` → selector only = `0` | src/mochi/ui/mochi.css:2102 |
+| `.mochi-view .mochi-search-controls input` | `flex` → `--mochi-v2-search-controls-input-flex` = `1 1 160px`<br>`min-width` → selector only = `0` | src/mochi/ui/mochi.css:2108 |
+| `.mochi-view .mochi-search-controls select` | `max-width` → selector only = `100%`<br>`min-width` → selector only = `0` | src/mochi/ui/mochi.css:2112 |
+| `.mochi-view .mochi-search-controls input,.mochi-view .mochi-search-controls select` | `box-sizing` → selector only = `border-box`<br>`background` → `--mochi-v2-search-controls-input-background` = `var(--lp-surface-2,#ffffff0c)`<br>`color` → selector only = `inherit`<br>`border` → `--mochi-v2-search-controls-input-border` = `1px solid var(--mochi-border)`<br>`border-radius` → `--mochi-radius-field` = `var(--mochi-radius-field)`<br>`padding` → `--mochi-v2-search-controls-input-padding` = `8px`<br>`font` → selector only = `inherit` | src/mochi/ui/mochi.css:2116 |
+| `.mochi-view .mochi-search-results` | `display` → selector only = `grid`<br>`gap` → `--mochi-v2-search-results-gap` = `6px`<br>`min-width` → selector only = `0` | src/mochi/ui/mochi.css:2125 |
+| `.mochi-view .mochi-search-result` | `display` → selector only = `grid`<br>`gap` → `--mochi-space-xs` = `var(--mochi-space-xs)`<br>`min-width` → selector only = `0`<br>`max-width` → selector only = `100%`<br>`text-align` → `--mochi-v2-search-result-text-align` = `left`<br>`overflow-wrap` → `--mochi-v2-search-result-overflow-wrap` = `anywhere`<br>`white-space` → `--mochi-v2-search-result-white-space` = `normal`<br>`background` → `--mochi-v2-search-result-background` = `var(--lp-surface-2,#ffffff0c)`<br>`color` → selector only = `inherit`<br>`border` → `--mochi-v2-search-result-border` = `1px solid var(--mochi-border)`<br>`border-radius` → `--mochi-v2-search-result-border-radius` = `10px`<br>`padding` → `--mochi-v2-search-result-padding` = `10px`<br>`cursor` → `--mochi-v2-search-result-cursor` = `pointer` | src/mochi/ui/mochi.css:2130 |
+| `.mochi-view .mochi-search-result strong` | `min-width` → selector only = `0`<br>`overflow` → selector only = `hidden`<br>`text-overflow` → `--mochi-v2-search-result-strong-text-overflow` = `ellipsis`<br>`white-space` → `--mochi-v2-search-result-strong-white-space` = `nowrap` | src/mochi/ui/mochi.css:2145 |
+| `.mochi-view .mochi-search-result small` | `font-size` → `--mochi-v2-search-result-small-font-size` = `calc(11px * var(--mochi-interface-scale,1))` | src/mochi/ui/mochi.css:2151 |
+| `.mochi-view .mochi-search-paging` | `display` → selector only = `flex`<br>`gap` → `--mochi-v2-search-paging-gap` = `6px`<br>`flex-wrap` → `--mochi-v2-search-paging-flex-wrap` = `wrap` | src/mochi/ui/mochi.css:2154 |
+| `.mochi-view .mochi-search-panel button` | `min-height` → `--mochi-v2-search-panel-button-min-height` = `40px` | src/mochi/ui/mochi.css:2159 |
+| `.mochi-view .mochi-search-panel :focus-visible` | `outline` → `--mochi-v2-search-panel-focus-visible-outline` = `2px solid var(--mochi-accent)`<br>`outline-offset` → `--mochi-v2-search-panel-focus-visible-outline-offset` = `2px` | src/mochi/ui/mochi.css:2162 |

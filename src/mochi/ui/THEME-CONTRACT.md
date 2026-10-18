@@ -1,180 +1,173 @@
-# Mochi CSS contract v1 — phase 1
+# Mochi whole-interface CSS contract v2
 
-This is the foundation of the whole-interface skinning project. It does **not**
-claim every visual value has been tokenized. Account authorization, saved account
-selection, revision checks, generation, persistence and required controls remain
-TypeScript responsibilities. CSS changes appearance; it does not grant access.
+Start with [UI-CUSTOMIZATION-MAP.md](UI-CUSTOMIZATION-MAP.md). It links a complete
+reference for all 24 Mochi CSS sections and shared Pocket primitives: outer
+Accounts/navigation/editor, Settings and Personal categories, accessibility,
+messenger list/header/messages/composer/actions, character profiles/editors,
+presets and prompt/block editing, dialogs, dropdowns, notification lists/toasts,
+mobile layouts, focus/hover/selected/disabled/error/loading/empty states and
+reduced motion. Every rule includes its exact selector, conditions, properties,
+tokens, original fallback values, importance and source location.
 
-## Plan and delivered boundary
+No component section remains deferred from the CSS customization map. This is
+an appearance contract, not a theme picker, permissions system or behavior
+rewrite. The owner's existing default appearance and behavioral JS remain the
+baseline. Phase 1's results are historical; see PHASE2-RESULTS.md for this work.
 
-1. **Delivered here:** inspect test-mochi HEAD and delivery; independent bundled
-   theme entry point; low-specificity public defaults; 52 Accounts/chrome tokens;
-   named shared SVG hooks; complete current token starter; source inventory;
-   isolated four-color, mobile and CSS zoom regression checks.
-2. **Pending:** migrate the remaining presentational values in all 24 sections,
-   including chat/personal settings, accessibility controls, messenger, profiles,
-   toolbar/menu states, presets, prompt/block editor, dialogs and notifications.
-   Consolidate duplicated rules only with before/after visual evidence. Introduce
-   semantic component slots for currently anonymous descendants. Tokenize mobile
-   overrides as independent defaults without reducing required hit targets.
-3. **Pending:** standardize all icons; locally bundle actual upstream Lucide SVGs
-   and the matching upstream license/attribution if selected. Add optional custom
-   SVG/image slots with load-error fallback, no script execution, accessible
-   button names and unchanged hit targets. Finish browser zoom, contrast,
-   keyboard/assistive-technology and whole-interface acceptance coverage.
+## Edit a theme independently
 
-Each phase can ship independently on test-mochi. No beta promotion or hosted
-update is implied.
+1. Copy `starter-theme.css` into **mochi-theme.css**, or begin with a few rules.
+2. Use a common `--mochi-*` semantic token first. For a precise component/state
+   adjustment, copy the `--mochi-v2-*` token from its reference table. A token's
+   fallback lives at the original declaration, so default cascade, host colors,
+   saved scale aliases and responsive/state differences stay intact.
+3. Place component overrides on that component or a matching Mochi root. For
+   shared Pocket primitives, always scope your theme rule to `.mochi-sheet`,
+   `.mochi-notification-toast`, `.mochi-view`, `.mochi-sidebar`, etc. The portal
+   root is `.pocket-portal[data-destination=mochi]`; this excludes phone/home
+   destinations.
+4. Rebuild with `bun run build:frontend`. Commit CSS and its matched
+   `dist/frontend.js` together. The build embeds local CSS text; no separate
+   stylesheet installation, remote CSS fetch or host-source edit is needed.
 
-## Theme files and compiled delivery
+Keep unedited component tokens **unset**. Their original fallback can differ
+between base/desktop/mobile/state rules. The starter keeps common semantic
+defaults active and provides opt-in examples; the complete component template
+is the map's set of copyable token/value entries, not thousands of active
+declarations that flatten those contextual differences.
 
-Edit **mochi-theme.css** to author a theme independently of application logic.
-Copy **starter-theme.css** into that file for a complete template of currently
-exposed tokens, or start with a few overrides. The starter deliberately preserves
-current host-derived values. It is not an exhaustive inventory of hardcoded CSS.
+## Precedence and compatibility
 
-`styles.ts` embeds token defaults, the requested marked component section, then
-the theme text. Independent surfaces receive defaults too. All are local text
-inside **dist/frontend.js**, with no extra CSS file to install or runtime fetch.
-Rebuild the frontend and commit the matched bundle. The manifest uses that bundle.
-Changing the source file alone cannot update an installed extension.
+Common defaults use zero-specificity `:where(...)`. Component declarations use
+`var(--mochi-v2-component-property, original value)` without redeclaring the
+token on the element. Consequently a theme can set component tokens on an
+ancestor without defaults on nested views shadowing them. The original common
+semantic aliases still have defaults on each root: target all relevant roots
+when changing a common alias across the entire interface. Private
+`--mochi-saved-*` values back accessibility preferences; public aliases stay
+themeable.
 
-The same theme text is delivered at existing style boundaries; use normal scoped
-rules, not `@import`, global rules, registrations or side effects. Keep all 24
-`@mochi-section` markers. Colors continue to inherit `--lumiverse-*` / `--lp-*`
-unless the theme explicitly overrides a Mochi token. Phase 1 keeps original
-default values; it does not redesign the theme.
+Theme text is appended at each existing component-style boundary. Normal CSS
+specificity, scope proximity and source order apply. Use zero-specificity token
+blocks when convenient so ordinary host Custom CSS selectors can override them.
+Avoid blanket `!important`. Existing visibility and layout guards retain their
+importance; reduced-motion rules are structural accessibility overrides.
 
-## Scope and precedence
+Lumiverse global Custom CSS and Pocket device/persona Custom CSS are separate
+editors. Pocket's editor is scoped to `[data-pocket-surface="…"]`; persona CSS
+follows device CSS only on its own phone. It cannot style sibling float windows,
+outer Accounts or the fullscreen messenger. That privacy/isolation behavior is
+unchanged. Use the bundled theme for all Mochi surfaces; actual host global
+Custom CSS still follows the host's own cascade.
 
-Token defaults use `:where(...)` (zero specificity). A normal `.mochi-sidebar`
-rule in the theme or Lumiverse global Custom CSS can override the same token,
-even when a new component's defaults are inserted later. The starter targets
-**every root**, since nested views have their own defaults. A variable placed
-only on an outer window can be shadowed by the nested view's default.
+All selectors in the map and consumed public tokens are compatibility hooks.
+Future renames need an alias/deprecation path. Repeated tokens may intentionally
+control several matching declarations; the map shows every use. Responsive
+tokens include their condition in the name. Conditions themselves are ordinary
+marked CSS `@container`, `@media` and `@supports` rules: CSS variables cannot
+replace query thresholds. Change a query in the CSS file when needed.
 
-The starter also uses zero-specificity selectors, letting ordinary host Custom
-CSS selectors override its tokens. Keep that convention when adding token blocks.
-For tokens: default < a matching scoped theme declaration < a more specific
-matching Custom CSS declaration. For component declarations, normal CSS cascade,
-specificity, scope proximity and source order apply. The bundled theme does not
-make all later CSS automatically win. Saved font-scale settings write private
-`--mochi-saved-*` backing values; public scale aliases remain themeable. Avoid
-`!important` for normal theming.
+## Layout controls and runtime geometry
 
-**Lumiverse global Custom CSS** and **Pocket device/persona Custom CSS** are
-different editors. The latter is wrapped by `controller.ts` in
-`@scope ([data-pocket-surface="…"])`; persona CSS follows device CSS only for
-the active persona-owned phone. It cannot reach sibling Mochi float windows,
-outer Accounts or fullscreen surfaces. This phase preserves that isolation.
-The earlier README's blanket statement that any Custom CSS editor can style all
-Mochi surfaces was inaccurate. Use the bundled theme for reliable complete
-Mochi delivery; host global Custom CSS depends on the host's own cascade.
+Reference tables expose widths, max/min sizes, grid tracks/placement, flex
+direction/order/basis, alignment, gaps, margins/padding, insets, transforms,
+typography, border/radius/shadow, image fit/position, icon dimensions/strokes,
+transitions, animation and state decoration. Existing common sidebar/profile
+width and bubble/avatar controls remain supported. `selector only` entries
+cover structural declarations and standard zero/fill/inherited resets; edit
+their scoped selector only when the structural contract permits it.
 
-## Stable public selectors in v1
+Runtime adapters publish **measurements**, never hardcoded inline visual
+properties that defeat themes:
 
-Keep these names stable in future phases. Additional selectors appear in the
-generated inventory but are migration candidates until documented here.
-
-| Surface / semantic slot | Selector | Relevant tokens / states |
+| Surface | Public control | Private measurement / default |
 |---|---|---|
-| Accounts root, navigation, scroll picker | `.mochi-sidebar`, `.mochi-sidebar-nav`, `.mochi-sidebar-picker` | `--mochi-drawer-bg`, `--mochi-accounts-nav-*`, `--mochi-accounts-picker-padding` |
-| Account search/sort/tools | `.mochi-account-tools`, `.mochi-account-icon` | `--mochi-accounts-tools-*`, `--mochi-accounts-icon-*`; `:disabled`, `:focus-visible`, `[aria-pressed=true]` |
-| Account list / grid | `.mochi-account-list`, `.mochi-account-row`, `.mochi-sidebar-account` | `[data-layout=list/grid]`, `[aria-pressed=true]`; `--mochi-accounts-row-*`, `--mochi-accounts-grid-*` |
-| Account portrait / label | `.mochi-sidebar-avatar`, `.mochi-sidebar-label` | `--mochi-accounts-avatar-size`, `--mochi-accounts-avatar-radius` |
-| Account editor / fields | `.mochi-sidebar .mochi-profile-screen` | `--mochi-editor-*`, `--mochi-accounts-field-padding`, `--mochi-input-bg`, `--mochi-input-border` |
-| Account preview / persona choices | `.mochi-profile-preview`, `.mochi-profile-preview-body`, `.mochi-persona-choices`, `.mochi-persona-choice` | `--mochi-accounts-preview-*`, `--mochi-accounts-persona-*` |
-| Add-ons / source details | `.mochi-addon-row`, `.mochi-addon-content`, `.mochi-source-details` | `[data-selected=true]`; `--mochi-section-bg`, `--mochi-accounts-content-max-height` |
-| Float chrome / bar / controls | `.mochi-window`, `.mochi-window-bar`, `.mochi-window-close`, `.mochi-window-resize` | `--mochi-chrome-*`, `--mochi-window-*` |
-| Fullscreen / launcher | `.mochi-mobile-surface`, `.mochi-launcher-root`, `.mochi-launcher` | `--mochi-mobile-font`, `--mochi-launcher-*`, `--mochi-chrome-*` |
-| Messenger layout / conversation list | `.mochi-desktop`, `.mochi-desktop-list`, `.mochi-desktop-room` | existing `--mochi-sidebar-*`; `[data-mode]`, `[data-details]` |
-| Messenger header / composer / bubbles | `.mochi-room-header`, `.mochi-header-controls`, `.mochi-composer`, `.mochi-composer-row`, `.mochi-message`, `.mochi-bubble` | existing font, avatar, bubble and spacing tokens; `[data-grouped=true]`, `[data-selected=true]` |
-| Profile / settings / toolbar | `.mochi-profile-panel`, `.mochi-settings-workspace`, `.mochi-bottom-toolbar` | existing panel, radius, control tokens; see inventory for remaining literals |
-| Dialog / workspace / notification | `.mochi-sheet`, `.mochi-workspace`, `.mochi-notification-toast` | scoped token roots; component-specific migration pending |
-| Shared icon artwork | `svg[data-mochi-icon="settings"]` etc. | `--mochi-icon-stroke-width`; default artwork remains bundled |
-| Action glyph wrapper | `.mochi-icon-slot[data-mochi-icon-slot="search"]` etc. | decorative only; accessible name remains on button |
+| Composer | `--mochi-composer-height`; map's textarea max-height tokens | `--mochi-measured-composer-height`; automatic scroll-height measurement |
+| Conversation menu | `--mochi-menu-max-height`, `--mochi-menu-viewport-gap` | measured available space; defaults 300px / 8px |
+| Message action strip | `--mochi-action-right`, `--mochi-action-bottom`, `--mochi-action-gap`, `--mochi-action-edge-inset` | group-body offset and collision correction; gap 3px / inset 4px |
+| Dialog in phone | `--mochi-dialog-left`, `--mochi-dialog-bottom`, `--mochi-dialog-width`, `--mochi-dialog-max-height` | owner-relative bounds, adjusted for host zoom |
+| Dialog fitting | `--mochi-dialog-edge`, `--mochi-dialog-bottom-gap`, `--mochi-dialog-height-reserve`, `--mochi-dialog-min-height` | defaults 12px / 24px / 70px / 120px |
+| Other dialogs | map's shared `.lp-sheet` width/height and panel controls | native dialog layout and local owner |
 
-`--mochi-accounts-font-10/11/12/13/15/16/18` are compact typography roles named
-after their default base size. `--mochi-interface-scale` scales their defaults.
-`--mochi-accounts-avatar-flex` controls the outer account avatar flex basis;
-change it with avatar-size to avoid flex shrinking. Grid/preview columns and
-portrait sizes are separate controls. Responsive mobile control sizes still
-override some desktop values and are explicitly pending migration.
+Algorithmic fitting margins are **nonnegative pixel lengths**; invalid values
+fall back to the listed defaults. Ordinary layout tokens accept normal valid
+CSS lengths/functions. The menu remains limited to available viewport space.
+Do not set private `--mochi-measured-*` or `--pocket-measured-*` variables. Host
+window drag/resize/fullscreen bounds, session ownership and root height fill
+remain JS/host responsibilities. Timers, network cancellation and request state
+are behavior and do not become CSS parameters.
 
-## Practical external-editor examples
-
-Paste these rules into mochi-theme.css, then rebuild; no behavioral source edits:
+## Copyable examples
 
 ```css
-/* All root aliases, including nested dialogs/views. */
+/* Common aliases across the roots, including nested dialogs/views. */
 :where(.mochi-view,.mochi-sheet,.mochi-sidebar,.mochi-workspace,
-    .mochi-window,.mochi-mobile-surface,.mochi-launcher-root,
-    .mochi-notification-toast) {
+       .mochi-window,.mochi-mobile-surface,.mochi-launcher-root,
+       .mochi-notification-toast,.pocket-portal[data-destination=mochi]) {
   --mochi-brand-hue: 285;
+  --mochi-sidebar-width: 360px;
+  --mochi-profile-panel-width: 280px;
   --mochi-bubble-radius: 16px;
-  --mochi-accounts-row-radius: 12px;
-  --mochi-accounts-row-padding: 10px;
-  --mochi-window-radius: 18px;
   --mochi-icon-stroke-width: 2;
 }
-/* Account-only density; native Pocket controls retain their defaults. */
-.mochi-sidebar, .mochi-sidebar .mochi-view {
-  --mochi-accounts-list-gap: 6px;
-  --mochi-accounts-field-padding: 9px 12px;
-  --mochi-accounts-preview-avatar-size: 48px;
-  --mochi-accounts-preview-columns: 48px minmax(0,1fr);
+/* Different desktop and mobile header padding, without changing behavior. */
+.mochi-settings-workspace {
+  --mochi-v2-settings-heading-padding: 20px 24px;
+  --mochi-v2-settings-heading-container-max-width-650px-padding: 12px;
+  --mochi-v2-settings-heading-container-max-width-550px-padding: 12px;
 }
-/* Existing SVGs can be styled without altering their parent buttons. */
-.mochi-sidebar svg[data-mochi-icon="settings"] { stroke: var(--mochi-accent); }
+.mochi-sheet {
+  --mochi-v2-shared-sheet-width: min(520px,calc(100vw - 24px));
+  --mochi-v2-sheet-sheet-panel-background: var(--mochi-elevated-bg);
+}
+.mochi-notification-toast {
+  --mochi-v2-shared-floating-notification-background: var(--mochi-elevated-bg);
+}
+.mochi-view {
+  --mochi-menu-max-height: 240px;
+  --mochi-action-gap: 6px;
+}
+/* State-specific examples: copy exact tokens from the relevant map. */
+.mochi-view svg[data-mochi-icon="settings"] { stroke: var(--mochi-accent); }
 ```
 
-Icon hooks in this phase cover shared `MOCHI_TOOLBAR_ICONS` artwork and action
-wrappers. Other Pocket icons, text glyphs, mascot and group art are still in the
-inventory. Current artwork is locally authored outline art, **not an assertion
-that it is upstream Lucide**. Do not relabel it or attach a guessed license.
-Arbitrary image/SVG replacement and load-error fallback are pending. No custom
-asset from the owner is required for the current default renderer.
+Decorative glyph wrappers (`.mochi-icon-slot[data-mochi-icon-slot]`) and named
+shared SVGs (`svg[data-mochi-icon]`) remain available. The map also includes SVG
+descendant sizing/style selectors and existing image/mascot slots. Button names,
+hit targets and artwork defaults remain unchanged. This pass does not introduce
+an arbitrary asset loader or claim existing outline art is upstream Lucide.
 
-## Structural and accessibility boundaries
+## Required structure and data safety
 
-Preserve native buttons, labels, inputs, details/summary, dialog semantics,
-hidden/disabled states, keyboard routing, focus indicators, required actions,
-mobile safe-area insets and host-controlled window geometry. CSS must not expose
-`[hidden]` content, fake enabled actions, obscure destructive-action confirmation
-or replace account identity labels with misleading content. Existing hidden
-guards remain `!important`. Hit targets and required control presence remain
-application responsibilities; theme authors should enlarge visual glyphs inside
-the existing controls rather than shrink the controls.
+Preserve semantic buttons/labels/inputs, dialog/details behavior, accessible
+names, focus feedback, hidden/disabled state, required controls, mobile safe
+areas, readable control sizes, reduced-motion overrides and scroll/containment
+boundaries. Display/visibility/positioning mode, pointer/touch routing and core
+containment deliberately remain structural selectors rather than generic knobs.
+Do not unhide account content, fake enabled controls, obscure destructive-action
+confirmations or substitute misleading account labels with CSS content.
 
-Arbitrary trusted CSS can hide or misrepresent UI; CSS is not a security sandbox.
-Account/data ownership and data-action checks remain enforced in application
-logic. Theme editing does not read personal data or change saved accounts.
-Runtime-measured composer growth, action-strip collision adjustment, popup
-viewport fitting, host resize/drag geometry and saved scale backing values stay
-in JS. Their visual limits/offsets are future token candidates; do not replace
-measurements with guessed CSS coordinates.
+Arbitrary trusted CSS can hide or misrepresent UI; it is not a security sandbox.
+Account ownership, authenticated data actions, revisions, generation and stored
+identities remain enforced in application logic. Theme editing does not change
+those checks or touch installed/hosted data.
 
-## Inventory, tests and owner acceptance
+## Small sequential checks
 
-Run `bun scripts/audit-mochi-theme.ts` to refresh THEME-INVENTORY.md. This records
-all sections, presentational literal counts, class candidates, `!important`
-usage and inline geometry locations. Counts are a migration aid, not a promise
-that every literal belongs in a token. Zeros, flex/grid topology, visibility and
-geometry constraints often remain structural.
+Use explicit `./tests/file.test.ts` paths. Unqualified filters can also match
+archived snapshots under `tmp/`. Run one small batch at a time; never run the
+full current/base suites concurrently on a constrained machine.
 
-Run `node scripts/check-mochi-theme-contract-ui.mjs` with the same Playwright,
-browser and Bun variables documented in README. `MOCHI_THEME_OUTPUT` selects the
-evidence folder; `MOCHI_THEME_BASELINE` compares unchanged scenes byte-for-byte.
-`MOCHI_THEME_SOURCE` can point at an original source snapshot and
-`MOCHI_THEME_ORIGINAL=1` captures pre-contract scenes. Synthetic palettes cover
-dark/light/brown/purple at 1280/390/320px, Accounts list/grid/editor and messenger.
-The after run also checks scoped token overrides, editable composer, unchanged
-stored identities, required Save button, SVG stroke override, an unrelated
-control, and CSS zoom at 200%. HTTP requests are blocked; provider calls must be
-zero. Palette fixtures are approximations, not a live Lumiverse theme-engine run.
+`mochi-theme-contract.test.ts` checks exact original declaration fingerprints
+for all six style sources, migration idempotence, map coverage and measured
+geometry helpers. The browser checker accepts `MOCHI_THEME_EXTENDED=1`, one
+`MOCHI_THEME_COLORS` palette and one `MOCHI_THEME_WIDTHS` value per invocation.
+Use `MOCHI_THEME_SOURCE` plus `MOCHI_THEME_ORIGINAL=1` for the saved baseline,
+then `MOCHI_THEME_BASELINE` for the matching current comparison. See the results
+document for the completed matrix and environment paths described in README.
 
-Owner acceptance remains: complete UI coverage after phase 2; actual host global
-Custom CSS precedence; real browser zoom/OS scaling and screen readers; contrast
-ratios in all states; custom-asset success/failure; theme-only loading/switching
-expectations. No theme picker/importer is introduced here. Archived accounts,
-errors, loading, empty and destructive states need visual matrix expansion.
+The matrix covers synthetic dark/light/brown/purple, desktop/390/320px, the
+listed views/states, CSS zoom, scoped overrides and zero provider calls. It is
+not a live host installation, a full automated accessibility certification, or
+proof for every arbitrary user theme. Actual host theme/global CSS interaction,
+OS/browser zoom and assistive technology remain normal owner acceptance checks.

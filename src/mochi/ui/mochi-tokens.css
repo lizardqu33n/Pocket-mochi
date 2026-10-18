@@ -6,7 +6,8 @@
 .mochi-window,
 .mochi-mobile-surface,
 .mochi-launcher-root,
-.mochi-notification-toast) {
+.mochi-notification-toast,
+.pocket-portal[data-destination=mochi]) {
   /* Saved preferences set only backing variables; Custom CSS may override these public aliases. */
   --mochi-interface-scale: var(--mochi-saved-interface-scale,1);
   --mochi-message-scale: var(--mochi-saved-message-scale,1);
@@ -43,6 +44,15 @@
   --mochi-editor-gap: 8px;
   --mochi-editor-radius: 7px;
   --mochi-icon-stroke-width: 1.7;
+  /* Measured overlays: algorithmic margins use nonnegative pixel lengths. */
+  --mochi-menu-max-height: 300px;
+  --mochi-menu-viewport-gap: 8px;
+  --mochi-action-gap: 3px;
+  --mochi-action-edge-inset: 4px;
+  --mochi-dialog-edge: 12px;
+  --mochi-dialog-bottom-gap: 24px;
+  --mochi-dialog-height-reserve: 70px;
+  --mochi-dialog-min-height: 120px;
   /* @mochi-tokens accounts-and-chrome: public v1, original defaults */
   --mochi-accounts-nav-gap: 6px;
   --mochi-accounts-nav-padding: 8px;

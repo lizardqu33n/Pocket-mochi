@@ -1,4 +1,4 @@
-import { el } from '../shared.js'
+import { el,cssPixelToken } from '../shared.js'
 
 function classes(...values: Array<string | false | null | undefined>): string {
   return values.filter(Boolean).join(' ')
@@ -89,10 +89,10 @@ export function disclosure(label: string, ...children: Node[]): HTMLDetailsEleme
 }
 
 /** A surface-local modal sheet. Never attaches persona styling to document.body. */
-export function showPocketSheet(anchor: HTMLElement, title: string, content: HTMLElement, surfaceRoot?: HTMLElement): { dismiss: () => void } | undefined {
+export function showPocketSheet(anchor: HTMLElement, title: string, content: HTMLElement, surfaceRoot?: HTMLElement, className=''): { dismiss: () => void } | undefined {
   const parent = surfaceRoot || anchor.closest('.lumiphone-shell') || anchor.closest('[role="dialog"]') || anchor.parentElement
   if (!parent) return
-  const dialog = el('dialog', 'lp-sheet')
+  const dialog = el('dialog', 'lp-sheet'+(className?' '+className:''))
   const panel = el('div', 'lp-sheet-panel')
   const heading = el('h2', 'lp-title', title)
   dialog.setAttribute('aria-label', title)
@@ -115,13 +115,12 @@ export function showPocketSheet(anchor: HTMLElement, title: string, content: HTM
     const layoutWidth = (parent as HTMLElement).offsetWidth
     const zoom = layoutWidth && bounds.width ? bounds.width / layoutWidth : 1
     const layoutPx = (pixels: number) => pixels / zoom
-    dialog.style.position = 'fixed'
-    dialog.style.margin = '0'
-    dialog.style.left = `${layoutPx(bounds.left + 12)}px`
-    dialog.style.top = 'auto'
-    dialog.style.bottom = `${layoutPx(Math.max(12, window.innerHeight - bounds.bottom + 24))}px`
-    dialog.style.width = `${layoutPx(Math.max(0, bounds.width - 24))}px`
-    dialog.style.maxHeight = `${layoutPx(Math.max(120, bounds.height - 70))}px`
+    const edge=cssPixelToken(dialog,'--mochi-dialog-edge',12),gap=cssPixelToken(dialog,'--mochi-dialog-bottom-gap',24),reserve=cssPixelToken(dialog,'--mochi-dialog-height-reserve',70),minimum=cssPixelToken(dialog,'--mochi-dialog-min-height',120)
+    dialog.dataset.pocketMeasured='true'
+    dialog.style.setProperty('--pocket-measured-sheet-left',`${layoutPx(bounds.left + edge)}px`)
+    dialog.style.setProperty('--pocket-measured-sheet-bottom',`${layoutPx(Math.max(edge, window.innerHeight - bounds.bottom + gap))}px`)
+    dialog.style.setProperty('--pocket-measured-sheet-width',`${layoutPx(Math.max(0, bounds.width - edge*2))}px`)
+    dialog.style.setProperty('--pocket-measured-sheet-max-height',`${layoutPx(Math.max(minimum, bounds.height - reserve))}px`)
   }
   dialog.showModal()
   return { dismiss }

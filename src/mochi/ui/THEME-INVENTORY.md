@@ -1,51 +1,50 @@
-# Mochi theme inventory (generated)
+# Mochi theme coverage
 
-Refresh with `bun scripts/audit-mochi-theme.ts`. These are heuristic migration candidates, not a requirement to turn structural CSS into tokens. Counts include literal values inside fallbacks and formulas. Repeated rules are intentionally included.
+The complete reference is [UI-CUSTOMIZATION-MAP.md](UI-CUSTOMIZATION-MAP.md); machine-readable data is [theme-inventory.json](theme-inventory.json). No Mochi CSS section is deferred. Structural declarations use listed selectors rather than generic visual tokens. Shared Pocket primitives are included.
 
-The supported public selector contract is in [THEME-CONTRACT.md](THEME-CONTRACT.md). Exact class candidates and declaration values per section are in [theme-inventory.json](theme-inventory.json). This inventory does not cover host-owned UI or shared Pocket CSS consumed by Mochi; those require a separate cross-surface audit.
+| Section | Rules | Distinct consumed tokens |
+|---|---:|---:|
+| base | 340 | 741 |
+| mochi-reply-styles | 8 | 22 |
+| mochi-reaction-styles | 9 | 25 |
+| mochi-pin-styles | 11 | 30 |
+| mochi-search-styles | 12 | 29 |
+| mochi-texting-styles | 4 | 8 |
+| mochi-preview-styles | 6 | 16 |
+| mochi-preset-styles | 8 | 19 |
+| block-editor | 47 | 102 |
+| preset-workspace-base | 22 | 62 |
+| mochi-preset-dedicated-styles | 25 | 40 |
+| mochi-preset-chrome-styles | 12 | 12 |
+| preset-workspace-final | 12 | 15 |
+| mochi-memory-styles | 8 | 25 |
+| settings-workspace-styles | 120 | 257 |
+| mochi-disclosure-styles | 24 | 54 |
+| desktop | 200 | 434 |
+| mochi-sidebar-styles | 105 | 207 |
+| launcher | 4 | 11 |
+| mobile-surface | 3 | 6 |
+| window | 6 | 19 |
+| window-focus | 2 | 2 |
+| workspace | 3 | 1 |
+| notifications | 5 | 10 |
+| shared-pocket | 141 | 394 |
 
-| Section | Literal candidates | Direct host-variable declarations | Class candidates | !important |
-|---|---:|---:|---:|---:|
-| base | 498 | 36 | 91 | 6 |
-| mochi-reply-styles | 11 | 1 | 4 | 0 |
-| mochi-reaction-styles | 20 | 3 | 5 | 0 |
-| mochi-pin-styles | 18 | 3 | 8 | 0 |
-| mochi-search-styles | 17 | 2 | 6 | 0 |
-| mochi-texting-styles | 5 | 0 | 2 | 0 |
-| mochi-preview-styles | 10 | 1 | 4 | 0 |
-| mochi-preset-styles | 12 | 0 | 4 | 0 |
-| block-editor | 61 | 0 | 20 | 0 |
-| preset-workspace-base | 37 | 0 | 15 | 0 |
-| mochi-preset-dedicated-styles | 22 | 0 | 15 | 3 |
-| mochi-preset-chrome-styles | 7 | 0 | 6 | 0 |
-| preset-workspace-final | 10 | 0 | 6 | 0 |
-| mochi-memory-styles | 16 | 2 | 5 | 0 |
-| settings-workspace-styles | 143 | 0 | 46 | 2 |
-| mochi-disclosure-styles | 34 | 3 | 12 | 0 |
-| desktop | 256 | 18 | 60 | 3 |
-| mochi-sidebar-styles | 76 | 0 | 50 | 1 |
-| launcher | 4 | 1 | 2 | 0 |
-| mobile-surface | 1 | 0 | 2 | 1 |
-| window | 5 | 1 | 5 | 0 |
-| window-focus | 2 | 1 | 2 | 1 |
-| workspace | 0 | 0 | 2 | 1 |
-| notifications | 4 | 1 | 2 | 0 |
+## Inline assignments
 
-## Inline style audit
+These are private measurements, saved accessibility backing values, or host root-fill invariants. Dialog measurements live in the shared sheet helper and are consumed through CSS variables.
 
-- src/mochi/mobile-surface.ts:14 — host root fill geometry (retain)
-- src/mochi/personal-settings.ts:67 — saved accessibility backing variables (retain)
-- src/mochi/view.ts:708 — measured geometry; visual limits/offsets pending extraction
-- src/mochi/view.ts:768 — saved accessibility backing variables (retain)
-- src/mochi/view.ts:769 — saved accessibility backing variables (retain)
-- src/mochi/view.ts:985 — measured geometry; visual limits/offsets pending extraction
-- src/mochi/view.ts:1115 — measured geometry; visual limits/offsets pending extraction
-- src/mochi/view.ts:1117 — measured geometry; visual limits/offsets pending extraction
-- src/mochi/window.ts:60 — host root fill geometry (retain)
+- src/mochi/mobile-surface.ts:14 — host root fill invariant
+- src/mochi/personal-settings.ts:67 — saved accessibility backing values
+- src/mochi/ui/geometry.ts:4 — private geometry measurements; public CSS controls mapped separately
+- src/mochi/ui/geometry.ts:5 — private geometry measurements; public CSS controls mapped separately
+- src/mochi/view.ts:711 — private geometry measurements; public CSS controls mapped separately
+- src/mochi/view.ts:771 — saved accessibility backing values
+- src/mochi/view.ts:772 — saved accessibility backing values
+- src/mochi/view.ts:988 — private geometry measurements; public CSS controls mapped separately
+- src/mochi/window.ts:60 — host root fill invariant
 
-## Current public tokens and original defaults
-
-Copy [starter-theme.css](starter-theme.css) for the full editable starter. Private saved backing values are deliberately not included.
+## Common semantic tokens
 
 | Token | Default |
 |---|---|
@@ -83,6 +82,14 @@ Copy [starter-theme.css](starter-theme.css) for the full editable starter. Priva
 | `--mochi-editor-gap` | `8px` |
 | `--mochi-editor-radius` | `7px` |
 | `--mochi-icon-stroke-width` | `1.7` |
+| `--mochi-menu-max-height` | `300px` |
+| `--mochi-menu-viewport-gap` | `8px` |
+| `--mochi-action-gap` | `3px` |
+| `--mochi-action-edge-inset` | `4px` |
+| `--mochi-dialog-edge` | `12px` |
+| `--mochi-dialog-bottom-gap` | `24px` |
+| `--mochi-dialog-height-reserve` | `70px` |
+| `--mochi-dialog-min-height` | `120px` |
 | `--mochi-accounts-nav-gap` | `6px` |
 | `--mochi-accounts-nav-padding` | `8px` |
 | `--mochi-accounts-picker-padding` | `0 8px 12px` |

@@ -1,4 +1,5 @@
 import {CharacterEditor} from './character-editor.js'
+import {measureMochiComposer,mochiPixelToken} from './ui/geometry.js'
 import {GROUP_ICONS,chatIdentity,chatPortrait} from './chat-identity.js'
 import {MOCHI_TOOLBAR_ICONS} from './toolbar-icons.js'
 import {PersonalSettings} from './personal-settings.js'
@@ -703,9 +704,11 @@ export class MochiView {
       menu.addEventListener('toggle',()=>{
         if(!menu.open)return
         const rect=controls.getBoundingClientRect(),height=document.documentElement.clientHeight
-        const below=height-rect.bottom-8,above=rect.top-8,up=below<Math.min(300,menuSheet.scrollHeight)&&above>below
+        const edge=mochiPixelToken(menuSheet,'--mochi-menu-viewport-gap',8),limit=mochiPixelToken(menuSheet,'--mochi-menu-max-height',300)
+        const below=height-rect.bottom-edge,above=rect.top-edge,up=below<Math.min(limit,menuSheet.scrollHeight)&&above>below
         menu.dataset.direction=up?'up':'down'
-        menuSheet.style.maxHeight=`${Math.max(0,Math.min(300,up?above:below))}px`
+        menuSheet.dataset.mochiSlot='conversation-menu'
+        menuSheet.style.setProperty('--mochi-measured-menu-height',`${Math.max(0,up?above:below)}px`)
       })
       menu.addEventListener('keydown',event=>{if(event.key==='Escape'){menu.open=false;more.focus();event.stopPropagation()}})
       menu.addEventListener('focusout',event=>{if(!event.relatedTarget||!menu.contains(event.relatedTarget as Node))menu.open=false})
@@ -982,7 +985,7 @@ export class MochiView {
       const locked=this.busy||Boolean(this.state?.jobs?.[room.id])
       for(const [label,icon,target] of [['React','smile','React'],['Reply','back','Reply'],['Edit message','edit','Edit message'],[room.chatPins?.includes(message.id)?'Unpin':'Pin','pin',room.chatPins?.includes(message.id)?'Unpin':'Pin'],['Copy message','copy','Copy message'],['More message actions','ellipsis','']] as const){const control=action(label,icon,true);control.disabled=locked&&!['Reply','Copy message','More message actions'].includes(label);control.onclick=event=>{event.stopPropagation();this.messageActions(control,room,message,target||undefined)};strip.append(control)}
       body.append(strip)
-      const selectMessage=()=>{const selected=row.dataset.selected==='true';this.clearMessageSelection();row.dataset.selected=String(!selected);row.setAttribute('aria-expanded',String(!selected));if(!selected){strip.style.right='0px';strip.style.bottom='calc(100% + 3px)';let first=row;while(first.dataset.grouped==='true'&&first.previousElementSibling?.classList.contains('mochi-message'))first=first.previousElementSibling as HTMLDivElement;const start=first.querySelector<HTMLElement>('.mochi-message-body');if(start){const own=body.getBoundingClientRect(),top=start.getBoundingClientRect().top;strip.style.bottom=`${own.height+own.top-top+3}px`}const bounds=thread.getBoundingClientRect(),r=strip.getBoundingClientRect();if(r.left<bounds.left+4)strip.style.right=`${r.left-bounds.left-4}px`;else if(r.right>bounds.right-4)strip.style.right=`${r.right-bounds.right+4}px`}}
+      const selectMessage=()=>{const selected=row.dataset.selected==='true';this.clearMessageSelection();row.dataset.selected=String(!selected);row.setAttribute('aria-expanded',String(!selected));if(!selected){strip.style.setProperty('--mochi-measured-action-right','0px');strip.style.setProperty('--mochi-measured-action-bottom','100%');let first=row;while(first.dataset.grouped==='true'&&first.previousElementSibling?.classList.contains('mochi-message'))first=first.previousElementSibling as HTMLDivElement;const start=first.querySelector<HTMLElement>('.mochi-message-body');if(start){const own=body.getBoundingClientRect(),top=start.getBoundingClientRect().top;strip.style.setProperty('--mochi-measured-action-bottom',`${own.height+own.top-top}px`)}const bounds=thread.getBoundingClientRect(),r=strip.getBoundingClientRect(),edge=mochiPixelToken(strip,'--mochi-action-edge-inset',4);if(r.left<bounds.left+edge)strip.style.setProperty('--mochi-measured-action-right',`${r.left-bounds.left-edge}px`);else if(r.right>bounds.right-edge)strip.style.setProperty('--mochi-measured-action-right',`${r.right-bounds.right+edge}px`)}}
 
       row.addEventListener('click',event=>{if((event.target as Element).closest('button,a,input,textarea,select'))return;if(window.getSelection()?.toString())return;selectMessage()})
       row.addEventListener('keydown',event=>{if(event.key==='Escape'){longPressed=false;this.clearMessageSelection(true);event.stopPropagation()}else if((event.key==='Enter'||event.key===' ')&&event.target===row){event.preventDefault();selectMessage()}})
@@ -997,7 +1000,7 @@ export class MochiView {
   }
   private sheet(anchor: HTMLElement, title: string, content: HTMLElement): ReturnType<typeof showPocketSheet> {
     // Keep confirmations alive when metadata refresh replaces the inner view.
-    const sheet = showPocketSheet(anchor, title, content, anchor.closest<HTMLElement>('.mochi-sidebar') || anchor.closest<HTMLElement>('.mochi-workspace') || this.presenceRoot?.closest<HTMLElement>('.mochi-workspace') || anchor.closest<HTMLElement>('.lumiphone-shell') || this.presenceRoot?.closest<HTMLElement>('.mochi-desktop') || this.presenceRoot || undefined)
+    const sheet = showPocketSheet(anchor, title, content, anchor.closest<HTMLElement>('.mochi-sidebar') || anchor.closest<HTMLElement>('.mochi-workspace') || this.presenceRoot?.closest<HTMLElement>('.mochi-workspace') || anchor.closest<HTMLElement>('.lumiphone-shell') || this.presenceRoot?.closest<HTMLElement>('.mochi-desktop') || this.presenceRoot || undefined,'mochi-sheet')
     if (sheet) { const dialog=content.closest('dialog');if(dialog)this.applyPresentation(dialog);this.sheets.add(sheet.dismiss); content.closest('dialog')?.classList.add('mochi-sheet'); content.closest('dialog')?.addEventListener('close', () => {this.sheets.delete(sheet.dismiss);if(!anchor.isConnected)Array.from(this.presenceRoot?.querySelectorAll<HTMLButtonElement>('button')||[]).find(b=>anchor.getAttribute('aria-label')?b.getAttribute('aria-label')===anchor.getAttribute('aria-label'):b.textContent===anchor.textContent)?.focus({preventScroll:true})}, { once: true }) }
     return sheet
   }
@@ -1112,9 +1115,9 @@ export class MochiView {
     input.dataset.pocketComposer = `mochi_${room.id}`
     const guidance = `Messaging as ${room.persona.name}. Enter to send; Shift+Enter for a new line. Send empty to continue.`
     input.setAttribute('aria-description', guidance); input.title = guidance
-    input.oninput = () => { this.drafts.set(room.id, input.value); input.style.height = 'auto'; input.style.height = `${Math.min(input.scrollHeight, 112)}px` }
+    input.oninput = () => { this.drafts.set(room.id, input.value); measureMochiComposer(input) }
     // Restored drafts did not previously get their measured multiline height back.
-    globalThis.requestAnimationFrame?.(()=>{if(input.isConnected&&input.value){input.style.height='auto';input.style.height=`${Math.min(input.scrollHeight,112)}px`}})
+    globalThis.requestAnimationFrame?.(()=>{if(input.isConnected&&input.value)measureMochiComposer(input)})
     input.onkeydown = event => { if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) { event.preventDefault(); form.requestSubmit() } }
     const job = this.state?.jobs?.[room.id]
     const submit = action('Send', 'send', true); submit.classList.add('mochi-primary'); submit.type = 'submit'; submit.disabled = this.busy || Boolean(job) || this.memoryPanel.generating

@@ -1,11 +1,12 @@
 # Editing Mochi's appearance
 
-**Whole-interface skinning is being delivered in bounded phases.** Start with
+**Whole-interface CSS customization is documented in contract v2.** Start with
 [THEME-CONTRACT.md](THEME-CONTRACT.md) for the current public selectors, theme
-entry point, exact Custom CSS scopes and remaining acceptance gaps. Edit
+entry point, exact Custom CSS scopes and structural boundaries. Edit
 `mochi-theme.css` for an independent bundled theme; `starter-theme.css` contains
-all currently exposed tokens. [THEME-INVENTORY.md](THEME-INVENTORY.md) tracks the
-remaining hardcoded values. The older guide below describes the original
+the common semantic tokens. [UI-CUSTOMIZATION-MAP.md](UI-CUSTOMIZATION-MAP.md)
+lists every component/state/responsive selector and fallback token, including
+shared dialogs and notifications. The older guide below describes the original
 extraction; the contract supersedes its broad Custom CSS claims.
 
 You can change Mochi's appearance in ordinary CSS. You do not need to edit TypeScript, presets, or application logic. There is no theme picker or theme loader in this change.

@@ -1,3 +1,4 @@
+import {originalDefaults} from '../scripts/mochi-css-contract'
 import {expect,test} from 'bun:test'
 import {JSDOM} from 'jsdom'
 import {createMochiMobileSurface} from '../src/mochi/mobile-surface.js'
@@ -28,7 +29,7 @@ for(const width of [320,360,390,430])test(`mobile surface ${width}: fullscreen h
 })
 
 test('mobile styles bound history/composer, keep one column and do not apply navigation button styles to chat',()=>{
- const css=MOCHI_SIDEBAR_STYLES.replace(/\s*([{};])\s*/g,'$1')
+ const css=originalDefaults(MOCHI_SIDEBAR_STYLES).replace(/\s*([{};])\s*/g,'$1')
  expect(css).not.toContain('.mochi-sidebar button{')
  expect(css).toContain('grid-template-rows:minmax(0,1fr)')
  expect(css).toContain('.mochi-thread{flex:1 1 0;min-height:0;max-height:none;overflow:auto')

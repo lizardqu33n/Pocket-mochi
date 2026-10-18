@@ -1,0 +1,14 @@
+# window
+
+[All surfaces](../UI-CUSTOMIZATION-MAP.md) · [Theme contract](../THEME-CONTRACT.md)
+
+Rules appear in cascade order. Conditions are part of the control. Scope shared selectors to a Mochi root.
+
+| Selector / condition | CSS controls and original fallback values | Source |
+|---|---|---|
+| `.mochi-window` | `display` → selector only = `flex`<br>`flex-direction` → `--mochi-v2-window-flex-direction` = `column`<br>`width` → selector only = `100%`<br>`height` → selector only = `100%`<br>`min-width` → selector only = `0`<br>`min-height` → selector only = `0`<br>`position` → selector only = `relative`<br>`background` → `--mochi-chrome-bg` = `var(--mochi-chrome-bg)`<br>`color` → `--mochi-chrome-text` = `var(--mochi-chrome-text)`<br>`border` → `--mochi-v2-window-border` = `1px solid var(--mochi-chrome-border)`<br>`border-radius` → `--mochi-window-radius` = `var(--mochi-window-radius)`<br>`overflow` → selector only = `hidden`<br>`box-sizing` → selector only = `border-box`<br>`box-shadow` → `--mochi-window-shadow` = `var(--mochi-window-shadow)` | src/mochi/ui/mochi.css:4687 |
+| `.mochi-window-bar` | `display` → selector only = `flex`<br>`align-items` → `--mochi-v2-window-bar-align-items` = `center`<br>`justify-content` → `--mochi-v2-window-bar-justify-content` = `space-between`<br>`padding` → `--mochi-window-bar-padding` = `var(--mochi-window-bar-padding)`<br>`min-height` → `--mochi-window-bar-height` = `var(--mochi-window-bar-height)`<br>`flex-shrink` → selector only = `0`<br>`cursor` → `--mochi-v2-window-bar-cursor` = `move`<br>`touch-action` → selector only = `none`<br>`user-select` → selector only = `none` | src/mochi/ui/mochi.css:4703 |
+| `.mochi-window-body` | `flex` → `--mochi-v2-window-body-flex` = `1`<br>`min-height` → selector only = `0`<br>`min-width` → selector only = `0`<br>`overflow` → selector only = `hidden` | src/mochi/ui/mochi.css:4714 |
+| `.mochi-window-close,.mochi-window-resize` | `color` → selector only = `inherit`<br>`background` → `--mochi-v2-window-close-background` = `transparent`<br>`border` → selector only = `0`<br>`min-width` → `--mochi-v2-window-close-min-width` = `32px`<br>`min-height` → `--mochi-v2-window-close-min-height` = `32px`<br>`cursor` → `--mochi-v2-window-close-cursor` = `pointer` | src/mochi/ui/mochi.css:4720 |
+| `.mochi-window-resize` | `position` → selector only = `absolute`<br>`right` → selector only = `0`<br>`bottom` → selector only = `0`<br>`cursor` → `--mochi-v2-window-resize-cursor` = `nwse-resize`<br>`touch-action` → selector only = `none` | src/mochi/ui/mochi.css:4728 |
+| `.mochi-window button:focus-visible` | `outline` → `--mochi-v2-window-button-focus-visible-outline` = `2px solid var(--lumiverse-primary,#9399ab)`<br>`outline-offset` → `--mochi-v2-window-button-focus-visible-outline-offset` = `-3px` | src/mochi/ui/mochi.css:4735 |

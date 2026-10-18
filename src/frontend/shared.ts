@@ -11,6 +11,12 @@ export function button(label: string, className = 'lp-button'): HTMLButtonElemen
   return node
 }
 
+/** Nonnegative pixel margins used by measured overlays; invalid CSS keeps defaults. */
+export function cssPixelToken(node:HTMLElement,name:string,fallback:number):number {
+  const raw=node.ownerDocument.defaultView?.getComputedStyle(node).getPropertyValue(name).trim()||''
+  return /^\d+(?:\.\d+)?px$/.test(raw)?Number.parseFloat(raw):fallback
+}
+
 export interface PageAction {
   label: string
   callback: () => void

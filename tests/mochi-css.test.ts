@@ -8,6 +8,8 @@ import {MOCHI_STYLES} from '../src/mochi/styles.js'
 import {MOCHI_PRESET_WORKSPACE_STYLES} from '../src/mochi/preset-panel.js'
 import {JSDOM} from 'jsdom'
 import {showMochiNotification} from '../src/mochi/notifications.js'
+import postcss from 'postcss'
+import {publicVariable,originalDefaults} from '../scripts/mochi-css-contract'
 
 test('ordinary CSS text imports retain the existing cascade section boundaries',()=>{
  const markers=[...components.matchAll(/\/\* @mochi-section ([a-z0-9-]+) \*\//g)].map(m=>m[1])
@@ -23,7 +25,11 @@ test('ordinary CSS text imports retain the existing cascade section boundaries',
 
 test('all Mochi component variables have scoped editable defaults and preserve host color inheritance',()=>{
  const definitions=new Set([...tokens.matchAll(/(--mochi-[\w-]+)\s*:/g)].map(m=>m[1]))
- for(const [,name]of components.matchAll(/var\((--mochi-[\w-]+)/g))expect(definitions.has(name)).toBe(true)
+ postcss.parse(components).walkDecls(decl=>{
+  const variable=publicVariable(decl.value)
+  if(variable?.[1].startsWith('--mochi-v2-'))expect(variable[2]?.length).toBeGreaterThan(0)
+ })
+ for(const [,name]of originalDefaults(components).matchAll(/var\((--mochi-[\w-]+)/g))expect(definitions.has(name)||/--mochi-(?:measured-|action-(?:right|bottom)|composer-height)/.test(name)).toBe(true)
  expect(tokens).toMatch(/--mochi-sidebar-width: \d+px/);expect(tokens).toMatch(/--mochi-chat-font-size: calc\(15px \* var\(--mochi-message-scale\)\)/)
  expect(tokens).toMatch(/--mochi-bubble-radius: \d+px/);expect(tokens).toMatch(/--mochi-avatar-size: \d+px/)
  expect(tokens).toContain('var(--lumiverse-bg,var(--lp-bg,#17151d))')
@@ -44,6 +50,9 @@ test('notification CSS remains available outside a Mochi view and does not dupli
  const first=showMochiNotification(shell,notice,true,()=>{}),second=showMochiNotification(shell,notice,true,()=>{})
  try{
   expect(shell.querySelectorAll('style[data-mochi-notifications]')).toHaveLength(1)
+  // jsdom cannot resolve custom-property fallback lengths; the browser batches
+  // check the cascade. This DOM check exercises the original fallback sizes.
+  const sheet=shell.querySelector('style')!;sheet.textContent=originalDefaults(sheet.textContent||'')
   const avatar=shell.querySelector<HTMLElement>('.mochi-notification-avatar')!,img=avatar.querySelector('img')!
   expect(dom.window.getComputedStyle(avatar).width).toBe('32px');expect(dom.window.getComputedStyle(avatar).height).toBe('32px')
   expect(dom.window.getComputedStyle(img).objectFit).toBe('cover')

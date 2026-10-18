@@ -1,0 +1,17 @@
+# mochi-reaction-styles
+
+[All surfaces](../UI-CUSTOMIZATION-MAP.md) · [Theme contract](../THEME-CONTRACT.md)
+
+Rules appear in cascade order. Conditions are part of the control. Scope shared selectors to a Mochi root.
+
+| Selector / condition | CSS controls and original fallback values | Source |
+|---|---|---|
+| `.mochi-view .mochi-reactions,.mochi-view .mochi-reaction-palette,.mochi-sheet .mochi-reaction-palette` | `display` → selector only = `flex`<br>`flex-wrap` → `--mochi-v2-reactions-flex-wrap` = `wrap`<br>`gap` → `--mochi-v2-reactions-gap` = `5px`<br>`min-width` → selector only = `0`<br>`max-width` → selector only = `100%`<br>`margin-top` → `--mochi-v2-reactions-margin-top` = `5px` | src/mochi/ui/mochi.css:1965 |
+| `.mochi-view .mochi-reactions:empty` | `display` → selector only = `none` | src/mochi/ui/mochi.css:1973 |
+| `.mochi-view .mochi-reaction` | `font` → selector only = `inherit`<br>`font-size` → `--mochi-v2-reaction-font-size` = `calc(12px * var(--mochi-interface-scale,1))`<br>`color` → selector only = `inherit`<br>`min-height` → `--mochi-v2-reaction-min-height` = `32px`<br>`padding` → `--mochi-v2-reaction-padding` = `4px 8px`<br>`border` → `--mochi-v2-reaction-border` = `1px solid var(--mochi-border)`<br>`border-radius` → `--mochi-radius-card` = `var(--mochi-radius-card)`<br>`background` → `--mochi-v2-reaction-background` = `var(--lp-surface-2,#ffffff0c)`<br>`cursor` → `--mochi-v2-reaction-cursor` = `pointer`<br>`max-width` → selector only = `100%` | src/mochi/ui/mochi.css:1976 |
+| `.mochi-view .mochi-reaction-palette .mochi-reaction` | `min-width` → `--mochi-v2-reaction-palette-reaction-min-width` = `44px`<br>`min-height` → `--mochi-v2-reaction-palette-reaction-min-height` = `44px`<br>`font-size` → `--mochi-v2-reaction-palette-reaction-font-size` = `calc(20px * var(--mochi-interface-scale,1))` | src/mochi/ui/mochi.css:1988 |
+| `.mochi-view .mochi-reaction[aria-pressed=true]` | `border-color` → `--mochi-accent` = `var(--mochi-accent)`<br>`background` → `--mochi-v2-reaction-aria-pressed-true-background` = `var(--lp-surface-2,#ffffff18)` | src/mochi/ui/mochi.css:1993 |
+| `.mochi-view .mochi-reaction:focus-visible` | `outline` → `--mochi-v2-reaction-focus-visible-outline` = `2px solid var(--mochi-accent)`<br>`outline-offset` → `--mochi-v2-reaction-focus-visible-outline-offset` = `2px` | src/mochi/ui/mochi.css:1997 |
+| `.mochi-sheet .mochi-reaction` | `min-width` → `--mochi-v2-sheet-reaction-min-width` = `44px`<br>`min-height` → `--mochi-v2-sheet-reaction-min-height` = `44px`<br>`font-size` → `--mochi-v2-sheet-reaction-font-size` = `calc(20px * var(--mochi-interface-scale,1))`<br>`border-radius` → `--mochi-radius-card` = `var(--mochi-radius-card)`<br>`border` → `--mochi-v2-sheet-reaction-border` = `1px solid var(--mochi-border)`<br>`background` → `--mochi-v2-sheet-reaction-background` = `var(--lp-surface-2,#ffffff0c)`<br>`color` → selector only = `inherit`<br>`cursor` → `--mochi-v2-sheet-reaction-cursor` = `pointer` | src/mochi/ui/mochi.css:2001 |
+| `.mochi-sheet .mochi-reaction:focus-visible` | `outline` → `--mochi-v2-sheet-reaction-focus-visible-outline` = `2px solid var(--mochi-accent)`<br>`outline-offset` → `--mochi-v2-sheet-reaction-focus-visible-outline-offset` = `2px` | src/mochi/ui/mochi.css:2011 |
+| `.mochi-sheet .mochi-reaction[aria-pressed=true]` | `border-color` → `--mochi-accent` = `var(--mochi-accent)` | src/mochi/ui/mochi.css:2015 |

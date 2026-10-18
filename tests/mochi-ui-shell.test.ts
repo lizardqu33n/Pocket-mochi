@@ -3,6 +3,7 @@ import {JSDOM,VirtualConsole} from 'jsdom'
 import {MochiView} from '../src/mochi/view.js'
 import {defaultMochiSettings,type MochiRoom} from '../src/mochi/types.js'
 import {MOCHI_DESKTOP_STYLES} from '../src/mochi/desktop-styles.js'
+import {originalDefaults} from '../scripts/mochi-css-contract'
 import image from '../src/mochi/assets/mochi-wordmark.data-url.txt' with {type:'text'}
 
 function fixture(width:number,group=false){
@@ -105,7 +106,7 @@ test('All and Groups combine with account-scoped text discovery without touching
 test('standalone menu has scoped surface/contrast/layering rules and Escape restores its opener',()=>{
  const f=fixture(390)
  try{
-  expect(MOCHI_DESKTOP_STYLES).toContain('background:var(--mochi-surface,#17151d)');expect(MOCHI_DESKTOP_STYLES).toContain('z-index:50');expect(MOCHI_DESKTOP_STYLES).toContain(':is(:hover,:focus-visible)')
+  expect(MOCHI_DESKTOP_STYLES).toContain('background:var(--mochi-surface,#17151d)');expect(originalDefaults(MOCHI_DESKTOP_STYLES)).toContain('z-index:50');expect(MOCHI_DESKTOP_STYLES).toContain(':is(:hover,:focus-visible)')
   const menu=document.querySelector<HTMLDetailsElement>('.lp-conversation-menu')!,opener=menu.querySelector<HTMLElement>('summary')!
   expect(menu.querySelector('[aria-label="Search conversation"],[aria-label="Participants"]')===null).toBe(true)
   expect(Array.from(menu.querySelectorAll('button')).map(button=>button.textContent)).toEqual(expect.arrayContaining(['Settings','Pins & Notes','Conversation Memory','Presets','Preview AI prompt']))

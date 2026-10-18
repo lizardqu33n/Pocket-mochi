@@ -1,0 +1,11 @@
+{
+  "base": "51840687185fca50a5685a1ffb7942b054bc58ef",
+  "files": {
+    "src/mochi/ui/mochi.css": "0207ee7a532df906685bedfd11f8d231065b63b23ef008fd86881de9f0d7d520",
+    "src/styles.ts": "3abc4413cf25127aaa232398dc3dd4d40d430a70317f2cf5dc499cb6c16d3c96",
+    "src/frontend/components/design-system.ts": "c2b44c2d471ef2ca2fee401941d34816eba280a93212acef1a9ffe8b35538865",
+    "src/frontend/components/inline-styles.ts": "5d07c7090d81718a0b39b99079f23aadcead837356365a470cea9d25e119f408",
+    "src/frontend/components/pocket-inline-redesign.css": "0488324ce014ba87937f3c72df86c3fdcea0d1b2b2540f7b908b91a20b0bbc51",
+    "src/frontend/components/portal.ts": "db47847b14f9824ec5dd8752e7c1ac2af04d2bf38d985fa9fe66dcd0368448eb"
+  }
+}
