@@ -1,0 +1,5976 @@
+{
+  "schemaVersion": 1,
+  "scope": "Mochi only; static heuristic, not a CSS parser",
+  "sections": [
+    {
+      "section": "base",
+      "literalCandidates": [
+        {
+          "property": "background",
+          "value": "#e7b95e"
+        },
+        {
+          "property": "background",
+          "value": "#d77991"
+        },
+        {
+          "property": "background",
+          "value": "#85818d"
+        },
+        {
+          "property": "min-height",
+          "value": "44px"
+        },
+        {
+          "property": "margin-top",
+          "value": "-8px"
+        },
+        {
+          "property": "grid-template-columns",
+          "value": "minmax(0,1fr) 96px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(10px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "border",
+          "value": "1px solid color-mix(in srgb,var(--mochi-accent) 45%,transparent)"
+        },
+        {
+          "property": "border-radius",
+          "value": "99px"
+        },
+        {
+          "property": "padding",
+          "value": "4px 8px"
+        },
+        {
+          "property": "border-radius",
+          "value": "99px"
+        },
+        {
+          "property": "padding",
+          "value": "9px 10px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(14px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "gap",
+          "value": "6px!important"
+        },
+        {
+          "property": "width",
+          "value": "44px"
+        },
+        {
+          "property": "height",
+          "value": "44px"
+        },
+        {
+          "property": "min-height",
+          "value": "44px"
+        },
+        {
+          "property": "margin-top",
+          "value": "-3px"
+        },
+        {
+          "property": "gap",
+          "value": "12px"
+        },
+        {
+          "property": "min-height",
+          "value": "110px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--lp-border)"
+        },
+        {
+          "property": "padding",
+          "value": "12px"
+        },
+        {
+          "property": "gap",
+          "value": "10px"
+        },
+        {
+          "property": "min-height",
+          "value": "44px"
+        },
+        {
+          "property": "width",
+          "value": "20px"
+        },
+        {
+          "property": "height",
+          "value": "20px"
+        },
+        {
+          "property": "box-shadow",
+          "value": "inset 0 0 0 2px var(--mochi-accent)"
+        },
+        {
+          "property": "width",
+          "value": "32px"
+        },
+        {
+          "property": "height",
+          "value": "32px"
+        },
+        {
+          "property": "max-width",
+          "value": "calc(100% - 24px)"
+        },
+        {
+          "property": "padding",
+          "value": "16px"
+        },
+        {
+          "property": "gap",
+          "value": "14px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(23px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "letter-spacing",
+          "value": "-.04em"
+        },
+        {
+          "property": "gap",
+          "value": "8px"
+        },
+        {
+          "property": "gap",
+          "value": "8px"
+        },
+        {
+          "property": "width",
+          "value": "20px"
+        },
+        {
+          "property": "height",
+          "value": "20px"
+        },
+        {
+          "property": "min-height",
+          "value": "44px"
+        },
+        {
+          "property": "padding",
+          "value": "10px 14px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "background",
+          "value": "color-mix(in srgb,var(--lp-text,#fff) 4%,var(--mochi-surface))"
+        },
+        {
+          "property": "width",
+          "value": "44px"
+        },
+        {
+          "property": "padding",
+          "value": "10px"
+        },
+        {
+          "property": "color",
+          "value": "#21182e"
+        },
+        {
+          "property": "outline",
+          "value": "2px solid var(--mochi-accent)"
+        },
+        {
+          "property": "outline-offset",
+          "value": "3px"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-muted,var(--lumiverse-text-muted,#a9a3b5))"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-destructive,#ed7c8c)"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(13px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "gap",
+          "value": "10px"
+        },
+        {
+          "property": "padding-bottom",
+          "value": "12px"
+        },
+        {
+          "property": "border-bottom",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "gap",
+          "value": "3px"
+        },
+        {
+          "property": "gap",
+          "value": "6px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(11px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "width",
+          "value": "26px"
+        },
+        {
+          "property": "height",
+          "value": "26px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(11px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "padding",
+          "value": "14px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "border-radius",
+          "value": "16px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(14px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-muted,#a9a3b5)"
+        },
+        {
+          "property": "width",
+          "value": "48px"
+        },
+        {
+          "property": "gap",
+          "value": "2px"
+        },
+        {
+          "property": "width",
+          "value": "23px"
+        },
+        {
+          "property": "height",
+          "value": "23px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(10px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "width",
+          "value": "44px"
+        },
+        {
+          "property": "height",
+          "value": "44px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(18px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "gap",
+          "value": "18px"
+        },
+        {
+          "property": "gap",
+          "value": "7px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "min-height",
+          "value": "44px"
+        },
+        {
+          "property": "padding",
+          "value": "11px 12px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "background",
+          "value": "color-mix(in srgb,var(--lp-text,#fff) 3%,var(--mochi-surface))"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(14px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-text,#f7f5ff)"
+        },
+        {
+          "property": "padding",
+          "value": "12px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "border-radius",
+          "value": "12px"
+        },
+        {
+          "property": "min-height",
+          "value": "24px"
+        },
+        {
+          "property": "width",
+          "value": "24px"
+        },
+        {
+          "property": "height",
+          "value": "24px"
+        },
+        {
+          "property": "gap",
+          "value": "8px"
+        },
+        {
+          "property": "padding",
+          "value": "12px 6px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid transparent"
+        },
+        {
+          "property": "border-radius",
+          "value": "14px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))!important"
+        },
+        {
+          "property": "right",
+          "value": "5px"
+        },
+        {
+          "property": "top",
+          "value": "5px"
+        },
+        {
+          "property": "width",
+          "value": "18px"
+        },
+        {
+          "property": "height",
+          "value": "18px"
+        },
+        {
+          "property": "color",
+          "value": "#21182e"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "width",
+          "value": "48px"
+        },
+        {
+          "property": "height",
+          "value": "48px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid color-mix(in srgb,var(--mochi-accent) 35%,var(--mochi-border))"
+        },
+        {
+          "property": "gap",
+          "value": "18px"
+        },
+        {
+          "property": "min-height",
+          "value": "160px"
+        },
+        {
+          "property": "padding",
+          "value": "4px 0 10px"
+        },
+        {
+          "property": "width",
+          "value": "32px"
+        },
+        {
+          "property": "height",
+          "value": "32px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "margin-top",
+          "value": "2px"
+        },
+        {
+          "property": "max-width",
+          "value": "min(86%,calc(100% - 40px))"
+        },
+        {
+          "property": "gap",
+          "value": "5px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "background",
+          "value": "color-mix(in srgb,var(--lp-text,#fff) 7%,var(--mochi-surface))"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "padding",
+          "value": "10px 12px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(10px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-muted,#a9a3b5)"
+        },
+        {
+          "property": "padding",
+          "value": "10px 0 max(4px,env(safe-area-inset-bottom,0px))"
+        },
+        {
+          "property": "border-top",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "min-height",
+          "value": "44px"
+        },
+        {
+          "property": "max-height",
+          "value": "112px"
+        },
+        {
+          "property": "border-radius",
+          "value": "18px"
+        },
+        {
+          "property": "padding",
+          "value": "11px 13px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "min-height",
+          "value": "36px"
+        },
+        {
+          "property": "padding",
+          "value": "7px 10px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(10px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-muted,#a9a3b5)"
+        },
+        {
+          "property": "gap",
+          "value": "6px"
+        },
+        {
+          "property": "gap",
+          "value": "6px"
+        },
+        {
+          "property": "gap",
+          "value": "4px"
+        },
+        {
+          "property": "padding",
+          "value": "14px"
+        },
+        {
+          "property": "gap",
+          "value": "12px"
+        },
+        {
+          "property": "padding",
+          "value": "2px 0 10px"
+        },
+        {
+          "property": "border-bottom",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(28px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "letter-spacing",
+          "value": "-.045em"
+        },
+        {
+          "property": "gap",
+          "value": "7px!important"
+        },
+        {
+          "property": "width",
+          "value": "38px"
+        },
+        {
+          "property": "height",
+          "value": "32px"
+        },
+        {
+          "property": "right",
+          "value": "1px"
+        },
+        {
+          "property": "min-width",
+          "value": "17px"
+        },
+        {
+          "property": "padding",
+          "value": "1px 4px"
+        },
+        {
+          "property": "border-radius",
+          "value": "99px"
+        },
+        {
+          "property": "color",
+          "value": "#21182e"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(10px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "line-height",
+          "value": "15px"
+        },
+        {
+          "property": "min-height",
+          "value": "46px"
+        },
+        {
+          "property": "padding",
+          "value": "10px 14px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(15px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "gap",
+          "value": "8px"
+        },
+        {
+          "property": "gap",
+          "value": "5px"
+        },
+        {
+          "property": "gap",
+          "value": "6px"
+        },
+        {
+          "property": "padding-bottom",
+          "value": "10px"
+        },
+        {
+          "property": "border-bottom",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "padding",
+          "value": "3px 7px 3px 3px"
+        },
+        {
+          "property": "border-radius",
+          "value": "99px"
+        },
+        {
+          "property": "width",
+          "value": "30px"
+        },
+        {
+          "property": "height",
+          "value": "30px"
+        },
+        {
+          "property": "gap",
+          "value": "14px"
+        },
+        {
+          "property": "gap",
+          "value": "9px"
+        },
+        {
+          "property": "width",
+          "value": "36px"
+        },
+        {
+          "property": "height",
+          "value": "36px"
+        },
+        {
+          "property": "margin-top",
+          "value": "4px"
+        },
+        {
+          "property": "max-width",
+          "value": "min(86%,calc(100% - 45px))"
+        },
+        {
+          "property": "gap",
+          "value": "2px"
+        },
+        {
+          "property": "min-height",
+          "value": "36px"
+        },
+        {
+          "property": "gap",
+          "value": "6px"
+        },
+        {
+          "property": "padding-right",
+          "value": "34px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(13px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(10px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "right",
+          "value": "-7px"
+        },
+        {
+          "property": "top",
+          "value": "-4px"
+        },
+        {
+          "property": "width",
+          "value": "44px"
+        },
+        {
+          "property": "height",
+          "value": "44px"
+        },
+        {
+          "property": "width",
+          "value": "15px"
+        },
+        {
+          "property": "height",
+          "value": "15px"
+        },
+        {
+          "property": "padding",
+          "value": "12px 14px"
+        },
+        {
+          "property": "border-radius",
+          "value": "17px"
+        },
+        {
+          "property": "border-top-left-radius",
+          "value": "6px"
+        },
+        {
+          "property": "border-top-right-radius",
+          "value": "6px"
+        },
+        {
+          "property": "margin-top",
+          "value": "-6px"
+        },
+        {
+          "property": "min-height",
+          "value": "28px"
+        },
+        {
+          "property": "gap",
+          "value": "7px"
+        },
+        {
+          "property": "padding-top",
+          "value": "10px"
+        },
+        {
+          "property": "gap",
+          "value": "8px"
+        },
+        {
+          "property": "padding",
+          "value": "6px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "border-radius",
+          "value": "26px"
+        },
+        {
+          "property": "background",
+          "value": "color-mix(in srgb,var(--lp-text,#fff) 4%,var(--mochi-surface))"
+        },
+        {
+          "property": "border-radius",
+          "value": "20px"
+        },
+        {
+          "property": "padding",
+          "value": "10px 14px"
+        },
+        {
+          "property": "height",
+          "value": "44px"
+        },
+        {
+          "property": "border-radius",
+          "value": "99px"
+        },
+        {
+          "property": "grid-template-columns",
+          "value": "minmax(0,1fr) 44px"
+        },
+        {
+          "property": "gap",
+          "value": "10px"
+        },
+        {
+          "property": "min-height",
+          "value": "44px"
+        },
+        {
+          "property": "width",
+          "value": "32px"
+        },
+        {
+          "property": "height",
+          "value": "32px"
+        },
+        {
+          "property": "border",
+          "value": "2px solid var(--mochi-surface)"
+        },
+        {
+          "property": "margin-left",
+          "value": "-10px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-muted,#a9a3b5)"
+        },
+        {
+          "property": "border-top",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "padding-top",
+          "value": "16px"
+        },
+        {
+          "property": "gap",
+          "value": "20px"
+        },
+        {
+          "property": "width",
+          "value": "38px"
+        },
+        {
+          "property": "height",
+          "value": "38px"
+        },
+        {
+          "property": "max-width",
+          "value": "min(86%,calc(100% - 47px))"
+        },
+        {
+          "property": "gap",
+          "value": "6px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(13px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "line-height",
+          "value": "20px"
+        },
+        {
+          "property": "min-height",
+          "value": "24px"
+        },
+        {
+          "property": "padding-right",
+          "value": "38px"
+        },
+        {
+          "property": "gap",
+          "value": "8px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(10px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "top",
+          "value": "-10px"
+        },
+        {
+          "property": "right",
+          "value": "-6px"
+        },
+        {
+          "property": "margin-top",
+          "value": "-16px"
+        },
+        {
+          "property": "min-height",
+          "value": "24px"
+        },
+        {
+          "property": "padding",
+          "value": "11px 14px"
+        },
+        {
+          "property": "margin",
+          "value": "0 -14px -14px"
+        },
+        {
+          "property": "padding",
+          "value": "10px 14px max(14px,env(safe-area-inset-bottom,0px))"
+        },
+        {
+          "property": "gap",
+          "value": "6px"
+        },
+        {
+          "property": "min-width",
+          "value": "100px"
+        },
+        {
+          "property": "min-height",
+          "value": "44px"
+        },
+        {
+          "property": "border-radius",
+          "value": "99px"
+        },
+        {
+          "property": "padding",
+          "value": "6px 36px 6px 8px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "right",
+          "value": "12px"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-muted,#a9a3b5)"
+        },
+        {
+          "property": "gap",
+          "value": "10px"
+        },
+        {
+          "property": "width",
+          "value": "26px"
+        },
+        {
+          "property": "height",
+          "value": "26px"
+        },
+        {
+          "property": "width",
+          "value": "16px"
+        },
+        {
+          "property": "height",
+          "value": "16px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "min-height",
+          "value": "44px"
+        },
+        {
+          "property": "outline",
+          "value": "2px solid var(--mochi-accent)"
+        },
+        {
+          "property": "outline-offset",
+          "value": "2px"
+        },
+        {
+          "property": "grid-template-columns",
+          "value": "minmax(0,1fr) auto 52px"
+        },
+        {
+          "property": "min-height",
+          "value": "60px"
+        },
+        {
+          "property": "width",
+          "value": "52px"
+        },
+        {
+          "property": "height",
+          "value": "42px"
+        },
+        {
+          "property": "top",
+          "value": "-2px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(10px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "color",
+          "value": "#e89dbd"
+        },
+        {
+          "property": "padding-top",
+          "value": "5px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "line-height",
+          "value": "18px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(10px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "line-height",
+          "value": "18px"
+        },
+        {
+          "property": "margin-top",
+          "value": "8px"
+        },
+        {
+          "property": "gap",
+          "value": "4px"
+        },
+        {
+          "property": "padding-top",
+          "value": "12px"
+        },
+        {
+          "property": "min-height",
+          "value": "16px"
+        },
+        {
+          "property": "padding-right",
+          "value": "38px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(10px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "line-height",
+          "value": "16px"
+        },
+        {
+          "property": "top",
+          "value": "-14px"
+        },
+        {
+          "property": "right",
+          "value": "-6px"
+        },
+        {
+          "property": "margin-top",
+          "value": "-12px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(14px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "top",
+          "value": "-5px"
+        },
+        {
+          "property": "grid-template-columns",
+          "value": "minmax(0,1fr) 96px"
+        },
+        {
+          "property": "padding-top",
+          "value": "2px"
+        },
+        {
+          "property": "left",
+          "value": "12px"
+        },
+        {
+          "property": "top",
+          "value": "13px"
+        },
+        {
+          "property": "width",
+          "value": "20px"
+        },
+        {
+          "property": "height",
+          "value": "20px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(14px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "padding-left",
+          "value": "40px"
+        },
+        {
+          "property": "padding-right",
+          "value": "24px"
+        },
+        {
+          "property": "border-radius",
+          "value": "24px"
+        },
+        {
+          "property": "gap",
+          "value": "8px"
+        },
+        {
+          "property": "gap",
+          "value": "7px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(11px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-muted,#a9a3b5)"
+        },
+        {
+          "property": "min-height",
+          "value": "18px"
+        },
+        {
+          "property": "width",
+          "value": "8px"
+        },
+        {
+          "property": "height",
+          "value": "8px"
+        },
+        {
+          "property": "background",
+          "value": "#58d998"
+        },
+        {
+          "property": "margin-top",
+          "value": "5px"
+        },
+        {
+          "property": "right",
+          "value": "-1px"
+        },
+        {
+          "property": "bottom",
+          "value": "-1px"
+        },
+        {
+          "property": "width",
+          "value": "12px"
+        },
+        {
+          "property": "height",
+          "value": "12px"
+        },
+        {
+          "property": "border",
+          "value": "2px solid var(--mochi-surface)"
+        },
+        {
+          "property": "background",
+          "value": "#58d998"
+        },
+        {
+          "property": "max-width",
+          "value": "min(var(--mochi-bubble-max-width),calc(100% - var(--mochi-avatar-size) - 9px))"
+        },
+        {
+          "property": "gap",
+          "value": "4px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(11px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "gap",
+          "value": "7px"
+        },
+        {
+          "property": "padding-top",
+          "value": "6px"
+        },
+        {
+          "property": "gap",
+          "value": "20px"
+        },
+        {
+          "property": "padding-top",
+          "value": "14px"
+        },
+        {
+          "property": "top",
+          "value": "-21px"
+        },
+        {
+          "property": "right",
+          "value": "-5px"
+        },
+        {
+          "property": "margin-top",
+          "value": "-17px"
+        },
+        {
+          "property": "border-radius",
+          "value": "22px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--lp-border)"
+        },
+        {
+          "property": "box-shadow",
+          "value": "0 14px 42px #0003"
+        },
+        {
+          "property": "padding",
+          "value": "18px"
+        },
+        {
+          "property": "gap",
+          "value": "5px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(11px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "margin",
+          "value": "0 0 8px"
+        },
+        {
+          "property": "min-height",
+          "value": "48px"
+        },
+        {
+          "property": "padding",
+          "value": "12px 14px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(13px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-destructive,#d9677d)"
+        },
+        {
+          "property": "border-radius",
+          "value": "99px"
+        },
+        {
+          "property": "min-height",
+          "value": "44px"
+        },
+        {
+          "property": "outline",
+          "value": "2px solid var(--lp-accent)"
+        },
+        {
+          "property": "outline-offset",
+          "value": "2px"
+        },
+        {
+          "property": "gap",
+          "value": "3px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(11px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "gap",
+          "value": "10px"
+        },
+        {
+          "property": "flex",
+          "value": "1 1 140px"
+        },
+        {
+          "property": "min-height",
+          "value": "44px"
+        },
+        {
+          "property": "padding",
+          "value": "8px 0"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(11px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "padding-top",
+          "value": "12px"
+        },
+        {
+          "property": "border-top",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(11px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "padding",
+          "value": "8px 10px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "border-radius",
+          "value": "14px"
+        },
+        {
+          "property": "height",
+          "value": "72px"
+        },
+        {
+          "property": "gap",
+          "value": "5px"
+        },
+        {
+          "property": "padding",
+          "value": "42px 16px 18px"
+        },
+        {
+          "property": "top",
+          "value": "-32px"
+        },
+        {
+          "property": "left",
+          "value": "12px"
+        },
+        {
+          "property": "width",
+          "value": "64px"
+        },
+        {
+          "property": "height",
+          "value": "64px"
+        },
+        {
+          "property": "border",
+          "value": "4px solid var(--mochi-surface)"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(24px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(20px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "padding",
+          "value": "16px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "gap",
+          "value": "14px"
+        },
+        {
+          "property": "padding",
+          "value": "0 6px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(11px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "letter-spacing",
+          "value": ".04em"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(11px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(10px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "min-height",
+          "value": "32px"
+        },
+        {
+          "property": "padding",
+          "value": "4px 0"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(10px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-destructive,#d9677d)"
+        },
+        {
+          "property": "min-height",
+          "value": "28px"
+        },
+        {
+          "property": "padding-block",
+          "value": "2px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(14px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "margin",
+          "value": "1px 0"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(10px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "line-height",
+          "value": "16px"
+        },
+        {
+          "property": "min-height",
+          "value": "16px"
+        },
+        {
+          "property": "width",
+          "value": "6px"
+        },
+        {
+          "property": "height",
+          "value": "6px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(10px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "line-height",
+          "value": "16px"
+        },
+        {
+          "property": "padding-bottom",
+          "value": "10px"
+        },
+        {
+          "property": "gap",
+          "value": "8px"
+        },
+        {
+          "property": "width",
+          "value": "40px"
+        },
+        {
+          "property": "min-width",
+          "value": "40px"
+        },
+        {
+          "property": "height",
+          "value": "40px"
+        },
+        {
+          "property": "min-height",
+          "value": "40px"
+        },
+        {
+          "property": "padding",
+          "value": "14px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "border-radius",
+          "value": "12px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(11px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "padding",
+          "value": "0 5px"
+        },
+        {
+          "property": "padding",
+          "value": "14px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "min-height",
+          "value": "44px"
+        },
+        {
+          "property": "outline",
+          "value": "2px solid var(--mochi-accent)"
+        },
+        {
+          "property": "outline-offset",
+          "value": "-3px"
+        },
+        {
+          "property": "border-bottom",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "margin-bottom",
+          "value": "14px"
+        },
+        {
+          "property": "margin-left",
+          "value": "14px"
+        },
+        {
+          "property": "margin-right",
+          "value": "14px"
+        },
+        {
+          "property": "margin-bottom",
+          "value": "14px"
+        },
+        {
+          "property": "padding",
+          "value": "4px 0"
+        },
+        {
+          "property": "min-height",
+          "value": "36px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(11px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "grid-template-columns",
+          "value": "repeat(auto-fill,minmax(72px,1fr))"
+        },
+        {
+          "property": "gap",
+          "value": "8px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(11px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "padding",
+          "value": "8px 4px"
+        },
+        {
+          "property": "gap",
+          "value": "12px"
+        },
+        {
+          "property": "width",
+          "value": "36px"
+        },
+        {
+          "property": "min-width",
+          "value": "36px"
+        },
+        {
+          "property": "min-height",
+          "value": "36px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(22px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "min-height",
+          "value": "40px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "outline",
+          "value": "2px solid var(--mochi-accent)"
+        },
+        {
+          "property": "outline-offset",
+          "value": "2px"
+        },
+        {
+          "property": "gap",
+          "value": "8px"
+        },
+        {
+          "property": "flex",
+          "value": "1 1 180px"
+        },
+        {
+          "property": "min-height",
+          "value": "44px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(11px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "padding",
+          "value": "8px 10px"
+        },
+        {
+          "property": "margin",
+          "value": "6px 0 0"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(11px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "gap",
+          "value": "6px"
+        },
+        {
+          "property": "gap",
+          "value": "8px"
+        },
+        {
+          "property": "gap",
+          "value": "4px"
+        },
+        {
+          "property": "gap",
+          "value": "2px"
+        },
+        {
+          "property": "min-width",
+          "value": "40px"
+        },
+        {
+          "property": "min-height",
+          "value": "40px"
+        },
+        {
+          "property": "height",
+          "value": "40px"
+        },
+        {
+          "property": "padding",
+          "value": "8px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid transparent"
+        },
+        {
+          "property": "border-radius",
+          "value": "8px"
+        },
+        {
+          "property": "width",
+          "value": "18px"
+        },
+        {
+          "property": "height",
+          "value": "18px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "background",
+          "value": "color-mix(in srgb,var(--lp-accent,#b7a0e8) 12%,transparent)"
+        },
+        {
+          "property": "outline",
+          "value": "2px solid var(--lp-accent,#b7a0e8)"
+        },
+        {
+          "property": "outline-offset",
+          "value": "-2px"
+        },
+        {
+          "property": "inset",
+          "value": "calc(100% + 4px) 0 auto auto"
+        },
+        {
+          "property": "width",
+          "value": "min(224px,100%)"
+        },
+        {
+          "property": "max-height",
+          "value": "min(300px,45dvh)"
+        },
+        {
+          "property": "inset",
+          "value": "auto 0 calc(100% + 4px) auto"
+        },
+        {
+          "property": "gap",
+          "value": "10px"
+        },
+        {
+          "property": "padding",
+          "value": "12px"
+        },
+        {
+          "property": "gap",
+          "value": "6px"
+        },
+        {
+          "property": "min-height",
+          "value": "56px"
+        },
+        {
+          "property": "padding",
+          "value": "8px 10px"
+        },
+        {
+          "property": "gap",
+          "value": "10px"
+        },
+        {
+          "property": "border-radius",
+          "value": "10px"
+        },
+        {
+          "property": "width",
+          "value": "34px"
+        },
+        {
+          "property": "height",
+          "value": "34px"
+        },
+        {
+          "property": "min-height",
+          "value": "40px"
+        },
+        {
+          "property": "padding",
+          "value": "6px 10px"
+        },
+        {
+          "property": "border-radius",
+          "value": "8px"
+        },
+        {
+          "property": "gap",
+          "value": "4px"
+        },
+        {
+          "property": "padding",
+          "value": "5px 8px"
+        },
+        {
+          "property": "border-top",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "padding",
+          "value": "8px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "outline",
+          "value": "2px solid var(--mochi-accent)"
+        },
+        {
+          "property": "outline-offset",
+          "value": "-2px"
+        },
+        {
+          "property": "inset",
+          "value": "auto 4px calc(100% + 4px) auto"
+        },
+        {
+          "property": "width",
+          "value": "min(224px,calc(100% - 8px))"
+        },
+        {
+          "property": "max-height",
+          "value": "min(300px,50dvh)"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "box-shadow",
+          "value": "0 10px 28px #0004"
+        },
+        {
+          "property": "padding",
+          "value": "0 8px max(8px,env(safe-area-inset-bottom,0px))"
+        },
+        {
+          "property": "gap",
+          "value": "4px"
+        },
+        {
+          "property": "padding",
+          "value": "4px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "outline",
+          "value": "1px solid var(--mochi-accent)"
+        },
+        {
+          "property": "padding",
+          "value": "9px 8px"
+        },
+        {
+          "property": "min-width",
+          "value": "40px"
+        },
+        {
+          "property": "width",
+          "value": "40px"
+        },
+        {
+          "property": "min-height",
+          "value": "40px"
+        },
+        {
+          "property": "height",
+          "value": "40px"
+        },
+        {
+          "property": "flex",
+          "value": "0 0 40px"
+        },
+        {
+          "property": "width",
+          "value": "40px"
+        },
+        {
+          "property": "min-width",
+          "value": "40px"
+        },
+        {
+          "property": "max-width",
+          "value": "40px"
+        },
+        {
+          "property": "min-height",
+          "value": "40px"
+        },
+        {
+          "property": "height",
+          "value": "40px"
+        },
+        {
+          "property": "width",
+          "value": "40px"
+        },
+        {
+          "property": "height",
+          "value": "40px"
+        },
+        {
+          "property": "width",
+          "value": "25px"
+        },
+        {
+          "property": "height",
+          "value": "25px"
+        },
+        {
+          "property": "bottom",
+          "value": "calc(100% + 8px)"
+        },
+        {
+          "property": "right",
+          "value": "-44px"
+        },
+        {
+          "property": "width",
+          "value": "min(240px,75cqw)"
+        },
+        {
+          "property": "max-height",
+          "value": "240px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "box-shadow",
+          "value": "0 10px 30px #0004"
+        },
+        {
+          "property": "padding",
+          "value": "4px"
+        },
+        {
+          "property": "min-height",
+          "value": "40px"
+        },
+        {
+          "property": "padding",
+          "value": "7px 10px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(10px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "box-shadow",
+          "value": "0 4px 14px #0003,0 0 0 1px var(--mochi-accent)"
+        },
+        {
+          "property": "bottom",
+          "value": "calc(100% + 3px)"
+        },
+        {
+          "property": "max-width",
+          "value": "calc(100cqw - 24px)"
+        },
+        {
+          "property": "padding",
+          "value": "2px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "box-shadow",
+          "value": "0 3px 12px #0003"
+        },
+        {
+          "property": "min-width",
+          "value": "32px"
+        },
+        {
+          "property": "width",
+          "value": "32px"
+        },
+        {
+          "property": "height",
+          "value": "32px"
+        },
+        {
+          "property": "min-height",
+          "value": "32px"
+        },
+        {
+          "property": "padding",
+          "value": "7px"
+        },
+        {
+          "property": "border-radius",
+          "value": "6px"
+        },
+        {
+          "property": "animation-delay",
+          "value": "0ms"
+        },
+        {
+          "property": "width",
+          "value": "16px"
+        },
+        {
+          "property": "height",
+          "value": "16px"
+        },
+        {
+          "property": "outline",
+          "value": "1px solid var(--mochi-accent)"
+        },
+        {
+          "property": "transform",
+          "value": "translateY(8px) scale(.82)"
+        },
+        {
+          "property": "transform",
+          "value": "translateY(-2px) scale(1.05)"
+        }
+      ],
+      "hostAliases": [
+        {
+          "property": "border",
+          "value": "1px solid var(--lp-border)"
+        },
+        {
+          "property": "background",
+          "value": "var(--lp-bg)"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-text)"
+        },
+        {
+          "property": "background",
+          "value": "var(--lp-surface-2)"
+        },
+        {
+          "property": "background",
+          "value": "color-mix(in srgb,var(--lp-text,#fff) 4%,var(--mochi-surface))"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-muted,var(--lumiverse-text-muted,#a9a3b5))"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-destructive,#ed7c8c)"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-muted,#a9a3b5)"
+        },
+        {
+          "property": "background",
+          "value": "color-mix(in srgb,var(--lp-text,#fff) 3%,var(--mochi-surface))"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-text,#f7f5ff)"
+        },
+        {
+          "property": "background",
+          "value": "color-mix(in srgb,var(--lp-text,#fff) 7%,var(--mochi-surface))"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-muted,#a9a3b5)"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-muted,#a9a3b5)"
+        },
+        {
+          "property": "background",
+          "value": "color-mix(in srgb,var(--lp-text,#fff) 4%,var(--mochi-surface))"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-muted,#a9a3b5)"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-muted,#a9a3b5)"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-muted,#a9a3b5)"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--lp-border)"
+        },
+        {
+          "property": "background",
+          "value": "var(--lp-bg)"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-muted)"
+        },
+        {
+          "property": "background",
+          "value": "color-mix(in srgb,var(--lp-text) 4%,var(--lp-bg))"
+        },
+        {
+          "property": "background",
+          "value": "color-mix(in srgb,var(--lp-accent) 12%,var(--lp-bg))"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-destructive,#d9677d)"
+        },
+        {
+          "property": "outline",
+          "value": "2px solid var(--lp-accent)"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-text)"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-muted)"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-muted)"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-muted)"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-destructive,#d9677d)"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-muted)"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-muted)"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-muted,var(--lumiverse-text-muted,inherit))"
+        },
+        {
+          "property": "background",
+          "value": "color-mix(in srgb,var(--lp-accent,#b7a0e8) 12%,transparent)"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-text,var(--lumiverse-text,inherit))"
+        },
+        {
+          "property": "outline",
+          "value": "2px solid var(--lp-accent,#b7a0e8)"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-muted,inherit)"
+        }
+      ],
+      "classes": [
+        "mochi-account-actions",
+        "mochi-account-list",
+        "mochi-account-picker",
+        "mochi-action-author",
+        "mochi-action-context",
+        "mochi-action-panel",
+        "mochi-action-strip",
+        "mochi-actions",
+        "mochi-assignment",
+        "mochi-avatar",
+        "mochi-avatar-frame",
+        "mochi-bottom-toolbar",
+        "mochi-brand",
+        "mochi-bubble",
+        "mochi-card",
+        "mochi-card-copy",
+        "mochi-choice",
+        "mochi-composer",
+        "mochi-composer-dock",
+        "mochi-composer-hint",
+        "mochi-composer-row",
+        "mochi-connection-indicator",
+        "mochi-connection-status",
+        "mochi-custom-toolbar",
+        "mochi-desktop",
+        "mochi-desktop-main",
+        "mochi-edited-label",
+        "mochi-error",
+        "mochi-form",
+        "mochi-header-controls",
+        "mochi-icon-button",
+        "mochi-inbox-actions",
+        "mochi-legacy-action",
+        "mochi-mascot",
+        "mochi-member",
+        "mochi-member-strip",
+        "mochi-message",
+        "mochi-message-actions",
+        "mochi-message-avatar",
+        "mochi-message-body",
+        "mochi-message-heading",
+        "mochi-message-meta",
+        "mochi-message-name",
+        "mochi-model-picker",
+        "mochi-model-picker-row",
+        "mochi-muted",
+        "mochi-notification-avatar",
+        "mochi-notification-entry",
+        "mochi-notification-list",
+        "mochi-notification-toast",
+        "mochi-participant-count",
+        "mochi-participants",
+        "mochi-picker",
+        "mochi-portrait-stack",
+        "mochi-presence-dot",
+        "mochi-preview",
+        "mochi-primary",
+        "mochi-profile-actions",
+        "mochi-profile-banner",
+        "mochi-profile-fields",
+        "mochi-profile-portrait",
+        "mochi-profile-preview",
+        "mochi-profile-preview-body",
+        "mochi-profile-preview-name",
+        "mochi-responder",
+        "mochi-responder-choice",
+        "mochi-responder-choices",
+        "mochi-responder-identity",
+        "mochi-responder-name",
+        "mochi-responder-popup",
+        "mochi-room-avatars",
+        "mochi-room-connection",
+        "mochi-room-header",
+        "mochi-room-info",
+        "mochi-room-meta",
+        "mochi-room-select",
+        "mochi-room-select-icon",
+        "mochi-room-selector",
+        "mochi-secondary-action",
+        "mochi-settings-section",
+        "mochi-sheet",
+        "mochi-sidebar",
+        "mochi-standalone",
+        "mochi-thread",
+        "mochi-toggle",
+        "mochi-toolbar-label",
+        "mochi-toolbar-shortcuts",
+        "mochi-unread-count",
+        "mochi-view",
+        "mochi-wordmark-i",
+        "mochi-wordmark-image"
+      ],
+      "important": 6
+    },
+    {
+      "section": "mochi-reply-styles",
+      "literalCandidates": [
+        {
+          "property": "gap",
+          "value": "3px"
+        },
+        {
+          "property": "padding",
+          "value": "7px 10px"
+        },
+        {
+          "property": "border-left",
+          "value": "3px solid var(--mochi-accent)"
+        },
+        {
+          "property": "border-radius",
+          "value": "6px"
+        },
+        {
+          "property": "background",
+          "value": "var(--lp-surface-2,#ffffff0c)"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(11px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "min-height",
+          "value": "44px"
+        },
+        {
+          "property": "outline",
+          "value": "2px solid var(--mochi-accent)"
+        },
+        {
+          "property": "outline-offset",
+          "value": "2px"
+        },
+        {
+          "property": "gap",
+          "value": "6px"
+        }
+      ],
+      "hostAliases": [
+        {
+          "property": "background",
+          "value": "var(--lp-surface-2,#ffffff0c)"
+        }
+      ],
+      "classes": [
+        "mochi-message",
+        "mochi-quote",
+        "mochi-reply-preview",
+        "mochi-view"
+      ],
+      "important": 0
+    },
+    {
+      "section": "mochi-reaction-styles",
+      "literalCandidates": [
+        {
+          "property": "gap",
+          "value": "5px"
+        },
+        {
+          "property": "margin-top",
+          "value": "5px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "min-height",
+          "value": "32px"
+        },
+        {
+          "property": "padding",
+          "value": "4px 8px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "background",
+          "value": "var(--lp-surface-2,#ffffff0c)"
+        },
+        {
+          "property": "min-width",
+          "value": "44px"
+        },
+        {
+          "property": "min-height",
+          "value": "44px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(20px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "background",
+          "value": "var(--lp-surface-2,#ffffff18)"
+        },
+        {
+          "property": "outline",
+          "value": "2px solid var(--mochi-accent)"
+        },
+        {
+          "property": "outline-offset",
+          "value": "2px"
+        },
+        {
+          "property": "min-width",
+          "value": "44px"
+        },
+        {
+          "property": "min-height",
+          "value": "44px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(20px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "background",
+          "value": "var(--lp-surface-2,#ffffff0c)"
+        },
+        {
+          "property": "outline",
+          "value": "2px solid var(--mochi-accent)"
+        },
+        {
+          "property": "outline-offset",
+          "value": "2px"
+        }
+      ],
+      "hostAliases": [
+        {
+          "property": "background",
+          "value": "var(--lp-surface-2,#ffffff0c)"
+        },
+        {
+          "property": "background",
+          "value": "var(--lp-surface-2,#ffffff18)"
+        },
+        {
+          "property": "background",
+          "value": "var(--lp-surface-2,#ffffff0c)"
+        }
+      ],
+      "classes": [
+        "mochi-reaction",
+        "mochi-reaction-palette",
+        "mochi-reactions",
+        "mochi-sheet",
+        "mochi-view"
+      ],
+      "important": 0
+    },
+    {
+      "section": "mochi-pin-styles",
+      "literalCandidates": [
+        {
+          "property": "gap",
+          "value": "10px"
+        },
+        {
+          "property": "background",
+          "value": "var(--lp-surface-2,#ffffff0c)"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "border-radius",
+          "value": "10px"
+        },
+        {
+          "property": "padding",
+          "value": "10px"
+        },
+        {
+          "property": "gap",
+          "value": "10px"
+        },
+        {
+          "property": "gap",
+          "value": "5px"
+        },
+        {
+          "property": "background",
+          "value": "var(--lp-surface-2,#ffffff0c)"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "padding",
+          "value": "8px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "border-radius",
+          "value": "10px"
+        },
+        {
+          "property": "padding",
+          "value": "10px"
+        },
+        {
+          "property": "min-height",
+          "value": "40px"
+        },
+        {
+          "property": "outline",
+          "value": "2px solid var(--mochi-accent)"
+        },
+        {
+          "property": "outline-offset",
+          "value": "2px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(11px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "margin-left",
+          "value": "6px"
+        }
+      ],
+      "hostAliases": [
+        {
+          "property": "background",
+          "value": "var(--lp-surface-2,#ffffff0c)"
+        },
+        {
+          "property": "background",
+          "value": "var(--lp-surface-2,#ffffff0c)"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-text-secondary)"
+        }
+      ],
+      "classes": [
+        "mochi-note-editor",
+        "mochi-note-row",
+        "mochi-pin-indicator",
+        "mochi-pin-jump",
+        "mochi-pin-row",
+        "mochi-pins-panel",
+        "mochi-sheet",
+        "mochi-view"
+      ],
+      "important": 0
+    },
+    {
+      "section": "mochi-search-styles",
+      "literalCandidates": [
+        {
+          "property": "border-bottom",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "padding",
+          "value": "10px"
+        },
+        {
+          "property": "gap",
+          "value": "6px"
+        },
+        {
+          "property": "flex",
+          "value": "1 1 160px"
+        },
+        {
+          "property": "background",
+          "value": "var(--lp-surface-2,#ffffff0c)"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "padding",
+          "value": "8px"
+        },
+        {
+          "property": "gap",
+          "value": "6px"
+        },
+        {
+          "property": "background",
+          "value": "var(--lp-surface-2,#ffffff0c)"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "border-radius",
+          "value": "10px"
+        },
+        {
+          "property": "padding",
+          "value": "10px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(11px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "gap",
+          "value": "6px"
+        },
+        {
+          "property": "min-height",
+          "value": "40px"
+        },
+        {
+          "property": "outline",
+          "value": "2px solid var(--mochi-accent)"
+        },
+        {
+          "property": "outline-offset",
+          "value": "2px"
+        }
+      ],
+      "hostAliases": [
+        {
+          "property": "background",
+          "value": "var(--lp-surface-2,#ffffff0c)"
+        },
+        {
+          "property": "background",
+          "value": "var(--lp-surface-2,#ffffff0c)"
+        }
+      ],
+      "classes": [
+        "mochi-search-controls",
+        "mochi-search-paging",
+        "mochi-search-panel",
+        "mochi-search-result",
+        "mochi-search-results",
+        "mochi-view"
+      ],
+      "important": 0
+    },
+    {
+      "section": "mochi-texting-styles",
+      "literalCandidates": [
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "border-radius",
+          "value": "10px"
+        },
+        {
+          "property": "padding",
+          "value": "10px"
+        },
+        {
+          "property": "outline",
+          "value": "2px solid var(--mochi-accent)"
+        },
+        {
+          "property": "outline-offset",
+          "value": "2px"
+        }
+      ],
+      "hostAliases": [],
+      "classes": [
+        "mochi-texting-controls",
+        "mochi-view"
+      ],
+      "important": 0
+    },
+    {
+      "section": "mochi-preview-styles",
+      "literalCandidates": [
+        {
+          "property": "padding",
+          "value": "10px"
+        },
+        {
+          "property": "border-bottom",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "gap",
+          "value": "6px"
+        },
+        {
+          "property": "background",
+          "value": "var(--lp-surface-2,#ffffff0c)"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "padding",
+          "value": "8px"
+        },
+        {
+          "property": "border-radius",
+          "value": "8px"
+        },
+        {
+          "property": "min-height",
+          "value": "40px"
+        },
+        {
+          "property": "outline",
+          "value": "2px solid var(--mochi-accent)"
+        },
+        {
+          "property": "outline-offset",
+          "value": "2px"
+        }
+      ],
+      "hostAliases": [
+        {
+          "property": "background",
+          "value": "var(--lp-surface-2,#ffffff0c)"
+        }
+      ],
+      "classes": [
+        "mochi-preview-controls",
+        "mochi-preview-panel",
+        "mochi-preview-text",
+        "mochi-view"
+      ],
+      "important": 0
+    },
+    {
+      "section": "mochi-preset-styles",
+      "literalCandidates": [
+        {
+          "property": "padding",
+          "value": "10px"
+        },
+        {
+          "property": "border-bottom",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "min-height",
+          "value": "40px"
+        },
+        {
+          "property": "margin",
+          "value": "3px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "padding",
+          "value": "8px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "border-radius",
+          "value": "10px"
+        },
+        {
+          "property": "padding",
+          "value": "8px"
+        },
+        {
+          "property": "margin-top",
+          "value": "8px"
+        },
+        {
+          "property": "outline",
+          "value": "2px solid var(--mochi-accent)"
+        },
+        {
+          "property": "outline-offset",
+          "value": "2px"
+        }
+      ],
+      "hostAliases": [],
+      "classes": [
+        "mochi-preset-editor",
+        "mochi-preset-entry",
+        "mochi-preset-panel",
+        "mochi-view"
+      ],
+      "important": 0
+    },
+    {
+      "section": "block-editor",
+      "literalCandidates": [
+        {
+          "property": "margin",
+          "value": "12px 0"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "border-radius",
+          "value": "9px"
+        },
+        {
+          "property": "margin",
+          "value": "8px 0"
+        },
+        {
+          "property": "min-height",
+          "value": "44px"
+        },
+        {
+          "property": "padding",
+          "value": "0 12px"
+        },
+        {
+          "property": "line-height",
+          "value": "44px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(13px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "min-width",
+          "value": "44px"
+        },
+        {
+          "property": "margin-left",
+          "value": "10px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(11px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "padding",
+          "value": "8px 12px"
+        },
+        {
+          "property": "gap",
+          "value": "6px"
+        },
+        {
+          "property": "border-bottom",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "flex",
+          "value": "1 1 160px"
+        },
+        {
+          "property": "padding",
+          "value": "2px 10px"
+        },
+        {
+          "property": "border-top",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "gap",
+          "value": "10px"
+        },
+        {
+          "property": "min-height",
+          "value": "48px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(13px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(11px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "min-height",
+          "value": "40px"
+        },
+        {
+          "property": "padding",
+          "value": "7px 10px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "border-radius",
+          "value": "7px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "min-width",
+          "value": "36px"
+        },
+        {
+          "property": "min-height",
+          "value": "44px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "padding",
+          "value": "5px"
+        },
+        {
+          "property": "min-width",
+          "value": "150px"
+        },
+        {
+          "property": "box-shadow",
+          "value": "0 5px 15px color-mix(in srgb,currentColor 12%,transparent)"
+        },
+        {
+          "property": "gap",
+          "value": "12px"
+        },
+        {
+          "property": "gap",
+          "value": "10px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "min-height",
+          "value": "clamp(280px,45vh,650px)"
+        },
+        {
+          "property": "border-top",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "padding-top",
+          "value": "6px"
+        },
+        {
+          "property": "gap",
+          "value": "12px"
+        },
+        {
+          "property": "flex",
+          "value": "1 1 180px"
+        },
+        {
+          "property": "padding",
+          "value": "0 12px"
+        },
+        {
+          "property": "min-height",
+          "value": "44px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "padding-bottom",
+          "value": "12px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "padding",
+          "value": "12px"
+        },
+        {
+          "property": "gap",
+          "value": "8px"
+        },
+        {
+          "property": "padding",
+          "value": "12px 0"
+        },
+        {
+          "property": "border-bottom",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "gap",
+          "value": "5px"
+        },
+        {
+          "property": "outline",
+          "value": "2px solid var(--mochi-accent)"
+        },
+        {
+          "property": "outline-offset",
+          "value": "2px"
+        },
+        {
+          "property": "width",
+          "value": "20px"
+        },
+        {
+          "property": "height",
+          "value": "20px"
+        },
+        {
+          "property": "min-height",
+          "value": "20px"
+        },
+        {
+          "property": "gap",
+          "value": "5px"
+        },
+        {
+          "property": "padding",
+          "value": "4px 0"
+        },
+        {
+          "property": "padding-left",
+          "value": "38px"
+        },
+        {
+          "property": "padding",
+          "value": "0 8px"
+        },
+        {
+          "property": "padding",
+          "value": "2px 8px"
+        },
+        {
+          "property": "min-height",
+          "value": "44px"
+        }
+      ],
+      "hostAliases": [],
+      "classes": [
+        "mochi-block-action",
+        "mochi-block-category",
+        "mochi-block-columns",
+        "mochi-block-count",
+        "mochi-block-detail",
+        "mochi-block-drag",
+        "mochi-block-editor",
+        "mochi-block-name",
+        "mochi-block-overflow",
+        "mochi-block-picker",
+        "mochi-block-row",
+        "mochi-block-row-actions",
+        "mochi-block-settings",
+        "mochi-block-title",
+        "mochi-block-toolbar",
+        "mochi-category-tools",
+        "mochi-macro-browser",
+        "mochi-macro-item",
+        "mochi-prompt-block",
+        "mochi-view"
+      ],
+      "important": 0
+    },
+    {
+      "section": "preset-workspace-base",
+      "literalCandidates": [
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "margin",
+          "value": "6px"
+        },
+        {
+          "property": "margin-top",
+          "value": "12px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "border-radius",
+          "value": "10px"
+        },
+        {
+          "property": "padding",
+          "value": "10px"
+        },
+        {
+          "property": "gap",
+          "value": "6px"
+        },
+        {
+          "property": "max-height",
+          "value": "220px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "padding",
+          "value": "8px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "padding",
+          "value": "8px"
+        },
+        {
+          "property": "border-radius",
+          "value": "10px"
+        },
+        {
+          "property": "min-height",
+          "value": "44px"
+        },
+        {
+          "property": "padding",
+          "value": "10px 0"
+        },
+        {
+          "property": "margin",
+          "value": "0 0 10px"
+        },
+        {
+          "property": "padding",
+          "value": "8px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "border-radius",
+          "value": "8px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "padding",
+          "value": "10px"
+        },
+        {
+          "property": "margin",
+          "value": "8px 0"
+        },
+        {
+          "property": "gap",
+          "value": "5px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "padding",
+          "value": "8px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "margin",
+          "value": "6px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "padding",
+          "value": "10px"
+        },
+        {
+          "property": "margin-top",
+          "value": "8px"
+        },
+        {
+          "property": "min-height",
+          "value": "32px"
+        },
+        {
+          "property": "max-height",
+          "value": "320px"
+        },
+        {
+          "property": "padding",
+          "value": "8px"
+        },
+        {
+          "property": "border-left",
+          "value": "2px solid var(--mochi-border)"
+        },
+        {
+          "property": "border-left",
+          "value": "3px solid var(--mochi-accent)"
+        },
+        {
+          "property": "padding",
+          "value": "6px 10px"
+        },
+        {
+          "property": "grid-template-columns",
+          "value": "minmax(115px,155px) minmax(0,1fr)"
+        }
+      ],
+      "hostAliases": [],
+      "classes": [
+        "mochi-placement-editor",
+        "mochi-placement-row",
+        "mochi-placement-row-head",
+        "mochi-preset-binding",
+        "mochi-preset-edit-pane",
+        "mochi-preset-editor",
+        "mochi-preset-library",
+        "mochi-preset-library-item",
+        "mochi-preset-panel",
+        "mochi-preset-workspace",
+        "mochi-preview-identity",
+        "mochi-preview-panel",
+        "mochi-preview-text",
+        "mochi-preview-warning",
+        "mochi-view"
+      ],
+      "important": 0
+    },
+    {
+      "section": "mochi-preset-dedicated-styles",
+      "literalCandidates": [
+        {
+          "property": "padding",
+          "value": "24px clamp(14px,4vw,64px)"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(19px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "margin",
+          "value": "0 0 6px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "margin",
+          "value": "6px 0"
+        },
+        {
+          "property": "margin-top",
+          "value": "16px"
+        },
+        {
+          "property": "border-bottom",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "padding",
+          "value": "0 0 8px"
+        },
+        {
+          "property": "margin-bottom",
+          "value": "16px"
+        },
+        {
+          "property": "min-height",
+          "value": "44px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(13px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "line-height",
+          "value": "44px"
+        },
+        {
+          "property": "margin",
+          "value": "4px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "gap",
+          "value": "12px"
+        },
+        {
+          "property": "border-width",
+          "value": "0 0 1px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "padding-bottom",
+          "value": "12px"
+        },
+        {
+          "property": "margin-top",
+          "value": "14px"
+        },
+        {
+          "property": "padding",
+          "value": "24px"
+        },
+        {
+          "property": "padding",
+          "value": "14px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(17px * var(--mochi-interface-scale,1))"
+        }
+      ],
+      "hostAliases": [],
+      "classes": [
+        "mochi-desktop",
+        "mochi-desktop-back",
+        "mochi-desktop-list",
+        "mochi-muted",
+        "mochi-preset-binding",
+        "mochi-preset-edit-pane",
+        "mochi-preset-editor",
+        "mochi-preset-library",
+        "mochi-preset-library-item",
+        "mochi-preset-panel",
+        "mochi-preset-workspace",
+        "mochi-preview-panel",
+        "mochi-profile-panel",
+        "mochi-shell-notifications",
+        "mochi-view"
+      ],
+      "important": 3
+    },
+    {
+      "section": "mochi-preset-chrome-styles",
+      "literalCandidates": [
+        {
+          "property": "margin-bottom",
+          "value": "8px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(18px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "margin",
+          "value": "0 0 8px"
+        },
+        {
+          "property": "margin-top",
+          "value": "4px"
+        },
+        {
+          "property": "margin-bottom",
+          "value": "10px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(20px * var(--mochi-interface-scale,1))"
+        }
+      ],
+      "hostAliases": [],
+      "classes": [
+        "mochi-block-detail",
+        "mochi-preset-heading",
+        "mochi-preset-library",
+        "mochi-preset-panel",
+        "mochi-preset-workspace",
+        "mochi-view"
+      ],
+      "important": 0
+    },
+    {
+      "section": "preset-workspace-final",
+      "literalCandidates": [
+        {
+          "property": "min-height",
+          "value": "32px"
+        },
+        {
+          "property": "gap",
+          "value": "10px"
+        },
+        {
+          "property": "gap",
+          "value": "10px"
+        },
+        {
+          "property": "gap",
+          "value": "8px 24px"
+        },
+        {
+          "property": "border-bottom",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "margin-bottom",
+          "value": "12px"
+        },
+        {
+          "property": "flex",
+          "value": "1 1 220px"
+        },
+        {
+          "property": "min-height",
+          "value": "40px"
+        },
+        {
+          "property": "line-height",
+          "value": "40px"
+        },
+        {
+          "property": "padding-top",
+          "value": "16px"
+        }
+      ],
+      "hostAliases": [],
+      "classes": [
+        "mochi-block-detail",
+        "mochi-block-switches",
+        "mochi-preset-editor",
+        "mochi-preset-navigation",
+        "mochi-preset-panel",
+        "mochi-view"
+      ],
+      "important": 0
+    },
+    {
+      "section": "mochi-memory-styles",
+      "literalCandidates": [
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "margin",
+          "value": "6px"
+        },
+        {
+          "property": "padding",
+          "value": "10px"
+        },
+        {
+          "property": "gap",
+          "value": "10px"
+        },
+        {
+          "property": "gap",
+          "value": "5px"
+        },
+        {
+          "property": "background",
+          "value": "var(--lp-surface-2,#ffffff0c)"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "padding",
+          "value": "8px"
+        },
+        {
+          "property": "min-height",
+          "value": "40px"
+        },
+        {
+          "property": "margin",
+          "value": "3px"
+        },
+        {
+          "property": "max-height",
+          "value": "240px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "padding",
+          "value": "8px"
+        },
+        {
+          "property": "margin",
+          "value": "8px 0"
+        },
+        {
+          "property": "outline",
+          "value": "2px solid var(--mochi-accent)"
+        },
+        {
+          "property": "outline-offset",
+          "value": "2px"
+        }
+      ],
+      "hostAliases": [
+        {
+          "property": "background",
+          "value": "var(--lp-surface-1,transparent)"
+        },
+        {
+          "property": "background",
+          "value": "var(--lp-surface-2,#ffffff0c)"
+        }
+      ],
+      "classes": [
+        "mochi-memory-editor",
+        "mochi-memory-panel",
+        "mochi-memory-text",
+        "mochi-memory-version",
+        "mochi-view"
+      ],
+      "important": 0
+    },
+    {
+      "section": "settings-workspace-styles",
+      "literalCandidates": [
+        {
+          "property": "padding",
+          "value": "16px 20px"
+        },
+        {
+          "property": "border-bottom",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(17px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "gap",
+          "value": "8px"
+        },
+        {
+          "property": "padding",
+          "value": "12px 20px"
+        },
+        {
+          "property": "border-bottom",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "grid-template-columns",
+          "value": "repeat(auto-fit,minmax(130px,1fr))"
+        },
+        {
+          "property": "min-height",
+          "value": "44px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(13px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "box-shadow",
+          "value": "inset 0 -2px var(--mochi-accent)"
+        },
+        {
+          "property": "padding",
+          "value": "10px 20px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "padding",
+          "value": "20px"
+        },
+        {
+          "property": "gap",
+          "value": "10px"
+        },
+        {
+          "property": "padding",
+          "value": "12px 20px"
+        },
+        {
+          "property": "border-top",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "padding",
+          "value": "8px 0"
+        },
+        {
+          "property": "margin",
+          "value": "0 0 12px"
+        },
+        {
+          "property": "gap",
+          "value": "10px"
+        },
+        {
+          "property": "min-height",
+          "value": "64px"
+        },
+        {
+          "property": "padding",
+          "value": "8px 0"
+        },
+        {
+          "property": "border-bottom",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "gap",
+          "value": "3px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(13px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(11px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "width",
+          "value": "36px"
+        },
+        {
+          "property": "height",
+          "value": "36px"
+        },
+        {
+          "property": "gap",
+          "value": "6px"
+        },
+        {
+          "property": "border-bottom",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "padding",
+          "value": "6px 0"
+        },
+        {
+          "property": "gap",
+          "value": "8px"
+        },
+        {
+          "property": "width",
+          "value": "20px"
+        },
+        {
+          "property": "height",
+          "value": "20px"
+        },
+        {
+          "property": "min-height",
+          "value": "20px"
+        },
+        {
+          "property": "max-width",
+          "value": "780px"
+        },
+        {
+          "property": "width",
+          "value": "36px"
+        },
+        {
+          "property": "height",
+          "value": "36px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(10px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(11px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "gap",
+          "value": "2px"
+        },
+        {
+          "property": "min-height",
+          "value": "44px"
+        },
+        {
+          "property": "min-width",
+          "value": "40px"
+        },
+        {
+          "property": "padding",
+          "value": "6px"
+        },
+        {
+          "property": "margin-left",
+          "value": "4px"
+        },
+        {
+          "property": "outline",
+          "value": "2px solid var(--mochi-accent)"
+        },
+        {
+          "property": "outline-offset",
+          "value": "2px"
+        },
+        {
+          "property": "grid-template-columns",
+          "value": "minmax(140px,1fr) minmax(0,auto)"
+        },
+        {
+          "property": "max-width",
+          "value": "650px"
+        },
+        {
+          "property": "padding",
+          "value": "8px"
+        },
+        {
+          "property": "width",
+          "value": "18px"
+        },
+        {
+          "property": "height",
+          "value": "18px"
+        },
+        {
+          "property": "padding",
+          "value": "8px 20px"
+        },
+        {
+          "property": "border-top",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "margin-bottom",
+          "value": "12px"
+        },
+        {
+          "property": "gap",
+          "value": "12px"
+        },
+        {
+          "property": "min-height",
+          "value": "44px"
+        },
+        {
+          "property": "padding",
+          "value": "10px 12px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(15px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "padding",
+          "value": "6px 12px"
+        },
+        {
+          "property": "gap",
+          "value": "4px"
+        },
+        {
+          "property": "padding",
+          "value": "12px"
+        },
+        {
+          "property": "padding",
+          "value": "8px 12px"
+        },
+        {
+          "property": "grid-template-columns",
+          "value": "200px minmax(0,1fr)"
+        },
+        {
+          "property": "gap",
+          "value": "4px"
+        },
+        {
+          "property": "padding",
+          "value": "12px"
+        },
+        {
+          "property": "border-right",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "padding",
+          "value": "20px clamp(12px,3vw,32px)"
+        },
+        {
+          "property": "gap",
+          "value": "8px"
+        },
+        {
+          "property": "padding",
+          "value": "12px 16px"
+        },
+        {
+          "property": "border-top",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "padding",
+          "value": "8px 10px"
+        },
+        {
+          "property": "min-height",
+          "value": "36px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(13px * var(--mochi-interface-scale))"
+        },
+        {
+          "property": "border",
+          "value": "1px solid transparent"
+        },
+        {
+          "property": "padding",
+          "value": "9px 10px"
+        },
+        {
+          "property": "border-inline-start-width",
+          "value": "4px"
+        },
+        {
+          "property": "padding-inline-start",
+          "value": "6px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(18px * var(--mochi-interface-scale))"
+        },
+        {
+          "property": "margin",
+          "value": "0 0 16px"
+        },
+        {
+          "property": "max-width",
+          "value": "760px"
+        },
+        {
+          "property": "gap",
+          "value": "6px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(13px * var(--mochi-interface-scale))"
+        },
+        {
+          "property": "margin",
+          "value": "12px 0"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-input-border)"
+        },
+        {
+          "property": "padding",
+          "value": "8px 10px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-accent)"
+        },
+        {
+          "property": "outline",
+          "value": "2px solid var(--mochi-focus)"
+        },
+        {
+          "property": "outline-offset",
+          "value": "3px"
+        },
+        {
+          "property": "gap",
+          "value": "6px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "padding",
+          "value": "10px"
+        },
+        {
+          "property": "padding",
+          "value": "6px"
+        },
+        {
+          "property": "max-height",
+          "value": "280px"
+        },
+        {
+          "property": "margin-top",
+          "value": "8px"
+        },
+        {
+          "property": "gap",
+          "value": "8px"
+        },
+        {
+          "property": "padding",
+          "value": "6px"
+        },
+        {
+          "property": "width",
+          "value": "28px"
+        },
+        {
+          "property": "height",
+          "value": "28px"
+        },
+        {
+          "property": "padding",
+          "value": "8px 0"
+        },
+        {
+          "property": "border-bottom",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "max-width",
+          "value": "650px"
+        },
+        {
+          "property": "margin",
+          "value": "8px 0"
+        },
+        {
+          "property": "grid-template-columns",
+          "value": "minmax(0,1fr) 36px 36px"
+        },
+        {
+          "property": "gap",
+          "value": "6px"
+        },
+        {
+          "property": "padding",
+          "value": "5px 0"
+        },
+        {
+          "property": "gap",
+          "value": "12px"
+        },
+        {
+          "property": "padding",
+          "value": "12px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "max-width",
+          "value": "650px"
+        },
+        {
+          "property": "width",
+          "value": "24px"
+        },
+        {
+          "property": "height",
+          "value": "24px"
+        },
+        {
+          "property": "max-width",
+          "value": "550px"
+        },
+        {
+          "property": "min-height",
+          "value": "36px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-input-border)"
+        },
+        {
+          "property": "padding",
+          "value": "16px"
+        },
+        {
+          "property": "max-width",
+          "value": "650px"
+        },
+        {
+          "property": "padding",
+          "value": "12px"
+        },
+        {
+          "property": "border-top",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "padding",
+          "value": "12px 0"
+        },
+        {
+          "property": "gap",
+          "value": "6px"
+        },
+        {
+          "property": "margin",
+          "value": "10px 0"
+        },
+        {
+          "property": "min-height",
+          "value": "90px"
+        },
+        {
+          "property": "gap",
+          "value": "6px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(13px * var(--mochi-interface-scale))"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-input-border)"
+        },
+        {
+          "property": "padding",
+          "value": "12px"
+        },
+        {
+          "property": "gap",
+          "value": "8px"
+        },
+        {
+          "property": "margin-bottom",
+          "value": "16px"
+        },
+        {
+          "property": "padding-block",
+          "value": "5px"
+        },
+        {
+          "property": "min-height",
+          "value": "48px"
+        },
+        {
+          "property": "padding",
+          "value": "12px"
+        },
+        {
+          "property": "padding",
+          "value": "14px"
+        },
+        {
+          "property": "margin-bottom",
+          "value": "14px"
+        },
+        {
+          "property": "min-height",
+          "value": "44px"
+        },
+        {
+          "property": "padding",
+          "value": "10px"
+        },
+        {
+          "property": "gap",
+          "value": "8px"
+        },
+        {
+          "property": "padding",
+          "value": "8px 12px"
+        },
+        {
+          "property": "padding",
+          "value": "8px 12px"
+        },
+        {
+          "property": "grid-template-columns",
+          "value": "minmax(0,1fr) 44px 44px"
+        },
+        {
+          "property": "padding",
+          "value": "8px"
+        },
+        {
+          "property": "gap",
+          "value": "6px"
+        }
+      ],
+      "hostAliases": [],
+      "classes": [
+        "mochi-accessibility-preview",
+        "mochi-actions",
+        "mochi-avatar",
+        "mochi-category-back",
+        "mochi-category-workspace",
+        "mochi-character-defaults",
+        "mochi-character-detail-nav",
+        "mochi-character-fields",
+        "mochi-character-picker",
+        "mochi-character-settings-list",
+        "mochi-character-settings-row",
+        "mochi-choice",
+        "mochi-custom-toolbar",
+        "mochi-desktop",
+        "mochi-desktop-back",
+        "mochi-desktop-list",
+        "mochi-desktop-room",
+        "mochi-dock-username",
+        "mochi-muted",
+        "mochi-organized-settings",
+        "mochi-participant-chips",
+        "mochi-personal-presentation",
+        "mochi-personal-scroll",
+        "mochi-picker",
+        "mochi-presentation-actions",
+        "mochi-primary",
+        "mochi-profile-about",
+        "mochi-profile-dock",
+        "mochi-profile-panel",
+        "mochi-room-header",
+        "mochi-scale-control",
+        "mochi-scale-message",
+        "mochi-settings-categories",
+        "mochi-settings-category",
+        "mochi-settings-heading",
+        "mochi-settings-scroll",
+        "mochi-settings-section",
+        "mochi-settings-tabs",
+        "mochi-settings-workspace",
+        "mochi-shared-setup",
+        "mochi-toggle",
+        "mochi-toolbar-choice-group",
+        "mochi-toolbar-label",
+        "mochi-toolbar-live-preview",
+        "mochi-toolbar-preference",
+        "mochi-view"
+      ],
+      "important": 2
+    },
+    {
+      "section": "mochi-disclosure-styles",
+      "literalCandidates": [
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "margin",
+          "value": "6px 0"
+        },
+        {
+          "property": "background",
+          "value": "var(--lp-surface-2,#ffffff06)"
+        },
+        {
+          "property": "min-height",
+          "value": "44px"
+        },
+        {
+          "property": "padding",
+          "value": "12px 36px 12px 12px"
+        },
+        {
+          "property": "line-height",
+          "value": "20px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(13px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "border-radius",
+          "value": "11px"
+        },
+        {
+          "property": "right",
+          "value": "16px"
+        },
+        {
+          "property": "top",
+          "value": "17px"
+        },
+        {
+          "property": "width",
+          "value": "7px"
+        },
+        {
+          "property": "height",
+          "value": "7px"
+        },
+        {
+          "property": "border-right",
+          "value": "2px solid var(--lp-muted,currentColor)"
+        },
+        {
+          "property": "border-bottom",
+          "value": "2px solid var(--lp-muted,currentColor)"
+        },
+        {
+          "property": "top",
+          "value": "15px"
+        },
+        {
+          "property": "border-bottom",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "border-radius",
+          "value": "11px 11px 0 0"
+        },
+        {
+          "property": "outline",
+          "value": "2px solid var(--mochi-accent)"
+        },
+        {
+          "property": "outline-offset",
+          "value": "-3px"
+        },
+        {
+          "property": "margin",
+          "value": "10px 12px"
+        },
+        {
+          "property": "max-width",
+          "value": "calc(100% - 24px)"
+        },
+        {
+          "property": "margin",
+          "value": "12px"
+        },
+        {
+          "property": "max-width",
+          "value": "calc(100% - 24px)"
+        },
+        {
+          "property": "gap",
+          "value": "8px"
+        },
+        {
+          "property": "flex",
+          "value": "1 1 240px"
+        },
+        {
+          "property": "gap",
+          "value": "6px 16px"
+        },
+        {
+          "property": "padding",
+          "value": "10px 0"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "border-left",
+          "value": "3px solid var(--mochi-accent)"
+        },
+        {
+          "property": "padding",
+          "value": "8px 12px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(13px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "margin",
+          "value": "6px 0"
+        },
+        {
+          "property": "flex",
+          "value": "1 1 200px"
+        },
+        {
+          "property": "gap",
+          "value": "8px"
+        }
+      ],
+      "hostAliases": [
+        {
+          "property": "background",
+          "value": "var(--lp-surface-2,#ffffff06)"
+        },
+        {
+          "property": "border-right",
+          "value": "2px solid var(--lp-muted,currentColor)"
+        },
+        {
+          "property": "border-bottom",
+          "value": "2px solid var(--lp-muted,currentColor)"
+        }
+      ],
+      "classes": [
+        "mochi-disclosure",
+        "mochi-preset-entry",
+        "mochi-preset-heading",
+        "mochi-preset-navigation",
+        "mochi-preview-controls",
+        "mochi-preview-group",
+        "mochi-preview-identity",
+        "mochi-preview-overview",
+        "mochi-preview-panel",
+        "mochi-preview-warning",
+        "mochi-settings-scroll",
+        "mochi-view"
+      ],
+      "important": 0
+    },
+    {
+      "section": "desktop",
+      "literalCandidates": [
+        {
+          "property": "border-right",
+          "value": "1px solid var(--lp-border,#ffffff26)"
+        },
+        {
+          "property": "padding",
+          "value": "16px 14px 8px"
+        },
+        {
+          "property": "gap",
+          "value": "12px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(14px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "gap",
+          "value": "10px"
+        },
+        {
+          "property": "padding-right",
+          "value": "34px"
+        },
+        {
+          "property": "width",
+          "value": "40px"
+        },
+        {
+          "property": "height",
+          "value": "44px"
+        },
+        {
+          "property": "min-height",
+          "value": "44px"
+        },
+        {
+          "property": "padding",
+          "value": "8px"
+        },
+        {
+          "property": "gap",
+          "value": "6px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "padding",
+          "value": "8px"
+        },
+        {
+          "property": "min-height",
+          "value": "40px"
+        },
+        {
+          "property": "width",
+          "value": "44px"
+        },
+        {
+          "property": "width",
+          "value": "18px"
+        },
+        {
+          "property": "height",
+          "value": "18px"
+        },
+        {
+          "property": "gap",
+          "value": "6px"
+        },
+        {
+          "property": "min-height",
+          "value": "40px"
+        },
+        {
+          "property": "padding",
+          "value": "6px 10px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "background",
+          "value": "var(--lp-surface-2,#ffffff12)"
+        },
+        {
+          "property": "box-shadow",
+          "value": "inset 0 -2px var(--mochi-accent)"
+        },
+        {
+          "property": "padding",
+          "value": "6px 12px"
+        },
+        {
+          "property": "border-bottom",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "padding",
+          "value": "12px 0"
+        },
+        {
+          "property": "border-top",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "margin",
+          "value": "0 0 6px"
+        },
+        {
+          "property": "padding",
+          "value": "8px 10px"
+        },
+        {
+          "property": "gap",
+          "value": "6px"
+        },
+        {
+          "property": "padding",
+          "value": "12px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid transparent"
+        },
+        {
+          "property": "background",
+          "value": "var(--lp-surface-2,#ffffff12)"
+        },
+        {
+          "property": "background",
+          "value": "var(--lp-surface-2,#ffffff12)"
+        },
+        {
+          "property": "gap",
+          "value": "3px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(14px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "width",
+          "value": "34px"
+        },
+        {
+          "property": "height",
+          "value": "34px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(11px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "border-radius",
+          "value": "99px"
+        },
+        {
+          "property": "padding",
+          "value": "2px 6px"
+        },
+        {
+          "property": "padding",
+          "value": "12px"
+        },
+        {
+          "property": "outline",
+          "value": "2px solid var(--mochi-accent)"
+        },
+        {
+          "property": "outline-offset",
+          "value": "-2px"
+        },
+        {
+          "property": "padding",
+          "value": "6px 12px"
+        },
+        {
+          "property": "border-bottom",
+          "value": "1px solid var(--lp-border,#ffffff26)"
+        },
+        {
+          "property": "min-height",
+          "value": "32px"
+        },
+        {
+          "property": "padding",
+          "value": "4px 2px 8px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(27px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "letter-spacing",
+          "value": "-1px"
+        },
+        {
+          "property": "flex",
+          "value": "0 0 40px"
+        },
+        {
+          "property": "width",
+          "value": "40px"
+        },
+        {
+          "property": "height",
+          "value": "36px"
+        },
+        {
+          "property": "width",
+          "value": "40px"
+        },
+        {
+          "property": "height",
+          "value": "36px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "padding",
+          "value": "10px 12px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--lp-border,#ffffff26)"
+        },
+        {
+          "property": "border-radius",
+          "value": "10px"
+        },
+        {
+          "property": "min-height",
+          "value": "42px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(16px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "padding",
+          "value": "12px 0 16px"
+        },
+        {
+          "property": "border-bottom",
+          "value": "1px solid var(--lp-border,#ffffff26)"
+        },
+        {
+          "property": "gap",
+          "value": "8px"
+        },
+        {
+          "property": "padding",
+          "value": "16px"
+        },
+        {
+          "property": "border-left",
+          "value": "1px solid var(--lp-border,#ffffff26)"
+        },
+        {
+          "property": "margin-bottom",
+          "value": "24px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "padding",
+          "value": "6px 10px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "margin-bottom",
+          "value": "20px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(18px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "height",
+          "value": "72px"
+        },
+        {
+          "property": "width",
+          "value": "72px"
+        },
+        {
+          "property": "padding",
+          "value": "12px 0 24px"
+        },
+        {
+          "property": "grid-template-columns",
+          "value": "36px minmax(0,1fr)"
+        },
+        {
+          "property": "column-gap",
+          "value": "10px"
+        },
+        {
+          "property": "row-gap",
+          "value": "2px"
+        },
+        {
+          "property": "margin-bottom",
+          "value": "16px"
+        },
+        {
+          "property": "width",
+          "value": "36px"
+        },
+        {
+          "property": "height",
+          "value": "36px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(13px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "min-height",
+          "value": "44px"
+        },
+        {
+          "property": "margin-top",
+          "value": "12px"
+        },
+        {
+          "property": "border-width",
+          "value": "1px 0 0"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "padding",
+          "value": "8px 0"
+        },
+        {
+          "property": "grid-template-columns",
+          "value": "minmax(0,1fr) minmax(72px,110px) auto auto 40px"
+        },
+        {
+          "property": "gap",
+          "value": "5px"
+        },
+        {
+          "property": "min-height",
+          "value": "40px"
+        },
+        {
+          "property": "padding",
+          "value": "7px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "padding",
+          "value": "7px 9px"
+        },
+        {
+          "property": "min-height",
+          "value": "40px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(11px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "margin-top",
+          "value": "4px"
+        },
+        {
+          "property": "margin-top",
+          "value": "6px"
+        },
+        {
+          "property": "outline",
+          "value": "2px solid var(--mochi-accent)"
+        },
+        {
+          "property": "outline-offset",
+          "value": "2px"
+        },
+        {
+          "property": "min-height",
+          "value": "44px"
+        },
+        {
+          "property": "max-height",
+          "value": "min(70vh,440px)"
+        },
+        {
+          "property": "max-width",
+          "value": "min(280px,85cqw)"
+        },
+        {
+          "property": "border-top",
+          "value": "1px solid var(--lp-border,#ffffff26)"
+        },
+        {
+          "property": "top",
+          "value": "calc(100% + 6px)"
+        },
+        {
+          "property": "width",
+          "value": "224px"
+        },
+        {
+          "property": "max-height",
+          "value": "300px"
+        },
+        {
+          "property": "padding",
+          "value": "8px"
+        },
+        {
+          "property": "gap",
+          "value": "3px"
+        },
+        {
+          "property": "background",
+          "value": "var(--mochi-surface,#17151d)"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border,#777)"
+        },
+        {
+          "property": "box-shadow",
+          "value": "0 12px 32px #0006"
+        },
+        {
+          "property": "padding",
+          "value": "9px 10px"
+        },
+        {
+          "property": "border-radius",
+          "value": "7px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "min-height",
+          "value": "44px"
+        },
+        {
+          "property": "background",
+          "value": "var(--lp-surface-2,#ffffff18)"
+        },
+        {
+          "property": "outline",
+          "value": "2px solid var(--mochi-accent)"
+        },
+        {
+          "property": "outline-offset",
+          "value": "-2px"
+        },
+        {
+          "property": "box-shadow",
+          "value": "inset 0 0 0 1px var(--mochi-accent)"
+        },
+        {
+          "property": "grid-template-columns",
+          "value": "minmax(0,1fr) auto 40px"
+        },
+        {
+          "property": "padding",
+          "value": "4px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(11px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "padding",
+          "value": "10px 10px 6px"
+        },
+        {
+          "property": "gap",
+          "value": "8px"
+        },
+        {
+          "property": "padding",
+          "value": "0 2px 4px"
+        },
+        {
+          "property": "gap",
+          "value": "6px"
+        },
+        {
+          "property": "gap",
+          "value": "7px"
+        },
+        {
+          "property": "padding",
+          "value": "4px 0"
+        },
+        {
+          "property": "width",
+          "value": "30px"
+        },
+        {
+          "property": "height",
+          "value": "30px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "min-height",
+          "value": "36px"
+        },
+        {
+          "property": "padding",
+          "value": "4px 22px 4px 6px"
+        },
+        {
+          "property": "min-width",
+          "value": "36px"
+        },
+        {
+          "property": "min-height",
+          "value": "36px"
+        },
+        {
+          "property": "padding",
+          "value": "7px"
+        },
+        {
+          "property": "border-radius",
+          "value": "8px"
+        },
+        {
+          "property": "min-height",
+          "value": "36px"
+        },
+        {
+          "property": "padding",
+          "value": "7px 10px"
+        },
+        {
+          "property": "gap",
+          "value": "4px"
+        },
+        {
+          "property": "min-height",
+          "value": "36px"
+        },
+        {
+          "property": "padding",
+          "value": "5px 8px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "border-radius",
+          "value": "8px"
+        },
+        {
+          "property": "padding",
+          "value": "4px 6px"
+        },
+        {
+          "property": "gap",
+          "value": "3px"
+        },
+        {
+          "property": "padding",
+          "value": "8px"
+        },
+        {
+          "property": "gap",
+          "value": "8px"
+        },
+        {
+          "property": "min-height",
+          "value": "58px"
+        },
+        {
+          "property": "border-radius",
+          "value": "10px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(13px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(11px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "padding",
+          "value": "8px 0 10px"
+        },
+        {
+          "property": "gap",
+          "value": "8px"
+        },
+        {
+          "property": "gap",
+          "value": "10px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(15px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(11px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "margin",
+          "value": "3px 0 0"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(10px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "margin-top",
+          "value": "2px"
+        },
+        {
+          "property": "max-width",
+          "value": "420px"
+        },
+        {
+          "property": "padding",
+          "value": "7px"
+        },
+        {
+          "property": "max-width",
+          "value": "min(80%,calc(100% - var(--mochi-message-avatar-size) - 10px))"
+        },
+        {
+          "property": "padding-top",
+          "value": "10px"
+        },
+        {
+          "property": "margin-top",
+          "value": "-6px"
+        },
+        {
+          "property": "padding-top",
+          "value": "2px"
+        },
+        {
+          "property": "width",
+          "value": "9px"
+        },
+        {
+          "property": "height",
+          "value": "9px"
+        },
+        {
+          "property": "padding",
+          "value": "12px"
+        },
+        {
+          "property": "margin-bottom",
+          "value": "10px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(13px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "min-height",
+          "value": "40px"
+        },
+        {
+          "property": "padding",
+          "value": "6px 10px"
+        },
+        {
+          "property": "border-radius",
+          "value": "8px"
+        },
+        {
+          "property": "height",
+          "value": "64px"
+        },
+        {
+          "property": "border-radius",
+          "value": "10px"
+        },
+        {
+          "property": "margin-top",
+          "value": "-26px"
+        },
+        {
+          "property": "margin",
+          "value": "0 auto 10px"
+        },
+        {
+          "property": "border",
+          "value": "3px solid var(--mochi-surface)"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(17px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "margin",
+          "value": "6px 0"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "margin-top",
+          "value": "16px"
+        },
+        {
+          "property": "padding-top",
+          "value": "12px"
+        },
+        {
+          "property": "border-top",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "margin",
+          "value": "0 0 6px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(12px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "margin-top",
+          "value": "-26px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(30px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "margin-top",
+          "value": "12px"
+        },
+        {
+          "property": "padding",
+          "value": "10px 0"
+        },
+        {
+          "property": "border-top",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "gap",
+          "value": "4px"
+        },
+        {
+          "property": "padding-top",
+          "value": "44px"
+        },
+        {
+          "property": "min-width",
+          "value": "40px"
+        },
+        {
+          "property": "width",
+          "value": "40px"
+        },
+        {
+          "property": "height",
+          "value": "40px"
+        },
+        {
+          "property": "min-height",
+          "value": "40px"
+        },
+        {
+          "property": "min-height",
+          "value": "64px"
+        },
+        {
+          "property": "padding",
+          "value": "10px"
+        },
+        {
+          "property": "grid-template-columns",
+          "value": "minmax(140px,1fr) minmax(0,1fr) auto"
+        },
+        {
+          "property": "gap",
+          "value": "10px"
+        },
+        {
+          "property": "padding",
+          "value": "12px 0"
+        },
+        {
+          "property": "min-height",
+          "value": "48px"
+        },
+        {
+          "property": "outline",
+          "value": "2px solid var(--mochi-accent)"
+        },
+        {
+          "property": "outline-offset",
+          "value": "3px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(13px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "min-width",
+          "value": "40px"
+        },
+        {
+          "property": "width",
+          "value": "40px"
+        },
+        {
+          "property": "min-height",
+          "value": "40px"
+        },
+        {
+          "property": "height",
+          "value": "40px"
+        },
+        {
+          "property": "padding",
+          "value": "9px"
+        },
+        {
+          "property": "max-width",
+          "value": "min(var(--mochi-bubble-max-width),var(--mochi-bubble-line-length),calc(100% - var(--mochi-message-avatar-size) - 12px))"
+        },
+        {
+          "property": "margin-top",
+          "value": "-8px"
+        },
+        {
+          "property": "padding",
+          "value": "16px"
+        },
+        {
+          "property": "height",
+          "value": "72px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(19px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "column-gap",
+          "value": "6px"
+        },
+        {
+          "property": "margin-left",
+          "value": "48px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(11px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "padding",
+          "value": "8px 0"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(14px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "min-width",
+          "value": "36px"
+        },
+        {
+          "property": "width",
+          "value": "36px"
+        },
+        {
+          "property": "gap",
+          "value": "7px"
+        },
+        {
+          "property": "width",
+          "value": "34px"
+        },
+        {
+          "property": "height",
+          "value": "34px"
+        },
+        {
+          "property": "margin-left",
+          "value": "41px"
+        },
+        {
+          "property": "gap",
+          "value": "7px"
+        },
+        {
+          "property": "padding",
+          "value": "8px"
+        },
+        {
+          "property": "border-top",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "gap",
+          "value": "2px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(11px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "width",
+          "value": "34px"
+        },
+        {
+          "property": "height",
+          "value": "34px"
+        },
+        {
+          "property": "flex",
+          "value": "0 0 34px"
+        },
+        {
+          "property": "font-size",
+          "value": "calc(14px * var(--mochi-interface-scale,1))"
+        },
+        {
+          "property": "width",
+          "value": "36px"
+        },
+        {
+          "property": "min-width",
+          "value": "36px"
+        },
+        {
+          "property": "height",
+          "value": "36px"
+        },
+        {
+          "property": "min-height",
+          "value": "36px"
+        },
+        {
+          "property": "padding",
+          "value": "8px"
+        },
+        {
+          "property": "border-radius",
+          "value": "6px"
+        },
+        {
+          "property": "width",
+          "value": "17px"
+        },
+        {
+          "property": "height",
+          "value": "17px"
+        },
+        {
+          "property": "outline",
+          "value": "2px solid var(--mochi-focus)"
+        },
+        {
+          "property": "outline-offset",
+          "value": "-2px"
+        },
+        {
+          "property": "width",
+          "value": "40px"
+        },
+        {
+          "property": "min-width",
+          "value": "40px"
+        },
+        {
+          "property": "height",
+          "value": "40px"
+        },
+        {
+          "property": "min-height",
+          "value": "40px"
+        }
+      ],
+      "hostAliases": [
+        {
+          "property": "border-right",
+          "value": "1px solid var(--lp-border,#ffffff26)"
+        },
+        {
+          "property": "background",
+          "value": "var(--lp-surface-2,#ffffff12)"
+        },
+        {
+          "property": "background",
+          "value": "var(--lp-surface-2,#ffffff12)"
+        },
+        {
+          "property": "background",
+          "value": "var(--lp-surface-2,#ffffff12)"
+        },
+        {
+          "property": "border-bottom",
+          "value": "1px solid var(--lp-border,#ffffff26)"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--lp-border,#ffffff26)"
+        },
+        {
+          "property": "background",
+          "value": "var(--lp-bg,transparent)"
+        },
+        {
+          "property": "border-bottom",
+          "value": "1px solid var(--lp-border,#ffffff26)"
+        },
+        {
+          "property": "border-left",
+          "value": "1px solid var(--lp-border,#ffffff26)"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-muted,inherit)"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-muted,inherit)"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-muted,inherit)"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-muted,inherit)"
+        },
+        {
+          "property": "border-top",
+          "value": "1px solid var(--lp-border,#ffffff26)"
+        },
+        {
+          "property": "background",
+          "value": "var(--lp-surface-2,#ffffff18)"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-muted,inherit)"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-muted,inherit)"
+        },
+        {
+          "property": "color",
+          "value": "var(--lp-muted,inherit)"
+        }
+      ],
+      "classes": [
+        "mochi-account-dock",
+        "mochi-action-strip",
+        "mochi-actions",
+        "mochi-activity-snapshot",
+        "mochi-avatar",
+        "mochi-avatar-frame",
+        "mochi-bubble",
+        "mochi-chat-avatar",
+        "mochi-chat-name",
+        "mochi-composer",
+        "mochi-conversation-filter",
+        "mochi-conversation-filters",
+        "mochi-conversation-title",
+        "mochi-custom-toolbar",
+        "mochi-desktop",
+        "mochi-desktop-account",
+        "mochi-desktop-back",
+        "mochi-desktop-list",
+        "mochi-desktop-list-head",
+        "mochi-desktop-main",
+        "mochi-desktop-room",
+        "mochi-desktop-room-copy",
+        "mochi-desktop-rooms",
+        "mochi-desktop-unread",
+        "mochi-group-portraits",
+        "mochi-header-controls",
+        "mochi-header-copy",
+        "mochi-icon-button",
+        "mochi-identity-button",
+        "mochi-message",
+        "mochi-message-avatar",
+        "mochi-message-body",
+        "mochi-message-heading",
+        "mochi-messenger-dock",
+        "mochi-presence-dot",
+        "mochi-profile-about",
+        "mochi-profile-chat-name",
+        "mochi-profile-cover",
+        "mochi-profile-group",
+        "mochi-profile-heading",
+        "mochi-profile-panel",
+        "mochi-profile-person",
+        "mochi-profile-settings",
+        "mochi-room-avatars",
+        "mochi-room-header",
+        "mochi-room-info",
+        "mochi-room-meta",
+        "mochi-search-controls",
+        "mochi-search-panel",
+        "mochi-search-results",
+        "mochi-search-secondary",
+        "mochi-shell-account-row",
+        "mochi-shell-brand",
+        "mochi-shell-mascot",
+        "mochi-shell-notifications",
+        "mochi-shell-tools",
+        "mochi-thread",
+        "mochi-view",
+        "mochi-wordmark-image",
+        "mochi-workspace"
+      ],
+      "important": 3
+    },
+    {
+      "section": "mochi-sidebar-styles",
+      "literalCandidates": [
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "outline",
+          "value": "2px solid var(--mochi-focus)"
+        },
+        {
+          "property": "outline-offset",
+          "value": "2px"
+        },
+        {
+          "property": "gap",
+          "value": "3px"
+        },
+        {
+          "property": "margin",
+          "value": "10px 0"
+        },
+        {
+          "property": "padding",
+          "value": "4px 8px"
+        },
+        {
+          "property": "padding",
+          "value": "2px 8px"
+        },
+        {
+          "property": "min-height",
+          "value": "40px"
+        },
+        {
+          "property": "padding",
+          "value": "8px"
+        },
+        {
+          "property": "gap",
+          "value": "4px"
+        },
+        {
+          "property": "padding-bottom",
+          "value": "6px"
+        },
+        {
+          "property": "width",
+          "value": "36px"
+        },
+        {
+          "property": "min-width",
+          "value": "36px"
+        },
+        {
+          "property": "height",
+          "value": "40px"
+        },
+        {
+          "property": "min-height",
+          "value": "40px"
+        },
+        {
+          "property": "padding",
+          "value": "8px"
+        },
+        {
+          "property": "padding",
+          "value": "6px 0 0"
+        },
+        {
+          "property": "gap",
+          "value": "4px"
+        },
+        {
+          "property": "gap",
+          "value": "4px"
+        },
+        {
+          "property": "max-height",
+          "value": "min(112px,25dvh)"
+        },
+        {
+          "property": "width",
+          "value": "44px"
+        },
+        {
+          "property": "min-width",
+          "value": "44px"
+        },
+        {
+          "property": "padding",
+          "value": "10px"
+        },
+        {
+          "property": "max-width",
+          "value": "min(260px,85cqw)"
+        },
+        {
+          "property": "max-height",
+          "value": "min(300px,55dvh)"
+        },
+        {
+          "property": "margin",
+          "value": "8px 0"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "box-shadow",
+          "value": "0 0 0 3px var(--mochi-focus-bg)"
+        },
+        {
+          "property": "width",
+          "value": "80px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid transparent"
+        },
+        {
+          "property": "gap",
+          "value": "5px"
+        },
+        {
+          "property": "margin-top",
+          "value": "14px"
+        },
+        {
+          "property": "gap",
+          "value": "2px"
+        },
+        {
+          "property": "width",
+          "value": "18px"
+        },
+        {
+          "property": "height",
+          "value": "18px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid transparent"
+        },
+        {
+          "property": "right",
+          "value": "2px"
+        },
+        {
+          "property": "top",
+          "value": "2px"
+        },
+        {
+          "property": "border-top",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "padding",
+          "value": "0 6px 0 0"
+        },
+        {
+          "property": "gap",
+          "value": "4px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-input-border)"
+        },
+        {
+          "property": "padding",
+          "value": "6px 10px"
+        },
+        {
+          "property": "box-shadow",
+          "value": "0 0 0 2px var(--mochi-focus-bg)"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "gap",
+          "value": "6px"
+        },
+        {
+          "property": "gap",
+          "value": "8px"
+        },
+        {
+          "property": "min-height",
+          "value": "32px"
+        },
+        {
+          "property": "width",
+          "value": "18px"
+        },
+        {
+          "property": "height",
+          "value": "18px"
+        },
+        {
+          "property": "min-height",
+          "value": "18px"
+        },
+        {
+          "property": "min-height",
+          "value": "30px"
+        },
+        {
+          "property": "padding",
+          "value": "6px"
+        },
+        {
+          "property": "border-radius",
+          "value": "6px"
+        },
+        {
+          "property": "gap",
+          "value": "3px"
+        },
+        {
+          "property": "margin-top",
+          "value": "5px"
+        },
+        {
+          "property": "border-bottom",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "gap",
+          "value": "8px"
+        },
+        {
+          "property": "padding",
+          "value": "5px 7px"
+        },
+        {
+          "property": "gap",
+          "value": "2px"
+        },
+        {
+          "property": "gap",
+          "value": "4px"
+        },
+        {
+          "property": "margin",
+          "value": "5px 0"
+        },
+        {
+          "property": "letter-spacing",
+          "value": ".04em"
+        },
+        {
+          "property": "gap",
+          "value": "0 6px"
+        },
+        {
+          "property": "padding",
+          "value": "5px 7px"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-border)"
+        },
+        {
+          "property": "border-radius",
+          "value": "8px"
+        },
+        {
+          "property": "padding",
+          "value": "8px"
+        },
+        {
+          "property": "border-radius",
+          "value": "6px"
+        },
+        {
+          "property": "--mochi-editor-control-height",
+          "value": "40px"
+        },
+        {
+          "property": "width",
+          "value": "40px"
+        },
+        {
+          "property": "min-width",
+          "value": "40px"
+        },
+        {
+          "property": "height",
+          "value": "40px"
+        },
+        {
+          "property": "min-height",
+          "value": "40px"
+        },
+        {
+          "property": "min-height",
+          "value": "40px"
+        }
+      ],
+      "hostAliases": [],
+      "classes": [
+        "mochi-account-icon",
+        "mochi-account-list",
+        "mochi-account-row",
+        "mochi-account-startup",
+        "mochi-account-tools",
+        "mochi-actions",
+        "mochi-addon-content",
+        "mochi-addon-details",
+        "mochi-addon-group",
+        "mochi-addon-name",
+        "mochi-addon-row",
+        "mochi-addon-status",
+        "mochi-bubble",
+        "mochi-composer",
+        "mochi-composer-row",
+        "mochi-danger-action",
+        "mochi-desktop",
+        "mochi-desktop-back",
+        "mochi-desktop-list",
+        "mochi-desktop-main",
+        "mochi-icon-button",
+        "mochi-mobile-surface",
+        "mochi-muted",
+        "mochi-persona-choice",
+        "mochi-persona-choices",
+        "mochi-persona-row",
+        "mochi-primary",
+        "mochi-profile-actions",
+        "mochi-profile-banner",
+        "mochi-profile-fields",
+        "mochi-profile-panel",
+        "mochi-profile-portrait",
+        "mochi-profile-preview",
+        "mochi-profile-preview-body",
+        "mochi-profile-preview-name",
+        "mochi-profile-screen",
+        "mochi-room-header",
+        "mochi-sidebar",
+        "mochi-sidebar-account",
+        "mochi-sidebar-avatar",
+        "mochi-sidebar-body",
+        "mochi-sidebar-label",
+        "mochi-sidebar-message",
+        "mochi-sidebar-nav",
+        "mochi-sidebar-picker",
+        "mochi-source-details",
+        "mochi-sync-value",
+        "mochi-thread",
+        "mochi-view",
+        "mochi-workspace"
+      ],
+      "important": 1
+    },
+    {
+      "section": "launcher",
+      "literalCandidates": [
+        {
+          "property": "color",
+          "value": "var(--lumiverse-primary,#a6a0d9)"
+        },
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-chrome-border)"
+        },
+        {
+          "property": "outline",
+          "value": "2px solid currentColor"
+        },
+        {
+          "property": "outline-offset",
+          "value": "2px"
+        }
+      ],
+      "hostAliases": [
+        {
+          "property": "color",
+          "value": "var(--lumiverse-primary,#a6a0d9)"
+        }
+      ],
+      "classes": [
+        "mochi-launcher",
+        "mochi-launcher-root"
+      ],
+      "important": 0
+    },
+    {
+      "section": "mobile-surface",
+      "literalCandidates": [
+        {
+          "property": "padding",
+          "value": "env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)"
+        }
+      ],
+      "hostAliases": [],
+      "classes": [
+        "mochi-mobile-surface",
+        "mochi-sidebar"
+      ],
+      "important": 1
+    },
+    {
+      "section": "window",
+      "literalCandidates": [
+        {
+          "property": "border",
+          "value": "1px solid var(--mochi-chrome-border)"
+        },
+        {
+          "property": "min-width",
+          "value": "32px"
+        },
+        {
+          "property": "min-height",
+          "value": "32px"
+        },
+        {
+          "property": "outline",
+          "value": "2px solid var(--lumiverse-primary,#9399ab)"
+        },
+        {
+          "property": "outline-offset",
+          "value": "-3px"
+        }
+      ],
+      "hostAliases": [
+        {
+          "property": "outline",
+          "value": "2px solid var(--lumiverse-primary,#9399ab)"
+        }
+      ],
+      "classes": [
+        "mochi-window",
+        "mochi-window-bar",
+        "mochi-window-body",
+        "mochi-window-close",
+        "mochi-window-resize"
+      ],
+      "important": 0
+    },
+    {
+      "section": "window-focus",
+      "literalCandidates": [
+        {
+          "property": "outline",
+          "value": "2px solid var(--lumiverse-primary,#9399ab)"
+        },
+        {
+          "property": "outline-offset",
+          "value": "-2px"
+        }
+      ],
+      "hostAliases": [
+        {
+          "property": "outline",
+          "value": "2px solid var(--lumiverse-primary,#9399ab)"
+        }
+      ],
+      "classes": [
+        "mochi-window",
+        "mochi-window-bar"
+      ],
+      "important": 1
+    },
+    {
+      "section": "workspace",
+      "literalCandidates": [],
+      "hostAliases": [],
+      "classes": [
+        "mochi-view",
+        "mochi-workspace"
+      ],
+      "important": 1
+    },
+    {
+      "section": "notifications",
+      "literalCandidates": [
+        {
+          "property": "max-width",
+          "value": "calc(100% - 24px)"
+        },
+        {
+          "property": "grid-template-columns",
+          "value": "32px minmax(0,1fr)"
+        },
+        {
+          "property": "width",
+          "value": "32px"
+        },
+        {
+          "property": "height",
+          "value": "32px"
+        }
+      ],
+      "hostAliases": [
+        {
+          "property": "background",
+          "value": "var(--lp-surface-2)"
+        }
+      ],
+      "classes": [
+        "mochi-notification-avatar",
+        "mochi-notification-toast"
+      ],
+      "important": 0
+    }
+  ]
+}

@@ -1,8 +1,12 @@
 /* Mochi-only defaults. Inherit host colors; never move these to :root. */
-.mochi-view,
+:where(.mochi-view,
 .mochi-sheet,
 .mochi-sidebar,
-.mochi-workspace {
+.mochi-workspace,
+.mochi-window,
+.mochi-mobile-surface,
+.mochi-launcher-root,
+.mochi-notification-toast) {
   /* Saved preferences set only backing variables; Custom CSS may override these public aliases. */
   --mochi-interface-scale: var(--mochi-saved-interface-scale,1);
   --mochi-message-scale: var(--mochi-saved-message-scale,1);
@@ -38,6 +42,60 @@
   --mochi-editor-control-height: 34px;
   --mochi-editor-gap: 8px;
   --mochi-editor-radius: 7px;
+  --mochi-icon-stroke-width: 1.7;
+  /* @mochi-tokens accounts-and-chrome: public v1, original defaults */
+  --mochi-accounts-nav-gap: 6px;
+  --mochi-accounts-nav-padding: 8px;
+  --mochi-accounts-picker-padding: 0 8px 12px;
+  --mochi-accounts-button-padding: 6px 10px;
+  --mochi-accounts-avatar-flex: 0 0 36px;
+  --mochi-accounts-avatar-size: 36px;
+  --mochi-accounts-avatar-radius: 50%;
+  --mochi-disabled-opacity: .4;
+  --mochi-accounts-tools-gap: 4px;
+  --mochi-accounts-tools-margin: 7px 0;
+  --mochi-accounts-icon-control-size: 34px;
+  --mochi-accounts-icon-padding: 8px;
+  --mochi-accounts-icon-radius: 6px;
+  --mochi-accounts-icon-size: 16px;
+  --mochi-accounts-list-gap: 3px;
+  --mochi-accounts-row-radius: 8px;
+  --mochi-accounts-row-padding: 7px;
+  --mochi-accounts-row-gap: 8px;
+  --mochi-accounts-grid-columns: repeat(auto-fill,minmax(116px,1fr));
+  --mochi-accounts-grid-row-height: 112px;
+  --mochi-accounts-grid-row-padding-top: 12px;
+  --mochi-accounts-grid-avatar-size: 48px;
+  --mochi-accounts-section-padding: 8px 0;
+  --mochi-accounts-section-gap: 6px;
+  --mochi-accounts-preview-radius: 10px;
+  --mochi-accounts-preview-columns: 42px minmax(0,1fr);
+  --mochi-accounts-preview-padding: 10px;
+  --mochi-accounts-preview-gap: 2px 10px;
+  --mochi-accounts-preview-avatar-size: 42px;
+  --mochi-accounts-persona-max-height: 190px;
+  --mochi-accounts-persona-avatar-size: 28px;
+  --mochi-accounts-content-max-height: 220px;
+  --mochi-accounts-font-10: calc(10px * var(--mochi-interface-scale,1));
+  --mochi-accounts-font-11: calc(11px * var(--mochi-interface-scale,1));
+  --mochi-accounts-font-12: calc(12px * var(--mochi-interface-scale,1));
+  --mochi-accounts-font-13: calc(13px * var(--mochi-interface-scale,1));
+  --mochi-accounts-font-15: calc(15px * var(--mochi-interface-scale,1));
+  --mochi-accounts-font-16: calc(16px * var(--mochi-interface-scale,1));
+  --mochi-accounts-font-18: calc(18px * var(--mochi-interface-scale,1));
+  --mochi-accounts-field-padding: 6px 9px;
+  --mochi-chrome-bg: var(--lumiverse-bg-elevated,#201e25);
+  --mochi-chrome-text: var(--lumiverse-text,#eee);
+  --mochi-chrome-border: var(--lumiverse-border,#ffffff26);
+  --mochi-window-radius: 14px;
+  --mochi-window-shadow: 0 12px 32px #0005;
+  --mochi-window-bar-padding: 8px 12px;
+  --mochi-window-bar-height: 36px;
+  --mochi-mobile-font: 400 13px/1.5 Inter,ui-sans-serif,system-ui,sans-serif;
+  --mochi-launcher-frame-size: 58px;
+  --mochi-launcher-size: 52px;
+  --mochi-launcher-padding: 6px;
+  --mochi-launcher-radius: 14px;
   /* Common dimensions: change these values, then rebuild the frontend. */
   --mochi-sidebar-min-width: 280px;
   --mochi-sidebar-width: 320px;
@@ -87,7 +145,7 @@
 
 /* Progressive native contrast selection; classic dark/light fallback remains above. */
 @supports (color:contrast-color(red)) {
-  .mochi-view,.mochi-sheet,.mochi-sidebar,.mochi-workspace {
+  :where(.mochi-view,.mochi-sheet,.mochi-sidebar,.mochi-workspace,.mochi-window,.mochi-mobile-surface,.mochi-launcher-root,.mochi-notification-toast) {
     --mochi-on-accent: contrast-color(var(--mochi-accent));
   }
 }

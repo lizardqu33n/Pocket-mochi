@@ -2,6 +2,7 @@ import {test,expect} from 'bun:test'
 import {readFileSync} from 'node:fs'
 import tokens from '../src/mochi/ui/mochi-tokens.css' with {type:'text'}
 import components from '../src/mochi/ui/mochi.css' with {type:'text'}
+import theme from '../src/mochi/ui/mochi-theme.css' with {type:'text'}
 import {mochiStyle} from '../src/mochi/ui/styles.js'
 import {MOCHI_STYLES} from '../src/mochi/styles.js'
 import {MOCHI_PRESET_WORKSPACE_STYLES} from '../src/mochi/preset-panel.js'
@@ -13,7 +14,9 @@ test('ordinary CSS text imports retain the existing cascade section boundaries',
  expect(markers).toHaveLength(24);expect(new Set(markers).size).toBe(markers.length)
  for(const name of markers)expect(mochiStyle(name).trim().length).toBeGreaterThan(0)
  expect(()=>mochiStyle('missing')).toThrow('Missing Mochi CSS section')
- expect(MOCHI_STYLES).toBe(tokens+'\n'+components.split('/* @mochi-section base */')[1].split('/* @mochi-section ')[0])
+ expect(MOCHI_STYLES).toBe(tokens+'\n'+components.split('/* @mochi-section base */')[1].split('/* @mochi-section ')[0]+'\n'+theme)
+ for(const name of ['base','launcher','mobile-surface','window','workspace','notifications'])expect(mochiStyle(name).startsWith(tokens+'\n')).toBe(true)
+ for(const name of markers)expect(mochiStyle(name).endsWith('\n'+theme)).toBe(true)
  const names=['block-editor','preset-workspace-base','mochi-preset-dedicated-styles','mochi-preset-chrome-styles','preset-workspace-final']
  expect(MOCHI_PRESET_WORKSPACE_STYLES).toBe(names.map(mochiStyle).join(''))
 })

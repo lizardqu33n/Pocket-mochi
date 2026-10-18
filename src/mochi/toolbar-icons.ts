@@ -22,4 +22,4 @@ const paths:Record<string,string>={
  pin:'<path d="m16 3 5 5-4 2-3 5-5-5 5-3 2-4ZM9 10l-3 3 5 5 3-3M8.5 15.5 3 21"/>',
  ellipsis:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
 }
-export const MOCHI_TOOLBAR_ICONS=Object.fromEntries(Object.entries(paths).map(([key,path])=>[key,`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`]))
+export const MOCHI_TOOLBAR_ICONS=Object.fromEntries(Object.entries(paths).map(([key,path])=>[key,`<svg data-mochi-icon="${key}" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`]))

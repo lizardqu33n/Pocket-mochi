@@ -1,0 +1,5 @@
+/* Mochi public theme entry point, contract v1 (phase 1).
+ * Put scoped theme CSS here, then rebuild dist/frontend.js.
+ * See THEME-CONTRACT.md and starter-theme.css. Empty preserves host defaults.
+ * This file is embedded locally; it never loads a theme or asset over the network.
+ */

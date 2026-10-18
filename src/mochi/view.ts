@@ -21,7 +21,7 @@ import { SCHEDULE_LABELS, TERMINAL, type PublicRuntime } from './scheduling.js'
 function action(label: string, icon: string, compact = false): HTMLButtonElement {
   const node = button('', `lp-button${compact ? ' mochi-icon-button' : ''}`)
   node.setAttribute('aria-label', label); node.title = label
-  const glyph = el('span'); glyph.setAttribute('aria-hidden', 'true')
+  const glyph = el('span','mochi-icon-slot'); glyph.dataset.mochiIconSlot=icon; glyph.setAttribute('aria-hidden', 'true')
   const extra: Record<string, string> = { stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>', copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4H4v12h4"/>', edit: '<path d="m15 4 5 5-11 11H4v-5L15 4Z M12 7l5 5"/>', more: '<path d="M5 12h.01M12 12h.01M19 12h.01"/>', people: '<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6M18 15a5 5 0 0 1 3 5"/>' }
   extra.close = '<path d="m6 6 12 12M18 6 6 18"/>'
   extra.search = '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/>'
