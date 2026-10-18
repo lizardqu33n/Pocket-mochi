@@ -118,6 +118,7 @@ export class MochiService {
     const user = identifier(userId), bank = await this.fictionalAccounts.bank(user)
     const key=await this.phoneKey(user,phone),selection=key?bank.phones?.[key]:undefined
     const associations = new Map(bank.accounts.map(a => [a.id, [] as string[]]))
+    let legacyRoomCount=0
     const warnings: string[] = []
     for (const file of await this.host.userStorage.list(ROOT, user)) {
       const match = /^(room_[a-f0-9]{32})\.json$/.exec(file)
@@ -128,12 +129,12 @@ export class MochiService {
           const ids = associations.get(room.accountId)
           if (!ids) throw new Error('Missing room owner')
           ids.push(room.id)
-        }
+        }else legacyRoomCount++
       } catch { warnings.push(`Room ${match[1]} has an unreadable association; its file was preserved.`) }
     }
     const choices = await this.state(user)
     const avatars = this.host.images && this.host.permissions.has('images') ? (await this.host.images.list({ userId: user, limit: 100, offset: 0, specificity: 'thumbnail' })).data.filter((a: any) => /^image\/(png|jpeg|webp|gif)$/.test(a.mime_type)).map((a: any) => ({ id: entityId(a.id), name: String(a.original_filename || 'Portrait').slice(0,120), url: `/api/v1/images/${entityId(a.id)}` })) : []
-    return { ...bank, phone: {supported:!!key,preference:key?selection?.preference||'last-used':bank.startupPreference||'last-used',lastAccountId:key?selection?.lastAccountId||'':bank.selectedAccountId}, accounts: bank.accounts.map(a => ({ ...a, roomIds: associations.get(a.id)!.sort() })), personas: choices.personas, avatars, canUploadAvatar: !!this.host.images && this.host.permissions.has('images'), warnings }
+    return { ...bank, legacyRoomCount, phone: {supported:!!key,preference:key?selection?.preference||'last-used':bank.startupPreference||'last-used',lastAccountId:key?selection?.lastAccountId||'':bank.selectedAccountId}, accounts: bank.accounts.map(a => ({ ...a, roomIds: associations.get(a.id)!.sort() })), personas: choices.personas, avatars, canUploadAvatar: !!this.host.images && this.host.permissions.has('images'), warnings }
   }
   private abortFictional(userId: string, accountId: string, includeServer: boolean, phoneKey?: string): void {
     if (!accountId) return
@@ -986,7 +987,9 @@ export class MochiService {
       }
       if (payload.type.startsWith('mochi:account_') || payload.type === 'mochi:accounts') {
         let createdAccountId: string | undefined, uploadedAvatarId: string | undefined
-        if (payload.type === 'mochi:account_create') createdAccountId = (await this.fictionalAccounts.create(userId, payload)).id
+        if(payload.type==='mochi:account_sync_preview'){this.host.sendToFrontend({type:'mochi:account_sync_preview',requestId:payload.requestId,review:await this.fictionalAccounts.syncReview(userId,payload)},userId);return}
+        if(payload.type==='mochi:account_sync') await this.fictionalAccounts.sync(userId,payload)
+        else if (payload.type === 'mochi:account_create') createdAccountId = (await this.fictionalAccounts.create(userId, payload)).id
         else if (payload.type === 'mochi:account_update') await this.fictionalAccounts.update(userId, payload)
         else if (payload.type === 'mochi:account_select') await this.selectAccount(userId, payload)
         else if (payload.type === 'mochi:account_archive') await this.archiveAccount(userId, payload)

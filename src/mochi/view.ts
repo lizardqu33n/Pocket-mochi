@@ -88,33 +88,45 @@ export class MochiView {
   private navigationError = ''
   private restoreRoom = false
   private sidebarProfile = false
+  private fictionalLoggedOut = false
+  private readFictionalLogout(owner:string):void {try{if(window.sessionStorage.getItem('mochi:fictional-logout:'+owner)==='1')this.fictionalLoggedOut=true}catch{/* In-memory session protection remains available. */}}
+
+  logoutNavigationAccount(anchor:HTMLElement, complete:()=>void):void {
+    this.exitPortal(()=>{this.leave();this.resetScope();this.fictionalLoggedOut=true;try{const owner=this.profiles.state?.ownerId;if(owner)window.sessionStorage.setItem('mochi:fictional-logout:'+owner,'1')}catch{};this.pickerOpen=true;this.startupOpen=false;complete();this.redraw()},anchor,true)
+  }
   private profileReturn?: () => void
   private accountNavigation?: {picker():void; settings(anchor:HTMLElement):void}
   setAccountNavigation(owner: {picker():void; settings(anchor:HTMLElement):void} | undefined):void {this.accountNavigation=owner}
   get isSidebarProfileOpen():boolean{return this.sidebarProfile}
-  editSidebarProfile(anchor:HTMLElement, complete:()=>void, create=false):void {
+  editSidebarProfile(anchor:HTMLElement, complete:()=>void, create=false, accountId?:string):void {
     // A running reply must reach the existing consequential-navigation warning.
     // Other pending writes still block opening a conflicting profile editor.
     if(this.busy&&!this.ownGenerations.has(this.roomId))return
-    const current=this.profiles.state?.accounts.find(a=>a.id===this.state?.accountId&&!a.archived)
+    const current=this.profiles.state?.accounts.find(a=>a.id===(accountId||this.state?.accountId||this.activeAccountId)&&!a.archived)
     if(!this.profiles.state||(!create&&!current))return
     this.exitPortal(()=>{this.sidebarProfile=true;this.profileReturn=complete;this.profiles.start(create?undefined:current);this.refreshChoices();this.redraw()},anchor,true)
   }
+  openAccountRecovery(anchor:HTMLElement,complete:()=>void):void {
+    this.exitPortal(()=>{this.sidebarProfile=true;this.profileReturn=complete;this.profiles.draft=null;this.redraw()},anchor,true)
+  }
   renderSidebarProfile():HTMLElement {
     const root=el('section','mochi-view');const style=el('style');style.textContent=MOCHI_STYLES;root.append(style)
+    if(this.error){const error=el('p','mochi-error',this.error);error.setAttribute('role','alert');root.append(error)}
     const finish=()=>{this.sidebarProfile=false;this.profiles.draft=null;const done=this.profileReturn;this.profileReturn=undefined;this.redraw();done?.()}
     root.append(this.profiles.render(this.busy,(type,input)=>this.dispatch(type,input),()=>{if(!this.profiles.draft)finish();else this.redraw()},finish,(next,anchor)=>this.confirmNavigation(next,anchor),()=>this.refreshChoices()))
+    root.addEventListener('keydown',event=>{if(event.key==='Escape'&&!root.closest('.mochi-sidebar')?.querySelector('dialog[open]')){event.stopPropagation();this.back(finish,event.target as HTMLElement)}})
     return root
   }
   get navigationState() { return {accounts:this.profiles.state, selectedAccountId:this.state?.accountId||this.activeAccountId, loading:!!this.navigationRequest, error:this.navigationError, switching:this.busy} }
+  setNavigationStartupPreference(preference:'last-used'|'picker'):void {if(!this.busy&&this.profiles.state)this.dispatch('mochi:account_startup',{preference,revision:this.profiles.state.revision})}
   loadNavigationAccounts(): void {
     if (this.destroyed || this.navigationRequest) return
     this.navigationError = ''; this.navigationRequest = requestId('mochi_navigation')
     this.navigationTimeout = setTimeout(()=>{this.navigationRequest='';this.navigationError='Accounts are unavailable. Try again.';this.redraw()},30000)
-    this.send({type:'mochi:accounts',requestId:this.navigationRequest}); this.redraw()
+    this.send({type:'mochi:accounts',requestId:this.navigationRequest,...(this.phone?{phone:this.phone}:{})}); this.redraw()
   }
   selectNavigationAccount(id: string | undefined, anchor: HTMLElement, present: () => void): void {
-    if (this.destroyed || this.busy) return
+    if (this.destroyed || this.busy&&!this.ownGenerations.has(this.roomId)) return
     if (id && !this.profiles.state?.accounts.some(a=>a.id===id&&!a.archived)) return
     if (this.state && this.state.accountId === id) { present(); return }
     this.exitPortal(()=>{
@@ -164,6 +176,7 @@ export class MochiView {
     this.notificationsChanged([],new Set(this.state?.rooms.map(r=>r.id)||[]));this.state=null;this.activeAccountId=undefined;this.roomId='';this.creating=false;this.editing=false;this.draft=null;this.settingsDraft=null;this.notificationsOpen=false;this.busy=false;clearTimeout(this.timeout);this.request='';this.selectionVersion++;this.notificationRevisions.clear();this.seenNotifications.clear();this.acknowledged.clear();this.acknowledgementRequests.clear();this.ownGenerations.clear()
   }
   private chooseAccount(id:string,persist=true):void{
+    this.fictionalLoggedOut=false;try{const owner=this.profiles.state?.ownerId;if(owner)window.sessionStorage.removeItem('mochi:fictional-logout:'+owner)}catch{}
     this.leave();this.resetScope();this.activeAccountId=id;this.profilesOpen=false
     if(persist){this.pickerOpen=true;this.dispatch('mochi:account_select',{accountId:id,revision:this.profiles.state?.revision})}
     else{this.pickerOpen=false;this.load()}
@@ -286,9 +299,10 @@ export class MochiView {
     this.confirmNavigation(()=>{this.creating=false;this.editing=false;this.draft=null;this.settingsDraft=null;this.profiles.draft=null;this.profilesOpen=false;this.sidebarProfile=false;this.profileReturn=undefined;this.personalSettings.discard();next()},anchor,stopsGeneration)
   }
   back(exit: () => void, anchor: HTMLElement): void {
-    if (this.busy) return
+    if (this.busy&&!this.ownGenerations.has(this.roomId)) return
     const next=()=>{
-      if(this.settingsPage){this.settingsPage='';this.editing=false;this.draft=null;this.settingsDraft=null;this.personalSettings.discard()}
+      if(this.sidebarProfile){if(this.profiles.syncOpen){this.profiles.backSync()}else{this.sidebarProfile=false;this.profiles.draft=null;const done=this.profileReturn;this.profileReturn=undefined;done?.()}}
+      else if(this.settingsPage){this.settingsPage='';this.editing=false;this.draft=null;this.settingsDraft=null;this.personalSettings.discard()}
       else if(this.profilesOpen){if(this.profiles.draft)this.profiles.draft=null;else this.profilesOpen=false}
       else if(this.creating||this.editing){this.creating=false;this.editing=false;this.draft=null;this.settingsDraft=null}
       else if(this.notificationsOpen)this.notificationsOpen=false
@@ -369,6 +383,7 @@ export class MochiView {
         (payload.accountId !== this.state?.accountId || payload.roomId !== this.roomId ||
          this.ownGenerations.get(payload.roomId) !== payload.requestId ||
          this.state?.rooms.find(r => r.id === payload.roomId)?.revision !== payload.roomRevision)) return true
+    if(payload?.type==='mochi:account_sync_preview'&&payload.requestId===this.request){clearTimeout(this.timeout);this.busy=false;this.profiles.acceptSync(payload.review);this.redraw();return true}
     if(this.personalSettings.receive(payload))return true
     if(this.memoryPanel.receive(payload))return true
     if(this.presetPanel.receive(payload))return true
@@ -377,7 +392,7 @@ export class MochiView {
     if(this.navigationRequest&&payload?.requestId===this.navigationRequest&&(payload.type==='mochi:accounts'||payload.type==='mochi:error')){
       clearTimeout(this.navigationTimeout);this.navigationRequest=''
       if(payload.type==='mochi:error')this.navigationError='Unable to load accounts. Try again.'
-      else if(!this.profiles.state||payload.state.revision>=this.profiles.state.revision)this.profiles.state=payload.state
+      else if(!this.profiles.state||payload.state.revision>=this.profiles.state.revision){this.readFictionalLogout(payload.state.ownerId);this.profiles.state=payload.state}
       this.redraw();return true
     }
     if(payload?.requestId===this.choicesRequest&&this.choicesRequest&&(payload.type==='mochi:choices'||payload.type==='mochi:error')){
@@ -400,10 +415,10 @@ export class MochiView {
     }
     if(payload?.type==='mochi:accounts') {
       if(payload.requestId!==this.request)return true
-      clearTimeout(this.timeout);this.busy=false;this.profiles.state=payload.state
+      clearTimeout(this.timeout);this.busy=false;this.readFictionalLogout(payload.state.ownerId);this.profiles.state=payload.state
       if(payload.uploadedAvatarId&&this.profiles.draft)this.profiles.draft.avatarId=payload.uploadedAvatarId
       else if(this.operation!=='mochi:accounts')this.profiles.draft=null
-      if(this.sidebarProfile&&!payload.uploadedAvatarId&&['mochi:account_create','mochi:account_update','mochi:account_archive','mochi:account_restore'].includes(this.operation)){
+      if(this.sidebarProfile&&!payload.uploadedAvatarId&&['mochi:account_create','mochi:account_update','mochi:account_sync','mochi:account_archive','mochi:account_restore'].includes(this.operation)){
         this.sidebarProfile=false;const done=this.profileReturn;this.profileReturn=undefined
         if(payload.createdAccountId){this.chooseAccount(payload.createdAccountId);done?.();return true}
         if(this.state?.accountId&&!payload.state.accounts.some((a:any)=>a.id===this.state?.accountId&&!a.archived)){this.leave();this.resetScope();this.pickerOpen=false}
@@ -415,7 +430,7 @@ export class MochiView {
       }
       if(payload.createdAccountId&&this.pickerOpen){this.chooseAccount(payload.createdAccountId);return true}
       if(this.state?.accountId&&!payload.state.accounts.some((a:any)=>a.id===this.state?.accountId&&!a.archived)){this.showPicker();return true}
-      if(this.startupOpen){this.startupOpen=false;const id=payload.state.phone?.lastAccountId;if(payload.state.phone?.preference==='last-used'&&payload.state.accounts.some((a:any)=>a.id===id&&!a.archived)){this.chooseAccount(id,false);return true}}
+      if(this.startupOpen&&!this.fictionalLoggedOut){this.startupOpen=false;const id=payload.state.phone?.lastAccountId;if(payload.state.phone?.preference==='last-used'&&payload.state.accounts.some((a:any)=>a.id===id&&!a.archived)){this.chooseAccount(id,false);return true}}
       this.redraw();return true
     }
     if (['mochi:notification', 'mochi:notifications', 'mochi:room_updated', 'mochi:job_finished', 'mochi:scheduling_updated'].includes(payload?.type) &&
@@ -545,7 +560,7 @@ export class MochiView {
       const dock=el('div','mochi-profile-dock');dock.dataset.compact=String(this.personalSettings.value.dock==='compact');dock.setAttribute('aria-label','Active fictional profile');const identityCopy=el('div'),switcher=el('select');switcher.setAttribute('aria-label','Switch fictional profile');for(const profile of this.profiles.state?.accounts.filter(a=>!a.archived)||[]){const option=el('option','',profile.displayName+(profile.username?' · @'+profile.username:''));option.value=profile.id;switcher.append(option)}if(!account){const option=el('option','','Unassigned legacy chats');option.value='';switcher.append(option)}switcher.value=this.state.accountId||'';switcher.onchange=()=>this.selectNavigationAccount(switcher.value||undefined,switcher,()=>this.redraw());identityCopy.append(switcher,el('small','mochi-dock-username',account?.username?'@'+account.username:'Fictional profile'));dock.append(portrait(account?.displayName||'?',account?.avatarUrl),identityCopy);identity.replaceChildren(dock)
       const accountRow=el('div','mochi-shell-account-row');accountRow.append(identity,profiles)
       create.setAttribute('aria-label','New Chat');create.title='New Chat';create.textContent='+ New Chat';newChat=create;noticesButton=notices
-      heading.append(accountRow)
+      if(!this.accountNavigation)heading.append(accountRow)
     }else heading.append(identity)
     const filter=el('input','mochi-conversation-filter');filter.type='search';filter.placeholder='Find a conversation';filter.setAttribute('aria-label','Find a conversation');filter.value=this.conversationFilter;filter.disabled=!this.state
     heading.append(filter)
@@ -690,12 +705,12 @@ export class MochiView {
       const preferences=this.personalSettings.value,route:Record<ToolbarAction,string>={search:'Search conversation',participants:'Participants',notifications:'Mochi notifications',settings:'Settings',presets:'Presets',memory:'Conversation Memory',preview:'Preview AI prompt',notes:'Pins & Notes'}
       const icons:Record<ToolbarAction,string>={search:'search',participants:'people',notifications:'notifications',settings:'settings',presets:'sliders',memory:'brain',preview:'eye',notes:'pin'}
       const permanent=el('div','mochi-header-controls')
-      for(const key of ['search','notifications','participants'] as const){const original=Array.from(menuSheet.querySelectorAll<HTMLButtonElement>('button')).find(b=>b.textContent===route[key]);if(!original&&surface!=='desktop')continue;const shortcut=action(TOOLBAR_LABELS[key],icons[key],true);if(original)shortcut.onclick=()=>original.click();else{shortcut.disabled=true;shortcut.title='Mochi notifications are disabled on this surface'}permanent.append(shortcut)}
+      for(const key of ['search','notifications','participants'] as const){const original=Array.from(menuSheet.querySelectorAll<HTMLButtonElement>('button')).find(b=>b.textContent===route[key]);if(!original&&surface!=='desktop')continue;const shortcut=action(TOOLBAR_LABELS[key],icons[key],true);if(original)shortcut.onclick=()=>original.click();else{shortcut.disabled=true;shortcut.title='Mochi notifications are disabled on this surface'}permanent.append(shortcut);if(original&&['search','participants'].includes(key))original.remove()}
       for(const key of preferences.order){if(['search','participants','notifications','settings'].includes(key)||preferences.hidden.includes(key))continue;const original=Array.from(menuSheet.querySelectorAll<HTMLButtonElement>('button')).find(b=>b.textContent===route[key]);if(!original)continue;const shortcut=action(TOOLBAR_LABELS[key],icons[key],true);shortcut.title=TOOLBAR_LABELS[key];if(preferences.presentation==='labels')shortcut.append(el('span','mochi-toolbar-label',TOOLBAR_LABELS[key]));shortcut.onclick=()=>original.click();controls.append(shortcut)}
       const rail=el('div','mochi-toolbar-shortcuts');rail.setAttribute('aria-label','Conversation shortcuts');rail.append(...Array.from(controls.children))
       const chatSettings=action('Chat Settings','settings',true);chatSettings.onclick=()=>this.openSettings('chat',chatSettings)
       controls.append(rail,menu,chatSettings);controls.classList.add('mochi-bottom-toolbar');controls.setAttribute('aria-label','Conversation tools')
-      const chatName=el('div','mochi-chat-name',room.title);chatName.title='Chat name: '+room.title;chatName.setAttribute('aria-label','Chat name: '+room.title)
+      const chatName=el('div','mochi-chat-name',room.title);chatName.hidden=room.title.trim().toLocaleLowerCase()===chatIdentity(room,this.state.characters).name.trim().toLocaleLowerCase();chatName.title='Chat name: '+room.title;chatName.setAttribute('aria-label','Chat name: '+room.title)
       roomHeader.append(info,chatName,permanent);page.append(roomHeader)
       if (surface === 'chat') roomHeader.classList.add('mochi-chat-heading')
       else headerActions.prepend(inbox)
@@ -965,7 +980,7 @@ export class MochiView {
   }
   private sheet(anchor: HTMLElement, title: string, content: HTMLElement): ReturnType<typeof showPocketSheet> {
     // Keep confirmations alive when metadata refresh replaces the inner view.
-    const sheet = showPocketSheet(anchor, title, content, anchor.closest<HTMLElement>('.mochi-workspace') || this.presenceRoot?.closest<HTMLElement>('.mochi-workspace') || anchor.closest<HTMLElement>('.lumiphone-shell') || this.presenceRoot?.closest<HTMLElement>('.mochi-desktop') || this.presenceRoot || undefined)
+    const sheet = showPocketSheet(anchor, title, content, anchor.closest<HTMLElement>('.mochi-sidebar') || anchor.closest<HTMLElement>('.mochi-workspace') || this.presenceRoot?.closest<HTMLElement>('.mochi-workspace') || anchor.closest<HTMLElement>('.lumiphone-shell') || this.presenceRoot?.closest<HTMLElement>('.mochi-desktop') || this.presenceRoot || undefined)
     if (sheet) { this.sheets.add(sheet.dismiss); content.closest('dialog')?.classList.add('mochi-sheet'); content.closest('dialog')?.addEventListener('close', () => {this.sheets.delete(sheet.dismiss);if(!anchor.isConnected)Array.from(this.presenceRoot?.querySelectorAll<HTMLButtonElement>('button')||[]).find(b=>anchor.getAttribute('aria-label')?b.getAttribute('aria-label')===anchor.getAttribute('aria-label'):b.textContent===anchor.textContent)?.focus({preventScroll:true})}, { once: true }) }
     return sheet
   }

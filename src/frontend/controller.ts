@@ -525,7 +525,7 @@ class PocketController {
 
   private renderDrawerLanding(): void {
     if (!this.portal) this.portal = new PocketPortal(() => this.renderPhoneChoices(), () => this.mochiSidebar.root,
-      () => this.mochiSidebar.open(), undefined, {phones:PHONE_ICON,mochi:MOCHI_SIDEBAR_ICON})
+      () => this.mochiSidebar.open(), {back:(exit,anchor)=>this.mochi.back(exit,anchor),home:(exit,anchor)=>this.mochi.exitPortal(exit,anchor,true)}, {phones:PHONE_ICON,mochi:MOCHI_SIDEBAR_ICON})
     if (!this.drawer.root.contains(this.portal.root)) this.drawer.root.replaceChildren(this.portal.root)
     this.portal.refresh()
   }

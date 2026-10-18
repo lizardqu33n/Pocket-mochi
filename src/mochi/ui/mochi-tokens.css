@@ -3,6 +3,7 @@
 .mochi-sheet,
 .mochi-sidebar,
 .mochi-workspace {
+  --mochi-account-accent: var(--lp-accent,#b6a0ed);
   /* Common dimensions: change these values, then rebuild the frontend. */
   --mochi-sidebar-min-width: 280px;
   --mochi-sidebar-width: 320px;
@@ -35,7 +36,7 @@
   --mochi-message-gap: 12px;
   --mochi-messenger-control-size: 40px;
   --mochi-messenger-font: var(--lumiverse-font-family, system-ui, sans-serif);
-  --mochi-bubble-line-length: 62ch;
+  --mochi-bubble-line-length: 78ch;
   --mochi-panel-radius: 22px;
   --mochi-control-radius: 8px;
   --mochi-header-icon-size: 18px;

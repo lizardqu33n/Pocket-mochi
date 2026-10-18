@@ -108,7 +108,8 @@ test('standalone menu has scoped surface/contrast/layering rules and Escape rest
  try{
   expect(MOCHI_DESKTOP_STYLES).toContain('background:var(--mochi-surface,#17151d)');expect(MOCHI_DESKTOP_STYLES).toContain('z-index:50');expect(MOCHI_DESKTOP_STYLES).toContain(':is(:hover,:focus-visible)')
   const menu=document.querySelector<HTMLDetailsElement>('.lp-conversation-menu')!,opener=menu.querySelector<HTMLElement>('summary')!
-  expect(Array.from(menu.querySelectorAll('button')).map(button=>button.textContent)).toEqual(expect.arrayContaining(['Settings','Pins & Notes','Conversation Memory','Presets','Search conversation','Preview AI prompt']))
+  expect(menu.querySelector('[aria-label="Search conversation"],[aria-label="Participants"]')===null).toBe(true)
+  expect(Array.from(menu.querySelectorAll('button')).map(button=>button.textContent)).toEqual(expect.arrayContaining(['Settings','Pins & Notes','Conversation Memory','Presets','Preview AI prompt']))
   menu.open=true;menu.dispatchEvent(new f.dom.window.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));expect(menu.open).toBe(false);expect(document.activeElement).toBe(opener)
   expect(f.sent).toHaveLength(0)
  }finally{f.cleanup()}

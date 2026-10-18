@@ -4,6 +4,8 @@ import { createMochiWindow, type MochiWindowUI } from './window.js'
 import { createMochiWorkspace, type MochiWorkspace } from './workspace.js'
 import type { MochiNotificationPolicy } from './notifications.js'
 import { MOCHI_SIDEBAR_STYLES } from './sidebar-styles.js'
+import {MOCHI_TOOLBAR_ICONS} from './toolbar-icons.js'
+import {MOCHI_STYLES} from './styles.js'
 import {createMochiMobileSurface} from './mobile-surface.js'
 
 /** Navigation only; conversation rendering always leases the existing session. */
@@ -11,13 +13,17 @@ export interface MochiSidebar {readonly root:HTMLElement; open():void; openMesse
 export function createMochiSidebar(ctx: Pick<SpindleFrontendContext,'ui'>, session: MochiSession,
   policy: () => Pick<MochiNotificationPolicy,'enabled'|'previews'>, activateSidebar:()=>void=()=>{}, dismissDrawer?:()=>void): MochiSidebar {
   const root=document.createElement('section');root.className='mochi-sidebar';root.setAttribute('aria-label','Mochi account navigation')
-  const style=document.createElement('style');style.textContent=MOCHI_SIDEBAR_STYLES
+  const style=document.createElement('style');style.textContent=MOCHI_STYLES+'\n'+MOCHI_SIDEBAR_STYLES
   const nav=document.createElement('nav'),picker=document.createElement('div'),body=document.createElement('div'),editor=document.createElement('div')
   const fallbackStatus=document.createElement('p');fallbackStatus.className='mochi-sidebar-message';fallbackStatus.setAttribute('role','status');fallbackStatus.hidden=true
   editor.className='mochi-sidebar-picker';editor.hidden=true
   nav.className='mochi-sidebar-nav';nav.setAttribute('aria-label','Mochi navigation');picker.className='mochi-sidebar-picker';body.className='mochi-sidebar-body';body.hidden=true
-  root.append(style,nav,fallbackStatus,picker,body,editor)
-  let disposed=false, workspace:MochiWorkspace|undefined, fallback='', rendered='', pickerRequested=true
+  const dock=document.createElement('footer');dock.className='mochi-account-dock'
+  root.append(style,nav,fallbackStatus,picker,body,editor,dock)
+  let query='',sort='displayName',descending=false,grid=false,bulk=false,archived=false
+  const selected=new Set<string>()
+  let editorActivated=false
+  let disposed=false, workspace:MochiWorkspace|undefined, fallback='', pickerRequested=true
   let ownedWindow:ReturnType<typeof createMochiWindow>|undefined, offWindow:(()=>void)|undefined
   let mobileSurface:ReturnType<typeof createMochiMobileSurface>|undefined
   const visibility=new Set<(visible:boolean)=>void>()
@@ -48,54 +54,81 @@ export function createMochiSidebar(ctx: Pick<SpindleFrontendContext,'ui'>, sessi
     }
     if(fullscreen)body.querySelector<HTMLElement>(session.view.roomId?'[aria-label="Back to conversations"]':'.mochi-desktop-room,[aria-label="New Chat"]')?.focus({preventScroll:true})
   }
-  const accounts=button('Accounts',()=>showPicker()),open=button('Open messenger',()=>present())
+  const accounts=button('Refresh accounts',()=>session.prepareNavigation()),open=button('Open Mochi',()=>present())
   const close=button('Close',anchor=>session.view.confirmGenerationExit(()=>{workspace?.close();mobileSurface?.hide();showPicker()},anchor))
   close.setAttribute('aria-label','Close Mochi messenger');close.hidden=true
   nav.append(accounts,open,close)
+  const glyph=(label:string,icon:string,click:(node:HTMLButtonElement)=>void)=>{const node=button('',click);node.className='mochi-account-icon';node.title=label;node.setAttribute('aria-label',label);node.innerHTML=MOCHI_TOOLBAR_ICONS[icon]||MOCHI_TOOLBAR_ICONS.profile;return node}
+  const portrait=(name:string,url:string)=>{const node=document.createElement('span');node.className='mochi-sidebar-avatar';node.textContent=name.slice(0,1);node.setAttribute('aria-hidden','true');if(url){const img=document.createElement('img');img.src=url;img.alt='';node.replaceChildren(img)}return node}
+  const edit=(anchor:HTMLElement,create=false,id?:string)=>session.view.editSidebarProfile(anchor,()=>{showPicker();queueMicrotask(()=>picker.querySelector<HTMLElement>(id?'[data-account-id="'+id+'"]':'[aria-label="New account"]')?.focus())},create,id)
   function render():void {
     if(disposed)return
     fallbackStatus.hidden=!fallback;fallbackStatus.textContent=fallback
-    close.hidden=!mobileSurface?.isOpen;open.hidden=!!mobileSurface?.isOpen&&!pickerRequested
-    editor.hidden=!session.view.isSidebarProfileOpen||pickerRequested
-    if(session.view.isSidebarProfileOpen&&!pickerRequested){
+    const editing=session.view.isSidebarProfileOpen
+    close.hidden=!mobileSurface?.isOpen;open.hidden=editing||!!mobileSurface?.isOpen&&!pickerRequested;accounts.hidden=editing
+    editor.hidden=!editing
+    const state=session.view.navigationState
+    open.disabled=!state.selectedAccountId||!session.view.state||state.switching
+    dock.replaceChildren()
+    const current=state.accounts?.accounts.find(a=>a.id===state.selectedAccountId&&!a.archived)
+    if(current){
+      const copy=document.createElement('div'),name=document.createElement('strong'),username=document.createElement('small');name.textContent=current.displayName;username.textContent=current.username?'@'+current.username:'Fictional account';copy.append(name,username)
+      const settings=glyph('Account Settings','settings',anchor=>edit(anchor,false,current.id)),logout=glyph('Log out of fictional account','logout',anchor=>session.view.logoutNavigationAccount(anchor,()=>{ownedWindow?.hide();workspace?.close();mobileSurface?.hide();showPicker()}))
+      dock.append(portrait(current.displayName,current.avatarUrl),copy,settings,logout)
+    }else{const text=document.createElement('small');text.textContent='No fictional account selected';dock.append(text)}
+    dock.hidden=!!mobileSurface?.isOpen&&!editing
+    if(editing){
       if(ownedWindow?.isOpen)ownedWindow.hide()
-      picker.hidden=true;body.hidden=true
+      mobileSurface?.hide();picker.hidden=true;body.hidden=true
+      if(!editorActivated){editorActivated=true;activateSidebar()}
       const focused=editor.contains(document.activeElement)?document.activeElement as HTMLInputElement:undefined,label=focused?.getAttribute('aria-label'),start=focused?.selectionStart,end=focused?.selectionEnd
       editor.replaceChildren(session.view.renderSidebarProfile())
       const next=Array.from(editor.querySelectorAll<HTMLInputElement>('[aria-label]')).find(n=>n.getAttribute('aria-label')===label)
-      if(next){next.focus({preventScroll:true});if(start!=null&&end!=null)next.setSelectionRange(start,end)}
+      if(next){next.focus({preventScroll:true});if(start!=null&&end!=null&&next.type!=='checkbox')next.setSelectionRange(start,end)}
+      else queueMicrotask(()=>editor.querySelector<HTMLElement>('h3')?.focus())
       return
     }
-    if(editor.childNodes.length){editor.replaceChildren();picker.hidden=false}
-    const state=session.view.navigationState, focused=picker.contains(document.activeElement)?(document.activeElement as HTMLElement).dataset.accountId:undefined
-    open.disabled=!session.view.state
-    const key=JSON.stringify([state.accounts?.revision,state.accounts?.accounts.map(a=>[a.id,a.displayName,a.avatarUrl,a.archived,a.roomIds.length]),state.selectedAccountId,state.loading,state.error,state.switching,fallback])
-    if(key===rendered)return
-    rendered=key
+    editorActivated=false
+    if(editor.childNodes.length){editor.replaceChildren();pickerRequested=true}
+    picker.hidden=!pickerRequested;body.hidden=pickerRequested
+    const focused=picker.contains(document.activeElement)?document.activeElement as HTMLInputElement:undefined,label=focused?.getAttribute('aria-label'),position=focused?.selectionStart,accountFocus=focused?.dataset.accountId
     picker.replaceChildren()
-    const message=(text:string)=>{const p=document.createElement('p');p.className='mochi-sidebar-message';p.textContent=text;p.setAttribute('role',text===state.error?'alert':'status');picker.append(p)}
+    const message=(text:string,alert=false)=>{const p=document.createElement('p');p.className='mochi-sidebar-message';p.textContent=text;p.setAttribute('role',alert?'alert':'status');picker.append(p)}
+    const title=document.createElement('h3');title.textContent='Mochi Accounts';picker.append(title)
     if(state.loading)message('Loading accounts…')
-    if(state.error){message(state.error);picker.append(button('Try again',()=>session.prepareNavigation()))}
-    if(!state.accounts){if(!state.loading&&!state.error)message('Open Accounts to load your Mochi profiles.');return}
-    const available=state.accounts.accounts.filter(a=>!a.archived)
-    if(!available.length)message('No fictional accounts yet. Create one to start chatting.')
-    for(const account of available){
-      const node=button('',anchor=>session.view.selectNavigationAccount(account.id,anchor,present));node.className='mochi-sidebar-account';node.dataset.accountId=account.id
-      node.setAttribute('aria-label',`Use Mochi account ${account.displayName}`);node.setAttribute('aria-pressed',String(state.selectedAccountId===account.id));node.disabled=state.switching
-      const avatar=document.createElement('span');avatar.className='mochi-sidebar-avatar';avatar.setAttribute('aria-hidden','true');avatar.textContent=account.displayName.slice(0,1)
-      if(account.avatarUrl){const image=document.createElement('img');image.src=account.avatarUrl;image.alt='';avatar.replaceChildren(image)}
-      const label=document.createElement('span');label.className='mochi-sidebar-label';const name=document.createElement('span');name.textContent=account.displayName
-      const detail=document.createElement('small');detail.textContent=`${state.selectedAccountId===account.id?'Selected · ':''}${account.roomIds.length} chats`;label.append(name,detail);node.append(avatar,label);picker.append(node)
+    if(state.error)message(state.error,true)
+    if(!state.accounts)return
+    const tools=document.createElement('div');tools.className='mochi-account-tools'
+    const search=document.createElement('input');search.type='search';search.placeholder='Search accounts…';search.setAttribute('aria-label','Search accounts');search.value=query;search.oninput=()=>{query=search.value;render()};search.onkeydown=e=>{if(e.key==='Escape'){query='';render()}}
+    const create=glyph('New account','plus',anchor=>edit(anchor,true));create.disabled=state.switching;tools.append(search,create);picker.append(tools)
+    const bar=document.createElement('div');bar.className='mochi-account-tools'
+    const sortBy=document.createElement('select');sortBy.setAttribute('aria-label','Sort accounts');for(const [value,text]of [['displayName','Name'],['updatedAt','Updated'],['createdAt','Created'],['roomIds','Chats']]){const option=document.createElement('option');option.value=value;option.textContent=text;sortBy.append(option)}sortBy.value=sort;sortBy.onchange=()=>{sort=sortBy.value;render()}
+    const order=glyph(descending?'Sort ascending':'Sort descending','sort',()=>{descending=!descending;render()}),view=glyph(grid?'Show list':'Show grid',grid?'list':'grid',()=>{grid=!grid;render()}),batch=glyph('Select multiple accounts','check',()=>{bulk=!bulk;selected.clear();render()});batch.setAttribute('aria-pressed',String(bulk))
+    const archive=glyph(archived?'Show active accounts':'Show archived accounts','archive',()=>{archived=!archived;selected.clear();render()});archive.setAttribute('aria-pressed',String(archived));bar.append(sortBy,order,view,batch,archive);picker.append(bar)
+    const all=state.accounts.accounts.filter(a=>a.archived===archived),visible=all.filter(a=>(a.displayName+' '+a.username).toLocaleLowerCase().includes(query.toLocaleLowerCase())).sort((a,b)=>{const value=sort==='roomIds'?a.roomIds.length-b.roomIds.length:sort==='displayName'?a.displayName.localeCompare(b.displayName):String(a[sort as 'updatedAt']).localeCompare(String(b[sort as 'updatedAt']));return descending?-value:value})
+    message(`${visible.length} / ${all.length} ${archived?'archived ':''}accounts`)
+    const list=document.createElement('div');list.className='mochi-account-list';list.dataset.layout=grid?'grid':'list';picker.append(list)
+    if(!visible.length)message(query?'No matching accounts.':'No accounts here. Use New account to create an independent identity or import a persona.')
+    for(const account of visible){
+      const row=document.createElement('div');row.className='mochi-account-row'
+      const node=button('',anchor=>{if(archived)session.view.openAccountRecovery(anchor,showPicker);else session.view.selectNavigationAccount(account.id,anchor,()=>render())});node.className='mochi-sidebar-account';node.dataset.accountId=account.id
+      node.setAttribute('aria-label',`${archived?'Recover':'Use Mochi account'} ${account.displayName}`);node.setAttribute('aria-pressed',String(state.selectedAccountId===account.id));node.disabled=state.switching
+      const copy=document.createElement('span');copy.className='mochi-sidebar-label';const name=document.createElement('strong'),detail=document.createElement('small');name.textContent=account.displayName;detail.textContent=(account.username?'@'+account.username+' · ':'')+account.roomIds.length+' chats';copy.append(name,detail);node.append(portrait(account.displayName,account.avatarUrl),copy)
+      if(bulk){const check=document.createElement('input');check.type='checkbox';check.setAttribute('aria-label','Select '+account.displayName);check.checked=selected.has(account.id);check.onchange=()=>{check.checked?selected.add(account.id):selected.delete(account.id);render()};row.append(check)}
+      row.append(node);list.append(row)
     }
-    const create=button('Create account',anchor=>{pickerRequested=false;session.view.editSidebarProfile(anchor,()=>{if(session.view.state?.accountId)present();else showPicker()},true)});create.disabled=state.switching;picker.append(create)
-    const legacy=button('Unassigned legacy chats',anchor=>session.view.selectNavigationAccount(undefined,anchor,present));legacy.disabled=state.switching;picker.append(legacy)
-    if(focused)Array.from(picker.querySelectorAll<HTMLButtonElement>('[data-account-id]')).find(n=>n.dataset.accountId===focused)?.focus({preventScroll:true})
+    if(bulk){message(`${selected.size} selected · ${all.filter(a=>selected.has(a.id)).reduce((n,a)=>n+a.roomIds.length,0)} preserved chats`);picker.append(button('Select all shown',()=>{visible.forEach(a=>selected.add(a.id));render()}),button('Clear selection',()=>{selected.clear();render()}))}
+    if(state.accounts.legacyRoomCount){const recovery=document.createElement('details'),summary=document.createElement('summary');summary.textContent='Legacy recovery';recovery.append(summary,button(`Review ${state.accounts.legacyRoomCount} unassigned chats`,anchor=>session.view.selectNavigationAccount(undefined,anchor,present)));picker.append(recovery)}
+    const startupLabel=document.createElement('label');startupLabel.className='mochi-account-startup';startupLabel.textContent='On opening Mochi';const startup=document.createElement('select');startup.setAttribute('aria-label','Mochi startup preference');for(const [value,text]of [['last-used','Last used account'],['picker','Account picker']]){const option=document.createElement('option');option.value=value;option.textContent=text;startup.append(option)}startup.value=state.accounts.phone?.preference||state.accounts.startupPreference||'last-used';startup.disabled=state.switching;startup.onchange=()=>session.view.setNavigationStartupPreference(startup.value as 'last-used'|'picker');startupLabel.append(startup);picker.append(startupLabel)
+    for(const warning of state.accounts.warnings)message(warning,true)
+    const next=Array.from(picker.querySelectorAll<HTMLInputElement>('[aria-label]')).find(n=>accountFocus?n.dataset.accountId===accountFocus:n.getAttribute('aria-label')===label)
+    if(next){next.focus({preventScroll:true});if(position!=null&&next.type==='search')next.setSelectionRange(position,position)}
   }
   const dispose=()=>{if(disposed)return;disposed=true;offWindow?.();visibility.clear();session.view.setAccountNavigation(undefined);workspace?.destroy();mobileSurface?.destroy();root.remove()}
   const detach=session.observeNavigation({redraw:render,disposed:dispose})
   render()
   const openPicker=()=>{session.assertActive();const anchor=document.activeElement as HTMLElement;session.view.exitPortal(()=>{if(ownedWindow?.isOpen)ownedWindow.hide();if(!mobileSurface?.isOpen)activateSidebar();showPicker()},anchor,true)}
-  const settings=(anchor:HTMLElement)=>{if(!mobileSurface?.isOpen)activateSidebar();pickerRequested=false;if(session.view.isSidebarProfileOpen)render();else session.view.editSidebarProfile(anchor,()=>{if(session.view.state?.accountId)present();else showPicker()})}
+  const settings=(anchor:HTMLElement)=>edit(anchor)
   session.view.setAccountNavigation({picker:openPicker,settings})
   return {root,open:()=>{session.assertActive();showPicker()},settings,openMessenger:()=>{session.assertActive();const current=session.view.navigationState;if(current.selectedAccountId&&current.accounts?.accounts.some(a=>a.id===current.selectedAccountId&&!a.archived)&&session.view.state?.accountId===current.selectedAccountId)present();else openPicker()},onMessengerVisibility(handler){visibility.add(handler);handler(ownedWindow?.isOpen||workspace?.isOpen||false);return()=>{visibility.delete(handler)}},destroy:()=>{detach();dispose()}}
 }

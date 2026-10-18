@@ -10,7 +10,7 @@ import { createMochiLauncher } from '../src/mochi/launcher.js'
 import type { SpindleFrontendContext } from 'lumiverse-spindle-types'
 
 function fixture(width=900, geometry=true, dismissDrawer?:()=>void) {
-  const dom=new JSDOM('<body><main id="portal"></main></body>',{pretendToBeVisual:true})
+  const dom=new JSDOM('<body><main id="portal"></main></body>',{pretendToBeVisual:true,url:'https://synthetic.invalid'})
   const previous={document:globalThis.document,window:globalThis.window};Object.assign(globalThis,{document:dom.window.document,window:dom.window})
   Object.defineProperty(window,'innerWidth',{value:width,configurable:true})
   // jsdom does not implement native modal dialogs; emulate their lifecycle.
@@ -27,21 +27,22 @@ function fixture(width=900, geometry=true, dismissDrawer?:()=>void) {
     return {root,setVisible:(visible:boolean)=>{root.hidden=!visible},isVisible:()=>!root.hidden,setFullscreen:(value:boolean)=>{fullscreen=value},isFullscreen:()=>fullscreen,setSize:()=>{},moveTo:(x:number,y:number)=>{position={x,y}},getPosition:()=>position,onDragEnd:()=>()=>{},destroy:()=>root.remove()}
   }}
   if(geometry)ui.geometry={layoutViewportSize:()=>({width,height:850}),createResizeController:()=>()=>{}}
-  const navigation=createMochiSidebar({ui} as Pick<SpindleFrontendContext,'ui'>,session,()=>({enabled:true,previews:false}),()=>{},dismissDrawer)
+  const navigation=createMochiSidebar({ui} as Pick<SpindleFrontendContext,'ui'>,session,()=>({enabled:true,previews:false}),()=>pocket.show('mochi'),dismissDrawer)
   const pocket=new PocketPortal(()=>{const node=document.createElement('p');node.textContent='Native Pocket phones and settings';return node},()=>navigation.root,()=>navigation.open(),undefined,{phones:'<svg data-test="original-phone" viewBox="0 0 24 24"></svg>',mochi:MOCHI_SIDEBAR_ICON})
   document.body.append(pocket.root)
   const pane={root:navigation.root,activate:()=>pocket.show('mochi')}
   const a='account_'+'a'.repeat(32),b='account_'+'b'.repeat(32)
-  const bank:any={version:1,ownerId:'synthetic',revision:1,selectedAccountId:a,accounts:[a,b].map((id,i)=>({id,revision:1,persona:{name:'Synthetic',description:'',source:'manual',sourceId:'',avatarUrl:''},username:'',displayName:i?'Other profile':'Long fictional profile '.repeat(5),avatarUrl:'',archived:false,roomIds:['room_'+id]})),personas:[],avatars:[],warnings:[],canUploadAvatar:false}
+  const bank:any={version:1,ownerId:'synthetic',revision:1,selectedAccountId:a,legacyRoomCount:1,accounts:[a,b].map((id,i)=>({id,revision:1,persona:{name:'Synthetic',description:'',source:'manual',sourceId:'',avatarUrl:''},username:'',displayName:i?'Other profile':'Long fictional profile '.repeat(5),avatarUrl:'',archived:false,roomIds:['room_'+id]})),personas:[],avatars:[],warnings:[],canUploadAvatar:false}
   const emit=(p:any)=>{for(const fn of listeners)fn(p)}
   const request=(type:string)=>sent.filter(p=>p.type===type).at(-1)
   const accounts=()=>emit({type:'mochi:accounts',requestId:request('mochi:accounts').requestId,state:structuredClone(bank)})
   const state=(id:string|undefined,rooms=true)=>({accountId:id,rooms:rooms?[{id:'room_'+(id||'legacy'),accountId:id,ownerId:'synthetic',revision:1,title:'Long room '.repeat(15),characterIds:[],persona:{name:'Me',description:''},messages:[],settings:{autoReply:true,responseMode:'instant',instructions:'',connectionId:'',contextTokens:8192,outputTokens:1200,characterNames:{}}}]:[],characters:[],personas:[],connections:[],notifications:[],warnings:[]})
-  const select=(id:string|undefined,rooms=true)=>{
-    const button=id?pane.root.querySelector(`[data-account-id="${id}"]`):Array.from(pane.root.querySelectorAll('button')).find((n:any)=>n.textContent==='Unassigned legacy chats')
+  const select=(id:string|undefined,rooms=true,present=true)=>{
+    const button=id?pane.root.querySelector(`[data-account-id="${id}"]`):Array.from(pane.root.querySelectorAll('button')).find((n:any)=>n.textContent==='Review 1 unassigned chats')
     ;(button as HTMLButtonElement).click()
     if(id){bank.selectedAccountId=id;bank.revision++;emit({type:'mochi:accounts',requestId:request('mochi:account_select').requestId,state:structuredClone(bank)})}
     emit({type:'mochi:state',requestId:request('mochi:list').requestId,state:state(id,rooms)})
+    if(present)navigation.openMessenger()
   }
   const cleanup=()=>{try{navigation.destroy();session.destroy(false)}finally{dom.window.close();Object.assign(globalThis,previous)}}
   return {session,ui,navigation,tabs:[pane],registrations:tabs,pocket,sent,listeners,bank,a,b,emit,accounts,request,state,select,cleanup,get floats(){return floats}}
@@ -110,26 +111,24 @@ test('floating Mochi shortcut directly restores selected account, follows Pocket
   }finally{dispose();h.cleanup()}
 })
 
-test('messenger account controls use sidebar editor; save/cancel return to conversations without losing drafts',()=>{
-  const h=fixture()
-  try{
-    h.tabs[0].activate();h.accounts();h.select(h.a);h.session.view.select('room_'+h.a)
-    const view=h.session.view as any;view.drafts.set(view.roomId,'Unsent draft')
-    document.querySelector<HTMLButtonElement>('.mochi-window [aria-label="Personal Settings"]')!.click()
-    Array.from(document.querySelectorAll<HTMLButtonElement>('.mochi-window button')).find(n=>n.textContent==='Switch fictional profile')!.click();h.accounts()
-    expect(document.querySelector('.mochi-window .mochi-account-picker')).toBeNull();expect(view.roomId).toBe('room_'+h.a)
-    expect(document.querySelector('.mochi-window [aria-label="Mochi Settings"]')).not.toBeNull()
-    Array.from(document.querySelectorAll<HTMLButtonElement>('.mochi-window button')).find(n=>n.textContent==='Manage fictional profile & persona add-ons')!.click()
-    expect(h.navigation.root.querySelector('.mochi-profile-screen')).not.toBeNull();expect(document.querySelector('.mochi-window .mochi-profile-screen')).toBeNull()
-    Array.from(h.navigation.root.querySelectorAll<HTMLButtonElement>('button')).find(n=>n.textContent==='Cancel profile changes')!.click()
-    expect(view.isSidebarProfileOpen).toBe(false);expect(view.roomId).toBe('room_'+h.a);expect(view.drafts.get(view.roomId)).toBe('Unsent draft')
-    h.navigation.settings(document.createElement('button'));view.profiles.draft.displayName='Changed synthetic profile'
-    h.navigation.root.querySelector<HTMLFormElement>('form')!.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}))
-    expect(h.request('mochi:account_update').accountId).toBe(h.a)
-    h.bank.revision++;h.emit({type:'mochi:accounts',requestId:h.request('mochi:account_update').requestId,state:h.bank})
-    expect(view.isSidebarProfileOpen).toBe(false);expect(view.roomId).toBe('room_'+h.a);expect(view.drafts.get(view.roomId)).toBe('Unsent draft')
-    expect(document.querySelector('.mochi-window .mochi-account-picker')).toBeNull();expect(h.listeners.size).toBe(1)
-  }finally{h.cleanup()}
+test('account editor stays in the outer sidebar; cancel/save return to Accounts and keep chat drafts',()=>{
+ const h=fixture()
+ try{
+  h.tabs[0].activate();h.accounts();h.select(h.a);h.session.view.select('room_'+h.a)
+  const view=h.session.view as any;view.drafts.set(view.roomId,'Unsent draft')
+  expect(document.querySelector('.mochi-window [aria-label="Switch fictional profile"]')===null).toBe(true)
+  h.navigation.root.querySelector<HTMLButtonElement>('[aria-label="Account Settings"]')!.click()
+  expect(!!h.navigation.root.querySelector('.mochi-profile-screen')).toBe(true)
+  expect(document.querySelector('.mochi-window .mochi-profile-screen')===null).toBe(true)
+  Array.from(h.navigation.root.querySelectorAll<HTMLButtonElement>('button')).find(n=>n.textContent==='Cancel profile changes')!.click()
+  expect(view.isSidebarProfileOpen).toBe(false);expect(view.drafts.get(view.roomId)).toBe('Unsent draft')
+  h.navigation.settings(document.createElement('button'));view.profiles.draft.displayName='Changed synthetic profile'
+  h.navigation.root.querySelector<HTMLFormElement>('form')!.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}))
+  expect(h.request('mochi:account_update').accountId).toBe(h.a)
+  h.bank.revision++;h.emit({type:'mochi:accounts',requestId:h.request('mochi:account_update').requestId,state:h.bank})
+  expect(view.isSidebarProfileOpen).toBe(false);expect(view.drafts.get(view.roomId)).toBe('Unsent draft');expect(h.listeners.size).toBe(1)
+  expect(h.navigation.root.querySelector<HTMLElement>('.mochi-sidebar-picker')!.hidden).toBe(false)
+ }finally{h.cleanup()}
 })
 
 test('one Pocket rail tab: adjacent internal shortcuts reuse native phones and the 01E account picker',()=>{
@@ -201,8 +200,8 @@ test('mobile Open messenger, details/back and Close reuse one owner, retain draf
     root.querySelector<HTMLButtonElement>('.mochi-message-actions')!.click();expect(document.querySelector('dialog')).not.toBeNull()
     document.querySelector<HTMLButtonElement>('dialog .lp-sheet-close')!.click()
     const input=root.querySelector<HTMLTextAreaElement>('[aria-label="Message"]')!;input.value='Unsent mobile draft';input.dispatchEvent(new window.Event('input'))
-    root.querySelector<HTMLButtonElement>('[aria-label="Conversation details"]')!.click();expect(root.querySelector<HTMLElement>('.mochi-desktop')!.dataset.details).toBe('true')
-    root.querySelector<HTMLButtonElement>('[aria-label="Close conversation details"]')!.click();expect(root.querySelector<HTMLElement>('.mochi-desktop')!.dataset.details).toBe('false')
+    root.querySelector<HTMLButtonElement>('[aria-label="Character profile"]')!.click();expect(root.querySelector<HTMLElement>('.mochi-desktop')!.dataset.details).toBe('true')
+    root.querySelector<HTMLButtonElement>('[aria-label="Close character profile"]')!.click();expect(root.querySelector<HTMLElement>('.mochi-desktop')!.dataset.details).toBe('false')
     expect(root.querySelector('[aria-label="Message"]')).toBe(input);expect(input.value).toBe('Unsent mobile draft')
     ;(h.session.view as any).ownGenerations.set(roomId,'pending')
     root.querySelector<HTMLButtonElement>('[aria-label="Close Mochi messenger"]')!.click()
@@ -216,7 +215,7 @@ test('mobile Open messenger, details/back and Close reuse one owner, retain draf
     ;(h.session.view as any).memoryPanel.generating=false
     root.querySelector<HTMLButtonElement>('[aria-label="Back to conversations"]')!.click();expect(h.session.view.roomId).toBe('')
     root.querySelector<HTMLButtonElement>('[aria-label="Close Mochi messenger"]')!.click();expect(root.closest('.mochi-mobile-surface')).toBeNull()
-    Array.from(root.querySelectorAll<HTMLButtonElement>('nav button')).find(b=>b.textContent==='Open messenger')!.click()
+    Array.from(root.querySelectorAll<HTMLButtonElement>('nav button')).find(b=>b.textContent==='Open Mochi')!.click()
     expect(root.closest('.mochi-mobile-surface')).not.toBeNull();expect(h.floats).toBe(1);expect(h.listeners.size).toBe(1)
     expect((h.session.view as any).drafts.get(roomId)).toBe('Unsent mobile draft')
     h.session.authenticatedIdentityChanged(null);expect(document.querySelector('.mochi-mobile-surface')).toBeNull();expect(h.listeners.size).toBe(0)
@@ -289,17 +288,51 @@ test('picker loading/error/empty states, account creation and dirty-form safegua
   try{
     h.tabs[0].activate();expect(h.tabs[0].root.textContent).toContain('Loading accounts')
     h.emit({type:'mochi:error',requestId:h.request('mochi:accounts').requestId,message:'private detail'});expect(h.tabs[0].root.textContent).toContain('Unable to load accounts');expect(h.tabs[0].root.textContent).not.toContain('private detail');expect(h.tabs[0].root.querySelector('[role="alert"]')).not.toBeNull()
-    h.tabs[0].activate();h.bank.accounts=[];h.accounts();expect(h.tabs[0].root.textContent).toContain('No fictional accounts yet')
-    Array.from(h.tabs[0].root.querySelectorAll<HTMLButtonElement>('button')).find(n=>n.textContent==='Create account')!.click()
+    h.tabs[0].activate();h.bank.accounts=[];h.accounts();expect(h.tabs[0].root.textContent).toContain('No accounts here')
+    h.tabs[0].root.querySelector<HTMLButtonElement>('[aria-label="New account"]')!.click()
     expect(h.floats).toBe(0);expect(document.querySelector('.mochi-profile-preview')).not.toBeNull()
     const view=h.session.view as any;view.profiles.draft.displayName='Unsaved name';expect(view.hasUnsavedChanges()).toBe(true)
-    h.bank.accounts=[{id:h.b,displayName:'Other',avatarUrl:'',archived:false,roomIds:[]}];h.tabs[0].activate();h.accounts()
-    const count=h.sent.length;h.tabs[0].root.querySelector<HTMLButtonElement>(`[data-account-id="${h.b}"]`)!.click()
-    expect(h.sent.length).toBe(count);expect(view.profiles.draft.displayName).toBe('Unsaved name');expect(document.body.textContent).toContain('You have unsaved changes')
+    const back=()=>Array.from(h.tabs[0].root.querySelectorAll<HTMLButtonElement>('button')).find(n=>n.textContent==='Back to Accounts')!
+    back().click();expect(document.body.textContent).toContain('You have unsaved changes')
     Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(n=>n.textContent.includes('Keep editing'))!.click()
-    expect(h.sent.length).toBe(count);expect(view.hasUnsavedChanges()).toBe(true)
-    h.tabs[0].root.querySelector<HTMLButtonElement>(`[data-account-id="${h.b}"]`)!.click()
-    Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(n=>n.textContent.includes('Discard changes'))!.click()
-    expect(h.request('mochi:account_select').accountId).toBe(h.b)
+    expect(view.hasUnsavedChanges()).toBe(true)
+    back().click();Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(n=>n.textContent.includes('Discard changes'))!.click()
+    expect(view.isSidebarProfileOpen).toBe(false)
+
   }finally{h.cleanup()}
+})
+
+for(const width of [320,390,1100])test(`${width}: selection stays Accounts, dock settings routes outward and fictional logout defeats last-used reentry`,()=>{
+ const h=fixture(width)
+ try{
+  h.tabs[0].activate();h.accounts();h.select(h.a,true,false)
+  expect(h.floats).toBe(0);expect(h.session.view.navigationState.selectedAccountId).toBe(h.a)
+  expect(h.navigation.root.querySelector('[aria-label="Account Settings"]')!==null).toBe(true)
+  h.navigation.root.querySelector<HTMLButtonElement>('[aria-label="Log out of fictional account"]')!.click()
+  expect(h.session.view.state===null).toBe(true);expect(h.session.view.navigationState.selectedAccountId).toBeUndefined()
+  h.navigation.openMessenger();h.accounts();expect(h.floats).toBe(0);expect(window.sessionStorage.getItem('mochi:fictional-logout:synthetic')).toBe('1')
+  h.session.view.open();h.emit({type:'mochi:accounts',requestId:h.request('mochi:accounts').requestId,state:{...h.bank,phone:{preference:'last-used',lastAccountId:h.a}}})
+  expect(h.session.view.state===null).toBe(true);expect(h.session.view.navigationState.selectedAccountId).toBeUndefined()
+  h.select(h.b,true,false);expect(h.session.view.navigationState.selectedAccountId).toBe(h.b);expect(h.floats).toBe(0)
+  h.navigation.openMessenger();expect(h.floats).toBe(1)
+ }finally{h.cleanup()}
+})
+
+test('fictional logout and account editor honor generation and dirty warnings before changing scope',()=>{
+ const h=fixture(390)
+ try{
+  h.tabs[0].activate();h.accounts();h.select(h.a,true,false)
+  const view=h.session.view as any;view.roomId='room_'+h.a;view.ownGenerations.set(view.roomId,'pending');view.busy=true
+  h.navigation.root.querySelector<HTMLButtonElement>('[aria-label="Log out of fictional account"]')!.click()
+  expect(document.body.textContent).toContain('A reply is still generating')
+  Array.from(document.querySelectorAll<HTMLButtonElement>('dialog button')).find(b=>b.textContent==='Stay here')!.click()
+  expect(view.navigationState.selectedAccountId).toBe(h.a)
+  view.ownGenerations.clear();view.busy=false
+  h.navigation.root.querySelector<HTMLButtonElement>('[aria-label="Account Settings"]')!.click()
+  const input=h.navigation.root.querySelector<HTMLInputElement>('[aria-label="Profile display name"]')!;input.value='Unsaved';input.dispatchEvent(new window.Event('input'))
+  h.navigation.root.querySelector<HTMLButtonElement>('[aria-label="Log out of fictional account"]')!.click()
+  expect(document.body.textContent).toContain('You have unsaved changes')
+  Array.from(document.querySelectorAll<HTMLButtonElement>('dialog button')).find(b=>b.textContent==='Keep editing')!.click()
+  expect(view.isSidebarProfileOpen).toBe(true);expect(view.navigationState.selectedAccountId).toBe(h.a)
+ }finally{h.cleanup()}
 })

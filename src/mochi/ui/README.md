@@ -134,3 +134,27 @@ Wide layouts (1280px and above) show the profile by default. Medium layouts star
 The character profile intentionally shows **No Mochi bio saved yet** rather than republishing an AI description. Bio editing belongs to Part 2.
 
 Run `node scripts/check-mochi-refresh-ui.mjs` for focused refresh checks. Set the same browser/toolchain variables described above, and optionally `MOCHI_REFRESH_OUTPUT`. It checks wide/medium/390px/320px layouts, inherited themes, bottom toolbar placement, responder selection, grouping, action selection/animation, Stop and fictional-account isolation. The older messenger check command forwards to this check.
+# Live Mochi-only overrides in Lumiverse
+
+Lumiverse 1.2.5's existing Custom CSS panel writes CSS into the same document as
+extension drawer tabs and floating windows. You can use that panel for a local
+Mochi-only override without rebuilding. Enable Custom CSS there, then try:
+
+```css
+.mochi-view.mochi-view {
+  --mochi-chat-font-size: 17px;
+  --mochi-bubble-radius: 12px;
+}
+```
+
+The repeated class deliberately gives the rule higher specificity than Mochi's
+embedded defaults, even when the extension inserts its styles later. The rule
+does not change the rest of Lumiverse. Removing it restores the inherited
+defaults. This exact example was checked in a synthetic shared-document browser
+fixture; the owner's installed Custom CSS settings were not edited. Host safe
+theme mode or disabling Custom CSS prevents these overrides from being applied.
+There is no additional Mochi stylesheet loader or CSS editor.
+
+For distributable changes, continue editing the ordinary CSS files and rebuilding
+the frontend as described below. Live Custom CSS is a local host setting, not a
+replacement for committing a matching compiled extension.

@@ -1,6 +1,15 @@
 /** Local outline artwork compatible with Lumiverse's Lucide toolbar.
  * Kept inside Mochi: no dependency on host React components or private paths. */
 const paths:Record<string,string>={
+ plus:'<path d="M12 5v14M5 12h14"/>',
+ settings:'<path d="m9 3-.5 2-2 1.2-2-.5-2 3.5 1.5 1.5v2.6L2.5 15l2 3.5 2-.5 2 1.2L9 21h4l.5-1.8 2-1.2 2 .5 2-3.5-1.5-1.7v-2.6L19.5 9l-2-3.5-2 .5-2-1.2L13 3Z"/><circle cx="11" cy="12" r="3"/>',
+ logout:'<path d="M9 4H4v16h5m6-13 5 5-5 5m-7-5h12"/>',
+ sort:'<path d="M7 4v16m-4-4 4 4 4-4M14 5h7m-7 5h5m-5 5h3"/>',
+ grid:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+ list:'<path d="M8 5h13M8 12h13M8 19h13M3 5h.01M3 12h.01M3 19h.01"/>',
+ check:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="m7 12 3 3 7-7"/>',
+ archive:'<path d="M4 8v12h16V8M9 12h6"/><rect x="3" y="3" width="18" height="5" rx="1"/>',
+
  brain:'<path d="M12 18V5a3 3 0 0 0-5.8-1A4 4 0 0 0 3 11a4 4 0 0 0 2 7.5A3.5 3.5 0 0 0 12 18Zm0 0V5a3 3 0 0 1 5.8-1A4 4 0 0 1 21 11a4 4 0 0 1-2 7.5A3.5 3.5 0 0 1 12 18ZM7 8c2 0 3 1 3 3m7-3c-2 0-3 1-3 3M6 14c2 0 3 1 3 3m9-3c-2 0-3 1-3 3"/>',
  smile:'<circle cx="12" cy="12" r="9"/><path d="M8 14s1 3 4 3 4-3 4-3M8 9h.01M16 9h.01"/>',
 

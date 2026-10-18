@@ -213,6 +213,20 @@ function dispatchReady(room, j, now) {
 }
 
 // src/mochi/accounts.ts
+function personaLink(value, persona) {
+  if (value === null)
+    return;
+  const v = value;
+  if (!v || v.source !== "lumiverse" || identifier(v.sourceId) !== persona.sourceId || persona.source !== "lumiverse")
+    throw Error("Link an imported Lumiverse identity before syncing.");
+  return { source: "lumiverse", sourceId: v.sourceId };
+}
+function validateAddonSnapshots(value) {
+  const snapshots = value;
+  if (!Array.isArray(snapshots) || snapshots.length > 200 || snapshots.some((a) => !a || typeof a.id !== "string" || !a.id || a.id.length > 180 || typeof a.content !== "string" || a.content.length > 12000 || typeof a.label !== "string" || a.label.length > 200 || typeof a.enabled !== "boolean" || typeof a.available !== "boolean" || !Number.isFinite(a.sortOrder) || a.outletName !== undefined && (typeof a.outletName !== "string" || a.outletName.length > 180) || a.global !== undefined && typeof a.global !== "boolean") || new Set(snapshots.map((a) => a.id)).size !== snapshots.length)
+    throw Error("Invalid saved add-on snapshots; stored data was preserved.");
+  return snapshots;
+}
 var PATH = "mochi/v1/fictional-accounts.json";
 function fictionalAccountId(value) {
   if (typeof value !== "string" || !/^account_[a-f0-9]{32}$/.test(value))
@@ -285,6 +299,10 @@ class MochiAccounts {
       }
       if (account.persona.source !== "manual")
         identifier(account.persona.sourceId);
+      if (account.personaLink !== undefined)
+        personaLink(account.personaLink, account.persona);
+      if (account.personaAddonSnapshots !== undefined)
+        validateAddonSnapshots(account.personaAddonSnapshots);
       for (const date of [account.createdAt, account.updatedAt])
         if (typeof date !== "string" || !Number.isFinite(Date.parse(date)))
           throw new Error("Invalid fictional account metadata; stored data was preserved.");
@@ -312,6 +330,12 @@ class MochiAccounts {
     return account;
   }
   async save(user, bank) {
+    for (const account of bank.accounts) {
+      if (account.personaAddonSnapshots !== undefined)
+        validateAddonSnapshots(account.personaAddonSnapshots);
+      if (account.personaAddons !== undefined)
+        validateAddonSelection(account.personaAddons);
+    }
     bank.revision++;
     await this.host.userStorage.setJson(PATH + ".pending", bank, { userId: user });
     await this.host.userStorage.move(PATH + ".pending", PATH, user);
@@ -352,6 +376,10 @@ class MochiAccounts {
         account.avatarUrl = await this.avatar(user, input.avatarId);
       if (input.personaAddons !== undefined)
         account.personaAddons = await saveAddonSelection(this.host, user, persona, input.personaAddons);
+      if (input.personaLink != null)
+        account.personaLink = personaLink(input.personaLink, persona);
+      if (account.personaLink)
+        account.personaAddonSnapshots = await discoverPersonaAddons(this.host, await this.host.personas.get(persona.sourceId, user), user);
       bank.accounts.push(account);
       await this.save(user, bank);
       return account;
@@ -368,20 +396,109 @@ class MochiAccounts {
         account.persona = await this.snapshot(user, input.persona);
         account.avatarUrl = account.persona.avatarUrl;
       }
+      if (input.persona !== undefined) {
+        delete account.personaLink;
+        delete account.personaAddonSnapshots;
+      }
+      if (input.personaLink !== undefined) {
+        const link = personaLink(input.personaLink, account.persona);
+        if (link)
+          account.personaLink = link;
+        else
+          delete account.personaLink;
+      }
       if (input.persona !== undefined && (account.persona.source !== "lumiverse" || account.personaAddons?.personaId !== account.persona.sourceId))
         delete account.personaAddons;
       if (input.personaAddons !== undefined)
         account.personaAddons = await saveAddonSelection(this.host, user, account.persona, input.personaAddons);
       if (input.displayName !== undefined)
         account.displayName = field(input.displayName, 120, true);
+      if (input.identityDescription !== undefined) {
+        if (input.persona !== undefined)
+          throw Error("Import an identity or edit its saved description separately.");
+        account.persona = { ...account.persona, description: field(input.identityDescription, 12000) };
+      }
       if (input.username !== undefined)
         account.username = username(input.username);
       if (input.avatarId !== undefined)
         account.avatarUrl = await this.avatar(user, input.avatarId);
+      if (account.personaLink && !account.personaAddonSnapshots)
+        account.personaAddonSnapshots = await discoverPersonaAddons(this.host, await this.host.personas.get(account.persona.sourceId, user), user);
+      else if (account.personaAddonSnapshots && input.personaAddons !== undefined) {
+        const choices = await discoverPersonaAddons(this.host, await this.host.personas.get(account.persona.sourceId, user), user);
+        for (const id of account.personaAddons?.enabledIds || [])
+          if (!account.personaAddonSnapshots.some((a) => a.id === id)) {
+            const choice = choices.find((a) => a.id === id && a.available);
+            if (choice)
+              account.personaAddonSnapshots.push(choice);
+          }
+      }
       account.revision++;
       account.updatedAt = new Date(this.now()).toISOString();
       await this.save(user, bank);
       return account;
+    });
+  }
+  async syncReview(user, input) {
+    const account = await this.get(user, input.accountId);
+    if (input.revision !== account.revision)
+      throw Error("This fictional profile changed elsewhere. Refresh before syncing.");
+    if (!account.personaLink)
+      throw Error("This account has no linked Lumiverse persona.");
+    try {
+      const incoming = await this.snapshot(user, account.personaLink);
+      const native = await this.host.personas.get(account.personaLink.sourceId, user);
+      const addons = validateAddonSnapshots(await discoverPersonaAddons(this.host, native, user));
+      const bytes = new TextEncoder().encode(JSON.stringify([incoming, addons]));
+      const signature = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), (b) => b.toString(16).padStart(2, "0")).join("");
+      return { accountId: account.id, revision: account.revision, signature, incoming, addons };
+    } catch {
+      return { accountId: account.id, revision: account.revision, signature: "", addons: [], unavailable: "The linked persona is missing, unavailable or incompatible. Saved Mochi values are preserved." };
+    }
+  }
+  async sync(user, input) {
+    await this.guard(user, async () => {
+      const review = await this.syncReview(user, input);
+      if (!review.incoming || !input.signature || input.signature !== review.signature)
+        throw Error("The source changed or is unavailable. Review again before applying.");
+      if (!Array.isArray(input.fields) || input.fields.some((f) => !["displayName", "avatar", "description"].includes(f)) || new Set(input.fields).size !== input.fields.length)
+        throw Error("Invalid sync field selection.");
+      if (!Array.isArray(input.addons) || input.addons.length > 200 || input.addons.some((a) => !a || typeof a.id !== "string" || typeof a.enabled !== "boolean") || new Set(input.addons.map((a) => a.id)).size !== input.addons.length)
+        throw Error("Invalid sync add-on selection.");
+      const bank = await this.bank(user), account = bank.accounts.find((a) => a.id === review.accountId);
+      if (account.revision !== review.revision)
+        throw Error("This fictional profile changed elsewhere. Refresh before syncing.");
+      const selected = new Set(account.personaAddons?.enabledIds || []);
+      for (const change of input.addons) {
+        if (!review.addons.some((a) => a.id === change.id && a.available))
+          throw Error("An add-on is unavailable or incompatible. Saved selections are preserved.");
+        if (change.enabled)
+          selected.add(change.id);
+        else
+          selected.delete(change.id);
+      }
+      if (input.fields.includes("displayName"))
+        account.displayName = review.incoming.name;
+      if (input.fields.includes("avatar"))
+        account.avatarUrl = review.incoming.avatarUrl;
+      if (input.fields.includes("description"))
+        account.persona = { ...account.persona, description: review.incoming.description };
+      if (selected.size > 200)
+        throw Error("Too many saved add-ons. Preserve existing selections or review fewer changes.");
+      if (input.addons.length) {
+        account.personaAddons = { personaId: account.persona.sourceId, enabledIds: [...selected] };
+        const snapshots = new Map((account.personaAddonSnapshots || []).map((a) => [a.id, a]));
+        for (const change of input.addons)
+          snapshots.set(change.id, review.addons.find((a) => a.id === change.id));
+        if (snapshots.size > 200)
+          throw Error("Too many saved add-on snapshots. No changes were applied.");
+        account.personaAddonSnapshots = [...snapshots.values()];
+      }
+      if (!input.fields.length && !input.addons.length)
+        throw Error("Choose at least one change to apply.");
+      account.revision++;
+      account.updatedAt = new Date(this.now()).toISOString();
+      await this.save(user, bank);
     });
   }
   async select(user, input, switched, phoneKey) {
@@ -1558,10 +1675,13 @@ async function resolveAccountAddonContext(host, room, userId) {
     if (selected && room.persona.source === "lumiverse" && selected.personaId === room.persona.sourceId) {
       if (!host.permissions.has("personas"))
         throw Error("Persona permission is required.");
-      const native = await host.personas.get(selected.personaId, userId);
-      if (!native || native.id !== selected.personaId)
-        throw Error("The room persona is no longer available to your account.");
-      const choices = await discoverPersonaAddons(host, native, userId);
+      let choices = account.personaAddonSnapshots;
+      if (!choices) {
+        const native = await host.personas.get(selected.personaId, userId);
+        if (!native || native.id !== selected.personaId)
+          throw Error("The room persona is no longer available to your account.");
+        choices = await discoverPersonaAddons(host, native, userId);
+      }
       personaContext = addonContext(room.persona.description, choices, selected, JSON.stringify([account.revision, selected, choices]));
     }
   }
@@ -1903,6 +2023,7 @@ class MochiService {
     const user = identifier(userId), bank = await this.fictionalAccounts.bank(user);
     const key = await this.phoneKey(user, phone), selection = key ? bank.phones?.[key] : undefined;
     const associations = new Map(bank.accounts.map((a) => [a.id, []]));
+    let legacyRoomCount = 0;
     const warnings = [];
     for (const file of await this.host.userStorage.list(ROOT, user)) {
       const match = /^(room_[a-f0-9]{32})\.json$/.exec(file);
@@ -1915,14 +2036,15 @@ class MochiService {
           if (!ids)
             throw new Error("Missing room owner");
           ids.push(room.id);
-        }
+        } else
+          legacyRoomCount++;
       } catch {
         warnings.push(`Room ${match[1]} has an unreadable association; its file was preserved.`);
       }
     }
     const choices = await this.state(user);
     const avatars = this.host.images && this.host.permissions.has("images") ? (await this.host.images.list({ userId: user, limit: 100, offset: 0, specificity: "thumbnail" })).data.filter((a) => /^image\/(png|jpeg|webp|gif)$/.test(a.mime_type)).map((a) => ({ id: entityId(a.id), name: String(a.original_filename || "Portrait").slice(0, 120), url: `/api/v1/images/${entityId(a.id)}` })) : [];
-    return { ...bank, phone: { supported: !!key, preference: key ? selection?.preference || "last-used" : bank.startupPreference || "last-used", lastAccountId: key ? selection?.lastAccountId || "" : bank.selectedAccountId }, accounts: bank.accounts.map((a) => ({ ...a, roomIds: associations.get(a.id).sort() })), personas: choices.personas, avatars, canUploadAvatar: !!this.host.images && this.host.permissions.has("images"), warnings };
+    return { ...bank, legacyRoomCount, phone: { supported: !!key, preference: key ? selection?.preference || "last-used" : bank.startupPreference || "last-used", lastAccountId: key ? selection?.lastAccountId || "" : bank.selectedAccountId }, accounts: bank.accounts.map((a) => ({ ...a, roomIds: associations.get(a.id).sort() })), personas: choices.personas, avatars, canUploadAvatar: !!this.host.images && this.host.permissions.has("images"), warnings };
   }
   abortFictional(userId, accountId, includeServer, phoneKey) {
     if (!accountId)
@@ -3264,7 +3386,13 @@ class MochiService {
       }
       if (payload.type.startsWith("mochi:account_") || payload.type === "mochi:accounts") {
         let createdAccountId, uploadedAvatarId;
-        if (payload.type === "mochi:account_create")
+        if (payload.type === "mochi:account_sync_preview") {
+          this.host.sendToFrontend({ type: "mochi:account_sync_preview", requestId: payload.requestId, review: await this.fictionalAccounts.syncReview(userId, payload) }, userId);
+          return;
+        }
+        if (payload.type === "mochi:account_sync")
+          await this.fictionalAccounts.sync(userId, payload);
+        else if (payload.type === "mochi:account_create")
           createdAccountId = (await this.fictionalAccounts.create(userId, payload)).id;
         else if (payload.type === "mochi:account_update")
           await this.fictionalAccounts.update(userId, payload);

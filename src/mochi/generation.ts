@@ -61,9 +61,8 @@ export async function resolveAccountAddonContext(host:any,room:MochiRoom,userId:
     const selected=account.personaAddons
     if(selected&&room.persona.source==='lumiverse'&&selected.personaId===room.persona.sourceId){
       if(!host.permissions.has('personas'))throw Error('Persona permission is required.')
-      const native=await host.personas.get(selected.personaId,userId)
-      if(!native||native.id!==selected.personaId)throw Error('The room persona is no longer available to your account.')
-      const choices=await discoverPersonaAddons(host,native,userId)
+      let choices=account.personaAddonSnapshots
+      if(!choices){const native=await host.personas.get(selected.personaId,userId);if(!native||native.id!==selected.personaId)throw Error('The room persona is no longer available to your account.');choices=await discoverPersonaAddons(host,native,userId)}
       personaContext=addonContext(room.persona.description,choices,selected,JSON.stringify([account.revision,selected,choices]))
     }
   }

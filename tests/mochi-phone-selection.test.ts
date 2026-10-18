@@ -35,7 +35,7 @@ test('selection on one phone cannot cancel another phone provider or redirect it
   const pending=f.service.message('alice',{phone:phoneA,accountId:a.id,roomId:room.id,revision:room.revision,requestId:'phone_owned',content:'Mary'})
   await ready;await f.service.selectAccount('alice',{phone:phoneB,accountId:b.id,revision:(await f.service.fictionalAccounts.bank('alice')).revision})
   release({content:'{"speakerId":"alice_character","text":"Mary reply"}'});await pending
-  expect((await f.service.read('alice',room.id,a.id)).messages).toHaveLength(2);expect(f.calls[0].messages[0].content).toContain('MARY_PRIVATE');f.scheduler.stop()
+  expect((await f.service.read('alice',room.id,a.id)).messages).toHaveLength(2);expect(f.calls[0].messages.map((m:any)=>m.content).join('\n')).toContain('MARY_PRIVATE');f.scheduler.stop()
 })
 test('picker startup handles stale archived selections and ignores stale account responses',async()=>{
   const f=fixture(),a=await f.profile();await f.select(a.id)

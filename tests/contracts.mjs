@@ -1952,8 +1952,10 @@ try {
   // Its composer/history/notification contracts are exercised by mochi-sidebar,
   // mochi-workspace, mochi-session and mochi-multi-user-acceptance tests.
   assert.ok(drawerRoot.querySelector('[aria-label="Mochi account navigation"]'))
-  assert.match(drawerRoot.textContent, /No fictional accounts yet/)
-  assert.ok([...drawerRoot.querySelectorAll('button')].find(node=>node.textContent==='Unassigned legacy chats'))
+  assert.match(drawerRoot.textContent, /No accounts here/)
+  assert.equal([...drawerRoot.querySelectorAll('button')].some(node=>node.textContent==='Unassigned legacy chats'),false,'Legacy recovery is absent when there are no unassigned records')
+  assert.ok(drawerRoot.querySelector('[aria-label="New account"]'))
+  assert.ok([...drawerRoot.querySelectorAll('button')].find(node=>node.textContent==='Open Mochi').disabled)
   assert.equal(dockRoot.querySelector('textarea[aria-label="Message"]'),null,'Opening Mochi navigation must not put its composer inside the Pocket phone')
   drawerRoot.querySelector('.pocket-portal-home').click()
   assert.deepEqual([...storage.entries()], beforeMochiPhones, 'Mochi must not write existing phones or preferences')
