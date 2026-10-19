@@ -1,3 +1,4 @@
+import {planFor} from './routines.js'
 import { defaultPresence, STATUSES, type PresenceStatus } from './presence.js'
 import type { MochiRoom } from './types.js'
 export interface Behavior { delayMs: number; status?: PresenceStatus }
@@ -11,7 +12,7 @@ export function parseBehavior(value: unknown): Behavior {
   return { delayMs:v.delayMs, ...(v.status === undefined ? {} : {status:v.status}) }
 }
 export function applyDeliveredStatus(room: MochiRoom, characterId: string, status: PresenceStatus | undefined, now: number): void {
-  if (!status || !room.characterIds.includes(characterId)) return
+  if (!status || !room.characterIds.includes(characterId)||planFor(room,characterId)?.enabled) return
   room.runtime ||= {version:1,enabled:false,jobs:[]};room.runtime.presence ||= {}
   const p = room.runtime.presence[characterId] || structuredClone(room.characterDefaults?.[characterId]?.availability || defaultPresence())
   if (p.manual !== null) return

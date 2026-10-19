@@ -1,3 +1,5 @@
+import {planFor} from './routines.js'
+import type {RoutineActions} from './routine-actions.js'
 import { MochiAccounts } from './accounts.js'
 import { discoverPersonaAddons, addonContext, type PersonaAddonContext } from './persona-addons.js'
 import { callPocketProvider } from '../backend/generation.js'
@@ -9,8 +11,8 @@ import {parseResponse} from './response.js'
 export {type PromptMessage} from './context.js'
 import {resolveMochiContext,type PromptMessage} from './context.js'
 import {MochiPresets,type ResolvedPreset} from './presets.js'
-export async function buildMochiPrompt(room:MochiRoom,characters:any[],responder:string,count:(messages:PromptMessage[])=>Promise<number>,signal:AbortSignal,natural=false,preset?:ResolvedPreset,personaContext?:PersonaAddonContext):Promise<PromptMessage[]>{
-  return (await resolveMochiContext(room,characters,responder,count,signal,natural,preset,personaContext)).messages
+export async function buildMochiPrompt(room:MochiRoom,characters:any[],responder:string,count:(messages:PromptMessage[])=>Promise<number>,signal:AbortSignal,natural=false,preset?:ResolvedPreset,personaContext?:PersonaAddonContext,now=Date.now()):Promise<PromptMessage[]>{
+  return (await resolveMochiContext(room,characters,responder,count,signal,natural,preset,personaContext,now)).messages
 }
 export async function validateMochiSources(host: any, room: MochiRoom, userId: string): Promise<any> {
   const settings = room.settings || defaultMochiSettings()
@@ -68,19 +70,19 @@ export async function resolveAccountAddonContext(host:any,room:MochiRoom,userId:
   }
   return personaContext
 }
-export interface GeneratedReply { character:any; text:string; behavior:Behavior }
-export async function generateMochiReply(host: any, room: MochiRoom, userId: string, responder: string, signal: AbortSignal, eligibleIds = room.characterIds, natural = false): Promise<GeneratedReply & { replies: GeneratedReply[]; silent: boolean }> {
+export interface GeneratedReply { character:any; text:string; behavior:Behavior;routineActions?:RoutineActions }
+export async function generateMochiReply(host: any, room: MochiRoom, userId: string, responder: string, signal: AbortSignal, eligibleIds = room.characterIds, natural = false,now=Date.now()): Promise<GeneratedReply & { replies: GeneratedReply[]; silent: boolean }> {
   const settings = room.settings || defaultMochiSettings()
   const {connection,characters,speaker,preset,personaContext}=await resolveGenerationSources(host,room,userId,responder,eligibleIds)
   const messages = await buildMochiPrompt(room, characters, speaker, async messages => {
     try { return (await host.tokens.countMessages(messages, { model: settings.model || connection.model, userId })).total_tokens }
     catch (error) { signal.throwIfAborted(); throw providerFailure(error) }
-  }, signal, natural,preset,personaContext)
+  }, signal, natural,preset,personaContext,now)
   let response: any
   try { response = await callPocketProvider(host, { messages, connection_id: connection.id, userId, signal, reasoning: { source: 'off' }, parameters: { max_tokens: settings.outputTokens, temperature: 0.8, ...(settings.model ? { model: settings.model } : {}) } }) }
   catch (error) { signal.throwIfAborted(); throw providerFailure(error) }
-  const rows=parseResponse(response?.content,response?.finish_reason==='length',{speaker,eligibleIds:characters.map(c=>c.id),natural})
-  const replies:GeneratedReply[]=rows.map(row=>({character:characters.find(c=>c.id===row.speakerId)!,text:row.text,behavior:settings.aiBehavior?parseBehavior(row.behavior):{delayMs:0}}))
+  const rows=parseResponse(response?.content,response?.finish_reason==='length',{speaker,eligibleIds:characters.map(c=>c.id),natural,routineActions:characters.some(c=>{const p=planFor(room,c.id);return p?.enabled&&p.autonomy!=='manual'})})
+  const replies:GeneratedReply[]=rows.map(row=>({character:characters.find(c=>c.id===row.speakerId)!,text:row.text,behavior:settings.aiBehavior?parseBehavior(row.behavior):{delayMs:0},...(row.routineActions?{routineActions:{...row.routineActions,planRevision:JSON.stringify(planFor(room,row.speakerId))||''}}:{})}))
   signal.throwIfAborted()
   if(JSON.stringify(await resolveAccountAddonContext(host,room,userId))!==JSON.stringify(personaContext))throw Error('Persona add-ons changed during generation; the reply was discarded. Retry explicitly.')
   signal.throwIfAborted()

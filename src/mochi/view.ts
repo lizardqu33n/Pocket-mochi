@@ -1,3 +1,4 @@
+import {RoutineDraftControls} from './routine-draft-controls.js'
 import {roomRoutineControls} from './routine-controls.js'
 import {mochiDisclosureIcon} from './ui/icon-slots.js'
 import {mochiButton as button} from './ui/icon-slots.js'
@@ -259,6 +260,7 @@ export class MochiView {
   private draftRevision = 0
   private timeout: ReturnType<typeof setTimeout> | undefined
   private generationErrorRoom = ''
+  private routineDraftControls=new RoutineDraftControls(()=>this.redraw())
   private presenceTimer?: ReturnType<typeof setInterval>
   private presenceRoot?: HTMLElement
   private draft: { title: string; characterIds: string[]; persona: string; name: string; description: string; groupIcon?:string; presetId?:string } | null = null
@@ -389,6 +391,7 @@ export class MochiView {
          this.ownGenerations.get(payload.roomId) !== payload.requestId ||
          this.state?.rooms.find(r => r.id === payload.roomId)?.revision !== payload.roomRevision)) return true
     if(payload?.type==='mochi:account_sync_preview'&&payload.requestId===this.request){clearTimeout(this.timeout);this.busy=false;this.profiles.acceptSync(payload.review);this.redraw();return true}
+    if(this.routineDraftControls.receive(payload)){this.redraw();return true}
     if(this.personalSettings.receive(payload))return true
     if(this.memoryPanel.receive(payload))return true
     if(this.presetPanel.receive(payload))return true
@@ -682,7 +685,7 @@ export class MochiView {
       roomSelector.append(groupIcon, selector)
       const statuses = room.characterIds.map(id=>statusFor(room,id)), online = statuses.filter(s=>s==='online').length
       info.setAttribute('aria-label','Character profile');info.title='Open Character Profile'
-      const roomMeta = el('p', 'mochi-room-meta', `${room.characterIds.length} ${room.characterIds.length === 1 ? 'participant' : 'participants'} · ${online ? 'active now' : statuses.every(s=>s==='offline') ? 'offline' : 'replies delayed'}`)
+      const roomMeta = el('p', 'mochi-room-meta', `${room.characterIds.length} ${room.characterIds.length === 1 ? 'participant' : 'participants'} · ${online ? 'active now' : statuses.every(s=>s==='offline') ? 'offline' : 'replies delayed'}${room.characterIds.length===1&&activityFor(room,room.characterIds[0])?' · '+activityFor(room,room.characterIds[0]):''}`)
       roomMeta.dataset.status = online ? 'online' : statuses.includes('away') ? 'away' : statuses.includes('dnd') ? 'dnd' : 'offline'
       roomMeta.title = room.characterIds.map((id,i)=>`${room.settings?.characterNames[id] || this.state?.characters.find(c=>c.id===id)?.name || id}: ${statuses[i]}`).join('\n')
       if(surface==='desktop'){const title=el('h3','mochi-conversation-title',chatIdentity(room,this.state.characters).name);title.title=chatIdentity(room,this.state.characters).name;const copy=el('div','mochi-header-copy');copy.append(title,roomMeta);info.append(chatPortrait(room,this.state.characters),copy)}else info.append(roomSelector, roomMeta)
@@ -898,6 +901,7 @@ export class MochiView {
         const plan=action(`Schedule status change for ${name}`,'plus');plan.type='button';plan.disabled=this.busy;plan.onclick=()=>{presence.transitions.push({at:new Date(when.value).getTime(),status:next.value as typeof presence.automatic});setPresence()};group.append(plan)
         if(presence.transitions.length){const clear=action(`Clear status schedule for ${name}`,'trash');clear.type='button';clear.disabled=this.busy;clear.onclick=()=>{presence.transitions=[];setPresence()};group.append(clear)}
         group.append(roomRoutineControls(room,id,name,p=>this.dispatch('mochi:routine',p)))
+        group.append(this.routineDraftControls.render(room,id,name,(type,p)=>{if(type==='mochi:routine_apply')this.dispatch(type,p);else this.send({type,requestId:requestId('mochi'),accountId:room.accountId,...p})}))
         const input = el('input'); input.maxLength = 120; input.value = settings.characterNames[id] || ''; input.oninput = () => { settings.characterNames[id] = input.value }; field(`Display name for ${name}`, input)
         const inherited=!settings.textingStyles?.[id];const chatTexting=el('div','mochi-texting-chat');chatTexting.append(el('small','mochi-muted',inherited?'Inherited character texting defaults':'Explicit chat texting override'));const useDefaults=button('Use character texting defaults');useDefaults.onclick=()=>{if(settings.textingStyles)delete settings.textingStyles[id];this.redraw()};chatTexting.append(useDefaults,textingControls(settings,id,name));group.append(chatTexting);const presenceDefaults=button('Use character availability defaults (applies now)');presenceDefaults.disabled=this.busy;presenceDefaults.onclick=()=>this.dispatch('mochi:presence',{roomId:room.id,revision:room.revision,characterId:id,useDefault:true});group.append(el('small','mochi-muted',room.background?.presence?.[id]?'Explicit chat availability override':'Inherited character availability defaults'),presenceDefaults)
       }

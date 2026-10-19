@@ -1,5 +1,6 @@
 import type { MochiRoom } from './types.js'
 import type { PresenceStatus } from './presence.js'
+import {validateTextingStyles,type TextingStyle} from './texting.js'
 
 export const DAYS = ['mo','tu','we','th','fr','sa','su'] as const
 export const AUTONOMY = ['manual','temporary','review','autonomous'] as const
@@ -8,16 +9,20 @@ export interface QuietPeriod { days:Array<typeof DAYS[number]>; start:number; en
 export interface RoutinePlan { version:1; enabled:boolean; timezone:string; autonomy:typeof AUTONOMY[number]; locked:boolean; entries:RoutineEntry[]; quiet:QuietPeriod[]; fallback:{activity:string;presence:PresenceStatus} }
 export interface ActivityOverride { id:string; activity:string; presence:PresenceStatus; startedAt:number; expiresAt:number; source:'user'|'character' }
 export interface RoutineSnapshot { plan?:RoutinePlan; override?:ActivityOverride }
-export interface RoutineChange { id:string; at:number; source:'user'|'character'|'undo'; before:RoutineSnapshot; after:RoutineSnapshot }
+export interface RoutineChange { id:string; at:number; source:'user'|'character'|'undo'; before:RoutineSnapshot; after:RoutineSnapshot; texting?:{before?:TextingStyle;after?:TextingStyle} }
 export interface RoutineProposal { id:string; entryId:string; entry:RoutineEntry; planRevision:string; createdAt:number }
 export interface RoutineState extends RoutineSnapshot { history:RoutineChange[]; proposals:RoutineProposal[] }
+export interface PublicRoutineState extends RoutineSnapshot { history:Array<Pick<RoutineChange,'id'|'at'|'source'>&{summary:string}>; proposals:RoutineProposal[] }
+export function publicRoutines(states:Record<string,RoutineState>|undefined):Record<string,PublicRoutineState>|undefined {
+ return states?Object.fromEntries(Object.entries(states).map(([id,state])=>[id,{plan:state.plan,override:state.override,proposals:state.proposals,history:state.history.map(h=>({id:h.id,at:h.at,source:h.source,summary:h.after.override?'Live activity: '+h.after.override.activity:h.after.plan?'Weekly routine: '+h.after.plan.entries.length+' entries':'Use character routine defaults'}))}])):undefined
+}
 const statuses = ['online','away','dnd','offline']
 function object(v:any):boolean { return !!v&&typeof v==='object'&&!Array.isArray(v) }
 function keys(v:any,allowed:string[]) { if(!object(v)||Object.keys(v).some(k=>!allowed.includes(k)))throw Error('Unknown routine field.') }
 export function routineId(v:unknown):string { if(typeof v!=='string'||!/^[A-Za-z0-9_-]{1,180}$/.test(v)||['__proto__','constructor','prototype'].includes(v))throw Error('Invalid routine identifier.');return v }
 function activity(v:unknown):string { if(typeof v!=='string'||!v.trim()||v.length>160||/[\u0000-\u001f]/.test(v))throw Error('Activity must be 1–160 visible characters.');return v.trim() }
 export function timezone(v:unknown):string {
- if(typeof v!=='string'||v.length>100||!/^([A-Za-z_+-]+\/)*[A-Za-z_+-]+$/.test(v))throw Error('Choose an IANA timezone.')
+ if(typeof v!=='string'||v.length>100||!/^([A-Za-z][A-Za-z0-9_+-]*\/)*[A-Za-z][A-Za-z0-9_+-]*$/.test(v))throw Error('Choose an IANA timezone.')
  try { return new Intl.DateTimeFormat('en',{timeZone:v}).resolvedOptions().timeZone }catch{throw Error('Choose an IANA timezone.')}
 }
 function period(v:any):QuietPeriod {
@@ -55,7 +60,7 @@ export function validateRoutineState(v:any):RoutineState {
  keys(v,['plan','override','history','proposals'])
  const current=snapshot({plan:v.plan,override:v.override})
  if(!Array.isArray(v.history)||v.history.length>32||!Array.isArray(v.proposals)||v.proposals.length>8)throw Error('Invalid routine audit history.')
- const history=v.history.map((h:any)=>{keys(h,['id','at','source','before','after']);routineId(h.id);if(!Number.isSafeInteger(h.at)||h.at<0||!['user','character','undo'].includes(h.source))throw Error('Invalid audit entry.');return {...h,before:snapshot(h.before),after:snapshot(h.after)}})
+ const history=v.history.map((h:any)=>{keys(h,['id','at','source','before','after','texting']);routineId(h.id);if(!Number.isSafeInteger(h.at)||h.at<0||!['user','character','undo'].includes(h.source))throw Error('Invalid audit entry.');if(h.texting){keys(h.texting,['before','after']);for(const key of ['before','after'])if(h.texting[key]!==undefined)validateTextingStyles({character:h.texting[key]})}return {...h,before:snapshot(h.before),after:snapshot(h.after)}})
  const proposals=v.proposals.map((p:any)=>{keys(p,['id','entryId','entry','planRevision','createdAt']);routineId(p.id);routineId(p.entryId);if(p.entry.id!==p.entryId||typeof p.planRevision!=='string'||p.planRevision.length>40000||!Number.isSafeInteger(p.createdAt)||p.createdAt<0)throw Error('Invalid schedule proposal.');return {...p,entry:validateEntry(p.entry)}})
  return {...current,history,proposals}
 }

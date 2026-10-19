@@ -28,7 +28,7 @@ export function routineControls(plan:RoutinePlan,label:string):HTMLElement {
   }
  }
  draw();const add=button('Add routine entry');add.onclick=()=>{if(plan.entries.length<64){plan.entries.push({id:'entry_'+crypto.randomUUID().replaceAll('-',''),days:['mo'],start:540,end:1020,activity:'Work',presence:'away',locked:false});draw()}};root.append(add)
- const quiet=el('textarea');quiet.rows=2;quiet.maxLength=4000;quiet.value=JSON.stringify(plan.quiet);quiet.oninput=()=>{try{plan.quiet=JSON.parse(quiet.value);quiet.setCustomValidity('')}catch{quiet.setCustomValidity('Use a JSON list of quiet hours.')}};field('Quiet hours JSON: days, start and end in minutes',quiet)
+ const quiet=el('textarea');quiet.rows=2;quiet.maxLength=4000;quiet.value=JSON.stringify(plan.quiet);quiet.oninput=()=>{try{plan.quiet=JSON.parse(quiet.value);quiet.setCustomValidity('')}catch{plan.quiet=null as any;quiet.setCustomValidity('Use a JSON list of quiet hours.')}};field('Quiet hours JSON: days, start and end in minutes',quiet)
  return root
 }
 export function roomRoutineControls(room:MochiRoom,id:string,name:string,send:(p:any)=>void):HTMLElement {
@@ -45,7 +45,8 @@ export function roomRoutineControls(room:MochiRoom,id:string,name:string,send:(p
  const override=button('Set temporary activity for '+name);override.onclick=()=>dispatch({action:'override',activity:activity.value,presence:presence.value,minutes:Number(minutes.value)})
  const clear=button('Clear temporary activity for '+name);clear.onclick=()=>dispatch({action:'clear'});root.append(activity,minutes,presence,override,clear)
  const history=el('ol','mochi-routine-history');history.setAttribute('aria-label','Routine change history for '+name)
- for(const h of state?.history.slice().reverse()||[]){const row=el('li','',new Date(h.at).toISOString()+' · '+h.source+' · '+h.id);history.append(row)}root.append(history)
+  for(const proposal of state?.proposals||[]){const row=el('section','mochi-routine-proposal');row.dataset.proposalId=proposal.id;row.append(el('p','','Proposed routine edit: '+proposal.entry.activity+' · '+proposal.entry.days.join(',')+' · '+proposal.entry.start+'–'+proposal.entry.end));const approve=button('Approve schedule edit '+proposal.entryId),reject=button('Reject schedule edit '+proposal.entryId);approve.onclick=()=>dispatch({action:'approve',proposalId:proposal.id});reject.onclick=()=>dispatch({action:'reject',proposalId:proposal.id});row.append(approve,reject);root.append(row)}
+ for(const h of state?.history.slice().reverse()||[]){const row=el('li','',new Date(h.at).toISOString()+' · '+h.source+' · '+h.summary+' · '+h.id);history.append(row)}root.append(history)
  const last=state?.history.at(-1);if(last&&last.source!=='undo'){const undo=button('Undo last routine change for '+name);undo.onclick=()=>dispatch({action:'undo',changeId:last.id});root.append(undo)}
  return root
 }

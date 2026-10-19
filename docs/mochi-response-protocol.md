@@ -65,14 +65,15 @@ Supported message-only envelope:
 `protocol`, integer `version: 1` and `messages` are required. `actions` is optional
 and must be an empty array. Unknown envelope fields/versions/protocols reject;
 nonempty or malformed actions reject the entire response with a fixed diagnostic.
-Normal and Natural count/silence rules apply equally to envelopes. No action
-registry, migration or new executor exists. A future milestone can replace this
+Normal and Natural count/silence rules apply equally to envelopes. No envelope action
+registry or migration exists. A future milestone can replace this
 explicit rejection point only after specifying permissions, target ownership,
 validation, transaction/rollback semantics and replay protection. Merely producing
 JSON never authorizes an action.
 
-Future reactions, status/time updates, scheduling, multiple same-speaker bubbles
-and deletion are **inactive**. Existing previously authorized behavior hints and
+Envelope reactions, status/time updates, scheduling, multiple same-speaker bubbles
+and deletion are **inactive**. The separately opted-in compact routine extension
+below does not activate envelope actions. Existing previously authorized behavior hints and
 scheduling remain governed by their original feature gates; this protocol adds
 no capabilities to them.
 
@@ -91,3 +92,23 @@ guidance participates in normal token budgeting and may trim more old context;
 stored history is preserved. A conflicting custom block cannot disable parser or
 service validation. Original context goldens remain available; hybrid goldens
 record the intentional format-guidance and token-count changes.
+
+## AIGEN-01 compact routine extension
+
+An enabled non-manual character routine can accept
+`{"m":"off early, driving home","s":{"a":"Driving home early","p":"away","for":45}}`.
+The server fixes the speaker from authorized context; ambiguous groups require
+`speakerId`. Optional `e:{"i":"stable_entry_id","d":["mo"],"t":"0900-1600","a":"Work","p":"away"}`
+proposes a single permanent entry edit. Only `m` selects the compact extension;
+unrelated extra fields on legacy `text` messages stay inert. Compact fields are
+strict, cannot combine legacy behavior metadata, and cannot grant permissions.
+Malformed actions reject the whole compact reply before persistence. Nonempty
+envelope `actions` remain unsupported.
+
+Status actions expire after 1–240 whole minutes. Source-plan, ownership, revision,
+locks, quiet hours and DND/offline restrictions are enforced server side. Actions
+commit with accepted immediate/deferred replies and their replay protection.
+Manual mode grants no actions; temporary mode permits only bounded activity;
+review mode additionally retains proposed stable-ID edits for approval. Explicit
+autonomous mode is bounded and undoable. See [AIGEN-01](MOCHI-AIGEN-01.md) for
+full limits, source consent, editable preview/apply workflow and acceptance checks.

@@ -1,4 +1,7 @@
-import {validatePlan,validateOverride,recordRoutine,planFor,routineId,type RoutineState} from './routines.js'
+import {applyRoutineActions} from './routine-actions.js'
+import {callPocketProvider} from '../backend/generation.js'
+import {parseRoutineDraft,routinePrompt,preserveLocks,type RoutineDraft} from './routine-generation.js'
+import {validatePlan,validateOverride,recordRoutine,planFor,routineId,timezone,type RoutineState} from './routines.js'
 import {MochiCharacterPreferences} from './character-preferences.js'
 import {groupIcon} from './group-icons.js'
 import {MochiUIPreferences} from './ui-preferences.js'
@@ -91,7 +94,8 @@ export class MochiService {
     return background ? { ...background, snapshot: { session: this.schedulingSession, sequence: this.schedulingSequences.get(this.jobKey(user, room.id)) || 0 } } : undefined
   }
   private summaryAttempts=new Map<string,{accountId?:string;associationRevision:number;coverage?:import('./memory.js').SummaryCoverage;configuration:string;inputDigest:string;sourceSignature:string;useCurrent:boolean;suggestion?:SummarySuggestion}>()
-  private jobs = new Map<string, { task?:'summary'; requestId: string; controller: AbortController; accountId?: string; phoneKey?: string; response?: boolean }>()
+  private routineDrafts=new Map<string,{roomId:string;characterId:string;accountId?:string;revision:number;associationRevision:number;source:string;defaults:string;draftId?:string;raw?:string;draft?:RoutineDraft}>()
+  private jobs = new Map<string, { task?:'summary'|'routine'; requestId: string; controller: AbortController; accountId?: string; phoneKey?: string; response?: boolean }>()
   private pending = new Map<string, Set<{ requestId: string; controller: AbortController; accountId?: string; phoneKey?: string }>>()
   private jobKey(user: string, id: string): string { return JSON.stringify([user, id]) }
   private settings(input: any, ids: string[]): MochiSettings {
@@ -611,6 +615,79 @@ export class MochiService {
     }
     return rooms
   }
+  async generateRoutine(userId:string,input:any,parseOnly=false):Promise<any> {
+    const user=identifier(userId),id=roomId(input.roomId),character=routineId(input.characterId),request=routineId(input.requestId),key=this.jobKey(user,id),attemptKey=JSON.stringify([user,request]),controller=new AbortController()
+    let reserved=false,started=false
+    const timeout=setTimeout(()=>controller.abort(),180000)
+    try{
+      const room=await this.locked(user,id,async()=>{
+        const room=await this.read(user,id,input.accountId)
+        if(!room.characterIds.includes(character))throw Error('Character is unavailable.')
+        if(room.revision!==input.revision)throw Error('Refresh the conversation before generating.')
+        if(this.routineDrafts.has(attemptKey))throw Error('Generate again with a new request ID.')
+        if(this.jobs.has(key)||room.runtime?.jobs.some(j=>j.status==='generating'&&(j.leaseUntil||0)>this.now()))throw Error('Wait for the current reply or stop it first.')
+        if([...this.routineDrafts.keys()].filter(k=>JSON.parse(k)[0]===user).length>=128)throw Error('The draft safety limit for this session was reached.')
+        if(input.includeHistory!==undefined&&typeof input.includeHistory!=='boolean'||input.includeHistory===true&&input.historyConfirmed!==true)throw Error('Explicitly approve this chat history before including it.')
+        this.routineDrafts.set(attemptKey,{roomId:id,characterId:character,accountId:room.accountId,revision:room.revision,associationRevision:room.associationRevision||0,source:'',defaults:JSON.stringify(room.characterDefaults)})
+        this.jobs.set(key,{task:'routine',requestId:request,controller,accountId:room.accountId});started=true
+        return room
+      })
+      const sources=await resolveGenerationSources(this.host,room,user,character,[character]),attempt=this.routineDrafts.get(attemptKey)!
+      attempt.source=sourceSignature(sources)
+      const base=planFor(room,character)
+      let raw=input.raw
+      if(!parseOnly){
+        const history=input.includeHistory===true?(room.messages.slice(-20) as MochiMessage[]).map(m=>({role:m.role,characterId:m.characterId,text:m.content.slice(0,2000)})):undefined
+        const messages=routinePrompt({...sources.characters[0],about:room.characterDefaults?.[character]?.about},input.timezone,input.guidance??'',base,history)
+        const count=await this.host.tokens!.countMessages(messages,{model:room.settings!.model||sources.connection.model,userId:user})
+        if(!Number.isFinite(count.total_tokens)||count.total_tokens+room.settings!.outputTokens+256>room.settings!.contextTokens)throw Error('Schedule source exceeds this chat’s token budget. Shorten guidance or omit history.')
+        controller.signal.throwIfAborted();reserved=await this.reserveAutomatic(user,id,true)
+        if(!reserved)throw Error('The shared generation quota is unavailable.')
+        controller.signal.throwIfAborted()
+        const result=await callPocketProvider(this.host,{messages,connection_id:sources.connection.id,userId:user,signal:controller.signal,reasoning:{source:'off'},parameters:{max_tokens:room.settings!.outputTokens,temperature:0.8,...(room.settings!.model?{model:room.settings!.model}:{})}})
+        controller.signal.throwIfAborted();if(result?.finish_reason==='length')throw Error('Schedule output was truncated. Regenerate a shorter routine.')
+        raw=result?.content
+      }
+      const draft=parseRoutineDraft(raw,base)
+      if(!parseOnly&&draft.plan.timezone!==timezone(input.timezone))throw Error('Generated timezone differs from the reviewed request.')
+      return await this.locked(user,id,async()=>{
+        controller.signal.throwIfAborted()
+        const current=await this.read(user,id,input.accountId),fresh=await resolveGenerationSources(this.host,current,user,character,[character])
+        if(this.jobs.get(key)?.controller!==controller||current.revision!==attempt.revision||(current.associationRevision||0)!==attempt.associationRevision||JSON.stringify(current.characterDefaults)!==attempt.defaults||sourceSignature(fresh)!==attempt.source)throw Error('Schedule sources changed. Regenerate explicitly.')
+        controller.signal.throwIfAborted()
+        attempt.draft=draft;attempt.raw=raw;attempt.draftId='draft_'+crypto.randomUUID().replaceAll('-','')
+        return {type:'mochi:routine_draft',requestId:request,roomId:id,characterId:character,accountId:room.accountId,revision:room.revision,draftId:attempt.draftId,raw,draft}
+      })
+    }finally{clearTimeout(timeout);if(reserved)this.releaseAutomatic(user,id);if(started&&this.jobs.get(key)?.controller===controller)this.jobs.delete(key)}
+  }
+  async applyRoutineDraft(userId:string,input:any):Promise<void>{
+    const user=identifier(userId),id=roomId(input.roomId),character=routineId(input.characterId),request=routineId(input.requestId)
+    await this.locked(user,id,async()=>{
+      const room=await this.read(user,id,input.accountId)
+      if(room.receipts!.includes(request))return
+      if(input.confirmed!==true||room.revision!==input.revision)throw Error('Review and confirm the current draft before applying.')
+      const attempt=[...this.routineDrafts.entries()].find(([key,a])=>JSON.parse(key)[0]===user&&a.draftId===input.draftId)?.[1]
+      if(!attempt?.draft||attempt.roomId!==id||attempt.characterId!==character||attempt.accountId!==room.accountId||attempt.revision!==room.revision||attempt.associationRevision!==(room.associationRevision||0)||attempt.defaults!==JSON.stringify(room.characterDefaults))throw Error('This draft is unavailable or stale. Regenerate or preview again.')
+      if(this.jobs.has(this.jobKey(user,id)))throw Error('Wait for the current reply before applying.')
+      const fresh=await resolveGenerationSources(this.host,room,user,character,[character]);if(sourceSignature(fresh)!==attempt.source)throw Error('Character or connection changed. Regenerate the preview.')
+      const plan=validatePlan(input.plan);preserveLocks(planFor(room,character),plan)
+      const texting=input.texting===undefined?undefined:validateTextingStyles({[character]:input.texting})?.[character]
+      room.runtime||={version:1,enabled:false,jobs:[]};room.runtime.routines||={}
+      const state=room.runtime.routines[character]||{history:[],proposals:[]}
+      recordRoutine(state,{plan,override:undefined},request,this.now(),'user');state.proposals=[];room.runtime.routines[character]=state
+      if(texting)state.history.at(-1)!.texting={before:structuredClone(room.settings!.textingStyles?.[character]),after:structuredClone(texting)}
+      if(texting){room.settings!.textingStyles||={};room.settings!.textingStyles[character]=texting}
+      room.receipts!.push(request);room.revision++
+      for(const j of room.runtime.jobs)if(!TERMINAL.has(j.status)){j.status='cancelled';delete j.draft;delete j.additional}
+      await this.persist(user,room)
+      attempt.draft=undefined
+    })
+  }
+  async rejectRoutineDraft(userId:string,input:any):Promise<void>{
+    const user=identifier(userId),id=roomId(input.roomId);await this.read(user,id,input.accountId)
+    const attempt=this.routineDrafts.get(JSON.stringify([user,input.attemptId]))
+    if(attempt&&attempt.roomId===id&&attempt.accountId===input.accountId&&attempt.characterId===input.characterId){await this.cancel(user,id,input.attemptId,input.accountId);attempt.draft=undefined;attempt.draftId=undefined}
+  }
   async configureRoutine(userId:string,input:any):Promise<void> {
     const user=identifier(userId),id=roomId(input.roomId),character=routineId(input.characterId),request=routineId(input.requestId)
     await this.locked(user,id,async()=>{
@@ -628,14 +705,22 @@ export class MochiService {
         if(!Number.isInteger(input.minutes)||input.minutes<1||input.minutes>240)throw Error('Choose 1–240 whole minutes.')
         next.override=validateOverride({id:request,activity:input.activity,presence:input.presence,startedAt:this.now(),expiresAt:this.now()+input.minutes*60000,source:'user'})
       }else if(input.action==='clear')next.override=undefined
+      else if(input.action==='approve'||input.action==='reject'){
+        const proposal=state.proposals.find(p=>p.id===input.proposalId),current=planFor(room,character)
+        if(!proposal)throw Error('This proposal is unavailable.')
+        if(input.action==='approve'){if(!current||JSON.stringify(current)!==proposal.planRevision)throw Error('This proposal is stale. Review the current routine.');const plan=validatePlan({...current,entries:current.entries.map(e=>e.id===proposal.entryId?proposal.entry:e)});preserveLocks(current,plan);next.plan=plan}
+      }
       else if(input.action==='undo'){
         const last=state.history.at(-1)
         if(!last||last.id!==input.changeId||last.source==='undo')throw Error('This change is no longer safe to undo.')
+        if(last.texting){if(!equivalent(room.settings!.textingStyles?.[character],last.texting.after))throw Error('Texting style changed since this preview. Undo is no longer safe.');room.settings!.textingStyles||={};if(last.texting.before)room.settings!.textingStyles[character]=structuredClone(last.texting.before);else delete room.settings!.textingStyles[character]}
         next=structuredClone({plan:last.before.plan,override:last.before.override})
         if(next.override&&next.override.expiresAt<=this.now())next.override=undefined
       }else throw Error('Unsupported routine action.')
       this.abortScoped(user,id,input.accountId)
-      recordRoutine(state,next,request,this.now(),input.action==='undo'?'undo':'user');state.proposals=[]
+      recordRoutine(state,next,request,this.now(),input.action==='undo'?'undo':'user')
+      if(input.action==='reject')state.proposals=state.proposals.filter(p=>p.id!==input.proposalId)
+      else if(['save','defaults','undo','approve'].includes(input.action))state.proposals=[]
       room.runtime.routines[character]=state;room.receipts!.push(request);room.revision++
       for(const j of room.runtime.jobs)if(!TERMINAL.has(j.status)){j.status='cancelled';delete j.draft;delete j.additional}
       await this.persist(user,room)
@@ -770,7 +855,7 @@ export class MochiService {
         const j = snapshot.runtime!.jobs.find(j => j.id === occurrenceId)!
         const behaviorEnabled=Boolean(snapshot.settings!.aiBehavior&&snapshot.runtime!.enabled&&await allowed())
         const promptRoom={...snapshot,settings:{...snapshot.settings!,aiBehavior:behaviorEnabled}}
-        const reply = await generateMochiReply(this.host, promptRoom, user, j.responder, controller.signal, eligibleResponders(snapshot,j.responder,now()).filter(c => now() >= (j.createdAt ?? j.dueAt) + delayFor(snapshot!,c,now())),j.kind==='response'&&snapshot.settings!.responseMode==='natural'&&j.responder==='auto')
+        const reply = await generateMochiReply(this.host, promptRoom, user, j.responder, controller.signal, eligibleResponders(snapshot,j.responder,now()).filter(c => now() >= (j.createdAt ?? j.dueAt) + delayFor(snapshot!,c,now())),j.kind==='response'&&snapshot.settings!.responseMode==='natural'&&j.responder==='auto',now())
         await this.locked(user, id, async () => {
           const room = await this.readStored(user, id), job = room.runtime?.jobs.find(j => j.id === occurrenceId)
           await permitted(room)
@@ -778,9 +863,9 @@ export class MochiService {
           if(reply.silent){job.status='delivered';job.deliveredAt=now();await this.persist(user,room,controller.signal);return}
           job.draft = { characterId: reply.character.id, text: reply.text, name: room.settings!.characterNames[reply.character.id] || reply.character.name, avatarUrl: reply.character.image_id ? `/api/v1/images/${entityId(reply.character.image_id)}` : '' }
           job.status = 'generated'
-          job.additional=reply.replies.slice(1).map(r=>({characterId:r.character.id,text:r.text,name:room.settings!.characterNames[r.character.id]||r.character.name,avatarUrl:r.character.image_id?`/api/v1/images/${entityId(r.character.image_id)}`:'',proposedStatus:r.behavior.status}))
+          job.additional=reply.replies.slice(1).map(r=>({characterId:r.character.id,text:r.text,name:room.settings!.characterNames[r.character.id]||r.character.name,avatarUrl:r.character.image_id?`/api/v1/images/${entityId(r.character.image_id)}`:'',proposedStatus:r.behavior.status,routineActions:r.routineActions}))
           job.deliverAt = Math.max(...reply.replies.map(r=>Math.max(now()+r.behavior.delayMs,(job.createdAt??job.dueAt)+delayFor(room,r.character.id,now()))))
-          job.nextAttemptAt = job.deliverAt; job.expiresAt = Math.max(job.expiresAt, job.deliverAt + 3600000); job.proposedStatus = reply.behavior.status
+          job.nextAttemptAt = job.deliverAt; job.expiresAt = Math.max(job.expiresAt, job.deliverAt + 3600000); job.proposedStatus = reply.behavior.status;job.routineActions=reply.routineActions
           await this.persist(user, room, controller.signal)
         })
       }
@@ -803,10 +888,12 @@ export class MochiService {
         for(const d of j.additional || []) {
           const mid=crypto.randomUUID();room.messages.push({id:mid,requestId,role:'assistant',characterId:d.characterId,name:d.name,avatarUrl:d.avatarUrl,content:d.text,createdAt} satisfies MochiMessage)
           const notice={...notification,id:mid,messageId:mid,title:d.name,avatarUrl:d.avatarUrl,body:d.text.slice(0,220)};room.notifications!.push(notice);room.notificationRevision!++;events.push({notification:notice,revision:room.notificationRevision!})
+          applyRoutineActions(room,d.characterId,d.routineActions,mid,now())
           applyDeliveredStatus(room,d.characterId,d.proposedStatus,now())
         }
         // Completion tombstone is atomic with the message, independent of later deletion.
         j.status = 'delivered'; j.messageId = messageId; j.deliveredAt = now(); delete j.draft
+        applyRoutineActions(room,draft.characterId,j.routineActions,messageId,now());delete j.routineActions
         applyDeliveredStatus(room,draft.characterId,j.proposedStatus,now()); delete j.proposedStatus
         delete j.additional
         if(j.kind==='idle'){const idle=room.runtime!.idle!;idle.delivered++;idle.lastDeliveredAt=now();idle.nextDueAt=now()+5400000}
@@ -894,7 +981,7 @@ export class MochiService {
         automaticReserved=await this.reserveAutomatic(user,id,response)
         if(!automaticReserved) throw new Error('The automatic generation limit was reached.')
       }
-      const reply = await generateMochiReply(this.host, launched.promptRoom, user, launched.responder, controller.signal, eligibleResponders(launched.room,launched.responder,this.now()).filter(c=>delayFor(launched.room,c,this.now())===0),launched.natural)
+      const reply = await generateMochiReply(this.host, launched.promptRoom, user, launched.responder, controller.signal, eligibleResponders(launched.room,launched.responder,this.now()).filter(c=>delayFor(launched.room,c,this.now())===0),launched.natural,this.now())
       await this.locked(user, id, async () => {
         controller.signal.throwIfAborted()
         await selectedOnPhone()
@@ -914,7 +1001,7 @@ export class MochiService {
             for (const j of current.runtime.jobs) if (j.kind === 'response' && !TERMINAL.has(j.status)) { j.status='cancelled';delete j.draft; delete j.additional }
             if (current.runtime.jobs.length >= MAX_JOBS || current.runtime.jobs.filter(j=>!TERMINAL.has(j.status)).length >= 4) throw new Error('Deferred queue is full; history was preserved.')
             const now = this.now(), deliverAt = now + Math.max(...reply.replies.map(r=>r.behavior.delayMs))
-            current.runtime.jobs.push({id:`deferred_${requestId}`,kind:'response',createdAt:now,dueAt:deliverAt,deliverAt,expiresAt:deliverAt+3600000,revision:current.revision,responder:reply.character.id,status:'generated',attempts:1,nextAttemptAt:deliverAt,proposedStatus:reply.behavior.status,draft:{characterId:reply.character.id,name,avatarUrl:reply.character.image_id ? `/api/v1/images/${entityId(reply.character.image_id)}` : '',text:reply.text},additional:reply.replies.slice(1).map(r=>({characterId:r.character.id,name:current.settings!.characterNames[r.character.id]||r.character.name,avatarUrl:r.character.image_id?`/api/v1/images/${entityId(r.character.image_id)}`:'',text:r.text,proposedStatus:r.behavior.status}))})
+            current.runtime.jobs.push({id:`deferred_${requestId}`,kind:'response',createdAt:now,dueAt:deliverAt,deliverAt,expiresAt:deliverAt+3600000,revision:current.revision,responder:reply.character.id,status:'generated',attempts:1,nextAttemptAt:deliverAt,proposedStatus:reply.behavior.status,routineActions:reply.routineActions,draft:{characterId:reply.character.id,name,avatarUrl:reply.character.image_id ? `/api/v1/images/${entityId(reply.character.image_id)}` : '',text:reply.text},additional:reply.replies.slice(1).map(r=>({characterId:r.character.id,name:current.settings!.characterNames[r.character.id]||r.character.name,avatarUrl:r.character.image_id?`/api/v1/images/${entityId(r.character.image_id)}`:'',text:r.text,proposedStatus:r.behavior.status,routineActions:r.routineActions}))})
             await this.persist(user,current,controller.signal)
             return
           }
@@ -932,9 +1019,11 @@ export class MochiService {
           const notification = { id: message.id, messageId: message.id, roomId: id, roomTitle: current.title, title: name, body: message.content.slice(0, 220), avatarUrl: message.avatarUrl, createdAt: message.createdAt, read: false, ...(current.accountId ? {accountId:current.accountId} : {}) }
           current.notifications!.push(notification)
           current.notificationRevision!++;notifications.push({notification,revision:current.notificationRevision!})
+          applyRoutineActions(current,r.character.id,r.routineActions,message.id,this.now())
           if(launched.allowBehavior) applyDeliveredStatus(current,r.character.id,r.behavior.status,this.now())
           }
         }
+        if(launched.targetId)applyRoutineActions(current,reply.character.id,reply.routineActions,crypto.randomUUID(),this.now())
         if (launched.allowBehavior) applyDeliveredStatus(current,reply.character.id,reply.behavior.status,this.now())
         current.revision++; current.updatedAt = new Date().toISOString()
         if(launched.targetId) current.notificationRevision!++
@@ -970,6 +1059,10 @@ export class MochiService {
     if (!userId) return
     let selectedRoomId: string | undefined
     try {
+      if(payload.type==='mochi:routine_generate'||payload.type==='mochi:routine_parse'){
+        try{this.host.sendToFrontend(await this.generateRoutine(userId,payload,payload.type==='mochi:routine_parse'),userId)}catch{this.host.sendToFrontend({type:'mochi:routine_error',requestId:payload.requestId,roomId:payload.roomId,characterId:payload.characterId,accountId:payload.accountId,revision:payload.revision,message:'Schedule draft was not created. Check JSON, timezone, locked entries, token budget and source availability; retry explicitly.'},userId)}return
+      }
+      if(payload.type==='mochi:routine_reject'){await this.rejectRoutineDraft(userId,payload);return}
       if(payload.type==='mochi:summary_generate'){
         const suggestion=await this.generateSummary(userId,payload)
         this.host.sendToFrontend({type:'mochi:summary_suggestion',requestId:payload.requestId,roomId:suggestion.roomId,accountId:suggestion.accountId,associationRevision:suggestion.associationRevision,suggestion},userId);return
@@ -1071,6 +1164,7 @@ export class MochiService {
       else if (payload.type === 'mochi:update') selectedRoomId = (await this.update(userId, payload)).id
       else if (payload.type==='mochi:reaction')await this.react(userId,payload)
       else if (payload.type==='mochi:pinned_content')await this.pinnedContent(userId,payload)
+      else if(payload.type==='mochi:routine_apply')await this.applyRoutineDraft(userId,payload)
       else if (payload.type==='mochi:routine')await this.configureRoutine(userId,payload)
       else if (payload.type==='mochi:preset_bind')await this.bindPreset(userId,payload)
       else if (payload.type !== 'mochi:character_preferences' && payload.type !== 'mochi:list' && payload.type !== 'mochi:message_action' && payload.type !== 'mochi:notification_clear' && payload.type !== 'mochi:room_assign') throw new Error('Unsupported Mochi action.')

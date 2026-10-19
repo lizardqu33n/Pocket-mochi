@@ -46,1790 +46,6 @@ function rpContextPowerButton(enabled, save) {
 // src/domain/gallery-page.ts
 var GALLERY_PAGE_SIZE = 48;
 
-// src/frontend/shared.ts
-function el(tag, className = "", content = "") {
-  const node = document.createElement(tag);
-  if (className)
-    node.className = className;
-  if (content)
-    node.textContent = content;
-  return node;
-}
-function button(label, className = "lp-button") {
-  const node = el("button", className, label);
-  node.type = "button";
-  return node;
-}
-function cssPixelToken(node, name, fallback) {
-  const raw = node.ownerDocument.defaultView?.getComputedStyle(node).getPropertyValue(name).trim() || "";
-  return /^\d+(?:\.\d+)?px$/.test(raw) ? Number.parseFloat(raw) : fallback;
-}
-function formatTime(value) {
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime()))
-    return "";
-  return new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(date);
-}
-function formatDate(value, detail = false) {
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime()))
-    return String(value || "");
-  return new Intl.DateTimeFormat(undefined, detail ? { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" } : { month: "short", day: "numeric" }).format(date);
-}
-function dateTimeLocal(value) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime()))
-    return "";
-  const offset = date.getTimezoneOffset() * 60000;
-  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
-}
-function inputValue(input) {
-  return input.value.trim();
-}
-function requestId(prefix = "req") {
-  return `${prefix}_${globalThis.crypto?.randomUUID?.() || `${Date.now()}_${Math.random().toString(36).slice(2)}`}`;
-}
-
-// src/mochi/ui/icons/plus.svg
-var plus_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-plus"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="M5 12h14" />\r
-  <path d="M12 5v14" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/settings.svg
-var settings_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-settings"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />\r
-  <circle cx="12" cy="12" r="3" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/log-out.svg
-var log_out_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-log-out"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />\r
-  <polyline points="16 17 21 12 16 7" />\r
-  <line x1="21" x2="9" y1="12" y2="12" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/arrow-down-wide-narrow.svg
-var arrow_down_wide_narrow_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-arrow-down-wide-narrow"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="m3 16 4 4 4-4" />\r
-  <path d="M7 20V4" />\r
-  <path d="M11 4h10" />\r
-  <path d="M11 8h7" />\r
-  <path d="M11 12h4" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/layout-grid.svg
-var layout_grid_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-layout-grid"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <rect width="7" height="7" x="3" y="3" rx="1" />\r
-  <rect width="7" height="7" x="14" y="3" rx="1" />\r
-  <rect width="7" height="7" x="14" y="14" rx="1" />\r
-  <rect width="7" height="7" x="3" y="14" rx="1" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/list.svg
-var list_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-list"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="M3 12h.01" />\r
-  <path d="M3 18h.01" />\r
-  <path d="M3 6h.01" />\r
-  <path d="M8 12h13" />\r
-  <path d="M8 18h13" />\r
-  <path d="M8 6h13" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/square-check.svg
-var square_check_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-square-check"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <rect width="18" height="18" x="3" y="3" rx="2" />\r
-  <path d="m9 12 2 2 4-4" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/archive.svg
-var archive_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-archive"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <rect width="20" height="5" x="2" y="3" rx="1" />\r
-  <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" />\r
-  <path d="M10 12h4" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/brain.svg
-var brain_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-brain"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z" />\r
-  <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z" />\r
-  <path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4" />\r
-  <path d="M17.599 6.5a3 3 0 0 0 .399-1.375" />\r
-  <path d="M6.003 5.125A3 3 0 0 0 6.401 6.5" />\r
-  <path d="M3.477 10.896a4 4 0 0 1 .585-.396" />\r
-  <path d="M19.938 10.5a4 4 0 0 1 .585.396" />\r
-  <path d="M6 18a4 4 0 0 1-1.967-.516" />\r
-  <path d="M19.967 17.484A4 4 0 0 1 18 18" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/smile.svg
-var smile_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-smile"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <circle cx="12" cy="12" r="10" />\r
-  <path d="M8 14s1.5 2 4 2 4-2 4-2" />\r
-  <line x1="9" x2="9.01" y1="9" y2="9" />\r
-  <line x1="15" x2="15.01" y1="9" y2="9" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/sliders-horizontal.svg
-var sliders_horizontal_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-sliders-horizontal"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <line x1="21" x2="14" y1="4" y2="4" />\r
-  <line x1="10" x2="3" y1="4" y2="4" />\r
-  <line x1="21" x2="12" y1="12" y2="12" />\r
-  <line x1="8" x2="3" y1="12" y2="12" />\r
-  <line x1="21" x2="16" y1="20" y2="20" />\r
-  <line x1="12" x2="3" y1="20" y2="20" />\r
-  <line x1="14" x2="14" y1="2" y2="6" />\r
-  <line x1="8" x2="8" y1="10" y2="14" />\r
-  <line x1="16" x2="16" y1="18" y2="22" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/user-round.svg
-var user_round_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-user-round"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <circle cx="12" cy="8" r="5" />\r
-  <path d="M20 21a8 8 0 0 0-16 0" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/panel-right.svg
-var panel_right_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-panel-right"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <rect width="18" height="18" x="3" y="3" rx="2" />\r
-  <path d="M15 3v18" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/layers.svg
-var layers_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-layers"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z" />\r
-  <path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12" />\r
-  <path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/bookmark.svg
-var bookmark_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-bookmark"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/eye.svg
-var eye_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-eye"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />\r
-  <circle cx="12" cy="12" r="3" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/pin.svg
-var pin_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-pin"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="M12 17v5" />\r
-  <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/ellipsis.svg
-var ellipsis_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-ellipsis"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <circle cx="12" cy="12" r="1" />\r
-  <circle cx="19" cy="12" r="1" />\r
-  <circle cx="5" cy="12" r="1" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/power.svg
-var power_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-power"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="M12 2v10" />\r
-  <path d="M18.4 6.6a9 9 0 1 1-12.77.04" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/house.svg
-var house_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-house"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" />\r
-  <path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/messages-square.svg
-var messages_square_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-messages-square"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z" />\r
-  <path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/users-round.svg
-var users_round_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-users-round"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="M18 21a8 8 0 0 0-16 0" />\r
-  <circle cx="10" cy="8" r="5" />\r
-  <path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/camera.svg
-var camera_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-camera"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />\r
-  <circle cx="12" cy="13" r="3" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/image.svg
-var image_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-image"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />\r
-  <circle cx="9" cy="9" r="2" />\r
-  <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/notebook-pen.svg
-var notebook_pen_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-notebook-pen"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4" />\r
-  <path d="M2 6h4" />\r
-  <path d="M2 10h4" />\r
-  <path d="M2 14h4" />\r
-  <path d="M2 18h4" />\r
-  <path d="M21.378 5.626a1 1 0 1 0-3.004-3.004l-5.01 5.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/cloud-sun.svg
-var cloud_sun_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-cloud-sun"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="M12 2v2" />\r
-  <path d="m4.93 4.93 1.41 1.41" />\r
-  <path d="M20 12h2" />\r
-  <path d="m19.07 4.93-1.41 1.41" />\r
-  <path d="M15.947 12.65a4 4 0 0 0-5.925-4.128" />\r
-  <path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6Z" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/calendar.svg
-var calendar_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-calendar"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="M8 2v4" />\r
-  <path d="M16 2v4" />\r
-  <rect width="18" height="18" x="3" y="4" rx="2" />\r
-  <path d="M3 10h18" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/chart-no-axes-column.svg
-var chart_no_axes_column_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-chart-no-axes-column"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <line x1="18" x2="18" y1="20" y2="10" />\r
-  <line x1="12" x2="12" y1="20" y2="4" />\r
-  <line x1="6" x2="6" y1="20" y2="14" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/bell.svg
-var bell_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-bell"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="M10.268 21a2 2 0 0 0 3.464 0" />\r
-  <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/arrow-left.svg
-var arrow_left_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-arrow-left"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="m12 19-7-7 7-7" />\r
-  <path d="M19 12H5" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/send.svg
-var send_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-send"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z" />\r
-  <path d="m21.854 2.147-10.94 10.939" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/sparkles.svg
-var sparkles_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-sparkles"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />\r
-  <path d="M20 3v4" />\r
-  <path d="M22 5h-4" />\r
-  <path d="M4 17v2" />\r
-  <path d="M5 18H3" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/trash-2.svg
-var trash_2_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-trash-2"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="M3 6h18" />\r
-  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />\r
-  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />\r
-  <line x1="10" x2="10" y1="11" y2="17" />\r
-  <line x1="14" x2="14" y1="11" y2="17" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/square.svg
-var square_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-square"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <rect width="18" height="18" x="3" y="3" rx="2" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/copy.svg
-var copy_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-copy"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />\r
-  <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/pencil.svg
-var pencil_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-pencil"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />\r
-  <path d="m15 5 4 4" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/x.svg
-var x_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-x"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="M18 6 6 18" />\r
-  <path d="m6 6 12 12" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/search.svg
-var search_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-search"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <circle cx="11" cy="11" r="8" />\r
-  <path d="m21 21-4.3-4.3" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/refresh-cw.svg
-var refresh_cw_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-refresh-cw"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />\r
-  <path d="M21 3v5h-5" />\r
-  <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />\r
-  <path d="M8 16H3v5" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/arrow-up.svg
-var arrow_up_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-arrow-up"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="m5 12 7-7 7 7" />\r
-  <path d="M12 19V5" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/arrow-down.svg
-var arrow_down_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-arrow-down"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="M12 5v14" />\r
-  <path d="m19 12-7 7-7-7" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/arrow-right.svg
-var arrow_right_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-arrow-right"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="M5 12h14" />\r
-  <path d="m12 5 7 7-7 7" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/grip-vertical.svg
-var grip_vertical_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-grip-vertical"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <circle cx="9" cy="12" r="1" />\r
-  <circle cx="9" cy="5" r="1" />\r
-  <circle cx="9" cy="19" r="1" />\r
-  <circle cx="15" cy="12" r="1" />\r
-  <circle cx="15" cy="5" r="1" />\r
-  <circle cx="15" cy="19" r="1" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/maximize.svg
-var maximize_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-maximize"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="M8 3H5a2 2 0 0 0-2 2v3" />\r
-  <path d="M21 8V5a2 2 0 0 0-2-2h-3" />\r
-  <path d="M3 16v3a2 2 0 0 0 2 2h3" />\r
-  <path d="M16 21h3a2 2 0 0 0 2-2v-3" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/minimize.svg
-var minimize_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-minimize"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="M8 3v3a2 2 0 0 1-2 2H3" />\r
-  <path d="M21 8h-3a2 2 0 0 1-2-2V3" />\r
-  <path d="M3 16h3a2 2 0 0 1 2 2v3" />\r
-  <path d="M16 21v-3a2 2 0 0 1 2-2h3" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/move-diagonal-2.svg
-var move_diagonal_2_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-move-diagonal-2"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="M19 13v6h-6" />\r
-  <path d="M5 11V5h6" />\r
-  <path d="m5 5 14 14" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/reply.svg
-var reply_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-reply"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <polyline points="9 17 4 12 9 7" />\r
-  <path d="M20 18v-2a4 4 0 0 0-4-4H4" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/download.svg
-var download_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-download"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />\r
-  <polyline points="7 10 12 15 17 10" />\r
-  <line x1="12" x2="12" y1="15" y2="3" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/upload.svg
-var upload_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-upload"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />\r
-  <polyline points="17 8 12 3 7 8" />\r
-  <line x1="12" x2="12" y1="3" y2="15" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/lock-keyhole.svg
-var lock_keyhole_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-lock-keyhole"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <circle cx="12" cy="16" r="1" />\r
-  <rect x="3" y="10" width="18" height="12" rx="2" />\r
-  <path d="M7 10V7a5 5 0 0 1 10 0v3" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/lock-keyhole-open.svg
-var lock_keyhole_open_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-lock-keyhole-open"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <circle cx="12" cy="16" r="1" />\r
-  <rect width="18" height="12" x="3" y="10" rx="2" />\r
-  <path d="M7 10V7a5 5 0 0 1 9.33-2.5" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/accessibility.svg
-var accessibility_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-accessibility"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <circle cx="16" cy="4" r="1" />\r
-  <path d="m18 19 1-7-6 1" />\r
-  <path d="m5 8 3-3 5.5 3-2.36 3.5" />\r
-  <path d="M4.24 14.5a5 5 0 0 0 6.88 6" />\r
-  <path d="M13.76 17.5a5 5 0 0 0-6.88-6" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/palette.svg
-var palette_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-palette"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />\r
-  <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />\r
-  <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />\r
-  <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />\r
-  <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/volume-2.svg
-var volume_2_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-volume-2"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z" />\r
-  <path d="M16 9a5 5 0 0 1 0 6" />\r
-  <path d="M19.364 18.364a9 9 0 0 0 0-12.728" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/info.svg
-var info_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-info"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <circle cx="12" cy="12" r="10" />\r
-  <path d="M12 16v-4" />\r
-  <path d="M12 8h.01" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/triangle-alert.svg
-var triangle_alert_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-triangle-alert"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />\r
-  <path d="M12 9v4" />\r
-  <path d="M12 17h.01" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/save.svg
-var save_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-save"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />\r
-  <path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7" />\r
-  <path d="M7 3v4a1 1 0 0 0 1 1h7" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/icons/chevron-down.svg
-var chevron_down_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
-<svg\r
-  class="lucide lucide-chevron-down"\r
-  xmlns="http://www.w3.org/2000/svg"\r
-  width="24"\r
-  height="24"\r
-  viewBox="0 0 24 24"\r
-  fill="none"\r
-  stroke="currentColor"\r
-  stroke-width="2"\r
-  stroke-linecap="round"\r
-  stroke-linejoin="round"\r
->\r
-  <path d="m6 9 6 6 6-6" />\r
-</svg>\r
-`;
-
-// src/mochi/ui/lucide.ts
-/*!
-ISC License
-
-Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2022 as part of Feather (MIT). All other copyright (c) for Lucide are held by Lucide Contributors 2022.
-
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted, provided that the above
-copyright notice and this permission notice appear in all copies.
-
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-The MIT License (MIT)
-
-Copyright (c) 2013-present Cole Bemis
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
-var LUCIDE = {
-  plus: plus_default,
-  settings: settings_default,
-  logout: log_out_default,
-  sort: arrow_down_wide_narrow_default,
-  grid: layout_grid_default,
-  list: list_default,
-  check: square_check_default,
-  archive: archive_default,
-  brain: brain_default,
-  smile: smile_default,
-  sliders: sliders_horizontal_default,
-  profile: user_round_default,
-  panel: panel_right_default,
-  layers: layers_default,
-  bookmark: bookmark_default,
-  eye: eye_default,
-  pin: pin_default,
-  ellipsis: ellipsis_default,
-  more: ellipsis_default,
-  power: power_default,
-  home: house_default,
-  messages: messages_square_default,
-  contacts: users_round_default,
-  people: users_round_default,
-  camera: camera_default,
-  gallery: image_default,
-  notes: notebook_pen_default,
-  weather: cloud_sun_default,
-  calendar: calendar_default,
-  trackers: chart_no_axes_column_default,
-  notifications: bell_default,
-  back: arrow_left_default,
-  send: send_default,
-  sparkle: sparkles_default,
-  trash: trash_2_default,
-  stop: square_default,
-  copy: copy_default,
-  edit: pencil_default,
-  close: x_default,
-  search: search_default,
-  refresh: refresh_cw_default,
-  up: arrow_up_default,
-  down: arrow_down_default,
-  right: arrow_right_default,
-  drag: grip_vertical_default,
-  maximize: maximize_default,
-  restore: minimize_default,
-  resize: move_diagonal_2_default,
-  reply: reply_default,
-  download: download_default,
-  upload: upload_default,
-  lock: lock_keyhole_default,
-  unlock: lock_keyhole_open_default,
-  accessibility: accessibility_default,
-  palette: palette_default,
-  volume: volume_2_default,
-  info: info_default,
-  warning: triangle_alert_default,
-  save: save_default,
-  chevron: chevron_down_default
-};
-
-// src/mochi/ui/icon-assets.ts
-var MOCHI_ICON_ASSETS = {};
-
-// src/mochi/ui/icon-slots.ts
-var LIMIT = 131072;
-var tags = new Set(["svg", "g", "path", "circle", "ellipse", "rect", "line", "polyline", "polygon"]);
-var attrs = new Set(["xmlns", "viewBox", "width", "height", "fill", "stroke", "stroke-width", "stroke-linecap", "stroke-linejoin", "stroke-miterlimit", "fill-rule", "clip-rule", "opacity", "fill-opacity", "stroke-opacity", "transform", "d", "cx", "cy", "r", "rx", "ry", "x", "y", "x1", "x2", "y1", "y2", "points"]);
-function iconSVGData(svg) {
-  if (typeof svg !== "string" || svg.length > LIMIT || /<!|<\?|&/.test(svg))
-    return;
-  const doc = new DOMParser().parseFromString(svg, "image/svg+xml"), root = doc.documentElement;
-  if (root.localName !== "svg" || doc.querySelector("parsererror") || !root.hasAttribute("viewBox"))
-    return;
-  for (const n of [root, ...root.querySelectorAll("*")]) {
-    if (!tags.has(n.tagName) || n.namespaceURI !== "http://www.w3.org/2000/svg")
-      return;
-    for (const a of n.attributes) {
-      if (!attrs.has(a.name) || a.name === "xmlns" && a.value !== "http://www.w3.org/2000/svg")
-        return;
-      if (a.name !== "xmlns" && /url\s*\(|[<>:;\\]|(?:script|https?|data)\s*:/i.test(a.value))
-        return;
-    }
-  }
-  return "data:image/svg+xml," + encodeURIComponent(new XMLSerializer().serializeToString(root));
-}
-function safeIconData(value) {
-  if (typeof value !== "string" || value.length > LIMIT)
-    return;
-  const m = /^data:image\/(svg\+xml|png|jpeg|webp);?(base64)?,([\s\S]+)$/i.exec(value);
-  if (!m)
-    return;
-  try {
-    if (m[1].toLowerCase() === "svg+xml")
-      return iconSVGData(m[2] ? atob(m[3]) : decodeURIComponent(m[3]));
-    if (m[2] && /^[A-Za-z0-9+/]+={0,2}$/.test(m[3]))
-      return value;
-  } catch {}
-}
-function iconAssetData(value) {
-  if (!value || typeof value !== "object")
-    return;
-  return "svg" in value ? iconSVGData(value.svg) : safeIconData(value.data);
-}
-function cssAsset(raw) {
-  const m = /^url\(\s*(['"])(data:[\s\S]+)\1\s*\)$/.exec(raw.trim());
-  return m ? safeIconData(m[2]) : undefined;
-}
-function mochiIcon(icon, slot = icon) {
-  if (!/^[a-z][a-z0-9-]*$/.test(slot))
-    throw Error("Invalid Mochi icon slot");
-  const node = document.createElement("span");
-  node.className = "mochi-icon-slot";
-  node.dataset.mochiIconSlot = icon;
-  node.dataset.mochiIconAction = slot;
-  node.setAttribute("aria-hidden", "true");
-  node.innerHTML = (LUCIDE[icon] || LUCIDE.refresh).replace(/>\s+</g, "><").trim();
-  const svg = node.querySelector("svg");
-  svg.setAttribute("data-mochi-icon", icon);
-  svg.setAttribute("aria-hidden", "true");
-  svg.setAttribute("focusable", "false");
-  const image = document.createElement("img");
-  image.className = "mochi-icon-replacement";
-  image.alt = "";
-  image.draggable = false;
-  image.hidden = true;
-  node.append(image);
-  let generation = 0, last = "";
-  const refresh = () => {
-    if (!node.isConnected)
-      return;
-    const style = node.ownerDocument.defaultView?.getComputedStyle(node);
-    const legacy = slot === "disclosure" ? ["--mochi-v2-detailsdisclosure-summary-after-content"] : slot === "selected" ? node.closest(".mochi-settings-categories") ? ["--mochi-v2-settings-categories-button-aria-pressed-true-after-content"] : ["--mochi-v2-character-picker-choice-aria-pressed-true-after-content", "--mochi-v2-choice-aria-pressed-true-after-content"] : [];
-    node.dataset.mochiLegacyGlyph = String(legacy.some((token) => !!style?.getPropertyValue(token).trim()));
-    const css = style?.getPropertyValue("--mochi-icon-" + slot + "-image").trim() || "";
-    const asset = MOCHI_ICON_ASSETS[slot];
-    const source = css && css !== "none" ? cssAsset(css) : asset ? iconAssetData(asset) : undefined;
-    const key = (source || "") + "|" + css;
-    if (last === key)
-      return;
-    last = key;
-    const ticket = ++generation;
-    node.dataset.mochiIconState = css && css !== "none" || asset ? "fallback" : "default";
-    image.hidden = true;
-    svg.removeAttribute("hidden");
-    image.removeAttribute("src");
-    if (!source)
-      return;
-    image.onload = () => {
-      if (ticket === generation && image.naturalWidth && image.naturalHeight) {
-        image.hidden = false;
-        svg.setAttribute("hidden", "");
-        node.dataset.mochiIconState = "custom";
-      }
-    };
-    image.onerror = () => {
-      if (ticket === generation) {
-        image.hidden = true;
-        svg.removeAttribute("hidden");
-        node.dataset.mochiIconState = "fallback";
-      }
-    };
-    image.src = source;
-  };
-  const schedule = () => {
-    if (typeof requestAnimationFrame === "function")
-      requestAnimationFrame(refresh);
-    else
-      queueMicrotask(refresh);
-  };
-  schedule();
-  node.addEventListener("mochi:icons-refresh", refresh);
-  return node;
-}
-var glyphs = { "×": "close", "✕": "close", "↑": "up", "↓": "down", "⋯": "more", "⠿": "drag", "□": "maximize", "◢": "resize" };
-var TEXT_ACTIONS = [
-  [/^(?:Back|Return to)/i, "back", "back"],
-  [/^Close|^Done$|^Cancel/i, "close", "close"],
-  [/^Refresh|^Retry|^Restore/i, "refresh", "refresh"],
-  [/^Save|^Publish|^Apply|^Confirm apply|^Use selected/i, "save", "save"],
-  [/^Delete|^Remove|^Confirm delete|^Discard/i, "trash", "delete"],
-  [/^New |^Create |^\+ Add|^Add /i, "plus", "add"],
-  [/^Edit|^Rename|^Customize/i, "edit", "edit"],
-  [/^Duplicate|^Copy/i, "copy", "copy"],
-  [/^Search/i, "search", "search"],
-  [/^Move .* up$/i, "up", "up"],
-  [/^Move .* down$/i, "down", "down"],
-  [/^.*[Ss]ettings|^Advanced$/, "settings", "settings"],
-  [/^Presets|^AI & Replies$/, "sliders", "presets"],
-  [/^Preview/i, "eye", "preview"],
-  [/^Memory & Context$|^Conversation Memory$/, "brain", "memory"],
-  [/^Pins & Notes$/, "pin", "notes"],
-  [/^Participants$/, "people", "participants"],
-  [/^Notifications$/, "notifications", "notifications"],
-  [/^Accessibility$/, "accessibility", "accessibility"],
-  [/^Appearance$/, "palette", "appearance"],
-  [/^Toolbar$/, "panel", "toolbar"],
-  [/^Availability & Schedules$/, "calendar", "availability"],
-  [/^General$/, "info", "general"],
-  [/^Archive/i, "archive", "archive"],
-  [/^Export/i, "download", "export"],
-  [/^Import/i, "upload", "import"]
-];
-function mochiButton(label, className = "lp-button") {
-  const node = document.createElement("button");
-  node.type = "button";
-  node.className = className;
-  const icon = glyphs[label];
-  if (icon) {
-    node.setAttribute("aria-label", { up: "Move up", down: "Move down", more: "More actions", close: "Close" }[icon] || icon);
-    node.append(mochiIcon(icon));
-    node.dataset.mochiAction = icon;
-  } else if (label.startsWith("← ")) {
-    node.append(mochiIcon("back"), document.createTextNode(label.slice(2)));
-    node.dataset.mochiAction = "back";
-  } else if (label.startsWith("+ ")) {
-    node.setAttribute("aria-label", label);
-    node.append(mochiIcon("plus", "add"), document.createTextNode(label.slice(2)));
-    node.dataset.mochiAction = "add";
-  } else {
-    node.textContent = label;
-    const entry = TEXT_ACTIONS.find(([pattern]) => pattern.test(label));
-    if (entry) {
-      const slot = mochiIcon(entry[1], entry[2]);
-      slot.dataset.mochiOptional = "true";
-      node.prepend(slot);
-      node.dataset.mochiAction = entry[2];
-    }
-  }
-  if (/(?:^|\s)mochi-(?:choice|category-tab)(?:\s|$)/.test(className)) {
-    const selected = mochiIcon("check", "selected");
-    selected.dataset.mochiSelectedIndicator = "true";
-    node.append(selected);
-  }
-  return node;
-}
-function mochiDisclosureIcon(details) {
-  const summary = details.querySelector(":scope > summary");
-  if (summary && !summary.querySelector('[data-mochi-icon-action="disclosure"]'))
-    summary.append(mochiIcon("chevron", "disclosure"));
-}
-
-// src/mochi/routines.ts
-var DAYS = ["mo", "tu", "we", "th", "fr", "sa", "su"];
-var AUTONOMY = ["manual", "temporary", "review", "autonomous"];
-var statuses = ["online", "away", "dnd", "offline"];
-function object(v) {
-  return !!v && typeof v === "object" && !Array.isArray(v);
-}
-function keys(v, allowed) {
-  if (!object(v) || Object.keys(v).some((k) => !allowed.includes(k)))
-    throw Error("Unknown routine field.");
-}
-function routineId(v) {
-  if (typeof v !== "string" || !/^[A-Za-z0-9_-]{1,180}$/.test(v) || ["__proto__", "constructor", "prototype"].includes(v))
-    throw Error("Invalid routine identifier.");
-  return v;
-}
-function activity(v) {
-  if (typeof v !== "string" || !v.trim() || v.length > 160 || /[\u0000-\u001f]/.test(v))
-    throw Error("Activity must be 1–160 visible characters.");
-  return v.trim();
-}
-function timezone(v) {
-  if (typeof v !== "string" || v.length > 100 || !/^([A-Za-z_+-]+\/)*[A-Za-z_+-]+$/.test(v))
-    throw Error("Choose an IANA timezone.");
-  try {
-    return new Intl.DateTimeFormat("en", { timeZone: v }).resolvedOptions().timeZone;
-  } catch {
-    throw Error("Choose an IANA timezone.");
-  }
-}
-function period(v) {
-  if (!object(v) || !Array.isArray(v.days) || !v.days.length || v.days.length > 7 || new Set(v.days).size !== v.days.length || v.days.some((d) => !DAYS.includes(d)) || ![v.start, v.end].every((n) => Number.isInteger(n) && n >= 0 && n < 1440) || v.start === v.end)
-    throw Error("Invalid weekly interval; use distinct minute boundaries and day codes mo..su.");
-  return { days: [...v.days], start: v.start, end: v.end };
-}
-function validateEntry(v) {
-  keys(v, ["id", "days", "start", "end", "activity", "presence", "locked"]);
-  const p = period(v);
-  if (!statuses.includes(v.presence) || typeof v.locked !== "boolean")
-    throw Error("Invalid routine presence or lock.");
-  return { ...p, id: routineId(v.id), activity: activity(v.activity), presence: v.presence, locked: v.locked };
-}
-function intervals(p) {
-  return p.days.flatMap((day) => {
-    const start = DAYS.indexOf(day) * 1440 + p.start, end = start + (p.end - p.start + 1440) % 1440;
-    return end > 10080 ? [[start, 10080], [0, end - 10080]] : [[start, end]];
-  });
-}
-function validatePlan(v) {
-  keys(v, ["version", "enabled", "timezone", "autonomy", "locked", "entries", "quiet", "fallback"]);
-  if (v.version !== 1 || typeof v.enabled !== "boolean" || typeof v.locked !== "boolean" || !AUTONOMY.includes(v.autonomy) || !Array.isArray(v.entries) || v.entries.length > 64 || !Array.isArray(v.quiet) || v.quiet.length > 16)
-    throw Error("Invalid routine settings or size.");
-  const entries = v.entries.map(validateEntry), ids = new Set(entries.map((e) => e.id));
-  if (ids.size !== entries.length)
-    throw Error("Routine entry IDs must be unique.");
-  const occupied = entries.flatMap((e) => intervals(e)).sort((a, b) => a[0] - b[0]);
-  for (let i = 1;i < occupied.length; i++)
-    if (occupied[i][0] < occupied[i - 1][1])
-      throw Error("Weekly routine entries overlap, including overnight boundaries.");
-  const quiet = v.quiet.map((p) => {
-    keys(p, ["days", "start", "end"]);
-    return period(p);
-  });
-  keys(v.fallback, ["activity", "presence"]);
-  if (!statuses.includes(v.fallback.presence))
-    throw Error("Invalid free-time presence.");
-  return { version: 1, enabled: v.enabled, timezone: timezone(v.timezone), autonomy: v.autonomy, locked: v.locked, entries, quiet, fallback: { activity: activity(v.fallback.activity), presence: v.fallback.presence } };
-}
-function defaultRoutine() {
-  return { version: 1, enabled: false, timezone: "UTC", autonomy: "temporary", locked: false, entries: [], quiet: [], fallback: { activity: "Free time / hobbies", presence: "online" } };
-}
-function planFor(room, id) {
-  return (room.runtime?.routines || room.background?.routines)?.[id]?.plan || room.characterDefaults?.[id]?.routine;
-}
-function wallMinute(zone, now) {
-  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: zone, weekday: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(now);
-  const get = (type) => parts.find((p) => p.type === type).value;
-  return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].indexOf(get("weekday")) * 1440 + Number(get("hour")) * 60 + Number(get("minute"));
-}
-function contains(p, minute) {
-  return intervals(p).some(([a, b]) => minute >= a && minute < b);
-}
-function routineAt(room, id, now) {
-  const plan = planFor(room, id);
-  if (!plan?.enabled)
-    return;
-  const minute = wallMinute(plan.timezone, now), entry = plan.entries.find((e) => contains(e, minute)), quiet = plan.quiet.some((p) => contains(p, minute)), base = entry || plan.fallback;
-  const override = (room.runtime?.routines || room.background?.routines)?.[id]?.override;
-  const active = override && override.startedAt <= now && now < override.expiresAt;
-  const locked = plan.locked || !!entry?.locked;
-  const usable = active && (override.source === "user" || !locked && plan.autonomy !== "manual" && !["dnd", "offline"].includes(base.presence));
-  return { activity: usable ? override.activity : base.activity, presence: quiet ? "offline" : usable ? override.presence : base.presence, quiet, locked };
-}
-
-// src/mochi/routine-controls.ts
-function routineControls(plan, label) {
-  const root = el("fieldset", "mochi-routine-editor");
-  root.dataset.mochiRoutine = "editor";
-  root.append(el("legend", "", "Weekly routine · " + label));
-  const field = (title, node) => {
-    const l = el("label", "", title);
-    node.setAttribute("aria-label", title + " for " + label);
-    l.append(node);
-    root.append(l);
-  };
-  const enable = el("input");
-  enable.type = "checkbox";
-  enable.checked = plan.enabled;
-  enable.onchange = () => {
-    plan.enabled = enable.checked;
-  };
-  field("Enable weekly routine", enable);
-  const zone = el("input");
-  zone.value = plan.timezone;
-  zone.maxLength = 100;
-  zone.oninput = () => {
-    plan.timezone = zone.value;
-  };
-  field("IANA timezone", zone);
-  const mode = el("select");
-  for (const m of AUTONOMY) {
-    const o = el("option", "", { manual: "Manual only", temporary: "Temporary overrides (suggested)", review: "Suggest permanent edits for review", autonomous: "Fully autonomous (explicit opt-in, undo available)" }[m]);
-    o.value = m;
-    mode.append(o);
-  }
-  mode.value = plan.autonomy;
-  mode.onchange = () => {
-    plan.autonomy = mode.value;
-  };
-  field("Character autonomy", mode);
-  const lock = el("input");
-  lock.type = "checkbox";
-  lock.checked = plan.locked;
-  lock.onchange = () => {
-    plan.locked = lock.checked;
-  };
-  field("Lock routine against character changes", lock);
-  const fallback = el("input");
-  fallback.value = plan.fallback.activity;
-  fallback.maxLength = 160;
-  fallback.oninput = () => {
-    plan.fallback.activity = fallback.value;
-  };
-  field("Uncovered time activity", fallback);
-  root.append(el("p", "mochi-muted", "Weekly entries use local time in this timezone, including DST. End before start means overnight. Uncovered time uses the fallback. Quiet hours block delivery. Manual presence locks take precedence over routine presence."));
-  const rows = el("div", "mochi-routine-entries");
-  root.append(rows);
-  const draw = () => {
-    rows.replaceChildren();
-    for (const [index, e] of plan.entries.entries()) {
-      const row = el("fieldset", "mochi-routine-entry");
-      row.dataset.entryId = e.id;
-      row.append(el("legend", "", "Entry " + (index + 1)));
-      const f = (title, node) => {
-        const l = el("label", "", title);
-        node.setAttribute("aria-label", title + " " + e.id + " for " + label);
-        l.append(node);
-        row.append(l);
-      };
-      const days = el("input");
-      days.value = e.days.join(",");
-      days.oninput = () => {
-        e.days = days.value.split(",").map((d) => d.trim());
-      };
-      f("Days mo,tu,we,th,fr,sa,su", days);
-      for (const key of ["start", "end"]) {
-        const time = el("input");
-        time.type = "time";
-        time.value = String(Math.floor(e[key] / 60)).padStart(2, "0") + ":" + String(e[key] % 60).padStart(2, "0");
-        time.oninput = () => {
-          const [h, m] = time.value.split(":").map(Number);
-          e[key] = h * 60 + m;
-        };
-        f(key === "start" ? "Start" : "End", time);
-      }
-      const a = el("input");
-      a.value = e.activity;
-      a.maxLength = 160;
-      a.oninput = () => {
-        e.activity = a.value;
-      };
-      f("Activity", a);
-      const p = el("select");
-      for (const s of ["online", "away", "dnd", "offline"]) {
-        const o = el("option", "", s);
-        o.value = s;
-        p.append(o);
-      }
-      p.value = e.presence;
-      p.onchange = () => {
-        e.presence = p.value;
-      };
-      f("Presence", p);
-      const locked = el("input");
-      locked.type = "checkbox";
-      locked.checked = e.locked;
-      locked.onchange = () => {
-        e.locked = locked.checked;
-      };
-      f("User locked entry", locked);
-      const remove = mochiButton("Remove entry " + e.id);
-      remove.onclick = () => {
-        plan.entries.splice(index, 1);
-        draw();
-      };
-      row.append(remove);
-      rows.append(row);
-    }
-  };
-  draw();
-  const add = mochiButton("Add routine entry");
-  add.onclick = () => {
-    if (plan.entries.length < 64) {
-      plan.entries.push({ id: "entry_" + crypto.randomUUID().replaceAll("-", ""), days: ["mo"], start: 540, end: 1020, activity: "Work", presence: "away", locked: false });
-      draw();
-    }
-  };
-  root.append(add);
-  const quiet = el("textarea");
-  quiet.rows = 2;
-  quiet.maxLength = 4000;
-  quiet.value = JSON.stringify(plan.quiet);
-  quiet.oninput = () => {
-    try {
-      plan.quiet = JSON.parse(quiet.value);
-      quiet.setCustomValidity("");
-    } catch {
-      quiet.setCustomValidity("Use a JSON list of quiet hours.");
-    }
-  };
-  field("Quiet hours JSON: days, start and end in minutes", quiet);
-  return root;
-}
-function roomRoutineControls(room, id, name, send) {
-  const state = room.background?.routines?.[id], plan = structuredClone(planFor(room, id) || defaultRoutine()), root = el("section", "mochi-routine-panel");
-  root.dataset.characterId = id;
-  root.dataset.mochiRoutine = "panel";
-  const current = routineAt(room, id, Date.now());
-  const live = el("p", "mochi-routine-activity", current ? current.activity + " · " + current.presence : "Weekly routine is off");
-  live.dataset.routineActivity = id;
-  live.setAttribute("aria-live", "polite");
-  root.append(live, routineControls(plan, name));
-  const error = el("p", "mochi-error");
-  error.setAttribute("role", "alert");
-  root.append(error);
-  const dispatch = (p) => send({ roomId: room.id, characterId: id, revision: room.revision, ...p });
-  const save = mochiButton("Apply weekly routine for " + name);
-  save.onclick = () => {
-    try {
-      dispatch({ action: "save", plan: validatePlan(plan) });
-    } catch (e) {
-      error.textContent = e.message;
-    }
-  };
-  const defaults = mochiButton("Use character routine defaults for " + name);
-  defaults.onclick = () => dispatch({ action: "defaults" });
-  root.append(save, defaults);
-  const activity = el("input");
-  activity.maxLength = 160;
-  activity.setAttribute("aria-label", "Live activity for " + name);
-  activity.placeholder = "Driving home early";
-  const minutes = el("input");
-  minutes.type = "number";
-  minutes.min = "1";
-  minutes.max = "240";
-  minutes.value = "45";
-  minutes.setAttribute("aria-label", "Activity expiry minutes for " + name);
-  const presence = el("select");
-  presence.setAttribute("aria-label", "Live activity presence for " + name);
-  for (const p of ["online", "away", "dnd", "offline"]) {
-    const o = el("option", "", p);
-    o.value = p;
-    presence.append(o);
-  }
-  presence.value = "away";
-  const override = mochiButton("Set temporary activity for " + name);
-  override.onclick = () => dispatch({ action: "override", activity: activity.value, presence: presence.value, minutes: Number(minutes.value) });
-  const clear = mochiButton("Clear temporary activity for " + name);
-  clear.onclick = () => dispatch({ action: "clear" });
-  root.append(activity, minutes, presence, override, clear);
-  const history = el("ol", "mochi-routine-history");
-  history.setAttribute("aria-label", "Routine change history for " + name);
-  for (const h of state?.history.slice().reverse() || []) {
-    const row = el("li", "", new Date(h.at).toISOString() + " · " + h.source + " · " + h.id);
-    history.append(row);
-  }
-  root.append(history);
-  const last = state?.history.at(-1);
-  if (last && last.source !== "undo") {
-    const undo = mochiButton("Undo last routine change for " + name);
-    undo.onclick = () => dispatch({ action: "undo", changeId: last.id });
-    root.append(undo);
-  }
-  return root;
-}
-
 // src/mochi/ui/mochi-tokens.css
 var mochi_tokens_default = `/* Mochi-only defaults. Inherit host colors; never move these to :root. */
 :where(.mochi-view,
@@ -7056,8 +5272,80 @@ function mochiStyle(name) {
 ` : "") + mochi_theme_default;
 }
 
+// src/frontend/shared.ts
+function el(tag, className = "", content = "") {
+  const node = document.createElement(tag);
+  if (className)
+    node.className = className;
+  if (content)
+    node.textContent = content;
+  return node;
+}
+function button(label, className = "lp-button") {
+  const node = el("button", className, label);
+  node.type = "button";
+  return node;
+}
+function cssPixelToken(node, name, fallback) {
+  const raw = node.ownerDocument.defaultView?.getComputedStyle(node).getPropertyValue(name).trim() || "";
+  return /^\d+(?:\.\d+)?px$/.test(raw) ? Number.parseFloat(raw) : fallback;
+}
+function formatTime(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime()))
+    return "";
+  return new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(date);
+}
+function formatDate(value, detail = false) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime()))
+    return String(value || "");
+  return new Intl.DateTimeFormat(undefined, detail ? { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" } : { month: "short", day: "numeric" }).format(date);
+}
+function dateTimeLocal(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime()))
+    return "";
+  const offset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+}
+function inputValue(input) {
+  return input.value.trim();
+}
+function requestId(prefix = "req") {
+  return `${prefix}_${globalThis.crypto?.randomUUID?.() || `${Date.now()}_${Math.random().toString(36).slice(2)}`}`;
+}
+
 // src/mochi/texting.ts
 var TEXTING_OPTIONS = { length: ["short", "balanced", "detailed"], capitalization: ["lowercase", "natural", "formal"], punctuation: ["minimal", "natural", "expressive"], emoji: ["rare", "occasional", "frequent"] };
+function validateTextingStyles(value) {
+  if (value === undefined)
+    return;
+  if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).length > 100)
+    throw Error("Invalid character texting preferences; saved settings were preserved.");
+  const result = {};
+  for (const [id, raw] of Object.entries(value)) {
+    if (!/^[A-Za-z0-9_.:-]{1,180}$/.test(id) || ["__proto__", "constructor", "prototype"].includes(id) || !raw || typeof raw !== "object" || Array.isArray(raw))
+      throw Error("Invalid texting character identifier or style.");
+    const style = {};
+    for (const [key, v] of Object.entries(raw)) {
+      if (key === "tone") {
+        if (typeof v !== "string" || v.length > 400)
+          throw Error("Texting habits must be at most 400 characters.");
+        if (v.trim())
+          style.tone = v.trim();
+      } else {
+        const choices = Object.hasOwn(TEXTING_OPTIONS, key) ? TEXTING_OPTIONS[key] : undefined;
+        if (!choices || typeof v !== "string" || !choices.includes(v))
+          throw Error("Invalid character texting option.");
+        style[key] = v;
+      }
+    }
+    if (Object.keys(style).length)
+      result[id] = style;
+  }
+  return Object.keys(result).length ? result : undefined;
+}
 
 // src/mochi/texting-controls.ts
 function textingControls(settings, id, name) {
@@ -7110,6 +5398,1979 @@ var MOCHI_TEXTING_STYLES = mochiStyle("mochi-texting-styles");
 // src/mochi/types.ts
 var defaultMochiSettings = () => ({ autoReply: true, connectionId: "", contextTokens: 8192, outputTokens: 1200, instructions: "", characterNames: {} });
 var MOCHI_ROOM_ID = /^room_[a-f0-9]{32}$/;
+
+// src/mochi/ui/icons/plus.svg
+var plus_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-plus"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="M5 12h14" />\r
+  <path d="M12 5v14" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/settings.svg
+var settings_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-settings"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />\r
+  <circle cx="12" cy="12" r="3" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/log-out.svg
+var log_out_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-log-out"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />\r
+  <polyline points="16 17 21 12 16 7" />\r
+  <line x1="21" x2="9" y1="12" y2="12" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/arrow-down-wide-narrow.svg
+var arrow_down_wide_narrow_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-arrow-down-wide-narrow"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="m3 16 4 4 4-4" />\r
+  <path d="M7 20V4" />\r
+  <path d="M11 4h10" />\r
+  <path d="M11 8h7" />\r
+  <path d="M11 12h4" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/layout-grid.svg
+var layout_grid_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-layout-grid"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <rect width="7" height="7" x="3" y="3" rx="1" />\r
+  <rect width="7" height="7" x="14" y="3" rx="1" />\r
+  <rect width="7" height="7" x="14" y="14" rx="1" />\r
+  <rect width="7" height="7" x="3" y="14" rx="1" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/list.svg
+var list_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-list"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="M3 12h.01" />\r
+  <path d="M3 18h.01" />\r
+  <path d="M3 6h.01" />\r
+  <path d="M8 12h13" />\r
+  <path d="M8 18h13" />\r
+  <path d="M8 6h13" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/square-check.svg
+var square_check_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-square-check"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <rect width="18" height="18" x="3" y="3" rx="2" />\r
+  <path d="m9 12 2 2 4-4" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/archive.svg
+var archive_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-archive"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <rect width="20" height="5" x="2" y="3" rx="1" />\r
+  <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" />\r
+  <path d="M10 12h4" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/brain.svg
+var brain_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-brain"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z" />\r
+  <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z" />\r
+  <path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4" />\r
+  <path d="M17.599 6.5a3 3 0 0 0 .399-1.375" />\r
+  <path d="M6.003 5.125A3 3 0 0 0 6.401 6.5" />\r
+  <path d="M3.477 10.896a4 4 0 0 1 .585-.396" />\r
+  <path d="M19.938 10.5a4 4 0 0 1 .585.396" />\r
+  <path d="M6 18a4 4 0 0 1-1.967-.516" />\r
+  <path d="M19.967 17.484A4 4 0 0 1 18 18" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/smile.svg
+var smile_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-smile"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <circle cx="12" cy="12" r="10" />\r
+  <path d="M8 14s1.5 2 4 2 4-2 4-2" />\r
+  <line x1="9" x2="9.01" y1="9" y2="9" />\r
+  <line x1="15" x2="15.01" y1="9" y2="9" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/sliders-horizontal.svg
+var sliders_horizontal_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-sliders-horizontal"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <line x1="21" x2="14" y1="4" y2="4" />\r
+  <line x1="10" x2="3" y1="4" y2="4" />\r
+  <line x1="21" x2="12" y1="12" y2="12" />\r
+  <line x1="8" x2="3" y1="12" y2="12" />\r
+  <line x1="21" x2="16" y1="20" y2="20" />\r
+  <line x1="12" x2="3" y1="20" y2="20" />\r
+  <line x1="14" x2="14" y1="2" y2="6" />\r
+  <line x1="8" x2="8" y1="10" y2="14" />\r
+  <line x1="16" x2="16" y1="18" y2="22" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/user-round.svg
+var user_round_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-user-round"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <circle cx="12" cy="8" r="5" />\r
+  <path d="M20 21a8 8 0 0 0-16 0" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/panel-right.svg
+var panel_right_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-panel-right"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <rect width="18" height="18" x="3" y="3" rx="2" />\r
+  <path d="M15 3v18" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/layers.svg
+var layers_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-layers"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z" />\r
+  <path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12" />\r
+  <path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/bookmark.svg
+var bookmark_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-bookmark"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/eye.svg
+var eye_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-eye"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />\r
+  <circle cx="12" cy="12" r="3" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/pin.svg
+var pin_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-pin"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="M12 17v5" />\r
+  <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/ellipsis.svg
+var ellipsis_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-ellipsis"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <circle cx="12" cy="12" r="1" />\r
+  <circle cx="19" cy="12" r="1" />\r
+  <circle cx="5" cy="12" r="1" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/power.svg
+var power_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-power"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="M12 2v10" />\r
+  <path d="M18.4 6.6a9 9 0 1 1-12.77.04" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/house.svg
+var house_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-house"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" />\r
+  <path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/messages-square.svg
+var messages_square_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-messages-square"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z" />\r
+  <path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/users-round.svg
+var users_round_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-users-round"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="M18 21a8 8 0 0 0-16 0" />\r
+  <circle cx="10" cy="8" r="5" />\r
+  <path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/camera.svg
+var camera_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-camera"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />\r
+  <circle cx="12" cy="13" r="3" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/image.svg
+var image_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-image"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />\r
+  <circle cx="9" cy="9" r="2" />\r
+  <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/notebook-pen.svg
+var notebook_pen_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-notebook-pen"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4" />\r
+  <path d="M2 6h4" />\r
+  <path d="M2 10h4" />\r
+  <path d="M2 14h4" />\r
+  <path d="M2 18h4" />\r
+  <path d="M21.378 5.626a1 1 0 1 0-3.004-3.004l-5.01 5.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/cloud-sun.svg
+var cloud_sun_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-cloud-sun"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="M12 2v2" />\r
+  <path d="m4.93 4.93 1.41 1.41" />\r
+  <path d="M20 12h2" />\r
+  <path d="m19.07 4.93-1.41 1.41" />\r
+  <path d="M15.947 12.65a4 4 0 0 0-5.925-4.128" />\r
+  <path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6Z" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/calendar.svg
+var calendar_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-calendar"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="M8 2v4" />\r
+  <path d="M16 2v4" />\r
+  <rect width="18" height="18" x="3" y="4" rx="2" />\r
+  <path d="M3 10h18" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/chart-no-axes-column.svg
+var chart_no_axes_column_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-chart-no-axes-column"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <line x1="18" x2="18" y1="20" y2="10" />\r
+  <line x1="12" x2="12" y1="20" y2="4" />\r
+  <line x1="6" x2="6" y1="20" y2="14" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/bell.svg
+var bell_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-bell"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="M10.268 21a2 2 0 0 0 3.464 0" />\r
+  <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/arrow-left.svg
+var arrow_left_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-arrow-left"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="m12 19-7-7 7-7" />\r
+  <path d="M19 12H5" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/send.svg
+var send_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-send"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z" />\r
+  <path d="m21.854 2.147-10.94 10.939" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/sparkles.svg
+var sparkles_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-sparkles"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />\r
+  <path d="M20 3v4" />\r
+  <path d="M22 5h-4" />\r
+  <path d="M4 17v2" />\r
+  <path d="M5 18H3" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/trash-2.svg
+var trash_2_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-trash-2"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="M3 6h18" />\r
+  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />\r
+  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />\r
+  <line x1="10" x2="10" y1="11" y2="17" />\r
+  <line x1="14" x2="14" y1="11" y2="17" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/square.svg
+var square_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-square"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <rect width="18" height="18" x="3" y="3" rx="2" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/copy.svg
+var copy_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-copy"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />\r
+  <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/pencil.svg
+var pencil_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-pencil"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />\r
+  <path d="m15 5 4 4" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/x.svg
+var x_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-x"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="M18 6 6 18" />\r
+  <path d="m6 6 12 12" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/search.svg
+var search_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-search"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <circle cx="11" cy="11" r="8" />\r
+  <path d="m21 21-4.3-4.3" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/refresh-cw.svg
+var refresh_cw_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-refresh-cw"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />\r
+  <path d="M21 3v5h-5" />\r
+  <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />\r
+  <path d="M8 16H3v5" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/arrow-up.svg
+var arrow_up_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-arrow-up"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="m5 12 7-7 7 7" />\r
+  <path d="M12 19V5" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/arrow-down.svg
+var arrow_down_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-arrow-down"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="M12 5v14" />\r
+  <path d="m19 12-7 7-7-7" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/arrow-right.svg
+var arrow_right_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-arrow-right"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="M5 12h14" />\r
+  <path d="m12 5 7 7-7 7" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/grip-vertical.svg
+var grip_vertical_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-grip-vertical"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <circle cx="9" cy="12" r="1" />\r
+  <circle cx="9" cy="5" r="1" />\r
+  <circle cx="9" cy="19" r="1" />\r
+  <circle cx="15" cy="12" r="1" />\r
+  <circle cx="15" cy="5" r="1" />\r
+  <circle cx="15" cy="19" r="1" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/maximize.svg
+var maximize_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-maximize"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="M8 3H5a2 2 0 0 0-2 2v3" />\r
+  <path d="M21 8V5a2 2 0 0 0-2-2h-3" />\r
+  <path d="M3 16v3a2 2 0 0 0 2 2h3" />\r
+  <path d="M16 21h3a2 2 0 0 0 2-2v-3" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/minimize.svg
+var minimize_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-minimize"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="M8 3v3a2 2 0 0 1-2 2H3" />\r
+  <path d="M21 8h-3a2 2 0 0 1-2-2V3" />\r
+  <path d="M3 16h3a2 2 0 0 1 2 2v3" />\r
+  <path d="M16 21v-3a2 2 0 0 1 2-2h3" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/move-diagonal-2.svg
+var move_diagonal_2_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-move-diagonal-2"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="M19 13v6h-6" />\r
+  <path d="M5 11V5h6" />\r
+  <path d="m5 5 14 14" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/reply.svg
+var reply_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-reply"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <polyline points="9 17 4 12 9 7" />\r
+  <path d="M20 18v-2a4 4 0 0 0-4-4H4" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/download.svg
+var download_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-download"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />\r
+  <polyline points="7 10 12 15 17 10" />\r
+  <line x1="12" x2="12" y1="15" y2="3" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/upload.svg
+var upload_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-upload"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />\r
+  <polyline points="17 8 12 3 7 8" />\r
+  <line x1="12" x2="12" y1="3" y2="15" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/lock-keyhole.svg
+var lock_keyhole_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-lock-keyhole"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <circle cx="12" cy="16" r="1" />\r
+  <rect x="3" y="10" width="18" height="12" rx="2" />\r
+  <path d="M7 10V7a5 5 0 0 1 10 0v3" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/lock-keyhole-open.svg
+var lock_keyhole_open_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-lock-keyhole-open"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <circle cx="12" cy="16" r="1" />\r
+  <rect width="18" height="12" x="3" y="10" rx="2" />\r
+  <path d="M7 10V7a5 5 0 0 1 9.33-2.5" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/accessibility.svg
+var accessibility_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-accessibility"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <circle cx="16" cy="4" r="1" />\r
+  <path d="m18 19 1-7-6 1" />\r
+  <path d="m5 8 3-3 5.5 3-2.36 3.5" />\r
+  <path d="M4.24 14.5a5 5 0 0 0 6.88 6" />\r
+  <path d="M13.76 17.5a5 5 0 0 0-6.88-6" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/palette.svg
+var palette_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-palette"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />\r
+  <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />\r
+  <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />\r
+  <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />\r
+  <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/volume-2.svg
+var volume_2_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-volume-2"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z" />\r
+  <path d="M16 9a5 5 0 0 1 0 6" />\r
+  <path d="M19.364 18.364a9 9 0 0 0 0-12.728" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/info.svg
+var info_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-info"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <circle cx="12" cy="12" r="10" />\r
+  <path d="M12 16v-4" />\r
+  <path d="M12 8h.01" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/triangle-alert.svg
+var triangle_alert_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-triangle-alert"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />\r
+  <path d="M12 9v4" />\r
+  <path d="M12 17h.01" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/save.svg
+var save_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-save"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />\r
+  <path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7" />\r
+  <path d="M7 3v4a1 1 0 0 0 1 1h7" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/icons/chevron-down.svg
+var chevron_down_default = `<!-- @license lucide-static v0.468.0 - ISC -->\r
+<svg\r
+  class="lucide lucide-chevron-down"\r
+  xmlns="http://www.w3.org/2000/svg"\r
+  width="24"\r
+  height="24"\r
+  viewBox="0 0 24 24"\r
+  fill="none"\r
+  stroke="currentColor"\r
+  stroke-width="2"\r
+  stroke-linecap="round"\r
+  stroke-linejoin="round"\r
+>\r
+  <path d="m6 9 6 6 6-6" />\r
+</svg>\r
+`;
+
+// src/mochi/ui/lucide.ts
+/*!
+ISC License
+
+Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2022 as part of Feather (MIT). All other copyright (c) for Lucide are held by Lucide Contributors 2022.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+The MIT License (MIT)
+
+Copyright (c) 2013-present Cole Bemis
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
+var LUCIDE = {
+  plus: plus_default,
+  settings: settings_default,
+  logout: log_out_default,
+  sort: arrow_down_wide_narrow_default,
+  grid: layout_grid_default,
+  list: list_default,
+  check: square_check_default,
+  archive: archive_default,
+  brain: brain_default,
+  smile: smile_default,
+  sliders: sliders_horizontal_default,
+  profile: user_round_default,
+  panel: panel_right_default,
+  layers: layers_default,
+  bookmark: bookmark_default,
+  eye: eye_default,
+  pin: pin_default,
+  ellipsis: ellipsis_default,
+  more: ellipsis_default,
+  power: power_default,
+  home: house_default,
+  messages: messages_square_default,
+  contacts: users_round_default,
+  people: users_round_default,
+  camera: camera_default,
+  gallery: image_default,
+  notes: notebook_pen_default,
+  weather: cloud_sun_default,
+  calendar: calendar_default,
+  trackers: chart_no_axes_column_default,
+  notifications: bell_default,
+  back: arrow_left_default,
+  send: send_default,
+  sparkle: sparkles_default,
+  trash: trash_2_default,
+  stop: square_default,
+  copy: copy_default,
+  edit: pencil_default,
+  close: x_default,
+  search: search_default,
+  refresh: refresh_cw_default,
+  up: arrow_up_default,
+  down: arrow_down_default,
+  right: arrow_right_default,
+  drag: grip_vertical_default,
+  maximize: maximize_default,
+  restore: minimize_default,
+  resize: move_diagonal_2_default,
+  reply: reply_default,
+  download: download_default,
+  upload: upload_default,
+  lock: lock_keyhole_default,
+  unlock: lock_keyhole_open_default,
+  accessibility: accessibility_default,
+  palette: palette_default,
+  volume: volume_2_default,
+  info: info_default,
+  warning: triangle_alert_default,
+  save: save_default,
+  chevron: chevron_down_default
+};
+
+// src/mochi/ui/icon-assets.ts
+var MOCHI_ICON_ASSETS = {};
+
+// src/mochi/ui/icon-slots.ts
+var LIMIT = 131072;
+var tags = new Set(["svg", "g", "path", "circle", "ellipse", "rect", "line", "polyline", "polygon"]);
+var attrs = new Set(["xmlns", "viewBox", "width", "height", "fill", "stroke", "stroke-width", "stroke-linecap", "stroke-linejoin", "stroke-miterlimit", "fill-rule", "clip-rule", "opacity", "fill-opacity", "stroke-opacity", "transform", "d", "cx", "cy", "r", "rx", "ry", "x", "y", "x1", "x2", "y1", "y2", "points"]);
+function iconSVGData(svg) {
+  if (typeof svg !== "string" || svg.length > LIMIT || /<!|<\?|&/.test(svg))
+    return;
+  const doc = new DOMParser().parseFromString(svg, "image/svg+xml"), root = doc.documentElement;
+  if (root.localName !== "svg" || doc.querySelector("parsererror") || !root.hasAttribute("viewBox"))
+    return;
+  for (const n of [root, ...root.querySelectorAll("*")]) {
+    if (!tags.has(n.tagName) || n.namespaceURI !== "http://www.w3.org/2000/svg")
+      return;
+    for (const a of n.attributes) {
+      if (!attrs.has(a.name) || a.name === "xmlns" && a.value !== "http://www.w3.org/2000/svg")
+        return;
+      if (a.name !== "xmlns" && /url\s*\(|[<>:;\\]|(?:script|https?|data)\s*:/i.test(a.value))
+        return;
+    }
+  }
+  return "data:image/svg+xml," + encodeURIComponent(new XMLSerializer().serializeToString(root));
+}
+function safeIconData(value) {
+  if (typeof value !== "string" || value.length > LIMIT)
+    return;
+  const m = /^data:image\/(svg\+xml|png|jpeg|webp);?(base64)?,([\s\S]+)$/i.exec(value);
+  if (!m)
+    return;
+  try {
+    if (m[1].toLowerCase() === "svg+xml")
+      return iconSVGData(m[2] ? atob(m[3]) : decodeURIComponent(m[3]));
+    if (m[2] && /^[A-Za-z0-9+/]+={0,2}$/.test(m[3]))
+      return value;
+  } catch {}
+}
+function iconAssetData(value) {
+  if (!value || typeof value !== "object")
+    return;
+  return "svg" in value ? iconSVGData(value.svg) : safeIconData(value.data);
+}
+function cssAsset(raw) {
+  const m = /^url\(\s*(['"])(data:[\s\S]+)\1\s*\)$/.exec(raw.trim());
+  return m ? safeIconData(m[2]) : undefined;
+}
+function mochiIcon(icon, slot = icon) {
+  if (!/^[a-z][a-z0-9-]*$/.test(slot))
+    throw Error("Invalid Mochi icon slot");
+  const node = document.createElement("span");
+  node.className = "mochi-icon-slot";
+  node.dataset.mochiIconSlot = icon;
+  node.dataset.mochiIconAction = slot;
+  node.setAttribute("aria-hidden", "true");
+  node.innerHTML = (LUCIDE[icon] || LUCIDE.refresh).replace(/>\s+</g, "><").trim();
+  const svg = node.querySelector("svg");
+  svg.setAttribute("data-mochi-icon", icon);
+  svg.setAttribute("aria-hidden", "true");
+  svg.setAttribute("focusable", "false");
+  const image = document.createElement("img");
+  image.className = "mochi-icon-replacement";
+  image.alt = "";
+  image.draggable = false;
+  image.hidden = true;
+  node.append(image);
+  let generation = 0, last = "";
+  const refresh = () => {
+    if (!node.isConnected)
+      return;
+    const style = node.ownerDocument.defaultView?.getComputedStyle(node);
+    const legacy = slot === "disclosure" ? ["--mochi-v2-detailsdisclosure-summary-after-content"] : slot === "selected" ? node.closest(".mochi-settings-categories") ? ["--mochi-v2-settings-categories-button-aria-pressed-true-after-content"] : ["--mochi-v2-character-picker-choice-aria-pressed-true-after-content", "--mochi-v2-choice-aria-pressed-true-after-content"] : [];
+    node.dataset.mochiLegacyGlyph = String(legacy.some((token) => !!style?.getPropertyValue(token).trim()));
+    const css = style?.getPropertyValue("--mochi-icon-" + slot + "-image").trim() || "";
+    const asset = MOCHI_ICON_ASSETS[slot];
+    const source = css && css !== "none" ? cssAsset(css) : asset ? iconAssetData(asset) : undefined;
+    const key = (source || "") + "|" + css;
+    if (last === key)
+      return;
+    last = key;
+    const ticket = ++generation;
+    node.dataset.mochiIconState = css && css !== "none" || asset ? "fallback" : "default";
+    image.hidden = true;
+    svg.removeAttribute("hidden");
+    image.removeAttribute("src");
+    if (!source)
+      return;
+    image.onload = () => {
+      if (ticket === generation && image.naturalWidth && image.naturalHeight) {
+        image.hidden = false;
+        svg.setAttribute("hidden", "");
+        node.dataset.mochiIconState = "custom";
+      }
+    };
+    image.onerror = () => {
+      if (ticket === generation) {
+        image.hidden = true;
+        svg.removeAttribute("hidden");
+        node.dataset.mochiIconState = "fallback";
+      }
+    };
+    image.src = source;
+  };
+  const schedule = () => {
+    if (typeof requestAnimationFrame === "function")
+      requestAnimationFrame(refresh);
+    else
+      queueMicrotask(refresh);
+  };
+  schedule();
+  node.addEventListener("mochi:icons-refresh", refresh);
+  return node;
+}
+var glyphs = { "×": "close", "✕": "close", "↑": "up", "↓": "down", "⋯": "more", "⠿": "drag", "□": "maximize", "◢": "resize" };
+var TEXT_ACTIONS = [
+  [/^(?:Back|Return to)/i, "back", "back"],
+  [/^Close|^Done$|^Cancel/i, "close", "close"],
+  [/^Refresh|^Retry|^Restore/i, "refresh", "refresh"],
+  [/^Save|^Publish|^Apply|^Confirm apply|^Use selected/i, "save", "save"],
+  [/^Delete|^Remove|^Confirm delete|^Discard/i, "trash", "delete"],
+  [/^New |^Create |^\+ Add|^Add /i, "plus", "add"],
+  [/^Edit|^Rename|^Customize/i, "edit", "edit"],
+  [/^Duplicate|^Copy/i, "copy", "copy"],
+  [/^Search/i, "search", "search"],
+  [/^Move .* up$/i, "up", "up"],
+  [/^Move .* down$/i, "down", "down"],
+  [/^.*[Ss]ettings|^Advanced$/, "settings", "settings"],
+  [/^Presets|^AI & Replies$/, "sliders", "presets"],
+  [/^Preview/i, "eye", "preview"],
+  [/^Memory & Context$|^Conversation Memory$/, "brain", "memory"],
+  [/^Pins & Notes$/, "pin", "notes"],
+  [/^Participants$/, "people", "participants"],
+  [/^Notifications$/, "notifications", "notifications"],
+  [/^Accessibility$/, "accessibility", "accessibility"],
+  [/^Appearance$/, "palette", "appearance"],
+  [/^Toolbar$/, "panel", "toolbar"],
+  [/^Availability & Schedules$/, "calendar", "availability"],
+  [/^General$/, "info", "general"],
+  [/^Archive/i, "archive", "archive"],
+  [/^Export/i, "download", "export"],
+  [/^Import/i, "upload", "import"]
+];
+function mochiButton(label, className = "lp-button") {
+  const node = document.createElement("button");
+  node.type = "button";
+  node.className = className;
+  const icon = glyphs[label];
+  if (icon) {
+    node.setAttribute("aria-label", { up: "Move up", down: "Move down", more: "More actions", close: "Close" }[icon] || icon);
+    node.append(mochiIcon(icon));
+    node.dataset.mochiAction = icon;
+  } else if (label.startsWith("← ")) {
+    node.append(mochiIcon("back"), document.createTextNode(label.slice(2)));
+    node.dataset.mochiAction = "back";
+  } else if (label.startsWith("+ ")) {
+    node.setAttribute("aria-label", label);
+    node.append(mochiIcon("plus", "add"), document.createTextNode(label.slice(2)));
+    node.dataset.mochiAction = "add";
+  } else {
+    node.textContent = label;
+    const entry = TEXT_ACTIONS.find(([pattern]) => pattern.test(label));
+    if (entry) {
+      const slot = mochiIcon(entry[1], entry[2]);
+      slot.dataset.mochiOptional = "true";
+      node.prepend(slot);
+      node.dataset.mochiAction = entry[2];
+    }
+  }
+  if (/(?:^|\s)mochi-(?:choice|category-tab)(?:\s|$)/.test(className)) {
+    const selected = mochiIcon("check", "selected");
+    selected.dataset.mochiSelectedIndicator = "true";
+    node.append(selected);
+  }
+  return node;
+}
+function mochiDisclosureIcon(details) {
+  const summary = details.querySelector(":scope > summary");
+  if (summary && !summary.querySelector('[data-mochi-icon-action="disclosure"]'))
+    summary.append(mochiIcon("chevron", "disclosure"));
+}
+
+// src/mochi/routines.ts
+var DAYS = ["mo", "tu", "we", "th", "fr", "sa", "su"];
+var AUTONOMY = ["manual", "temporary", "review", "autonomous"];
+var statuses = ["online", "away", "dnd", "offline"];
+function object(v) {
+  return !!v && typeof v === "object" && !Array.isArray(v);
+}
+function keys(v, allowed) {
+  if (!object(v) || Object.keys(v).some((k) => !allowed.includes(k)))
+    throw Error("Unknown routine field.");
+}
+function routineId(v) {
+  if (typeof v !== "string" || !/^[A-Za-z0-9_-]{1,180}$/.test(v) || ["__proto__", "constructor", "prototype"].includes(v))
+    throw Error("Invalid routine identifier.");
+  return v;
+}
+function activity(v) {
+  if (typeof v !== "string" || !v.trim() || v.length > 160 || /[\u0000-\u001f]/.test(v))
+    throw Error("Activity must be 1–160 visible characters.");
+  return v.trim();
+}
+function timezone(v) {
+  if (typeof v !== "string" || v.length > 100 || !/^([A-Za-z][A-Za-z0-9_+-]*\/)*[A-Za-z][A-Za-z0-9_+-]*$/.test(v))
+    throw Error("Choose an IANA timezone.");
+  try {
+    return new Intl.DateTimeFormat("en", { timeZone: v }).resolvedOptions().timeZone;
+  } catch {
+    throw Error("Choose an IANA timezone.");
+  }
+}
+function period(v) {
+  if (!object(v) || !Array.isArray(v.days) || !v.days.length || v.days.length > 7 || new Set(v.days).size !== v.days.length || v.days.some((d) => !DAYS.includes(d)) || ![v.start, v.end].every((n) => Number.isInteger(n) && n >= 0 && n < 1440) || v.start === v.end)
+    throw Error("Invalid weekly interval; use distinct minute boundaries and day codes mo..su.");
+  return { days: [...v.days], start: v.start, end: v.end };
+}
+function validateEntry(v) {
+  keys(v, ["id", "days", "start", "end", "activity", "presence", "locked"]);
+  const p = period(v);
+  if (!statuses.includes(v.presence) || typeof v.locked !== "boolean")
+    throw Error("Invalid routine presence or lock.");
+  return { ...p, id: routineId(v.id), activity: activity(v.activity), presence: v.presence, locked: v.locked };
+}
+function intervals(p) {
+  return p.days.flatMap((day) => {
+    const start = DAYS.indexOf(day) * 1440 + p.start, end = start + (p.end - p.start + 1440) % 1440;
+    return end > 10080 ? [[start, 10080], [0, end - 10080]] : [[start, end]];
+  });
+}
+function validatePlan(v) {
+  keys(v, ["version", "enabled", "timezone", "autonomy", "locked", "entries", "quiet", "fallback"]);
+  if (v.version !== 1 || typeof v.enabled !== "boolean" || typeof v.locked !== "boolean" || !AUTONOMY.includes(v.autonomy) || !Array.isArray(v.entries) || v.entries.length > 64 || !Array.isArray(v.quiet) || v.quiet.length > 16)
+    throw Error("Invalid routine settings or size.");
+  const entries = v.entries.map(validateEntry), ids = new Set(entries.map((e) => e.id));
+  if (ids.size !== entries.length)
+    throw Error("Routine entry IDs must be unique.");
+  const occupied = entries.flatMap((e) => intervals(e)).sort((a, b) => a[0] - b[0]);
+  for (let i = 1;i < occupied.length; i++)
+    if (occupied[i][0] < occupied[i - 1][1])
+      throw Error("Weekly routine entries overlap, including overnight boundaries.");
+  const quiet = v.quiet.map((p) => {
+    keys(p, ["days", "start", "end"]);
+    return period(p);
+  });
+  keys(v.fallback, ["activity", "presence"]);
+  if (!statuses.includes(v.fallback.presence))
+    throw Error("Invalid free-time presence.");
+  return { version: 1, enabled: v.enabled, timezone: timezone(v.timezone), autonomy: v.autonomy, locked: v.locked, entries, quiet, fallback: { activity: activity(v.fallback.activity), presence: v.fallback.presence } };
+}
+function defaultRoutine() {
+  return { version: 1, enabled: false, timezone: "UTC", autonomy: "temporary", locked: false, entries: [], quiet: [], fallback: { activity: "Free time / hobbies", presence: "online" } };
+}
+function planFor(room, id) {
+  return (room.runtime?.routines || room.background?.routines)?.[id]?.plan || room.characterDefaults?.[id]?.routine;
+}
+function wallMinute(zone, now) {
+  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: zone, weekday: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(now);
+  const get = (type) => parts.find((p) => p.type === type).value;
+  return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].indexOf(get("weekday")) * 1440 + Number(get("hour")) * 60 + Number(get("minute"));
+}
+function contains(p, minute) {
+  return intervals(p).some(([a, b]) => minute >= a && minute < b);
+}
+function routineAt(room, id, now) {
+  const plan = planFor(room, id);
+  if (!plan?.enabled)
+    return;
+  const minute = wallMinute(plan.timezone, now), entry = plan.entries.find((e) => contains(e, minute)), quiet = plan.quiet.some((p) => contains(p, minute)), base = entry || plan.fallback;
+  const override = (room.runtime?.routines || room.background?.routines)?.[id]?.override;
+  const active = override && override.startedAt <= now && now < override.expiresAt;
+  const locked = plan.locked || !!entry?.locked;
+  const usable = active && (override.source === "user" || !locked && plan.autonomy !== "manual" && !["dnd", "offline"].includes(base.presence));
+  return { activity: usable ? override.activity : base.activity, presence: quiet ? "offline" : usable ? override.presence : base.presence, quiet, locked };
+}
+
+// src/mochi/routine-controls.ts
+function routineControls(plan, label) {
+  const root = el("fieldset", "mochi-routine-editor");
+  root.dataset.mochiRoutine = "editor";
+  root.append(el("legend", "", "Weekly routine · " + label));
+  const field = (title, node) => {
+    const l = el("label", "", title);
+    node.setAttribute("aria-label", title + " for " + label);
+    l.append(node);
+    root.append(l);
+  };
+  const enable = el("input");
+  enable.type = "checkbox";
+  enable.checked = plan.enabled;
+  enable.onchange = () => {
+    plan.enabled = enable.checked;
+  };
+  field("Enable weekly routine", enable);
+  const zone = el("input");
+  zone.value = plan.timezone;
+  zone.maxLength = 100;
+  zone.oninput = () => {
+    plan.timezone = zone.value;
+  };
+  field("IANA timezone", zone);
+  const mode = el("select");
+  for (const m of AUTONOMY) {
+    const o = el("option", "", { manual: "Manual only", temporary: "Temporary overrides (suggested)", review: "Suggest permanent edits for review", autonomous: "Fully autonomous (explicit opt-in, undo available)" }[m]);
+    o.value = m;
+    mode.append(o);
+  }
+  mode.value = plan.autonomy;
+  mode.onchange = () => {
+    plan.autonomy = mode.value;
+  };
+  field("Character autonomy", mode);
+  const lock = el("input");
+  lock.type = "checkbox";
+  lock.checked = plan.locked;
+  lock.onchange = () => {
+    plan.locked = lock.checked;
+  };
+  field("Lock routine against character changes", lock);
+  const fallback = el("input");
+  fallback.value = plan.fallback.activity;
+  fallback.maxLength = 160;
+  fallback.oninput = () => {
+    plan.fallback.activity = fallback.value;
+  };
+  field("Uncovered time activity", fallback);
+  root.append(el("p", "mochi-muted", "Weekly entries use local time in this timezone, including DST. End before start means overnight. Uncovered time uses the fallback. Quiet hours block delivery. Manual presence locks take precedence over routine presence."));
+  const rows = el("div", "mochi-routine-entries");
+  root.append(rows);
+  const draw = () => {
+    rows.replaceChildren();
+    for (const [index, e] of plan.entries.entries()) {
+      const row = el("fieldset", "mochi-routine-entry");
+      row.dataset.entryId = e.id;
+      row.append(el("legend", "", "Entry " + (index + 1)));
+      const f = (title, node) => {
+        const l = el("label", "", title);
+        node.setAttribute("aria-label", title + " " + e.id + " for " + label);
+        l.append(node);
+        row.append(l);
+      };
+      const days = el("input");
+      days.value = e.days.join(",");
+      days.oninput = () => {
+        e.days = days.value.split(",").map((d) => d.trim());
+      };
+      f("Days mo,tu,we,th,fr,sa,su", days);
+      for (const key of ["start", "end"]) {
+        const time = el("input");
+        time.type = "time";
+        time.value = String(Math.floor(e[key] / 60)).padStart(2, "0") + ":" + String(e[key] % 60).padStart(2, "0");
+        time.oninput = () => {
+          const [h, m] = time.value.split(":").map(Number);
+          e[key] = h * 60 + m;
+        };
+        f(key === "start" ? "Start" : "End", time);
+      }
+      const a = el("input");
+      a.value = e.activity;
+      a.maxLength = 160;
+      a.oninput = () => {
+        e.activity = a.value;
+      };
+      f("Activity", a);
+      const p = el("select");
+      for (const s of ["online", "away", "dnd", "offline"]) {
+        const o = el("option", "", s);
+        o.value = s;
+        p.append(o);
+      }
+      p.value = e.presence;
+      p.onchange = () => {
+        e.presence = p.value;
+      };
+      f("Presence", p);
+      const locked = el("input");
+      locked.type = "checkbox";
+      locked.checked = e.locked;
+      locked.onchange = () => {
+        e.locked = locked.checked;
+      };
+      f("User locked entry", locked);
+      const remove = mochiButton("Remove entry " + e.id);
+      remove.onclick = () => {
+        plan.entries.splice(index, 1);
+        draw();
+      };
+      row.append(remove);
+      rows.append(row);
+    }
+  };
+  draw();
+  const add = mochiButton("Add routine entry");
+  add.onclick = () => {
+    if (plan.entries.length < 64) {
+      plan.entries.push({ id: "entry_" + crypto.randomUUID().replaceAll("-", ""), days: ["mo"], start: 540, end: 1020, activity: "Work", presence: "away", locked: false });
+      draw();
+    }
+  };
+  root.append(add);
+  const quiet = el("textarea");
+  quiet.rows = 2;
+  quiet.maxLength = 4000;
+  quiet.value = JSON.stringify(plan.quiet);
+  quiet.oninput = () => {
+    try {
+      plan.quiet = JSON.parse(quiet.value);
+      quiet.setCustomValidity("");
+    } catch {
+      plan.quiet = null;
+      quiet.setCustomValidity("Use a JSON list of quiet hours.");
+    }
+  };
+  field("Quiet hours JSON: days, start and end in minutes", quiet);
+  return root;
+}
+function roomRoutineControls(room, id, name, send) {
+  const state = room.background?.routines?.[id], plan = structuredClone(planFor(room, id) || defaultRoutine()), root = el("section", "mochi-routine-panel");
+  root.dataset.characterId = id;
+  root.dataset.mochiRoutine = "panel";
+  const current = routineAt(room, id, Date.now());
+  const live = el("p", "mochi-routine-activity", current ? current.activity + " · " + current.presence : "Weekly routine is off");
+  live.dataset.routineActivity = id;
+  live.setAttribute("aria-live", "polite");
+  root.append(live, routineControls(plan, name));
+  const error = el("p", "mochi-error");
+  error.setAttribute("role", "alert");
+  root.append(error);
+  const dispatch = (p) => send({ roomId: room.id, characterId: id, revision: room.revision, ...p });
+  const save = mochiButton("Apply weekly routine for " + name);
+  save.onclick = () => {
+    try {
+      dispatch({ action: "save", plan: validatePlan(plan) });
+    } catch (e) {
+      error.textContent = e.message;
+    }
+  };
+  const defaults = mochiButton("Use character routine defaults for " + name);
+  defaults.onclick = () => dispatch({ action: "defaults" });
+  root.append(save, defaults);
+  const activity = el("input");
+  activity.maxLength = 160;
+  activity.setAttribute("aria-label", "Live activity for " + name);
+  activity.placeholder = "Driving home early";
+  const minutes = el("input");
+  minutes.type = "number";
+  minutes.min = "1";
+  minutes.max = "240";
+  minutes.value = "45";
+  minutes.setAttribute("aria-label", "Activity expiry minutes for " + name);
+  const presence = el("select");
+  presence.setAttribute("aria-label", "Live activity presence for " + name);
+  for (const p of ["online", "away", "dnd", "offline"]) {
+    const o = el("option", "", p);
+    o.value = p;
+    presence.append(o);
+  }
+  presence.value = "away";
+  const override = mochiButton("Set temporary activity for " + name);
+  override.onclick = () => dispatch({ action: "override", activity: activity.value, presence: presence.value, minutes: Number(minutes.value) });
+  const clear = mochiButton("Clear temporary activity for " + name);
+  clear.onclick = () => dispatch({ action: "clear" });
+  root.append(activity, minutes, presence, override, clear);
+  const history = el("ol", "mochi-routine-history");
+  history.setAttribute("aria-label", "Routine change history for " + name);
+  for (const proposal of state?.proposals || []) {
+    const row = el("section", "mochi-routine-proposal");
+    row.dataset.proposalId = proposal.id;
+    row.append(el("p", "", "Proposed routine edit: " + proposal.entry.activity + " · " + proposal.entry.days.join(",") + " · " + proposal.entry.start + "–" + proposal.entry.end));
+    const approve = mochiButton("Approve schedule edit " + proposal.entryId), reject = mochiButton("Reject schedule edit " + proposal.entryId);
+    approve.onclick = () => dispatch({ action: "approve", proposalId: proposal.id });
+    reject.onclick = () => dispatch({ action: "reject", proposalId: proposal.id });
+    row.append(approve, reject);
+    root.append(row);
+  }
+  for (const h of state?.history.slice().reverse() || []) {
+    const row = el("li", "", new Date(h.at).toISOString() + " · " + h.source + " · " + h.summary + " · " + h.id);
+    history.append(row);
+  }
+  root.append(history);
+  const last = state?.history.at(-1);
+  if (last && last.source !== "undo") {
+    const undo = mochiButton("Undo last routine change for " + name);
+    undo.onclick = () => dispatch({ action: "undo", changeId: last.id });
+    root.append(undo);
+  }
+  return root;
+}
+
+// src/mochi/routine-generation.ts
+var MAX_ROUTINE_OUTPUT = 20000;
+function strict(v, allowed) {
+  if (!v || typeof v !== "object" || Array.isArray(v) || Object.keys(v).some((k) => !allowed.includes(k)))
+    throw Error("Invalid compact JSON fields.");
+}
+function hhmm(v) {
+  if (!/^(?:[01][0-9]|2[0-3])[0-5][0-9]$/.test(v))
+    throw Error("Use unambiguous HHMM times from 0000 to 2359.");
+  return Number(v.slice(0, 2)) * 60 + Number(v.slice(2));
+}
+function preserveLocks(before, after) {
+  if (!before)
+    return;
+  if (before.locked && JSON.stringify(before) !== JSON.stringify(after))
+    throw Error("Unlock this routine manually before changing it.");
+  for (const old of before.entries.filter((e) => e.locked))
+    if (JSON.stringify(after.entries.find((e) => e.id === old.id)) !== JSON.stringify(old))
+      throw Error("A user-locked entry cannot be changed or removed.");
+}
+function parseRoutineDraft(raw, base) {
+  if (typeof raw !== "string" || !raw.trim() || raw.length > MAX_ROUTINE_OUTPUT)
+    throw Error("Schedule JSON must be nonempty and at most 20000 characters.");
+  let v;
+  try {
+    v = JSON.parse(raw);
+  } catch {
+    throw Error("Return strict schedule JSON without prose or fences.");
+  }
+  strict(v, ["v", "tz", "b", "x"]);
+  if (v.v !== 1 || !Array.isArray(v.b) || v.b.length > 64)
+    throw Error("Invalid schedule version or block count.");
+  const entries = v.b.map((b, i) => {
+    strict(b, ["i", "d", "t", "a", "p"]);
+    if (typeof b.t !== "string" || !/^\d{4}-\d{4}$/.test(b.t))
+      throw Error("Use HHMM-HHMM ranges.");
+    const id = b.i === undefined ? "routine_" + (i + 1) : routineId(b.i);
+    return { id, days: b.d, start: hhmm(b.t.slice(0, 4)), end: hhmm(b.t.slice(5)), activity: b.a, presence: b.p, locked: base?.entries.find((e) => e.id === id)?.locked || false };
+  });
+  const plan = validatePlan({ ...base || defaultRoutine(), enabled: true, timezone: timezone(v.tz), entries });
+  preserveLocks(base, plan);
+  let texting;
+  if (v.x !== undefined) {
+    strict(v.x, ["l", "c", "p", "e", "t"]);
+    const mapped = {};
+    for (const [short, long] of Object.entries({ l: "length", c: "capitalization", p: "punctuation", e: "emoji", t: "tone" }))
+      if (v.x[short] !== undefined)
+        mapped[long] = v.x[short];
+    texting = validateTextingStyles({ character: mapped })?.character;
+  }
+  return { plan, ...texting ? { texting } : {} };
+}
+
+// src/mochi/routine-draft-controls.ts
+class RoutineDraftControls {
+  redraw;
+  constructor(redraw) {
+    this.redraw = redraw;
+  }
+  drafts = new Map;
+  key(room, id) {
+    return JSON.stringify([room.accountId, room.id, id]);
+  }
+  receive(p) {
+    if (p.type !== "mochi:routine_draft" && p.type !== "mochi:routine_error")
+      return false;
+    const key = JSON.stringify([p.accountId, p.roomId, p.characterId]), d = this.drafts.get(key);
+    if (!d || d.requestId !== p.requestId || d.revision !== p.revision)
+      return true;
+    if (p.type === "mochi:routine_error") {
+      d.running = false;
+      d.error = p.message;
+      return true;
+    }
+    d.running = false;
+    d.draftId = p.draftId;
+    d.raw = p.raw;
+    d.draft = p.draft;
+    d.error = "";
+    return true;
+  }
+  render(room, id, name, send) {
+    const key = this.key(room, id);
+    let draft = this.drafts.get(key);
+    if (!draft || draft.revision !== room.revision) {
+      draft = { revision: room.revision, raw: "", error: "", guidance: "", history: false, timezone: planFor(room, id)?.timezone || "UTC" };
+      this.drafts.set(key, draft);
+    }
+    const d = draft, root = el("section", "mochi-routine-generation");
+    root.dataset.mochiRoutine = "generation";
+    root.append(el("h4", "", "AI schedule and texting style · " + name));
+    const field = (text, node) => {
+      const l = el("label", "", text);
+      node.setAttribute("aria-label", text + " for " + name);
+      l.append(node);
+      root.append(l);
+    };
+    const guidance = el("textarea");
+    guidance.maxLength = 2000;
+    guidance.value = d.guidance;
+    guidance.disabled = !!d.running;
+    guidance.oninput = () => {
+      d.guidance = guidance.value;
+    };
+    field("Schedule guidance", guidance);
+    const history = el("input");
+    history.type = "checkbox";
+    history.checked = d.history;
+    history.disabled = !!d.running;
+    history.onchange = () => {
+      d.history = history.checked;
+    };
+    field("Approve including the last 20 messages from this Mochi chat in this generation", history);
+    root.append(el("p", "mochi-muted", "Generate sends this character’s description, personality, guidance and chosen timezone to the saved chat connection. Chat history is included only with the checkbox above. A preview is never saved automatically."));
+    const zone = el("input");
+    zone.value = d.timezone;
+    zone.oninput = () => {
+      d.timezone = zone.value;
+    };
+    zone.disabled = !!d.running;
+    field("Generation timezone", zone);
+    const error = el("p", "mochi-error");
+    error.setAttribute("role", "alert");
+    error.textContent = d.error;
+    const preview = el("div", "mochi-routine-draft-preview");
+    preview.setAttribute("aria-label", "Schedule preview for " + name);
+    const raw = el("textarea");
+    raw.maxLength = 20000;
+    raw.rows = 5;
+    raw.disabled = !!d.running;
+    raw.value = d.raw;
+    raw.oninput = () => {
+      d.raw = raw.value;
+      d.draft = undefined;
+      preview.replaceChildren();
+    };
+    field("Compact schedule JSON", raw);
+    const draw = () => {
+      preview.replaceChildren();
+      if (d.draft) {
+        preview.append(routineControls(d.draft.plan, "draft " + name));
+        const settings = defaultMochiSettings();
+        settings.textingStyles = { [id]: d.draft.texting || {} };
+        const styles = textingControls(settings, id, "draft " + name);
+        const update = () => {
+          if (d.draft)
+            d.draft.texting = settings.textingStyles?.[id];
+        };
+        styles.addEventListener("input", update);
+        styles.addEventListener("change", update);
+        preview.append(styles);
+      }
+    };
+    draw();
+    const generate = mochiButton(d.draftId ? "Regenerate schedule for " + name : "Generate schedule for " + name);
+    generate.disabled = !!d.running;
+    generate.onclick = () => {
+      d.running = true;
+      const requestId = "routine_" + crypto.randomUUID().replaceAll("-", "");
+      d.requestId = requestId;
+      d.draftId = undefined;
+      d.draft = undefined;
+      preview.replaceChildren();
+      send("mochi:routine_generate", { requestId, roomId: room.id, characterId: id, revision: room.revision, guidance: d.guidance, timezone: zone.value, includeHistory: d.history, historyConfirmed: d.history });
+      this.redraw();
+    };
+    const parse = mochiButton("Preview edited schedule for " + name);
+    parse.disabled = !!d.running;
+    parse.onclick = () => {
+      try {
+        d.draft = parseRoutineDraft(d.raw, planFor(room, id));
+        d.error = "";
+        error.textContent = "";
+        draw();
+        if (!d.draftId) {
+          const requestId = "routine_" + crypto.randomUUID().replaceAll("-", "");
+          d.requestId = requestId;
+          send("mochi:routine_parse", { requestId, roomId: room.id, characterId: id, revision: room.revision, raw: d.raw });
+        }
+      } catch (e) {
+        d.error = e.message;
+        error.textContent = d.error;
+      }
+    };
+    const apply = mochiButton("Apply reviewed schedule and texting style for " + name);
+    apply.disabled = !!d.running;
+    apply.onclick = () => {
+      if (!d.draft || !d.draftId) {
+        error.textContent = "Generate or preview valid JSON before applying.";
+        return;
+      }
+      send("mochi:routine_apply", { roomId: room.id, characterId: id, revision: room.revision, draftId: d.draftId, confirmed: true, plan: d.draft.plan, texting: d.draft.texting });
+    };
+    const reject = mochiButton("Reject schedule draft for " + name);
+    reject.onclick = () => {
+      if (d.requestId)
+        send("mochi:routine_reject", { roomId: room.id, characterId: id, revision: room.revision, draftId: d.draftId, attemptId: d.requestId });
+      d.running = false;
+      d.requestId = undefined;
+      d.draftId = undefined;
+      d.draft = undefined;
+      d.raw = "";
+      raw.value = "";
+      preview.replaceChildren();
+    };
+    const stop = mochiButton("Stop schedule generation for " + name);
+    stop.disabled = !d.running;
+    stop.onclick = () => {
+      if (d.requestId) {
+        send("mochi:cancel", { roomId: room.id, requestId: d.requestId });
+        d.running = false;
+        d.requestId = undefined;
+        this.redraw();
+      }
+    };
+    const status = el("p", "mochi-muted", d.running ? "Generating schedule preview…" : "");
+    status.setAttribute("role", "status");
+    root.append(status, generate, stop, parse, reject, preview, apply, error);
+    return root;
+  }
+}
 
 // src/mochi/presence.ts
 var STATUSES = ["online", "away", "dnd", "offline"];
@@ -11422,6 +11683,7 @@ class MochiView {
   draftRevision = 0;
   timeout;
   generationErrorRoom = "";
+  routineDraftControls = new RoutineDraftControls(() => this.redraw());
   presenceTimer;
   presenceRoot;
   draft = null;
@@ -11719,6 +11981,10 @@ class MochiView {
       clearTimeout(this.timeout);
       this.busy = false;
       this.profiles.acceptSync(payload.review);
+      this.redraw();
+      return true;
+    }
+    if (this.routineDraftControls.receive(payload)) {
       this.redraw();
       return true;
     }
@@ -12398,7 +12664,7 @@ class MochiView {
       const statuses = room.characterIds.map((id) => statusFor(room, id)), online = statuses.filter((s) => s === "online").length;
       info.setAttribute("aria-label", "Character profile");
       info.title = "Open Character Profile";
-      const roomMeta = el("p", "mochi-room-meta", `${room.characterIds.length} ${room.characterIds.length === 1 ? "participant" : "participants"} · ${online ? "active now" : statuses.every((s) => s === "offline") ? "offline" : "replies delayed"}`);
+      const roomMeta = el("p", "mochi-room-meta", `${room.characterIds.length} ${room.characterIds.length === 1 ? "participant" : "participants"} · ${online ? "active now" : statuses.every((s) => s === "offline") ? "offline" : "replies delayed"}${room.characterIds.length === 1 && activityFor(room, room.characterIds[0]) ? " · " + activityFor(room, room.characterIds[0]) : ""}`);
       roomMeta.dataset.status = online ? "online" : statuses.includes("away") ? "away" : statuses.includes("dnd") ? "dnd" : "offline";
       roomMeta.title = room.characterIds.map((id, i) => `${room.settings?.characterNames[id] || this.state?.characters.find((c) => c.id === id)?.name || id}: ${statuses[i]}`).join(`
 `);
@@ -13108,6 +13374,12 @@ class MochiView {
           group.append(clear);
         }
         group.append(roomRoutineControls(room, id, name, (p) => this.dispatch("mochi:routine", p)));
+        group.append(this.routineDraftControls.render(room, id, name, (type, p) => {
+          if (type === "mochi:routine_apply")
+            this.dispatch(type, p);
+          else
+            this.send({ type, requestId: requestId("mochi"), accountId: room.accountId, ...p });
+        }));
         const input = el("input");
         input.maxLength = 120;
         input.value = settings.characterNames[id] || "";

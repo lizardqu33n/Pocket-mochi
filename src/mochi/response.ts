@@ -1,8 +1,9 @@
+import {parseRoutineActions,type RoutineActions} from './routine-actions.js'
 import {MochiGenerationError} from './generation-errors.js'
 
 export const RESPONSE_PROTOCOL='mochi.response'
-export interface ResponseContext {speaker:string;eligibleIds:string[];natural:boolean}
-export interface ResponseMessage {speakerId:string;text:string;behavior?:unknown}
+export interface ResponseContext {speaker:string;eligibleIds:string[];natural:boolean;routineActions?:boolean}
+export interface ResponseMessage {speakerId:string;text:string;behavior?:unknown;routineActions?:RoutineActions}
 
 /** Shared by generation and preview. Identity comes only from resolved host context. */
 export function plainTextSpeaker(context:ResponseContext):string|undefined {
@@ -11,7 +12,7 @@ export function plainTextSpeaker(context:ResponseContext):string|undefined {
 }
 export function responseFormat(context:ResponseContext):string {
  const fixed=plainTextSpeaker(context)
- return `Mochi response contract: ${fixed?`For ordinary dialogue, return plain text only; Mochi attributes it to ${JSON.stringify(fixed)}. Preserve natural line breaks. You may also use legacy message JSON.`:'Multiple speakers are eligible and no single responder is selected. Return structured message JSON; plain text cannot identify a speaker.'} Legacy message JSON: {"speakerId":"exact eligible id","text":"message text"}. Never speak as the user or invent speaker IDs. Eligible IDs: ${JSON.stringify(context.eligibleIds)}. ${context.speaker==='auto'?'Choose only an eligible speaker.':'Required speakerId: '+JSON.stringify(context.speaker)+'.'} JSON objects/arrays or JSON fences are reserved for structured output; put literal JSON-looking dialogue inside the text field of message JSON. Do not request actions: the versioned mochi.response protocol has no active action handlers.`
+ return `Mochi response contract: ${fixed?`For ordinary dialogue, return plain text only; Mochi attributes it to ${JSON.stringify(fixed)}. Preserve natural line breaks. You may also use legacy message JSON.`:'Multiple speakers are eligible and no single responder is selected. Return structured message JSON; plain text cannot identify a speaker.'} Legacy message JSON: {"speakerId":"exact eligible id","text":"message text"}. Never speak as the user or invent speaker IDs. Eligible IDs: ${JSON.stringify(context.eligibleIds)}. ${context.speaker==='auto'?'Choose only an eligible speaker.':'Required speakerId: '+JSON.stringify(context.speaker)+'.'} JSON objects/arrays or JSON fences are reserved for structured output; put literal JSON-looking dialogue inside the text field of message JSON. ${context.routineActions?'Only the opt-in compact routine contract below grants status/edit hints; action/actions fields remain unsupported.':'Do not request actions: the versioned mochi.response protocol has no active action handlers.'}`
 }
 
 /** Parse once, then validate the entire batch before the caller can persist anything. */
@@ -53,11 +54,17 @@ export function parseResponse(raw:unknown,limited:boolean,context:ResponseContex
  if(rows.length>(context.natural?3:1)||!context.natural&&!rows.length)throw new MochiGenerationError('invalid_schema')
  const seen=new Set<string>()
  return rows.map(row=>{
+  let routineActions:RoutineActions|undefined
+  if(context.routineActions&&row&&typeof row==='object'&&!Array.isArray(row)&&Object.hasOwn(row,'m')){
+   if(Object.keys(row).some(k=>!['speakerId','m','s','e'].includes(k)))throw new MochiGenerationError('invalid_schema')
+   try{routineActions=parseRoutineActions(row.s,row.e)}catch{throw new MochiGenerationError('invalid_schema')}
+   row={speakerId:row.speakerId??plainTextSpeaker(context),text:row.m}
+  }
   if(!row||typeof row!=='object'||Array.isArray(row)||typeof row.speakerId!=='string')throw new MochiGenerationError('invalid_schema')
   if(Object.hasOwn(row,'actions')||Object.hasOwn(row,'action'))throw new MochiGenerationError('unsupported_action')
   if(!context.eligibleIds.includes(row.speakerId)||context.speaker!=='auto'&&row.speakerId!==context.speaker)throw new MochiGenerationError('ineligible_speaker')
   if(seen.has(row.speakerId)||typeof row.text!=='string'||!row.text.trim()||row.text.length>32000)throw new MochiGenerationError('invalid_schema')
   seen.add(row.speakerId)
-  return {speakerId:row.speakerId,text:row.text.trim(),behavior:row.behavior}
+  return {speakerId:row.speakerId,text:row.text.trim(),behavior:row.behavior,...(routineActions?{routineActions}:{})}
  })
 }
