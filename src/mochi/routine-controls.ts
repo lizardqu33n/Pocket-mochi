@@ -1,10 +1,10 @@
 import {el} from '../frontend/shared.js'
 import {mochiButton as button} from './ui/icon-slots.js'
-import {DAYS,AUTONOMY,defaultRoutine,planFor,routineAt,validatePlan,type RoutinePlan} from './routines.js'
+import {DAYS,AUTONOMY,defaultRoutine,planFor,routineAt,validatePlan,routineWarnings,type RoutinePlan} from './routines.js'
 import type {MochiRoom} from './types.js'
 
 /** Semantic controls only: all presentation belongs to the existing theme contract. */
-export function routineControls(plan:RoutinePlan,label:string):HTMLElement {
+export function routineControls(plan:RoutinePlan,label:string,onChange:()=>void=()=>{}):HTMLElement {
  const root=el('fieldset','mochi-routine-editor');root.dataset.mochiRoutine='editor';root.append(el('legend','','Weekly routine · '+label))
  const field=(title:string,node:HTMLElement)=>{const l=el('label','',title);node.setAttribute('aria-label',title+' for '+label);l.append(node);root.append(l)}
  const enable=el('input');enable.type='checkbox';enable.checked=plan.enabled;enable.onchange=()=>{plan.enabled=enable.checked};field('Enable weekly routine',enable)
@@ -13,6 +13,9 @@ export function routineControls(plan:RoutinePlan,label:string):HTMLElement {
  const lock=el('input');lock.type='checkbox';lock.checked=plan.locked;lock.onchange=()=>{plan.locked=lock.checked};field('Lock routine against character changes',lock)
  const fallback=el('input');fallback.value=plan.fallback.activity;fallback.maxLength=160;fallback.oninput=()=>{plan.fallback.activity=fallback.value};field('Uncovered time activity',fallback)
  root.append(el('p','mochi-muted','Weekly entries use local time in this timezone, including DST. End before start means overnight. Uncovered time uses the fallback. Quiet hours block delivery. Manual presence locks take precedence over routine presence.'))
+ const warning=el('p','mochi-muted');warning.dataset.routineWarning='sleep';warning.setAttribute('role','status');root.append(warning)
+ const changed=()=>{warning.textContent=routineWarnings(plan).join(' ');onChange()}
+ root.addEventListener('input',changed);root.addEventListener('change',changed)
  const rows=el('div','mochi-routine-entries');root.append(rows)
  const draw=()=>{
   rows.replaceChildren()
@@ -24,17 +27,18 @@ export function routineControls(plan:RoutinePlan,label:string):HTMLElement {
    const a=el('input');a.value=e.activity;a.maxLength=160;a.oninput=()=>{e.activity=a.value};f('Activity',a)
    const p=el('select');for(const s of ['online','away','dnd','offline']){const o=el('option','',s);o.value=s;p.append(o)}p.value=e.presence;p.onchange=()=>{e.presence=p.value as any};f('Presence',p)
    const locked=el('input');locked.type='checkbox';locked.checked=e.locked;locked.onchange=()=>{e.locked=locked.checked};f('User locked entry',locked)
-   const remove=button('Remove entry '+e.id);remove.onclick=()=>{plan.entries.splice(index,1);draw()};row.append(remove);rows.append(row)
+   const remove=button('Remove entry '+e.id);remove.onclick=()=>{plan.entries.splice(index,1);draw();changed()};row.append(remove);rows.append(row)
   }
  }
- draw();const add=button('Add routine entry');add.onclick=()=>{if(plan.entries.length<64){plan.entries.push({id:'entry_'+crypto.randomUUID().replaceAll('-',''),days:['mo'],start:540,end:1020,activity:'Work',presence:'away',locked:false});draw()}};root.append(add)
+ draw();warning.textContent=routineWarnings(plan).join(' ');const add=button('Add routine entry');add.onclick=()=>{if(plan.entries.length<64){plan.entries.push({id:'entry_'+crypto.randomUUID().replaceAll('-',''),days:['mo'],start:540,end:1020,activity:'Work',presence:'away',locked:false});draw();changed()}};root.append(add)
+ const removeAll=button('Delete weekly routine for '+label);removeAll.onclick=()=>{plan.entries=[];plan.enabled=false;enable.checked=false;draw();changed()};root.append(removeAll,el('small','mochi-muted','Delete clears weekly entries and turns this routine off. Save to keep it deleted. Timezone, autonomy and quiet hours are retained.'))
  const quiet=el('textarea');quiet.rows=2;quiet.maxLength=4000;quiet.value=JSON.stringify(plan.quiet);quiet.oninput=()=>{try{plan.quiet=JSON.parse(quiet.value);quiet.setCustomValidity('')}catch{plan.quiet=null as any;quiet.setCustomValidity('Use a JSON list of quiet hours.')}};field('Quiet hours JSON: days, start and end in minutes',quiet)
  return root
 }
-export function roomRoutineControls(room:MochiRoom,id:string,name:string,send:(p:any)=>void):HTMLElement {
- const state=room.background?.routines?.[id],plan=structuredClone(planFor(room,id)||defaultRoutine()),root=el('section','mochi-routine-panel')
+export function roomRoutineControls(room:MochiRoom,id:string,name:string,send:(p:any)=>void,staged?:{plan?:RoutinePlan;change:(plan:RoutinePlan)=>void}):HTMLElement {
+ const state=room.background?.routines?.[id],plan=staged?.plan||structuredClone(planFor(room,id)||defaultRoutine()),root=el('section','mochi-routine-panel')
  root.dataset.characterId=id;root.dataset.mochiRoutine='panel'
- const current=routineAt(room,id,Date.now());const live=el('p','mochi-routine-activity',current?current.activity+' · '+current.presence:'Weekly routine is off');live.dataset.routineActivity=id;live.setAttribute('aria-live','polite');root.append(live,routineControls(plan,name))
+ const current=routineAt(room,id,Date.now());const live=el('p','mochi-routine-activity',current?current.activity+' · '+current.presence:'Weekly routine is off');live.dataset.routineActivity=id;live.setAttribute('aria-live','polite');root.append(live,el('p','mochi-muted','Weekly routine edits require Save settings or Apply weekly routine. Removing every entry leaves an explicit empty chat routine; character defaults are used only with the defaults button.'),routineControls(plan,name,()=>staged?.change(plan)))
  const error=el('p','mochi-error');error.setAttribute('role','alert');root.append(error)
  const dispatch=(p:any)=>send({roomId:room.id,characterId:id,revision:room.revision,...p})
  const save=button('Apply weekly routine for '+name);save.onclick=()=>{try{dispatch({action:'save',plan:validatePlan(plan)})}catch(e){error.textContent=(e as Error).message}}

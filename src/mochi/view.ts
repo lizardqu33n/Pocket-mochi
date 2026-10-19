@@ -1,5 +1,6 @@
 import {RoutineDraftControls} from './routine-draft-controls.js'
 import {roomRoutineControls} from './routine-controls.js'
+import {planFor,type RoutinePlan} from './routines.js'
 import {mochiDisclosureIcon} from './ui/icon-slots.js'
 import {mochiButton as button} from './ui/icon-slots.js'
 import {CharacterEditor} from './character-editor.js'
@@ -263,7 +264,7 @@ export class MochiView {
   private routineDraftControls=new RoutineDraftControls(()=>this.redraw())
   private presenceTimer?: ReturnType<typeof setInterval>
   private presenceRoot?: HTMLElement
-  private draft: { title: string; characterIds: string[]; persona: string; name: string; description: string; groupIcon?:string; presetId?:string } | null = null
+  private draft: { title: string; characterIds: string[]; persona: string; name: string; description: string; groupIcon?:string; presetId?:string; routines?:Record<string,{plan:RoutinePlan;base:RoutinePlan|null}> } | null = null
   constructor(private send: (payload: unknown) => void, private redraw: () => void, private navigate: (roomId?: string) => void,
     private notificationPolicy: () => MochiNotificationPolicy = () => ({ enabled: true, previews: true, visible: true }),
     private notify: (n: MochiNotification) => void = () => {},
@@ -900,7 +901,8 @@ export class MochiView {
         const when=el('input');when.type='datetime-local';field(`Status change time for ${name}`,when)
         const plan=action(`Schedule status change for ${name}`,'plus');plan.type='button';plan.disabled=this.busy;plan.onclick=()=>{presence.transitions.push({at:new Date(when.value).getTime(),status:next.value as typeof presence.automatic});setPresence()};group.append(plan)
         if(presence.transitions.length){const clear=action(`Clear status schedule for ${name}`,'trash');clear.type='button';clear.disabled=this.busy;clear.onclick=()=>{presence.transitions=[];setPresence()};group.append(clear)}
-        group.append(roomRoutineControls(room,id,name,p=>this.dispatch('mochi:routine',p)))
+        const routineBase=draft.routines?.[id]?draft.routines[id].base:structuredClone(planFor(room,id)||null)
+        group.append(roomRoutineControls(room,id,name,p=>this.dispatch('mochi:routine',p),{plan:draft.routines?.[id]?.plan,change:plan=>{draft.routines||={};draft.routines[id]={plan,base:routineBase}}}))
         group.append(this.routineDraftControls.render(room,id,name,(type,p)=>{if(type==='mochi:routine_apply')this.dispatch(type,p);else this.send({type,requestId:requestId('mochi'),accountId:room.accountId,...p})}))
         const input = el('input'); input.maxLength = 120; input.value = settings.characterNames[id] || ''; input.oninput = () => { settings.characterNames[id] = input.value }; field(`Display name for ${name}`, input)
         const inherited=!settings.textingStyles?.[id];const chatTexting=el('div','mochi-texting-chat');chatTexting.append(el('small','mochi-muted',inherited?'Inherited character texting defaults':'Explicit chat texting override'));const useDefaults=button('Use character texting defaults');useDefaults.onclick=()=>{if(settings.textingStyles)delete settings.textingStyles[id];this.redraw()};chatTexting.append(useDefaults,textingControls(settings,id,name));group.append(chatTexting);const presenceDefaults=button('Use character availability defaults (applies now)');presenceDefaults.disabled=this.busy;presenceDefaults.onclick=()=>this.dispatch('mochi:presence',{roomId:room.id,revision:room.revision,characterId:id,useDefault:true});group.append(el('small','mochi-muted',room.background?.presence?.[id]?'Explicit chat availability override':'Inherited character availability defaults'),presenceDefaults)
@@ -912,8 +914,9 @@ export class MochiView {
     const actions = el('div', 'mochi-actions'); actions.append(save, cancel); form.append(actions)
     form.onsubmit = event => {
       event.preventDefault()
+      if(this.characterEditor.dirty){this.error='Save character profile or cancel character changes before saving chat settings. Character-wide defaults have a separate Save button.';this.redraw();return}
       const selected = state.accountId ? undefined : draft.persona === 'keep' ? undefined : draft.persona === 'manual' ? { source: 'manual', name: draft.name, description: draft.description } : state.personas.find(p=>p.source+':'+p.sourceId===draft.persona)
-      this.dispatch(room ? 'mochi:update' : 'mochi:create', { roomId: room?.id, revision: room ? this.draftRevision : undefined, title: draft.title, groupIcon:draft.characterIds.length>1?draft.groupIcon||'':'', characterIds: draft.characterIds, persona: selected, ...(room ? { settings } : {preset:{id:draft.presetId,revision:1,...(state.accountId?{accountId:state.accountId}:{})}}) })
+      this.dispatch(room ? 'mochi:update' : 'mochi:create', { roomId: room?.id, revision: room ? this.draftRevision : undefined, title: draft.title, groupIcon:draft.characterIds.length>1?draft.groupIcon||'':'', characterIds: draft.characterIds, persona: selected, ...(room ? { settings,...(draft.routines?{routines:Object.fromEntries(Object.entries(draft.routines).filter(([id])=>draft.characterIds.includes(id)))}:{}) } : {preset:{id:draft.presetId,revision:1,...(state.accountId?{accountId:state.accountId}:{})}}) })
     }
     return room&&this.settingsPage==='chat'?this.settingsLayout.adapt(form,room,state,()=>this.redraw(),(name,anchor)=>this.openSettingsTool(name,anchor,room),(id,mode)=>{const character=state.characters.find(c=>c.id===id);return character?this.characterEditor.render(character,p=>this.dispatch('mochi:character_preferences',p),()=>this.redraw(),mode):el('p','','Character unavailable')}):form
   }

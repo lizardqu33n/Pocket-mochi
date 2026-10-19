@@ -1,6 +1,6 @@
 import {applyRoutineActions} from './routine-actions.js'
 import {callPocketProvider} from '../backend/generation.js'
-import {parseRoutineDraft,routinePrompt,preserveLocks,type RoutineDraft} from './routine-generation.js'
+import {parseRoutineDraft,routinePrompt,preserveLocks,RoutineDraftError,type RoutineDraft} from './routine-generation.js'
 import {validatePlan,validateOverride,recordRoutine,planFor,routineId,timezone,type RoutineState} from './routines.js'
 import {MochiCharacterPreferences} from './character-preferences.js'
 import {groupIcon} from './group-icons.js'
@@ -286,6 +286,7 @@ export class MochiService {
     const user = this.account(userId), id = roomId(input.roomId)
     return this.locked(user, id, async () => {
       const saved = await this.read(user, id, input.accountId)
+      if(input.routines!==undefined&&saved.receipts!.includes(entityId(input.requestId)))return saved
       if (saved.accountId && input.persona !== undefined) throw new Error('Fictional account rooms retain their identity snapshot. Per-room identity updates are not implemented yet.')
       if (input.revision !== saved.revision) throw new Error('This room changed elsewhere. Refresh before saving again.')
       const ids = await this.membership(user, input.characterIds)
@@ -296,8 +297,27 @@ export class MochiService {
       if (settings.aiBehavior && (!saved.runtime?.enabled || !await this.backgroundEnabled(user))) throw new Error('Enable account and room background messaging before AI timing suggestions.')
       if (settings.connectionId && !await this.host.connections?.get(settings.connectionId, user)) throw new Error('This connection is not available to your account.')
       const title = text(input.title, 120, true), persona = input.persona ? await this.persona(user, input.persona) : saved.persona
-      if (nextIcon===saved.groupIcon && title === saved.title && equivalent(ids, saved.characterIds) && equivalent(settings, saved.settings) && equivalent(persona, saved.persona)) return saved
+      const routines:Record<string,ReturnType<typeof validatePlan>>={}
+      if(input.routines!==undefined){
+        if(!input.routines||typeof input.routines!=='object'||Array.isArray(input.routines)||Object.keys(input.routines).length>12)throw Error('Invalid routine edits.')
+        for(const [cid,patch]of Object.entries(input.routines) as Array<[string,any]>){
+          routineId(cid)
+          if(!ids.includes(cid)||!saved.characterIds.includes(cid)||!patch||Object.keys(patch).some(k=>!['plan','base'].includes(k)))throw Error('Routine edits require a current chat character.')
+          if(!equivalent(patch.base,planFor(saved,cid)||null))throw Error('Routine defaults changed. Refresh and review before saving.')
+          routines[cid]=validatePlan(patch.plan)
+        }
+      }
+      const routineChanges=Object.entries(routines).filter(([cid,plan])=>!equivalent(plan,saved.runtime?.routines?.[cid]?.plan))
+      if (!routineChanges.length && nextIcon===saved.groupIcon && title === saved.title && equivalent(ids, saved.characterIds) && equivalent(settings, saved.settings) && equivalent(persona, saved.persona)) return saved
       const room = { ...saved, groupIcon:nextIcon, title, characterIds: ids, settings, persona, revision: saved.revision + 1, updatedAt: new Date().toISOString() }
+      if(routineChanges.length){
+        room.runtime||={version:1,enabled:false,jobs:[]};room.runtime.routines||={}
+        for(const [cid,plan]of routineChanges){
+          const state=room.runtime.routines[cid]||{history:[],proposals:[]}
+          recordRoutine(state,{plan,override:undefined},entityId(input.requestId),this.now(),'user');state.proposals=[];room.runtime.routines[cid]=state
+        }
+        room.receipts!.push(entityId(input.requestId))
+      }
       if(room.runtime?.routines)for(const cid of Object.keys(room.runtime.routines))if(!ids.includes(cid))delete room.runtime.routines[cid]
       for(const j of room.runtime?.jobs || []) if(!TERMINAL.has(j.status)){j.status='cancelled';delete j.draft;delete j.additional}
       for (const n of room.notifications!) n.roomTitle = room.title
@@ -645,11 +665,11 @@ export class MochiService {
         if(!reserved)throw Error('The shared generation quota is unavailable.')
         controller.signal.throwIfAborted()
         const result=await callPocketProvider(this.host,{messages,connection_id:sources.connection.id,userId:user,signal:controller.signal,reasoning:{source:'off'},parameters:{max_tokens:room.settings!.outputTokens,temperature:0.8,...(room.settings!.model?{model:room.settings!.model}:{})}})
-        controller.signal.throwIfAborted();if(result?.finish_reason==='length')throw Error('Schedule output was truncated. Regenerate a shorter routine.')
+        controller.signal.throwIfAborted();if(result?.finish_reason==='length')throw new RoutineDraftError('Schedule output was truncated. Regenerate a shorter routine.')
         raw=result?.content
       }
       const draft=parseRoutineDraft(raw,base)
-      if(!parseOnly&&draft.plan.timezone!==timezone(input.timezone))throw Error('Generated timezone differs from the reviewed request.')
+      if(!parseOnly&&draft.plan.timezone!==timezone(input.timezone))throw new RoutineDraftError('Generated timezone differs from the reviewed request. Regenerate using the chosen timezone.')
       return await this.locked(user,id,async()=>{
         controller.signal.throwIfAborted()
         const current=await this.read(user,id,input.accountId),fresh=await resolveGenerationSources(this.host,current,user,character,[character])
@@ -1060,7 +1080,7 @@ export class MochiService {
     let selectedRoomId: string | undefined
     try {
       if(payload.type==='mochi:routine_generate'||payload.type==='mochi:routine_parse'){
-        try{this.host.sendToFrontend(await this.generateRoutine(userId,payload,payload.type==='mochi:routine_parse'),userId)}catch{this.host.sendToFrontend({type:'mochi:routine_error',requestId:payload.requestId,roomId:payload.roomId,characterId:payload.characterId,accountId:payload.accountId,revision:payload.revision,message:'Schedule draft was not created. Check JSON, timezone, locked entries, token budget and source availability; retry explicitly.'},userId)}return
+        try{this.host.sendToFrontend(await this.generateRoutine(userId,payload,payload.type==='mochi:routine_parse'),userId)}catch(error){this.host.sendToFrontend({type:'mochi:routine_error',requestId:payload.requestId,roomId:payload.roomId,characterId:payload.characterId,accountId:payload.accountId,revision:payload.revision,message:error instanceof RoutineDraftError?'Schedule draft rejected: '+error.message+' No changes were saved. Edit the JSON and preview, or regenerate explicitly.':'Schedule draft was not created. Check JSON, timezone, locked entries, token budget and source availability; retry explicitly.'},userId)}return
       }
       if(payload.type==='mochi:routine_reject'){await this.rejectRoutineDraft(userId,payload);return}
       if(payload.type==='mochi:summary_generate'){

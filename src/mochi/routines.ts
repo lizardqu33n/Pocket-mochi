@@ -48,6 +48,15 @@ export function validatePlan(v:any):RoutinePlan {
  return {version:1,enabled:v.enabled,timezone:timezone(v.timezone),autonomy:v.autonomy,locked:v.locked,entries,quiet,fallback:{activity:activity(v.fallback.activity),presence:v.fallback.presence}}
 }
 export function defaultRoutine():RoutinePlan { return {version:1,enabled:false,timezone:'UTC',autonomy:'temporary',locked:false,entries:[],quiet:[],fallback:{activity:'Free time / hobbies',presence:'online'}} }
+/** Advisory only: labels may be localized, or the character may intentionally not sleep. */
+export function routineWarnings(plan:RoutinePlan):string[] {
+ const sleep=plan.entries.filter(e=>/\b(sleep(?:ing)?|asleep|bedtime|slumber)\b/i.test(e.activity))
+ if(!sleep.length)return ['No sleep block recognized. Review the activity labels and add a recurring Sleeping block, or regenerate with sleep guidance. Free time / hobbies is not sleep. Keep this only if intentional for this character; no hours are added automatically.']
+ const missing=DAYS.filter(d=>!sleep.some(e=>e.days.includes(d)))
+ const warnings=missing.length?['No sleep block starts on '+missing.join(', ')+'. Check overnight carryover, weekends and shift patterns; edit or regenerate if needed.']:[]
+ if(sleep.some(e=>{const duration=(e.end-e.start+1440)%1440;return duration<240||duration>720}))warnings.push('A sleep block is shorter than 4 or longer than 12 hours. Review whether that is intentional for this character.')
+ return warnings
+}
 export function validateOverride(v:any):ActivityOverride {
  keys(v,['id','activity','presence','startedAt','expiresAt','source'])
  if(!statuses.includes(v.presence)||!['user','character'].includes(v.source)||![v.startedAt,v.expiresAt].every(n=>Number.isSafeInteger(n)&&n>=0)||v.expiresAt<=v.startedAt||v.expiresAt-v.startedAt>240*60000)throw Error('Overrides must expire within four hours.')

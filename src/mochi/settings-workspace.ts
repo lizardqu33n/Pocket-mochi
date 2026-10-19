@@ -57,7 +57,7 @@ export class ChatSettingsLayout {
     const detailNav=el('nav','mochi-character-detail-nav');for(const [key,label]of [['texting','Texting & nickname'],['availability','Availability'],['profile','Mochi Character Profile']] as const){const tab=button(label);tab.setAttribute('aria-label','Character '+key+' settings');tab.setAttribute('aria-pressed',String(this.characterTab===key));tab.onclick=()=>{this.characterTab=key;this.scroll=0;redraw()};detailNav.append(tab)}
     detail.replaceChildren(heading,detailNav,this.characterTab==='texting'?texting:this.characterTab==='profile'&&defaults?defaults(this.character,'about'):availability)
     const back=button('Back to characters');back.onclick=()=>{const id=this.character;this.character='';this.scroll=this.overviewScroll;this.focus=id;redraw()}
-    scroller.append(back,el('p','mochi-muted','This character within this conversation · Name and texting edits require Save. Presence, delays and schedule buttons apply immediately.'),detail)
+    scroller.append(back,el('p','mochi-muted','This character within this conversation · Name, texting and weekly routine edits require Save settings. Presence, delays and explicit Apply/defaults buttons apply immediately. Character-wide defaults require Save character profile.'),detail)
    }else this.character=''
   }
   if(!this.character)scroller.append(el('h4','',this.category),categories.get(this.category)!)

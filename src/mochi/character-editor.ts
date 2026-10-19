@@ -24,7 +24,7 @@ export class CharacterEditor {
    texting.addEventListener('input',()=>{value.texting=settings.textingStyles?.[character.id]});texting.addEventListener('change',()=>{value.texting=settings.textingStyles?.[character.id]});root.append(texting)
   }
   if(mode==='availability'){
-   value.routine||=defaultRoutine();root.append(routineControls(value.routine,'character default '+character.name))
+   const routine=value.routine||defaultRoutine();root.append(routineControls(routine,'character default '+character.name,()=>{value.routine=routine}),el('p','mochi-muted','Character-wide routine edits require Save character profile below. Save settings applies the chat routine only. An explicit chat routine, even disabled or empty, takes precedence; use character routine defaults in that chat to inherit these changes.'))
    const presence=value.availability||defaultPresence(),wrap=el('label','','Default availability'),status=el('select');status.setAttribute('aria-label','Default availability for '+character.name)
    for(const id of STATUSES){const o=el('option','',id);o.value=id;status.append(o)}status.value=presence.manual||presence.automatic;status.onchange=()=>{value.availability={...(value.availability||presence),automatic:status.value as any,manual:null,transitions:[]}};wrap.append(status);root.append(wrap)
    for(const [key,name]of [['awayMs','Away delay'],['dndMs','DND delay']] as const){const l=el('label','',name+' (minutes)'),i=el('input');i.type='number';i.min='0';i.max='1440';i.value=String(presence[key]/60000);i.setAttribute('aria-label','Default '+name+' for '+character.name);i.oninput=()=>{value.availability={...(value.availability||presence),[key]:Number(i.value)*60000,transitions:[]}};l.append(i);root.append(l)}

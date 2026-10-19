@@ -6914,6 +6914,19 @@ function validatePlan(v) {
 function defaultRoutine() {
   return { version: 1, enabled: false, timezone: "UTC", autonomy: "temporary", locked: false, entries: [], quiet: [], fallback: { activity: "Free time / hobbies", presence: "online" } };
 }
+function routineWarnings(plan) {
+  const sleep = plan.entries.filter((e) => /\b(sleep(?:ing)?|asleep|bedtime|slumber)\b/i.test(e.activity));
+  if (!sleep.length)
+    return ["No sleep block recognized. Review the activity labels and add a recurring Sleeping block, or regenerate with sleep guidance. Free time / hobbies is not sleep. Keep this only if intentional for this character; no hours are added automatically."];
+  const missing = DAYS.filter((d) => !sleep.some((e) => e.days.includes(d)));
+  const warnings = missing.length ? ["No sleep block starts on " + missing.join(", ") + ". Check overnight carryover, weekends and shift patterns; edit or regenerate if needed."] : [];
+  if (sleep.some((e) => {
+    const duration = (e.end - e.start + 1440) % 1440;
+    return duration < 240 || duration > 720;
+  }))
+    warnings.push("A sleep block is shorter than 4 or longer than 12 hours. Review whether that is intentional for this character.");
+  return warnings;
+}
 function planFor(room, id) {
   return (room.runtime?.routines || room.background?.routines)?.[id]?.plan || room.characterDefaults?.[id]?.routine;
 }
@@ -6938,7 +6951,7 @@ function routineAt(room, id, now) {
 }
 
 // src/mochi/routine-controls.ts
-function routineControls(plan, label) {
+function routineControls(plan, label, onChange = () => {}) {
   const root = el("fieldset", "mochi-routine-editor");
   root.dataset.mochiRoutine = "editor";
   root.append(el("legend", "", "Weekly routine · " + label));
@@ -6988,6 +7001,16 @@ function routineControls(plan, label) {
   };
   field("Uncovered time activity", fallback);
   root.append(el("p", "mochi-muted", "Weekly entries use local time in this timezone, including DST. End before start means overnight. Uncovered time uses the fallback. Quiet hours block delivery. Manual presence locks take precedence over routine presence."));
+  const warning = el("p", "mochi-muted");
+  warning.dataset.routineWarning = "sleep";
+  warning.setAttribute("role", "status");
+  root.append(warning);
+  const changed = () => {
+    warning.textContent = routineWarnings(plan).join(" ");
+    onChange();
+  };
+  root.addEventListener("input", changed);
+  root.addEventListener("change", changed);
   const rows = el("div", "mochi-routine-entries");
   root.append(rows);
   const draw = () => {
@@ -7047,20 +7070,32 @@ function routineControls(plan, label) {
       remove.onclick = () => {
         plan.entries.splice(index, 1);
         draw();
+        changed();
       };
       row.append(remove);
       rows.append(row);
     }
   };
   draw();
+  warning.textContent = routineWarnings(plan).join(" ");
   const add = mochiButton("Add routine entry");
   add.onclick = () => {
     if (plan.entries.length < 64) {
       plan.entries.push({ id: "entry_" + crypto.randomUUID().replaceAll("-", ""), days: ["mo"], start: 540, end: 1020, activity: "Work", presence: "away", locked: false });
       draw();
+      changed();
     }
   };
   root.append(add);
+  const removeAll = mochiButton("Delete weekly routine for " + label);
+  removeAll.onclick = () => {
+    plan.entries = [];
+    plan.enabled = false;
+    enable.checked = false;
+    draw();
+    changed();
+  };
+  root.append(removeAll, el("small", "mochi-muted", "Delete clears weekly entries and turns this routine off. Save to keep it deleted. Timezone, autonomy and quiet hours are retained."));
   const quiet = el("textarea");
   quiet.rows = 2;
   quiet.maxLength = 4000;
@@ -7077,15 +7112,15 @@ function routineControls(plan, label) {
   field("Quiet hours JSON: days, start and end in minutes", quiet);
   return root;
 }
-function roomRoutineControls(room, id, name, send) {
-  const state = room.background?.routines?.[id], plan = structuredClone(planFor(room, id) || defaultRoutine()), root = el("section", "mochi-routine-panel");
+function roomRoutineControls(room, id, name, send, staged) {
+  const state = room.background?.routines?.[id], plan = staged?.plan || structuredClone(planFor(room, id) || defaultRoutine()), root = el("section", "mochi-routine-panel");
   root.dataset.characterId = id;
   root.dataset.mochiRoutine = "panel";
   const current = routineAt(room, id, Date.now());
   const live = el("p", "mochi-routine-activity", current ? current.activity + " · " + current.presence : "Weekly routine is off");
   live.dataset.routineActivity = id;
   live.setAttribute("aria-live", "polite");
-  root.append(live, routineControls(plan, name));
+  root.append(live, el("p", "mochi-muted", "Weekly routine edits require Save settings or Apply weekly routine. Removing every entry leaves an explicit empty chat routine; character defaults are used only with the defaults button."), routineControls(plan, name, () => staged?.change(plan)));
   const error = el("p", "mochi-error");
   error.setAttribute("role", "alert");
   root.append(error);
@@ -7152,6 +7187,9 @@ function roomRoutineControls(room, id, name, send) {
 
 // src/mochi/routine-generation.ts
 var MAX_ROUTINE_OUTPUT = 20000;
+
+class RoutineDraftError extends Error {
+}
 function strict(v, allowed) {
   if (!v || typeof v !== "object" || Array.isArray(v) || Object.keys(v).some((k) => !allowed.includes(k)))
     throw Error("Invalid compact JSON fields.");
@@ -7171,6 +7209,13 @@ function preserveLocks(before, after) {
       throw Error("A user-locked entry cannot be changed or removed.");
 }
 function parseRoutineDraft(raw, base) {
+  try {
+    return parseDraft(raw, base);
+  } catch (error) {
+    throw new RoutineDraftError(error.message);
+  }
+}
+function parseDraft(raw, base) {
   if (typeof raw !== "string" || !raw.trim() || raw.length > MAX_ROUTINE_OUTPUT)
     throw Error("Schedule JSON must be nonempty and at most 20000 characters.");
   let v;
@@ -7442,8 +7487,10 @@ class CharacterEditor {
       root.append(texting);
     }
     if (mode === "availability") {
-      value.routine ||= defaultRoutine();
-      root.append(routineControls(value.routine, "character default " + character.name));
+      const routine = value.routine || defaultRoutine();
+      root.append(routineControls(routine, "character default " + character.name, () => {
+        value.routine = routine;
+      }), el("p", "mochi-muted", "Character-wide routine edits require Save character profile below. Save settings applies the chat routine only. An explicit chat routine, even disabled or empty, takes precedence; use character routine defaults in that chat to inherit these changes."));
       const presence = value.availability || defaultPresence(), wrap = el("label", "", "Default availability"), status = el("select");
       status.setAttribute("aria-label", "Default availability for " + character.name);
       for (const id of STATUSES) {
@@ -8031,7 +8078,7 @@ class ChatSettingsLayout {
           this.focus = id;
           redraw();
         };
-        scroller.append(back, el("p", "mochi-muted", "This character within this conversation · Name and texting edits require Save. Presence, delays and schedule buttons apply immediately."), detail);
+        scroller.append(back, el("p", "mochi-muted", "This character within this conversation · Name, texting and weekly routine edits require Save settings. Presence, delays and explicit Apply/defaults buttons apply immediately. Character-wide defaults require Save character profile."), detail);
       } else
         this.character = "";
     }
@@ -13373,7 +13420,11 @@ class MochiView {
           };
           group.append(clear);
         }
-        group.append(roomRoutineControls(room, id, name, (p) => this.dispatch("mochi:routine", p)));
+        const routineBase = draft.routines?.[id] ? draft.routines[id].base : structuredClone(planFor(room, id) || null);
+        group.append(roomRoutineControls(room, id, name, (p) => this.dispatch("mochi:routine", p), { plan: draft.routines?.[id]?.plan, change: (plan) => {
+          draft.routines ||= {};
+          draft.routines[id] = { plan, base: routineBase };
+        } }));
         group.append(this.routineDraftControls.render(room, id, name, (type, p) => {
           if (type === "mochi:routine_apply")
             this.dispatch(type, p);
@@ -13430,8 +13481,13 @@ class MochiView {
     form.append(actions);
     form.onsubmit = (event) => {
       event.preventDefault();
+      if (this.characterEditor.dirty) {
+        this.error = "Save character profile or cancel character changes before saving chat settings. Character-wide defaults have a separate Save button.";
+        this.redraw();
+        return;
+      }
       const selected = state.accountId ? undefined : draft.persona === "keep" ? undefined : draft.persona === "manual" ? { source: "manual", name: draft.name, description: draft.description } : state.personas.find((p) => p.source + ":" + p.sourceId === draft.persona);
-      this.dispatch(room ? "mochi:update" : "mochi:create", { roomId: room?.id, revision: room ? this.draftRevision : undefined, title: draft.title, groupIcon: draft.characterIds.length > 1 ? draft.groupIcon || "" : "", characterIds: draft.characterIds, persona: selected, ...room ? { settings } : { preset: { id: draft.presetId, revision: 1, ...state.accountId ? { accountId: state.accountId } : {} } } });
+      this.dispatch(room ? "mochi:update" : "mochi:create", { roomId: room?.id, revision: room ? this.draftRevision : undefined, title: draft.title, groupIcon: draft.characterIds.length > 1 ? draft.groupIcon || "" : "", characterIds: draft.characterIds, persona: selected, ...room ? { settings, ...draft.routines ? { routines: Object.fromEntries(Object.entries(draft.routines).filter(([id]) => draft.characterIds.includes(id))) } : {} } : { preset: { id: draft.presetId, revision: 1, ...state.accountId ? { accountId: state.accountId } : {} } } });
     };
     return room && this.settingsPage === "chat" ? this.settingsLayout.adapt(form, room, state, () => this.redraw(), (name, anchor) => this.openSettingsTool(name, anchor, room), (id, mode) => {
       const character = state.characters.find((c) => c.id === id);
