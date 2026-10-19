@@ -1,3 +1,4 @@
+import {validatePlan,validateOverride,recordRoutine,planFor,routineId,type RoutineState} from './routines.js'
 import {MochiCharacterPreferences} from './character-preferences.js'
 import {groupIcon} from './group-icons.js'
 import {MochiUIPreferences} from './ui-preferences.js'
@@ -198,6 +199,7 @@ export class MochiService {
     if(room.memory)validateMemory(room.memory,room.id,user)
     validatePinnedContent(room)
     if (room.runtime !== undefined) validateRuntime(room.runtime)
+    if(room.runtime?.routines)for(const id of Object.keys(room.runtime.routines))if(!room.characterIds.includes(id))throw Error('Routine character is unavailable.')
     if (room.runtime?.presence) for (const [id,p] of Object.entries(room.runtime.presence)) { entityId(id); validatePresence(p) }
     for(const job of room.runtime?.jobs || []) {
       const drafts=[...job.draft?[job.draft]:[],...job.additional||[]],ids=drafts.map(d=>d.characterId)
@@ -292,6 +294,7 @@ export class MochiService {
       const title = text(input.title, 120, true), persona = input.persona ? await this.persona(user, input.persona) : saved.persona
       if (nextIcon===saved.groupIcon && title === saved.title && equivalent(ids, saved.characterIds) && equivalent(settings, saved.settings) && equivalent(persona, saved.persona)) return saved
       const room = { ...saved, groupIcon:nextIcon, title, characterIds: ids, settings, persona, revision: saved.revision + 1, updatedAt: new Date().toISOString() }
+      if(room.runtime?.routines)for(const cid of Object.keys(room.runtime.routines))if(!ids.includes(cid))delete room.runtime.routines[cid]
       for(const j of room.runtime?.jobs || []) if(!TERMINAL.has(j.status)){j.status='cancelled';delete j.draft;delete j.additional}
       for (const n of room.notifications!) n.roomTitle = room.title
       room.notificationRevision = (saved.notificationRevision || 0) + 1
@@ -607,6 +610,36 @@ export class MochiService {
       if (match) {try{rooms.push(await this.readStored(user, match[1]))}catch{this.schedulingWarning('Mochi scheduler skipped a damaged room; its file was preserved.')}}
     }
     return rooms
+  }
+  async configureRoutine(userId:string,input:any):Promise<void> {
+    const user=identifier(userId),id=roomId(input.roomId),character=routineId(input.characterId),request=routineId(input.requestId)
+    await this.locked(user,id,async()=>{
+      const room=await this.read(user,id,input.accountId)
+      if(!room.characterIds.includes(character))throw Error('Character is not in this conversation.')
+      if(room.receipts!.includes(request))return
+      if(room.revision!==input.revision)throw Error('Routine changed elsewhere. Refresh before saving.')
+      room.runtime||={version:1,enabled:false,jobs:[]};room.runtime.routines||={}
+      const state:RoutineState=room.runtime.routines[character]||{history:[],proposals:[]}
+      let next={plan:state.plan,override:state.override}
+      if(input.action==='save')next={plan:validatePlan(input.plan),override:undefined}
+      else if(input.action==='defaults')next={plan:undefined,override:undefined}
+      else if(input.action==='override'){
+        if(!planFor(room,character)?.enabled)throw Error('Enable routines before setting a live activity.')
+        if(!Number.isInteger(input.minutes)||input.minutes<1||input.minutes>240)throw Error('Choose 1–240 whole minutes.')
+        next.override=validateOverride({id:request,activity:input.activity,presence:input.presence,startedAt:this.now(),expiresAt:this.now()+input.minutes*60000,source:'user'})
+      }else if(input.action==='clear')next.override=undefined
+      else if(input.action==='undo'){
+        const last=state.history.at(-1)
+        if(!last||last.id!==input.changeId||last.source==='undo')throw Error('This change is no longer safe to undo.')
+        next=structuredClone({plan:last.before.plan,override:last.before.override})
+        if(next.override&&next.override.expiresAt<=this.now())next.override=undefined
+      }else throw Error('Unsupported routine action.')
+      this.abortScoped(user,id,input.accountId)
+      recordRoutine(state,next,request,this.now(),input.action==='undo'?'undo':'user');state.proposals=[]
+      room.runtime.routines[character]=state;room.receipts!.push(request);room.revision++
+      for(const j of room.runtime.jobs)if(!TERMINAL.has(j.status)){j.status='cancelled';delete j.draft;delete j.additional}
+      await this.persist(user,room)
+    })
   }
   async configurePresence(userId: string, input: any): Promise<void> {
     const user = identifier(userId), id = roomId(input.roomId), character = entityId(input.characterId), presence = input.useDefault===true?undefined:validatePresence(input.presence)
@@ -1038,6 +1071,7 @@ export class MochiService {
       else if (payload.type === 'mochi:update') selectedRoomId = (await this.update(userId, payload)).id
       else if (payload.type==='mochi:reaction')await this.react(userId,payload)
       else if (payload.type==='mochi:pinned_content')await this.pinnedContent(userId,payload)
+      else if (payload.type==='mochi:routine')await this.configureRoutine(userId,payload)
       else if (payload.type==='mochi:preset_bind')await this.bindPreset(userId,payload)
       else if (payload.type !== 'mochi:character_preferences' && payload.type !== 'mochi:list' && payload.type !== 'mochi:message_action' && payload.type !== 'mochi:notification_clear' && payload.type !== 'mochi:room_assign') throw new Error('Unsupported Mochi action.')
       this.host.sendToFrontend({ type: 'mochi:state', requestId: payload.requestId, selectedRoomId, state: await this.state(userId, payload.accountId) }, userId)

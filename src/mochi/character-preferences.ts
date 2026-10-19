@@ -1,9 +1,10 @@
+import {validatePlan,type RoutinePlan} from './routines.js'
 import type {MochiHost} from './service.js'
 import type {MochiAccounts} from './accounts.js'
 import {identifier} from './scheduling.js'
 import {validateTextingStyles,type TextingStyle} from './texting.js'
 import {validatePresence,type CharacterPresence} from './presence.js'
-export interface CharacterPreferences {version:1;ownerId:string;characterId:string;revision:number;about:string;texting?:TextingStyle;availability?:CharacterPresence}
+export interface CharacterPreferences {version:1;ownerId:string;characterId:string;revision:number;about:string;texting?:TextingStyle;availability?:CharacterPresence;routine?:RoutinePlan}
 /** Independent optional Mochi metadata. Never writes native character cards or room schedules. */
 export class MochiCharacterPreferences {
  constructor(private host:MochiHost,private accounts:MochiAccounts){}
@@ -22,14 +23,14 @@ export class MochiCharacterPreferences {
   const texting=validateTextingStyles(r.texting===undefined?undefined:{[r.characterId]:r.texting})?.[r.characterId]
   const availability=r.availability===undefined?undefined:validatePresence(r.availability)
   if(availability?.transitions.length)throw Error('Schedules are conversation-specific.')
-  return {...r,about:r.about.trim(),texting,availability}
+  return {...r,about:r.about.trim(),texting,availability,...(r.routine===undefined?{}:{routine:validatePlan(r.routine)})}
  }
  async save(userId:string,input:any,canSave:()=>void=()=>{}){
   return this.accounts.guard(userId,async()=>{
    canSave()
    const saved=await this.read(userId,input.characterId)
    if(input.revision!==saved.revision)throw Error('Character defaults changed. Refresh before saving.')
-   const record=this.validate({...saved,...(input.about!==undefined?{about:input.about}:{}),...(input.texting!==undefined?{texting:input.texting===null?undefined:input.texting}:{}),...(input.availability!==undefined?{availability:input.availability===null?undefined:input.availability}:{}),revision:saved.revision+1})
+   const record=this.validate({...saved,...(input.about!==undefined?{about:input.about}:{}),...(input.texting!==undefined?{texting:input.texting===null?undefined:input.texting}:{}),...(input.availability!==undefined?{availability:input.availability===null?undefined:input.availability}:{}),...(input.routine!==undefined?{routine:input.routine===null?undefined:input.routine}:{}),revision:saved.revision+1})
    const path=`mochi/v1/character-preferences/${record.characterId}.json`
    await this.host.userStorage.setJson(path+'.pending',record,{userId:userId});await this.host.userStorage.move(path+'.pending',path,userId)
    return record

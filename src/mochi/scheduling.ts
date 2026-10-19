@@ -1,3 +1,4 @@
+import {validateRoutineState,routineId} from './routines.js'
 import { roomId } from './types.js'
 import type { MochiRoom } from './types.js'
 import { delayFor, minimumDelay, statusFor } from './presence.js'
@@ -14,8 +15,8 @@ export interface ScheduledJob {
   additional?: ScheduledDraft[]; idlePeriodId?: string
 }
 export interface IdleState { enabled: boolean; periodId: string; startedAt: number; delivered: number; opportunities: number; lastDeliveredAt: number; nextDueAt: number }
-export interface RoomRuntime { version: 1; enabled: boolean; jobs: ScheduledJob[]; presence?: Record<string, import('./presence.js').CharacterPresence>; idle?: IdleState }
-export interface PublicRuntime { enabled: boolean; jobs: Array<Pick<ScheduledJob, 'id' | 'dueAt' | 'status' | 'attempts' | 'reason'> & Partial<Pick<ScheduledJob, 'expiresAt' | 'deliverAt' | 'kind'>>>; presence?: Record<string, import('./presence.js').CharacterPresence>; idle?: IdleState; snapshot?: { session: string; sequence: number } }
+export interface RoomRuntime { version: 1; enabled: boolean; jobs: ScheduledJob[]; presence?: Record<string, import('./presence.js').CharacterPresence>; idle?: IdleState; routines?:Record<string,import('./routines.js').RoutineState> }
+export interface PublicRuntime { enabled: boolean; jobs: Array<Pick<ScheduledJob, 'id' | 'dueAt' | 'status' | 'attempts' | 'reason'> & Partial<Pick<ScheduledJob, 'expiresAt' | 'deliverAt' | 'kind'>>>; presence?: Record<string, import('./presence.js').CharacterPresence>; idle?: IdleState; routines?:RoomRuntime['routines']; snapshot?: { session: string; sequence: number } }
 export const SCHEDULE_HISTORY_LIMIT = 20
 export const SCHEDULE_LABELS: Record<ScheduledStatus, string> = { queued: 'Scheduled', generating: 'Generating', generated: 'Waiting to deliver', delivered: 'Delivered', cancelled: 'Canceled', paused: 'Needs attention', failed: 'Failed', missed: 'Expired' }
 export const TERMINAL = new Set<ScheduledStatus>(['delivered', 'cancelled', 'failed', 'missed'])
@@ -28,6 +29,7 @@ export function validateRuntime(value: unknown): RoomRuntime {
   const r = value as RoomRuntime
   if (!r || r.version !== 1 || typeof r.enabled !== 'boolean' || !Array.isArray(r.jobs) || r.jobs.length > MAX_JOBS) throw new Error('Damaged scheduling records; the room file was preserved.')
   const ids = new Set<string>()
+  if(r.routines!==undefined){if(!r.routines||typeof r.routines!=='object'||Array.isArray(r.routines)||Object.keys(r.routines).length>12)throw Error('Invalid routine records.');for(const [id,state]of Object.entries(r.routines)){routineId(id);validateRoutineState(state)}}
   if (r.idle) { const i=r.idle; identifier(i.periodId); if(typeof i.enabled!=='boolean'||![i.startedAt,i.lastDeliveredAt,i.nextDueAt,i.delivered,i.opportunities].every(n=>Number.isSafeInteger(n)&&n>=0)||i.delivered>3||i.opportunities>3) throw new Error('Invalid idle allowance; room data was preserved.') }
   for (const j of r.jobs) {
     identifier(j.id); identifier(j.responder)
@@ -55,7 +57,7 @@ export function publicRuntime(r?: RoomRuntime): PublicRuntime | undefined {
   const active = r.jobs.filter(j => !TERMINAL.has(j.status))
   const history = r.jobs.filter(j => ['cancelled', 'failed', 'missed'].includes(j.status)).slice(-SCHEDULE_HISTORY_LIMIT).reverse()
   const safeReasons = new Set(['Responder is unavailable.', 'Delivery could not be saved. Deferred content is preserved.', 'Scheduled messaging needs attention. Check room sources, provider and storage.'])
-  return { enabled: r.enabled, presence: r.presence, idle: r.idle, jobs: [...active, ...history].map(({id,dueAt,expiresAt,deliverAt,kind,status,attempts,reason}) => ({id,dueAt,expiresAt,deliverAt,kind,status,attempts,
+  return { enabled: r.enabled, presence: r.presence, idle: r.idle, routines:r.routines, jobs: [...active, ...history].map(({id,dueAt,expiresAt,deliverAt,kind,status,attempts,reason}) => ({id,dueAt,expiresAt,deliverAt,kind,status,attempts,
     reason: status === 'missed' ? 'The delivery window ended without a message.' : status === 'cancelled' ? 'Canceled explicitly or invalidated by a room change.' : status === 'failed' ? 'The allowed attempts were exhausted.' : safeReasons.has(reason || '') ? reason : undefined })) }
 }
 export function scheduleInput(input: any, now: number): { id: string; roomId: string; responder: string; dueAt: number } {

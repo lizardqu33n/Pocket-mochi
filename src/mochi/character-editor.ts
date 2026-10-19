@@ -1,3 +1,5 @@
+import {routineControls} from './routine-controls.js'
+import {defaultRoutine} from './routines.js'
 import {mochiButton as button} from './ui/icon-slots.js'
 import {el} from '../frontend/shared.js'
 import {textingControls} from './texting-controls.js'
@@ -22,10 +24,11 @@ export class CharacterEditor {
    texting.addEventListener('input',()=>{value.texting=settings.textingStyles?.[character.id]});texting.addEventListener('change',()=>{value.texting=settings.textingStyles?.[character.id]});root.append(texting)
   }
   if(mode==='availability'){
+   value.routine||=defaultRoutine();root.append(routineControls(value.routine,'character default '+character.name))
    const presence=value.availability||defaultPresence(),wrap=el('label','','Default availability'),status=el('select');status.setAttribute('aria-label','Default availability for '+character.name)
    for(const id of STATUSES){const o=el('option','',id);o.value=id;status.append(o)}status.value=presence.manual||presence.automatic;status.onchange=()=>{value.availability={...(value.availability||presence),automatic:status.value as any,manual:null,transitions:[]}};wrap.append(status);root.append(wrap)
    for(const [key,name]of [['awayMs','Away delay'],['dndMs','DND delay']] as const){const l=el('label','',name+' (minutes)'),i=el('input');i.type='number';i.min='0';i.max='1440';i.value=String(presence[key]/60000);i.setAttribute('aria-label','Default '+name+' for '+character.name);i.oninput=()=>{value.availability={...(value.availability||presence),[key]:Number(i.value)*60000,transitions:[]}};l.append(i);root.append(l)}
   }
-  const actions=el('div','mochi-actions'),save=button('Save character profile','mochi-primary'),cancel=button('Cancel character changes');save.onclick=()=>send({characterId:character.id,revision:saved.revision,about:value.about,texting:value.texting||null,availability:value.availability||null});cancel.onclick=()=>{this.drafts.delete(character.id);redraw()};actions.append(save,cancel);root.append(actions);return root
+  const actions=el('div','mochi-actions'),save=button('Save character profile','mochi-primary'),cancel=button('Cancel character changes');save.onclick=()=>send({characterId:character.id,revision:saved.revision,about:value.about,texting:value.texting||null,availability:value.availability||null,...(value.routine?{routine:value.routine}:{})});cancel.onclick=()=>{this.drafts.delete(character.id);redraw()};actions.append(save,cancel);root.append(actions);return root
  }
 }

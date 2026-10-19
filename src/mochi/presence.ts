@@ -1,4 +1,5 @@
 import type { MochiRoom } from './types.js'
+import { routineAt } from './routines.js'
 export const STATUSES = ['online', 'away', 'dnd', 'offline'] as const
 export type PresenceStatus = typeof STATUSES[number]
 export interface CharacterPresence {
@@ -15,7 +16,10 @@ export function validatePresence(value: unknown): CharacterPresence {
 }
 export function statusFor(room: MochiRoom, id: string, now = Date.now()): PresenceStatus {
   const p = room.runtime?.presence?.[id] || room.background?.presence?.[id] || room.characterDefaults?.[id]?.availability || defaultPresence()
+  const routine=routineAt(room,id,now)
+  if(routine?.quiet)return 'offline'
   if (p.manual) return p.manual
+  if(routine)return routine.presence
   return p.transitions.filter(t => t.at <= now).sort((a,b) => a.at-b.at).at(-1)?.status || p.automatic
 }
 export function delayFor(room: MochiRoom, id: string, now = Date.now()): number {
@@ -29,3 +33,5 @@ export function minimumDelay(room: MochiRoom, responder: string, now: number): n
   const candidates = eligibleResponders(room,responder,now)
   return candidates.length ? Math.min(...candidates.map(id => delayFor(room,id,now))) : Infinity
 }
+
+export function activityFor(room:MochiRoom,id:string,now=Date.now()):string { return routineAt(room,id,now)?.activity||'' }

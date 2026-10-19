@@ -6,6 +6,136 @@ function galleryOffset(value) {
   return Number.isFinite(offset) ? Math.max(0, Math.min(1e6, Math.floor(offset))) : 0;
 }
 
+// src/mochi/routines.ts
+var DAYS = ["mo", "tu", "we", "th", "fr", "sa", "su"];
+var AUTONOMY = ["manual", "temporary", "review", "autonomous"];
+var statuses = ["online", "away", "dnd", "offline"];
+function object(v) {
+  return !!v && typeof v === "object" && !Array.isArray(v);
+}
+function keys(v, allowed) {
+  if (!object(v) || Object.keys(v).some((k) => !allowed.includes(k)))
+    throw Error("Unknown routine field.");
+}
+function routineId(v) {
+  if (typeof v !== "string" || !/^[A-Za-z0-9_-]{1,180}$/.test(v) || ["__proto__", "constructor", "prototype"].includes(v))
+    throw Error("Invalid routine identifier.");
+  return v;
+}
+function activity(v) {
+  if (typeof v !== "string" || !v.trim() || v.length > 160 || /[\u0000-\u001f]/.test(v))
+    throw Error("Activity must be 1\u2013160 visible characters.");
+  return v.trim();
+}
+function timezone(v) {
+  if (typeof v !== "string" || v.length > 100 || !/^([A-Za-z_+-]+\/)*[A-Za-z_+-]+$/.test(v))
+    throw Error("Choose an IANA timezone.");
+  try {
+    return new Intl.DateTimeFormat("en", { timeZone: v }).resolvedOptions().timeZone;
+  } catch {
+    throw Error("Choose an IANA timezone.");
+  }
+}
+function period(v) {
+  if (!object(v) || !Array.isArray(v.days) || !v.days.length || v.days.length > 7 || new Set(v.days).size !== v.days.length || v.days.some((d) => !DAYS.includes(d)) || ![v.start, v.end].every((n) => Number.isInteger(n) && n >= 0 && n < 1440) || v.start === v.end)
+    throw Error("Invalid weekly interval; use distinct minute boundaries and day codes mo..su.");
+  return { days: [...v.days], start: v.start, end: v.end };
+}
+function validateEntry(v) {
+  keys(v, ["id", "days", "start", "end", "activity", "presence", "locked"]);
+  const p = period(v);
+  if (!statuses.includes(v.presence) || typeof v.locked !== "boolean")
+    throw Error("Invalid routine presence or lock.");
+  return { ...p, id: routineId(v.id), activity: activity(v.activity), presence: v.presence, locked: v.locked };
+}
+function intervals(p) {
+  return p.days.flatMap((day) => {
+    const start = DAYS.indexOf(day) * 1440 + p.start, end = start + (p.end - p.start + 1440) % 1440;
+    return end > 10080 ? [[start, 10080], [0, end - 10080]] : [[start, end]];
+  });
+}
+function validatePlan(v) {
+  keys(v, ["version", "enabled", "timezone", "autonomy", "locked", "entries", "quiet", "fallback"]);
+  if (v.version !== 1 || typeof v.enabled !== "boolean" || typeof v.locked !== "boolean" || !AUTONOMY.includes(v.autonomy) || !Array.isArray(v.entries) || v.entries.length > 64 || !Array.isArray(v.quiet) || v.quiet.length > 16)
+    throw Error("Invalid routine settings or size.");
+  const entries = v.entries.map(validateEntry), ids = new Set(entries.map((e) => e.id));
+  if (ids.size !== entries.length)
+    throw Error("Routine entry IDs must be unique.");
+  const occupied = entries.flatMap((e) => intervals(e)).sort((a, b) => a[0] - b[0]);
+  for (let i = 1;i < occupied.length; i++)
+    if (occupied[i][0] < occupied[i - 1][1])
+      throw Error("Weekly routine entries overlap, including overnight boundaries.");
+  const quiet = v.quiet.map((p) => {
+    keys(p, ["days", "start", "end"]);
+    return period(p);
+  });
+  keys(v.fallback, ["activity", "presence"]);
+  if (!statuses.includes(v.fallback.presence))
+    throw Error("Invalid free-time presence.");
+  return { version: 1, enabled: v.enabled, timezone: timezone(v.timezone), autonomy: v.autonomy, locked: v.locked, entries, quiet, fallback: { activity: activity(v.fallback.activity), presence: v.fallback.presence } };
+}
+function validateOverride(v) {
+  keys(v, ["id", "activity", "presence", "startedAt", "expiresAt", "source"]);
+  if (!statuses.includes(v.presence) || !["user", "character"].includes(v.source) || ![v.startedAt, v.expiresAt].every((n) => Number.isSafeInteger(n) && n >= 0) || v.expiresAt <= v.startedAt || v.expiresAt - v.startedAt > 240 * 60000)
+    throw Error("Overrides must expire within four hours.");
+  return { id: routineId(v.id), activity: activity(v.activity), presence: v.presence, startedAt: v.startedAt, expiresAt: v.expiresAt, source: v.source };
+}
+function snapshot(v) {
+  keys(v, ["plan", "override"]);
+  return { ...v.plan === undefined ? {} : { plan: validatePlan(v.plan) }, ...v.override === undefined ? {} : { override: validateOverride(v.override) } };
+}
+function validateRoutineState(v) {
+  keys(v, ["plan", "override", "history", "proposals"]);
+  const current = snapshot({ plan: v.plan, override: v.override });
+  if (!Array.isArray(v.history) || v.history.length > 32 || !Array.isArray(v.proposals) || v.proposals.length > 8)
+    throw Error("Invalid routine audit history.");
+  const history = v.history.map((h) => {
+    keys(h, ["id", "at", "source", "before", "after"]);
+    routineId(h.id);
+    if (!Number.isSafeInteger(h.at) || h.at < 0 || !["user", "character", "undo"].includes(h.source))
+      throw Error("Invalid audit entry.");
+    return { ...h, before: snapshot(h.before), after: snapshot(h.after) };
+  });
+  const proposals = v.proposals.map((p) => {
+    keys(p, ["id", "entryId", "entry", "planRevision", "createdAt"]);
+    routineId(p.id);
+    routineId(p.entryId);
+    if (p.entry.id !== p.entryId || typeof p.planRevision !== "string" || p.planRevision.length > 40000 || !Number.isSafeInteger(p.createdAt) || p.createdAt < 0)
+      throw Error("Invalid schedule proposal.");
+    return { ...p, entry: validateEntry(p.entry) };
+  });
+  return { ...current, history, proposals };
+}
+function planFor(room, id) {
+  return (room.runtime?.routines || room.background?.routines)?.[id]?.plan || room.characterDefaults?.[id]?.routine;
+}
+function wallMinute(zone, now) {
+  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: zone, weekday: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(now);
+  const get = (type) => parts.find((p) => p.type === type).value;
+  return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].indexOf(get("weekday")) * 1440 + Number(get("hour")) * 60 + Number(get("minute"));
+}
+function contains(p, minute) {
+  return intervals(p).some(([a, b]) => minute >= a && minute < b);
+}
+function routineAt(room, id, now) {
+  const plan = planFor(room, id);
+  if (!plan?.enabled)
+    return;
+  const minute = wallMinute(plan.timezone, now), entry = plan.entries.find((e) => contains(e, minute)), quiet = plan.quiet.some((p) => contains(p, minute)), base = entry || plan.fallback;
+  const override = (room.runtime?.routines || room.background?.routines)?.[id]?.override;
+  const active = override && override.startedAt <= now && now < override.expiresAt;
+  const locked = plan.locked || !!entry?.locked;
+  const usable = active && (override.source === "user" || !locked && plan.autonomy !== "manual" && !["dnd", "offline"].includes(base.presence));
+  return { activity: usable ? override.activity : base.activity, presence: quiet ? "offline" : usable ? override.presence : base.presence, quiet, locked };
+}
+function recordRoutine(state, next, id, at, source) {
+  const before = structuredClone({ plan: state.plan, override: state.override }), after = structuredClone(next);
+  state.plan = after.plan;
+  state.override = after.override;
+  state.history.push({ id, at, source, before, after });
+  state.history = state.history.slice(-32);
+}
+
 // src/mochi/types.ts
 var defaultMochiSettings = () => ({ autoReply: true, connectionId: "", contextTokens: 8192, outputTokens: 1200, instructions: "", characterNames: {} });
 var MOCHI_ROOM_ID = /^room_[a-f0-9]{32}$/;
@@ -28,8 +158,13 @@ function validatePresence(value) {
 }
 function statusFor(room, id, now = Date.now()) {
   const p = room.runtime?.presence?.[id] || room.background?.presence?.[id] || room.characterDefaults?.[id]?.availability || defaultPresence();
+  const routine = routineAt(room, id, now);
+  if (routine?.quiet)
+    return "offline";
   if (p.manual)
     return p.manual;
+  if (routine)
+    return routine.presence;
   return p.transitions.filter((t) => t.at <= now).sort((a, b) => a.at - b.at).at(-1)?.status || p.automatic;
 }
 function delayFor(room, id, now = Date.now()) {
@@ -58,6 +193,14 @@ function validateRuntime(value) {
   if (!r || r.version !== 1 || typeof r.enabled !== "boolean" || !Array.isArray(r.jobs) || r.jobs.length > MAX_JOBS)
     throw new Error("Damaged scheduling records; the room file was preserved.");
   const ids = new Set;
+  if (r.routines !== undefined) {
+    if (!r.routines || typeof r.routines !== "object" || Array.isArray(r.routines) || Object.keys(r.routines).length > 12)
+      throw Error("Invalid routine records.");
+    for (const [id, state] of Object.entries(r.routines)) {
+      routineId(id);
+      validateRoutineState(state);
+    }
+  }
   if (r.idle) {
     const i = r.idle;
     identifier(i.periodId);
@@ -106,7 +249,7 @@ function publicRuntime(r) {
   const active = r.jobs.filter((j) => !TERMINAL.has(j.status));
   const history = r.jobs.filter((j) => ["cancelled", "failed", "missed"].includes(j.status)).slice(-SCHEDULE_HISTORY_LIMIT).reverse();
   const safeReasons = new Set(["Responder is unavailable.", "Delivery could not be saved. Deferred content is preserved.", "Scheduled messaging needs attention. Check room sources, provider and storage."]);
-  return { enabled: r.enabled, presence: r.presence, idle: r.idle, jobs: [...active, ...history].map(({ id, dueAt, expiresAt, deliverAt, kind, status, attempts, reason }) => ({
+  return { enabled: r.enabled, presence: r.presence, idle: r.idle, routines: r.routines, jobs: [...active, ...history].map(({ id, dueAt, expiresAt, deliverAt, kind, status, attempts, reason }) => ({
     id,
     dueAt,
     expiresAt,
@@ -207,7 +350,7 @@ class MochiCharacterPreferences {
     const availability = r.availability === undefined ? undefined : validatePresence(r.availability);
     if (availability?.transitions.length)
       throw Error("Schedules are conversation-specific.");
-    return { ...r, about: r.about.trim(), texting, availability };
+    return { ...r, about: r.about.trim(), texting, availability, ...r.routine === undefined ? {} : { routine: validatePlan(r.routine) } };
   }
   async save(userId, input, canSave = () => {}) {
     return this.accounts.guard(userId, async () => {
@@ -215,7 +358,7 @@ class MochiCharacterPreferences {
       const saved = await this.read(userId, input.characterId);
       if (input.revision !== saved.revision)
         throw Error("Character defaults changed. Refresh before saving.");
-      const record = this.validate({ ...saved, ...input.about !== undefined ? { about: input.about } : {}, ...input.texting !== undefined ? { texting: input.texting === null ? undefined : input.texting } : {}, ...input.availability !== undefined ? { availability: input.availability === null ? undefined : input.availability } : {}, revision: saved.revision + 1 });
+      const record = this.validate({ ...saved, ...input.about !== undefined ? { about: input.about } : {}, ...input.texting !== undefined ? { texting: input.texting === null ? undefined : input.texting } : {}, ...input.availability !== undefined ? { availability: input.availability === null ? undefined : input.availability } : {}, ...input.routine !== undefined ? { routine: input.routine === null ? undefined : input.routine } : {}, revision: saved.revision + 1 });
       const path = `mochi/v1/character-preferences/${record.characterId}.json`;
       await this.host.userStorage.setJson(path + ".pending", record, { userId });
       await this.host.userStorage.move(path + ".pending", path, userId);
@@ -2234,6 +2377,11 @@ class MochiService {
     validatePinnedContent(room);
     if (room.runtime !== undefined)
       validateRuntime(room.runtime);
+    if (room.runtime?.routines) {
+      for (const id of Object.keys(room.runtime.routines))
+        if (!room.characterIds.includes(id))
+          throw Error("Routine character is unavailable.");
+    }
     if (room.runtime?.presence)
       for (const [id, p] of Object.entries(room.runtime.presence)) {
         entityId(id);
@@ -2369,6 +2517,11 @@ class MochiService {
       if (nextIcon === saved.groupIcon && title === saved.title && equivalent(ids, saved.characterIds) && equivalent(settings, saved.settings) && equivalent(persona, saved.persona))
         return saved;
       const room = { ...saved, groupIcon: nextIcon, title, characterIds: ids, settings, persona, revision: saved.revision + 1, updatedAt: new Date().toISOString() };
+      if (room.runtime?.routines) {
+        for (const cid of Object.keys(room.runtime.routines))
+          if (!ids.includes(cid))
+            delete room.runtime.routines[cid];
+      }
       for (const j of room.runtime?.jobs || [])
         if (!TERMINAL.has(j.status)) {
           j.status = "cancelled";
@@ -2870,6 +3023,56 @@ class MochiService {
       }
     }
     return rooms;
+  }
+  async configureRoutine(userId, input) {
+    const user = identifier(userId), id = roomId(input.roomId), character = routineId(input.characterId), request = routineId(input.requestId);
+    await this.locked(user, id, async () => {
+      const room = await this.read(user, id, input.accountId);
+      if (!room.characterIds.includes(character))
+        throw Error("Character is not in this conversation.");
+      if (room.receipts.includes(request))
+        return;
+      if (room.revision !== input.revision)
+        throw Error("Routine changed elsewhere. Refresh before saving.");
+      room.runtime ||= { version: 1, enabled: false, jobs: [] };
+      room.runtime.routines ||= {};
+      const state = room.runtime.routines[character] || { history: [], proposals: [] };
+      let next = { plan: state.plan, override: state.override };
+      if (input.action === "save")
+        next = { plan: validatePlan(input.plan), override: undefined };
+      else if (input.action === "defaults")
+        next = { plan: undefined, override: undefined };
+      else if (input.action === "override") {
+        if (!planFor(room, character)?.enabled)
+          throw Error("Enable routines before setting a live activity.");
+        if (!Number.isInteger(input.minutes) || input.minutes < 1 || input.minutes > 240)
+          throw Error("Choose 1\u2013240 whole minutes.");
+        next.override = validateOverride({ id: request, activity: input.activity, presence: input.presence, startedAt: this.now(), expiresAt: this.now() + input.minutes * 60000, source: "user" });
+      } else if (input.action === "clear")
+        next.override = undefined;
+      else if (input.action === "undo") {
+        const last = state.history.at(-1);
+        if (!last || last.id !== input.changeId || last.source === "undo")
+          throw Error("This change is no longer safe to undo.");
+        next = structuredClone({ plan: last.before.plan, override: last.before.override });
+        if (next.override && next.override.expiresAt <= this.now())
+          next.override = undefined;
+      } else
+        throw Error("Unsupported routine action.");
+      this.abortScoped(user, id, input.accountId);
+      recordRoutine(state, next, request, this.now(), input.action === "undo" ? "undo" : "user");
+      state.proposals = [];
+      room.runtime.routines[character] = state;
+      room.receipts.push(request);
+      room.revision++;
+      for (const j of room.runtime.jobs)
+        if (!TERMINAL.has(j.status)) {
+          j.status = "cancelled";
+          delete j.draft;
+          delete j.additional;
+        }
+      await this.persist(user, room);
+    });
   }
   async configurePresence(userId, input) {
     const user = identifier(userId), id = roomId(input.roomId), character = entityId(input.characterId), presence = input.useDefault === true ? undefined : validatePresence(input.presence);
@@ -3577,6 +3780,8 @@ class MochiService {
         await this.react(userId, payload);
       else if (payload.type === "mochi:pinned_content")
         await this.pinnedContent(userId, payload);
+      else if (payload.type === "mochi:routine")
+        await this.configureRoutine(userId, payload);
       else if (payload.type === "mochi:preset_bind")
         await this.bindPreset(userId, payload);
       else if (payload.type !== "mochi:character_preferences" && payload.type !== "mochi:list" && payload.type !== "mochi:message_action" && payload.type !== "mochi:notification_clear" && payload.type !== "mochi:room_assign")
@@ -4115,21 +4320,21 @@ function setTrackerClockPaused(tracker, paused, roleplayNow, wallNow = new Date(
 
 // src/domain/jev.ts
 var TYPESAFE_JEV_ENDPOINT = "https://api.typesafe.ai/v1/systemone";
-var object = (value) => !!value && typeof value === "object" && !Array.isArray(value);
+var object2 = (value) => !!value && typeof value === "object" && !Array.isArray(value);
 var clean2 = (value, max) => typeof value === "string" ? value.trim().slice(0, max) : "";
 function normalizeJevSettings(value) {
-  const raw = object(value) ? value : {};
+  const raw = object2(value) ? value : {};
   const knownProvider = raw.provider === "llm" || raw.provider === "typesafe";
   const model = clean2(raw.model, 100);
   return { enabled: knownProvider && raw.enabled === true, provider: raw.provider === "typesafe" ? "typesafe" : "llm", model: /^jev-[a-zA-Z0-9._-]+$/.test(model) ? model : "jev-latest", autoAfterTurn: knownProvider && raw.autoAfterTurn === true };
 }
 function normalizeJevConfig(value) {
-  const raw = object(value) ? value : {};
-  const levels = (Array.isArray(raw.levels) ? raw.levels : []).flatMap((entry) => object(entry) && typeof entry.value === "number" && Number.isFinite(entry.value) && clean2(entry.label, 160) ? [{ value: entry.value, label: clean2(entry.label, 160) }] : []).slice(0, 10);
+  const raw = object2(value) ? value : {};
+  const levels = (Array.isArray(raw.levels) ? raw.levels : []).flatMap((entry) => object2(entry) && typeof entry.value === "number" && Number.isFinite(entry.value) && clean2(entry.label, 160) ? [{ value: entry.value, label: clean2(entry.label, 160) }] : []).slice(0, 10);
   return { question: clean2(raw.question, 240), levels, minConfidence: typeof raw.minConfidence === "number" && Number.isFinite(raw.minConfidence) ? Math.min(1, Math.max(0, raw.minConfidence)) : 0.65 };
 }
 function validateJevTracker(tracker) {
-  const raw = object(tracker.jev) ? tracker.jev : {};
+  const raw = object2(tracker.jev) ? tracker.jev : {};
   const config = normalizeJevConfig(raw);
   if (!config.question || String(raw.question).trim().length > 240)
     throw new Error("Give the judge a short question (up to 240 characters).");
@@ -4150,7 +4355,7 @@ function validateJevTracker(tracker) {
   }
 }
 function normalizeJevResult(value) {
-  if (!object(value) || !["applied", "unchanged", "uncertain", "invalid"].includes(String(value.status)))
+  if (!object2(value) || !["applied", "unchanged", "uncertain", "invalid"].includes(String(value.status)))
     return;
   return { sourceKey: clean2(value.sourceKey, 200), status: value.status, evaluatedAt: clean2(value.evaluatedAt, 80), message: clean2(value.message, 300), confidence: typeof value.confidence === "number" && Number.isFinite(value.confidence) ? value.confidence : undefined };
 }
@@ -4163,7 +4368,7 @@ function applyJevAnswer(tracker, answer, sourceKey, now, roleplayNow, provider =
     return tracker;
   const config = tracker.jev;
   const result = (status, message, confidence, next = tracker) => ({ ...next, jevResult: { sourceKey, status, message, confidence, evaluatedAt: now } });
-  if (!object(answer) || answer.type !== (tracker.kind === "state" ? "choice" : "score") || !Array.isArray(answer.probs))
+  if (!object2(answer) || answer.type !== (tracker.kind === "state" ? "choice" : "score") || !Array.isArray(answer.probs))
     return result("invalid", "The judge returned an invalid answer.");
   const options = tracker.kind === "state" ? tracker.states : config.levels.map((level) => level.label);
   const probs = answer.probs;
@@ -5935,7 +6140,7 @@ class ReplyJobs {
 }
 
 // src/backend/structured.ts
-function object2(value) {
+function object3(value) {
   if (!value || typeof value !== "object" || Array.isArray(value))
     throw new Error("Generation returned an invalid JSON object.");
   return value;
@@ -5980,13 +6185,13 @@ function parseGeneratedObject(content) {
     throw new Error("Generation returned an empty response.");
   const fenced = fencedBody(raw);
   if (fenced !== null)
-    return object2(JSON.parse(fenced));
+    return object3(JSON.parse(fenced));
   try {
-    return object2(JSON.parse(raw));
+    return object3(JSON.parse(raw));
   } catch (directError) {
     const extracted = firstCompleteObject(raw);
     if (extracted)
-      return object2(JSON.parse(extracted));
+      return object3(JSON.parse(extracted));
     throw directError;
   }
 }
@@ -6887,7 +7092,7 @@ async function runImageJob(api, input, signal, progress, native) {
 }
 
 // src/backend/jev.ts
-var object3 = (value) => !!value && typeof value === "object" && !Array.isArray(value);
+var object4 = (value) => !!value && typeof value === "object" && !Array.isArray(value);
 function jevQuestions(questions) {
   if (!questions.length || questions.length > 24)
     throw new Error("Use 1\u201324 tracker questions per batch.");
@@ -6898,15 +7103,15 @@ function jevQuestions(questions) {
   }]));
 }
 function readJevAnswers(response, questions) {
-  if (!object3(response) || !object3(response.answers))
+  if (!object4(response) || !object4(response.answers))
     throw new Error("The tracker judge returned incomplete results.");
   return questions.map((question, index) => {
     const id = `q${index + 1}`, answer = response.answers[id];
-    if (!object3(answer))
+    if (!object4(answer))
       throw new Error("The tracker judge returned incomplete results.");
     const keys = question.type === "choice" ? question.options : question.options.map((_, i) => String(i));
-    const matched = object3(answer.probabilities) && Object.keys(answer.probabilities).length === keys.length && keys.every((key) => Object.hasOwn(answer.probabilities, key));
-    const legendMatches = question.type === "choice" || object3(answer.legend) && Object.keys(answer.legend).length === keys.length && keys.every((key, i) => answer.legend[key] === question.options[i]);
+    const matched = object4(answer.probabilities) && Object.keys(answer.probabilities).length === keys.length && keys.every((key) => Object.hasOwn(answer.probabilities, key));
+    const legendMatches = question.type === "choice" || object4(answer.legend) && Object.keys(answer.legend).length === keys.length && keys.every((key, i) => answer.legend[key] === question.options[i]);
     if (!matched || !legendMatches)
       return { id, type: "invalid" };
     return {
