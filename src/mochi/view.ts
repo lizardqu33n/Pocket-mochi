@@ -168,6 +168,7 @@ export class MochiView {
     this.leave();this.resetScope();this.phone=phone;this.pickerOpen=true;this.startupOpen=true;this.profilesOpen=false;this.profiles.state=null;this.dispatch('mochi:accounts')
   }
   private resetScope():void{
+    this.routineDraftControls.prompts.reset();this.memoryPanel.prompts.reset()
     this.settingsPage='';this.settingsLayout.reset();this.personalSettings.reset();this.characterEditor.discard();this.personalScroll=0
     this.desktopDetails=undefined;this.mobileProfileOpen=false;this.profilePreferenceOwner='';this.conversationFilter='';this.conversationView='all'
     this.memoryPanel.reset()

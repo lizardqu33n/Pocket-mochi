@@ -1,0 +1,44 @@
+import {el} from '../frontend/shared.js'
+import {mochiButton as button,mochiIcon} from './ui/icon-slots.js'
+import {scopeKey,PROMPT_VERSION,DEFAULT_GENERATION_PROSE,GLOBAL_PROSE,type GenerationFeature,type PromptScope,type PromptBank,type PromptChoice} from './generation-prompts.js'
+import type {MochiRoom} from './types.js'
+interface State {scope:PromptScope;bank?:PromptBank;value?:PromptChoice;dirty:boolean;status:string;preview?:any;pending?:string}
+/** Reused by every independent Mochi generation editor. Drafts never enter browser storage. */
+export class GenerationPromptControls {
+ private states=new Map<string,State>();private requests=new Map<string,{key:string;action:string;timer:ReturnType<typeof setTimeout>}>()
+ constructor(private redraw:()=>void){}
+ reset(){for(const request of this.requests.values())clearTimeout(request.timer);this.states.clear();this.requests.clear()}
+ private key(room:MochiRoom,f:GenerationFeature,id=''){return JSON.stringify([room.accountId,room.id,room.revision,room.associationRevision||0,f,id])}
+ private selected(s:State,room:MochiRoom,f:GenerationFeature,id:string){const value=s.bank?.entries[scopeKey(s.scope,f,room.accountId,id)];s.value=structuredClone(value||{instructions:s.scope==='global'?GLOBAL_PROSE:DEFAULT_GENERATION_PROSE[f],detail:'balanced',defaultVersion:PROMPT_VERSION});s.dirty=false}
+ receive(p:any):boolean {
+  if(p.type!=='mochi:generation_prompt')return false
+  const request=this.requests.get(p.requestId);if(!request)return false;clearTimeout(request.timer);this.requests.delete(p.requestId)
+  const s=this.states.get(request.key);if(!s||s.pending!==p.requestId)return true;s.pending=undefined
+  if(p.error){s.status=p.error;s.preview=undefined}else if(request.action==='preview'){s.preview=p.result;s.status='Exact saved prompt snapshot ready. Generate uses this snapshot if sources and settings still match.'}
+  else{s.bank=p.result.bank;s.value=undefined;s.dirty=false;s.preview=undefined;s.status='Saved defaults revision '+s.bank!.revision+' · Effective source: '+p.result.effective.from+'.'}
+  this.redraw();return true
+ }
+ payload(room:MochiRoom,f:GenerationFeature,id=''):Record<string,string>{const s=this.states.get(this.key(room,f,id));if(s?.pending)throw Error('Wait for the prompt operation to finish.');if(s?.dirty)throw Error('Save instructions or reload defaults before generating.');return s?.preview?{previewDigest:s.preview.digest}:{}}
+ render(room:MochiRoom,f:GenerationFeature,id:string,send:(p:any)=>void,context:()=>any):HTMLElement {
+  const key=this.key(room,f,id);let s=this.states.get(key);if(!s){s={scope:'feature',dirty:false,status:''};this.states.set(key,s)}const state=s
+  const root=el('fieldset','mochi-generation-prompts');root.dataset.mochiGenerationFeature=f;root.append(el('legend','','AI generation instructions'),el('p','mochi-muted','Saved instructions replace the complete generation prose. Precedence: versioned feature default → global (all independent tools) → feature → fictional account + feature → character within that account + feature. Replies use Presets and Preview AI prompt. Save here is separate from Save settings.'))
+  const status=el('p','mochi-generation-prompt-status',state.status);status.setAttribute('role','status')
+  const request=(action:string)=>{const requestId='prompt_'+crypto.randomUUID().replaceAll('-','');state.pending=requestId;const timer=setTimeout(()=>{this.requests.delete(requestId);if(state.pending===requestId){state.pending=undefined;state.preview=undefined;state.status='Prompt operation timed out. Reload defaults before retrying a save; your edited text is retained.';this.redraw()}},30000);this.requests.set(requestId,{key,action,timer});try{send({type:'mochi:generation_prompt',requestId,roomId:room.id,accountId:room.accountId,revision:room.revision,feature:f,characterId:id||undefined,scope:state.scope,promptRevision:state.bank?.revision,value:state.value,action,...(action==='preview'?context():{})})}catch{clearTimeout(timer);this.requests.delete(requestId);state.pending=undefined;state.status='Prompt operation could not be sent. Your edited text is retained.'}this.redraw()}
+  const scope=el('select');scope.className='mochi-generation-prompt-scope';scope.setAttribute('aria-label','Generation instructions scope')
+  for(const [value,label]of [['global','Global · all independent Mochi generation'],['feature','This feature · all fictional accounts'],['account','This fictional account · this feature'],['character',room.accountId?'This character in this fictional account · this feature':'This character · legacy chats · this feature']]){if(value==='account'&&!room.accountId||value==='character'&&!id)continue;const o=el('option','',label);o.value=value;scope.append(o)}scope.value=state.scope;scope.disabled=!!state.pending;scope.onchange=()=>{if(state.dirty){scope.value=state.scope;status.textContent='Save or reload your edited instructions before switching scope.';return}state.scope=scope.value as PromptScope;state.value=undefined;state.preview=undefined;this.redraw()};root.append(scope)
+  const load=button(state.dirty?'Discard edits and reload saved defaults':'Load saved generation defaults');load.disabled=!!state.pending;load.onclick=()=>request('read');root.append(load)
+  const control=(label:string,icon:string,action:()=>void)=>{const b=button(label);b.classList.add('mochi-generation-prompt-action');b.prepend(mochiIcon(icon,'generation-prompt-'+icon));b.disabled=!!state.pending;b.onclick=action;return b}
+  if(state.bank){
+   if(!state.value)this.selected(state,room,f,id)
+   root.append(el('p','mochi-muted','The editor shows the selected saved override, or its versioned default when none is saved. Save creates a replacement at this scope. More specific overrides still win. Preview shows the effective instructions and expanded source context. Use only {{detail}} in global instructions so they work with both tools.'))
+   const text=el('textarea');text.className='mochi-generation-prompt-instructions';text.rows=8;text.maxLength=8000;text.value=state.value!.instructions;text.setAttribute('aria-label','Complete generation instructions');text.disabled=!!state.pending;text.oninput=()=>{state.value!.instructions=text.value;state.dirty=true;state.preview=undefined;status.textContent='Unsaved instructions. Save before generating.'};root.append(text)
+   const detail=el('select');detail.setAttribute('aria-label','Generation detail');detail.className='mochi-generation-prompt-detail';for(const value of ['minimal','balanced','detailed']){const o=el('option','',value);o.value=value;detail.append(o)}detail.value=state.value!.detail;detail.disabled=!!state.pending;detail.onchange=()=>{state.value!.detail=detail.value as any;state.dirty=true;state.preview=undefined;status.textContent='Unsaved detail preference.'};root.append(detail)
+   const vars=f==='schedule'?'{{detail}}, {{timezone}}, {{guidance}}, {{character_name}}, {{chat_history}} (only with explicit history checkbox approval)':'{{detail}}, {{conversation_title}}, {{chat_history}} (only the approved summary prefix)'
+   root.append(el('p','mochi-muted','Variables: '+vars+'. Use \\{{variable}} for literal text. Expansion is single-pass; source macros remain literal. Unknown or unapproved variables reject generation. Source context is always shown in preview.'))
+   root.append(control('Save generation instructions','save',()=>request('save')),control('Reset to '+PROMPT_VERSION+' default and save','refresh',()=>request('reset')),control('Remove override and inherit','back',()=>request('inherit')))
+  }
+  const preview=control('Preview saved generation prompt','eye',()=>{if(state.dirty){status.textContent='Save or reload instructions before previewing.';return}try{request('preview')}catch(e){state.pending=undefined;status.textContent=(e as Error).message}});root.append(preview,status)
+  if(state.preview){const p=state.preview;root.append(el('p','mochi-muted',p.wrappers+' · Effective source: '+p.effective.from+' · input '+p.budget.inputTokens+' / context '+p.budget.contextTokens+'; output reserve '+p.budget.outputTokens+'. '+(p.budget.approximate!==false?'Host token count may be approximate. ':'')+'Preview includes approved source text; copy only where you intend to share it.'));const pre=el('pre','mochi-generation-prompt-preview',JSON.stringify(p.messages,null,2));pre.tabIndex=0;pre.setAttribute('aria-label','Assembled Mochi generation prompt');root.append(pre,control('Copy assembled generation prompt','copy',()=>{const clipboard=globalThis.navigator?.clipboard;if(!clipboard){status.textContent='Clipboard unavailable. Select and copy the preview text.';return}clipboard.writeText(JSON.stringify(p.messages,null,2)).then(()=>{status.textContent='Prompt copied.'},()=>{status.textContent='Clipboard unavailable. Select and copy the preview text.'})}))}
+  return root
+ }
+}

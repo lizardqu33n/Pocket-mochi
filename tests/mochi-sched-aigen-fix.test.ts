@@ -46,7 +46,9 @@ for(const action of ['disable','remove','delete'] as const)test(`production sett
 
 test('generation contract requests reviewed sleep covering weekends and night workers without filler',()=>{
  const prompt=routinePrompt({name:'Sam',description:base},'America/Chicago','Night shift worker')
- expect(prompt[0].content).toContain('sleep');expect(prompt[0].content).toContain('weekend');expect(prompt[0].content).toContain('night');expect(prompt[0].content).toContain('2300-0700')
+ // AIGEN-02 keeps editable prose in the user task message, separate from the schema.
+ const assembled=prompt.map(m=>m.content).join('\n')
+ expect(assembled).toContain('sleep');expect(assembled).toContain('weekend');expect(assembled).toContain('night');expect(assembled).toContain('2300-0700')
  expect(JSON.parse(prompt[1].content).character.description).toBe(base)
 })
 

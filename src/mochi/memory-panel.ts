@@ -1,3 +1,4 @@
+import {GenerationPromptControls} from './generation-prompt-controls.js'
 import {mochiButton as button} from './ui/icon-slots.js'
 import {mochiStyle} from './ui/styles.js'
 import type {SummarySuggestion} from './summarization.js'
@@ -7,6 +8,7 @@ import {MAX_SUMMARY_TEXT,MAX_SUMMARY_VERSIONS,currentSummary,type ConversationMe
 const scope=(r:MochiRoom)=>JSON.stringify([r.accountId||'',r.id,r.associationRevision||0])
 interface Draft {suggestionId?:string;text:string;enabled:boolean;excludeCovered:boolean;boundaryId:string;revision:number;baseline:string}
 export class MochiMemoryPanel {
+ readonly prompts=new GenerationPromptControls(()=>this.redraw())
  generating=false;suggestion?:SummarySuggestion;private suggestionDrafts=new Map<string,SummarySuggestion>();private summaryTicket='';private summaryTimer?:ReturnType<typeof setTimeout>;private summaryBoundaryId='';private useCurrent=false;
  open=false;status='';memory?:ConversationMemory;valid=false;reason='';draft?:Draft
  private root?:HTMLElement;private loadedRevision=0;private focusEditor=false;private key='';private ticket='';private base=0;private submitted=false;private applyingSuggestionId?:string;private timer?:ReturnType<typeof setTimeout>;private drafts=new Map<string,Draft>()
@@ -28,7 +30,7 @@ export class MochiMemoryPanel {
   const room=this.current();if(!room||!this.open||scope(room)!==this.key||this.generating||this.ticket||this.unavailable()||!this.summaryBoundaryId)return
   this.summaryTicket=requestId('mochi_summary');const ticket=this.summaryTicket;this.generating=true;this.status='Generating one summary suggestion. Saved memory is unchanged.';this.taskChanged(ticket,true);this.renderAgain()
   this.summaryTimer=setTimeout(()=>{if(this.summaryTicket===ticket){this.stopSummary();this.status='Summary generation timed out. Your saved memory and previous draft are unchanged.';this.renderAgain()}},185000)
-  try{this.send({type:'mochi:summary_generate',requestId:ticket,roomId:room.id,accountId:room.accountId,associationRevision:room.associationRevision||0,revision:room.revision,boundaryId:this.summaryBoundaryId,useCurrent:this.useCurrent})}catch{this.stopSummary();this.status='Summary generation is unavailable. Your draft is retained.';this.renderAgain()}
+  try{this.send({type:'mochi:summary_generate',requestId:ticket,roomId:room.id,accountId:room.accountId,associationRevision:room.associationRevision||0,revision:room.revision,boundaryId:this.summaryBoundaryId,useCurrent:this.useCurrent,historyConfirmed:true,...this.prompts.payload(room,'summary',room.characterIds.length===1?room.characterIds[0]:'')})}catch(error){this.stopSummary();this.status=error instanceof Error?error.message:'Summary generation is unavailable. Your draft is retained.';this.renderAgain()}
  }
  private receiveSummary(p:any):boolean|undefined{
   const types=['mochi:summary_started','mochi:summary_suggestion','mochi:error','mochi:job_finished']
@@ -52,6 +54,7 @@ export class MochiMemoryPanel {
   try{this.send({type:'mochi:memory',requestId:ticket,accountId:room.accountId,roomId:room.id,revision:room.revision,associationRevision:room.associationRevision||0,...values})}catch{clearTimeout(this.timer);this.ticket='';this.status='Memory is unavailable. Your draft is retained.';this.renderAgain()}
  }
  receive(p:any):boolean{
+  if(this.prompts.receive(p))return true
   const summary=this.receiveSummary(p);if(summary!==undefined)return summary
   if(p?.type!=='mochi:memory'&&p?.type!=='mochi:error')return false
   if(!this.ticket||p.requestId!==this.ticket)return p.type==='mochi:memory'
@@ -87,7 +90,8 @@ export class MochiMemoryPanel {
   const sourceLabel=el('label','','Summarize from the start through message');sourceLabel.append(end);generation.append(sourceLabel)
   end.oninput=()=>{const i=Number(end.value),m=Number.isSafeInteger(i)&&i>0?room.messages[i-1] as {id?:string}|undefined:undefined;this.summaryBoundaryId=typeof m?.id==='string'?m.id:''}
   const reference=el('input');reference.type='checkbox';reference.checked=this.useCurrent;reference.setAttribute('aria-label','Use verified current summary as optional reference');reference.disabled=this.generating;reference.onchange=()=>{this.useCurrent=reference.checked};const referenceLabel=el('label','','Use verified current summary as optional reference');referenceLabel.prepend(reference);generation.append(referenceLabel)
-  const generate=button('Generate summary','lp-button');generate.setAttribute('aria-label','Generate summary');generate.disabled=this.generating||!!this.ticket||this.unavailable()||!room.messages.length;generate.onclick=()=>{if(this.suggestion){const yes=button('Confirm generate a replacement suggestion','lp-button');yes.onclick=()=>this.generate();generate.replaceWith(yes);yes.focus()}else this.generate()};const stop=button('Stop summary','lp-button');stop.setAttribute('aria-label','Stop summary');stop.hidden=!this.generating;stop.disabled=!this.generating;stop.onclick=()=>{this.stopSummary();this.status='Summary stopped. Your saved memory and draft are unchanged.';this.renderAgain()};generation.append(generate,stop,el('p','mochi-muted','One request, full chosen prefix. Oversized ranges are rejected rather than silently trimmed.'))
+  const generate=button('Generate summary','lp-button');generate.setAttribute('aria-label','Generate summary');generate.disabled=this.generating||!!this.ticket||this.unavailable()||!room.messages.length;generate.onclick=()=>{if(this.suggestion){const yes=button('Confirm generate a replacement suggestion','lp-button');yes.onclick=()=>this.generate();generate.replaceWith(yes);yes.focus()}else this.generate()};const stop=button('Stop summary','lp-button');stop.setAttribute('aria-label','Stop summary');stop.hidden=!this.generating;stop.disabled=!this.generating;stop.onclick=()=>{this.stopSummary();this.status='Summary stopped. Your saved memory and draft are unchanged.';this.renderAgain()};generation.append(generate,stop,el('p','mochi-muted','Generate summary explicitly approves sending this selected conversation prefix to the saved chat connection. Preview shows the complete source first. One request, full chosen prefix; oversized ranges are rejected.'))
+  generation.append(this.prompts.render(room,'summary',room.characterIds.length===1?room.characterIds[0]:'',p=>this.send(p),()=>({boundaryId:this.summaryBoundaryId,useCurrent:this.useCurrent,historyConfirmed:true})))
   root.append(generation)
   if(this.suggestion){
    const suggestion=this.suggestion,preview=el('section','mochi-memory-version');preview.append(el('h4','','3. Review AI suggestion — not saved'),el('p','mochi-muted',`Messages 1–${suggestion.coverage.count} · generated ${new Date(suggestion.createdAt).toLocaleString()} · input ${suggestion.budget.inputTokens}, output reserve ${suggestion.budget.outputTokens}, budget ${suggestion.budget.contextTokens}. ${suggestion.budget.approximate===true?'Host token count is approximate.':''}`))

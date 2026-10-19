@@ -1,5 +1,6 @@
 import {applyRoutineActions} from './routine-actions.js'
 import {callPocketProvider} from '../backend/generation.js'
+import {GenerationPromptError,GenerationPrompts,feature,choice,scopeKey,resolvePrompt,PROMPT_VERSION,DEFAULT_GENERATION_PROSE,GLOBAL_PROSE,type GenerationFeature} from './generation-prompts.js'
 import {parseRoutineDraft,routinePrompt,preserveLocks,RoutineDraftError,type RoutineDraft} from './routine-generation.js'
 import {validatePlan,validateOverride,recordRoutine,planFor,routineId,timezone,type RoutineState} from './routines.js'
 import {MochiCharacterPreferences} from './character-preferences.js'
@@ -78,6 +79,59 @@ function validateRoom(value: any, id: string): MochiRoom {
   return value
 }
 export class MochiService {
+  readonly generationPrompts:GenerationPrompts
+  /** Read-only construction is shared with dispatch; no provider or quota reservation. */
+  private async generationPlan(user:string,room:MochiRoom,input:any,f:GenerationFeature):Promise<any>{
+    const bank=await this.generationPrompts.read(user)
+    const target=f==='summary'?(room.characterIds.length===1?room.characterIds[0]:''):input.characterId||''
+    const selected=resolvePrompt(bank,f,room.accountId,target)
+    let messages:any[],sources:any,budget:any
+    if(f==='schedule'){
+      const character=routineId(input.characterId)
+      if(!room.characterIds.includes(character))throw new GenerationPromptError('Character is unavailable.')
+      if(input.includeHistory!==undefined&&typeof input.includeHistory!=='boolean'||input.includeHistory===true&&input.historyConfirmed!==true)throw new GenerationPromptError('Explicitly approve this chat history before including it.')
+      sources=await resolveGenerationSources(this.host,room,user,character,[character])
+      const history=input.includeHistory===true?(room.messages.slice(-20) as MochiMessage[]).map(m=>({role:m.role,characterId:m.characterId,text:m.content.slice(0,2000)})):undefined
+      messages=routinePrompt({...sources.characters[0],about:room.characterDefaults?.[character]?.about},input.timezone,input.guidance??'',planFor(room,character),history,selected)
+      if(!this.host.tokens?.countMessages)throw new GenerationPromptError('Required token counter is unavailable.')
+      const count=await this.host.tokens.countMessages(messages,{model:room.settings!.model||sources.connection.model,userId:user})
+      budget={inputTokens:count.total_tokens,outputTokens:room.settings!.outputTokens,contextTokens:room.settings!.contextTokens,envelopeTokens:256,approximate:typeof count.approximate==='boolean'?count.approximate:null}
+      if(!Number.isFinite(count.total_tokens)||count.total_tokens<0||count.total_tokens+budget.outputTokens+256>budget.contextTokens)throw new GenerationPromptError('Schedule source exceeds this chat’s token budget. Shorten instructions or omit history.')
+    }else{
+      // The existing Generate summary button approves the visibly selected prefix.
+      if(input.historyConfirmed!==undefined&&input.historyConfirmed!==true)throw new GenerationPromptError('Approve the selected conversation prefix first.')
+      const plan=await prepareSummary(this.host,room,user,input.boundaryId,input.useCurrent===true,new AbortController().signal,selected)
+      messages=plan.messages;sources=plan.sources;budget=plan.budget
+      return {...plan,promptRevision:bank.revision,digest:await hashSummaryInput([user,room.id,room.accountId,room.revision,room.associationRevision,bank.revision,messages,sourceSignature(sources)]),effective:selected}
+    }
+    return {messages,sources,budget,promptRevision:bank.revision,digest:await hashSummaryInput([user,room.id,room.accountId,room.revision,room.associationRevision,bank.revision,messages,sourceSignature(sources)]),effective:selected}
+  }
+  async promptConfiguration(userId:string,input:any){
+    return this.locked(identifier(userId),roomId(input.roomId),async()=>{
+    const user=identifier(userId),room=await this.read(user,roomId(input.roomId),input.accountId),f=feature(input.feature)
+    if(room.revision!==input.revision)throw new GenerationPromptError('Conversation changed. Reload prompt controls.')
+    if(input.characterId&&!room.characterIds.includes(entityId(input.characterId)))throw new GenerationPromptError('Character is unavailable.')
+    if(room.accountId)await this.fictionalAccounts.get(user,room.accountId)
+    if(input.action==='preview'){
+      const plan=await this.generationPlan(user,room,input,f)
+      return {messages:plan.messages,budget:plan.budget,digest:plan.digest,promptRevision:plan.promptRevision,effective:plan.effective,wrappers:'Exact Mochi-built messages. Provider or host wrappers are invisible to Mochi and are not shown.'}
+    }
+    let bank=await this.generationPrompts.read(user)
+    if(input.action!=='read'){
+      const key=scopeKey(input.scope,f,room.accountId,input.characterId)
+      if(!['save','reset','inherit'].includes(input.action))throw new GenerationPromptError('Invalid prompt action.')
+      const value=input.action==='inherit'?undefined:input.action==='reset'?{instructions:input.scope==='global'?GLOBAL_PROSE:DEFAULT_GENERATION_PROSE[f],detail:'balanced' as const,defaultVersion:PROMPT_VERSION}:choice(input.value)
+      bank=await this.generationPrompts.save(user,input.promptRevision,key,value)
+    }
+    const target=f==='summary'?(room.characterIds.length===1?room.characterIds[0]:''):input.characterId||''
+    const visible=new Set([scopeKey('global',f),scopeKey('feature',f)])
+    if(room.accountId)visible.add(scopeKey('account',f,room.accountId))
+    if(target)visible.add(scopeKey('character',f,room.accountId,target))
+    // Never return another fictional account's or character's saved prompt prose.
+    const publicBank={...bank,entries:Object.fromEntries(Object.entries(bank.entries).filter(([key])=>visible.has(key)))}
+    return {bank:publicBank,effective:resolvePrompt(bank,f,room.accountId,target),defaultVersion:PROMPT_VERSION}
+    })
+  }
   resolvePhone: (user: string, phone: MochiPhone) => Promise<string | undefined> = async()=>undefined
   private async phoneKey(user:string,input:unknown):Promise<string|undefined>{const phone=phoneContext(input);return phone?this.resolvePhone(user,phone):undefined}
   backgroundEnabled: (userId: string) => Promise<boolean> = async () => false
@@ -93,8 +147,8 @@ export class MochiService {
     const background = publicRuntime(room.runtime)
     return background ? { ...background, snapshot: { session: this.schedulingSession, sequence: this.schedulingSequences.get(this.jobKey(user, room.id)) || 0 } } : undefined
   }
-  private summaryAttempts=new Map<string,{accountId?:string;associationRevision:number;coverage?:import('./memory.js').SummaryCoverage;configuration:string;inputDigest:string;sourceSignature:string;useCurrent:boolean;suggestion?:SummarySuggestion}>()
-  private routineDrafts=new Map<string,{roomId:string;characterId:string;accountId?:string;revision:number;associationRevision:number;source:string;defaults:string;draftId?:string;raw?:string;draft?:RoutineDraft}>()
+  private summaryAttempts=new Map<string,{accountId?:string;associationRevision:number;coverage?:import('./memory.js').SummaryCoverage;configuration:string;promptRevision?:number;inputDigest:string;sourceSignature:string;useCurrent:boolean;suggestion?:SummarySuggestion}>()
+  private routineDrafts=new Map<string,{roomId:string;characterId:string;accountId?:string;revision:number;associationRevision:number;source:string;defaults:string;promptRevision?:number;draftId?:string;raw?:string;draft?:RoutineDraft}>()
   private jobs = new Map<string, { task?:'summary'|'routine'; requestId: string; controller: AbortController; accountId?: string; phoneKey?: string; response?: boolean }>()
   private pending = new Map<string, Set<{ requestId: string; controller: AbortController; accountId?: string; phoneKey?: string }>>()
   private jobKey(user: string, id: string): string { return JSON.stringify([user, id]) }
@@ -116,6 +170,7 @@ export class MochiService {
   readonly fictionalAccounts: MochiAccounts
   readonly presets:MochiPresets
   constructor(private host: MochiHost, private makeId = () => `room_${crypto.randomUUID().replaceAll('-', '')}`, private now: () => number = Date.now) {
+    this.generationPrompts=new GenerationPrompts(host)
     this.presets=new MochiPresets(host)
     this.fictionalAccounts = new MochiAccounts(host, (user, input) => this.persona(user, input), now)
   }
@@ -329,6 +384,7 @@ export class MochiService {
   }
   private summaryAttemptKey(user:string,id:string,request:string):string{return JSON.stringify([user,id,request])}
   private async verifySummary(user:string,room:MochiRoom,attempt:NonNullable<ReturnType<typeof this.summaryAttempts.get>>,boundaryId:string):Promise<void>{
+    if(attempt.promptRevision!==undefined&&(await this.generationPrompts.read(user)).revision!==attempt.promptRevision)throw new SummaryError('Generation prompts changed. Regenerate explicitly.','stale')
     if(room.accountId!==attempt.accountId||(room.associationRevision||0)!==attempt.associationRevision||summaryConfiguration(room)!==attempt.configuration)throw new SummaryError('The chat identity, settings or saved memory changed. Regenerate the suggestion; your editable text is retained.','stale')
     let input:Awaited<ReturnType<typeof summaryInput>>
     try{input=await summaryInput(room,boundaryId,attempt.useCurrent)}catch{throw new SummaryError('The source range changed or is unavailable. Regenerate or review your draft manually.','stale')}
@@ -356,7 +412,9 @@ export class MochiService {
       })
       if(snapshot.cached)return structuredClone(snapshot.cached)
       this.host.sendToFrontend({type:'mochi:summary_started',roomId:id,accountId:snapshot.room.accountId,requestId},user)
-      const plan=await prepareSummary(this.host,snapshot.room,user,input.boundaryId,input.useCurrent===true,controller.signal),attempt=this.summaryAttempts.get(attemptKey)!
+      const plan=await this.generationPlan(user,snapshot.room,input,'summary'),attempt=this.summaryAttempts.get(attemptKey)!
+      if(input.previewDigest&&input.previewDigest!==plan.digest)throw new SummaryError('Prompt preview changed. Preview again before generating.','stale')
+      attempt.promptRevision=plan.promptRevision
       attempt.coverage=plan.coverage;attempt.inputDigest=plan.inputDigest;attempt.sourceSignature=plan.sourceSignature
       await this.locked(user,id,async()=>{controller.signal.throwIfAborted();const current=await this.read(user,id,input.accountId);await this.verifySummary(user,current,attempt,plan.coverage.boundaryId)})
       reserved=await this.reserveAutomatic(user,id,true)
@@ -655,19 +713,26 @@ export class MochiService {
       const sources=await resolveGenerationSources(this.host,room,user,character,[character]),attempt=this.routineDrafts.get(attemptKey)!
       attempt.source=sourceSignature(sources)
       const base=planFor(room,character)
-      let raw=input.raw
+      let raw=input.raw,promptRevision:number|undefined
       if(!parseOnly){
-        const history=input.includeHistory===true?(room.messages.slice(-20) as MochiMessage[]).map(m=>({role:m.role,characterId:m.characterId,text:m.content.slice(0,2000)})):undefined
-        const messages=routinePrompt({...sources.characters[0],about:room.characterDefaults?.[character]?.about},input.timezone,input.guidance??'',base,history)
-        const count=await this.host.tokens!.countMessages(messages,{model:room.settings!.model||sources.connection.model,userId:user})
-        if(!Number.isFinite(count.total_tokens)||count.total_tokens+room.settings!.outputTokens+256>room.settings!.contextTokens)throw Error('Schedule source exceeds this chat’s token budget. Shorten guidance or omit history.')
+        const promptPlan=await this.generationPlan(user,room,input,'schedule'),messages=promptPlan.messages
+        if(sourceSignature(promptPlan.sources)!==attempt.source)throw Error('Schedule sources changed. Preview again.')
+        if(input.previewDigest&&input.previewDigest!==promptPlan.digest)throw Error('Prompt preview changed. Preview again before generating.')
+        promptRevision=promptPlan.promptRevision;attempt.promptRevision=promptRevision
+        await this.locked(user,id,async()=>{
+          const current=await this.read(user,id,input.accountId),fresh=await resolveGenerationSources(this.host,current,user,character,[character])
+          if(current.revision!==attempt.revision||(current.associationRevision||0)!==attempt.associationRevision||JSON.stringify(current.characterDefaults)!==attempt.defaults||sourceSignature(fresh)!==attempt.source)throw Error('Schedule sources changed. Preview again.')
+          controller.signal.throwIfAborted()
+        })
         controller.signal.throwIfAborted();reserved=await this.reserveAutomatic(user,id,true)
         if(!reserved)throw Error('The shared generation quota is unavailable.')
         controller.signal.throwIfAborted()
+        if((await this.generationPrompts.read(user)).revision!==promptRevision)throw Error('Generation prompts changed. Preview again.')
         const result=await callPocketProvider(this.host,{messages,connection_id:sources.connection.id,userId:user,signal:controller.signal,reasoning:{source:'off'},parameters:{max_tokens:room.settings!.outputTokens,temperature:0.8,...(room.settings!.model?{model:room.settings!.model}:{})}})
         controller.signal.throwIfAborted();if(result?.finish_reason==='length')throw new RoutineDraftError('Schedule output was truncated. Regenerate a shorter routine.')
         raw=result?.content
       }
+      if(promptRevision!==undefined&&(await this.generationPrompts.read(user)).revision!==promptRevision)throw Error('Generation prompts changed. Regenerate explicitly.')
       const draft=parseRoutineDraft(raw,base)
       if(!parseOnly&&draft.plan.timezone!==timezone(input.timezone))throw new RoutineDraftError('Generated timezone differs from the reviewed request. Regenerate using the chosen timezone.')
       return await this.locked(user,id,async()=>{
@@ -690,6 +755,7 @@ export class MochiService {
       if(!attempt?.draft||attempt.roomId!==id||attempt.characterId!==character||attempt.accountId!==room.accountId||attempt.revision!==room.revision||attempt.associationRevision!==(room.associationRevision||0)||attempt.defaults!==JSON.stringify(room.characterDefaults))throw Error('This draft is unavailable or stale. Regenerate or preview again.')
       if(this.jobs.has(this.jobKey(user,id)))throw Error('Wait for the current reply before applying.')
       const fresh=await resolveGenerationSources(this.host,room,user,character,[character]);if(sourceSignature(fresh)!==attempt.source)throw Error('Character or connection changed. Regenerate the preview.')
+      if(attempt.promptRevision!==undefined&&(await this.generationPrompts.read(user)).revision!==attempt.promptRevision)throw Error('Generation prompts changed. Regenerate explicitly.')
       const plan=validatePlan(input.plan);preserveLocks(planFor(room,character),plan)
       const texting=input.texting===undefined?undefined:validateTextingStyles({[character]:input.texting})?.[character]
       room.runtime||={version:1,enabled:false,jobs:[]};room.runtime.routines||={}
@@ -1079,6 +1145,9 @@ export class MochiService {
     if (!userId) return
     let selectedRoomId: string | undefined
     try {
+      if(payload.type==='mochi:generation_prompt'){
+        try{const result=await this.promptConfiguration(userId,payload);this.host.sendToFrontend({type:'mochi:generation_prompt',requestId:payload.requestId,result},userId)}catch(error){this.host.sendToFrontend({type:'mochi:generation_prompt',requestId:payload.requestId,error:error instanceof GenerationPromptError||error instanceof SummaryError?error.message:'Generation instructions could not be loaded, saved or previewed. Check source permissions, consent, token limits and the current account; reload and retry. Saved defaults are preserved.'},userId)}return
+      }
       if(payload.type==='mochi:routine_generate'||payload.type==='mochi:routine_parse'){
         try{this.host.sendToFrontend(await this.generateRoutine(userId,payload,payload.type==='mochi:routine_parse'),userId)}catch(error){this.host.sendToFrontend({type:'mochi:routine_error',requestId:payload.requestId,roomId:payload.roomId,characterId:payload.characterId,accountId:payload.accountId,revision:payload.revision,message:error instanceof RoutineDraftError?'Schedule draft rejected: '+error.message+' No changes were saved. Edit the JSON and preview, or regenerate explicitly.':'Schedule draft was not created. Check JSON, timezone, locked entries, token budget and source availability; retry explicitly.'},userId)}return
       }
