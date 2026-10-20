@@ -6,10 +6,12 @@ import type { TransferArchive, TransferReview } from './mochi/transfer.js'
 export function setup(ctx: SpindleFrontendContext): () => void {
   const tab = ctx.ui.registerDrawerTab({ id: 'mochi-transfer-maintenance', title: 'Mochi transfer', iconSvg: MOCHI_SIDEBAR_ICON })
   const root = document.createElement('section'), heading = document.createElement('h2'), notice = document.createElement('p')
+  root.style.cssText = 'display:grid;gap:12px;padding:16px;min-width:0'
   heading.textContent = 'Mochi transfer maintenance'
   notice.textContent = 'Use only after operator approval: stop the normal source and destination workers, preserve their original code/data, and keep the source disabled through import. No messaging or generation runs in this package. This transfers only the currently authenticated owner.'
   const status = document.createElement('p'); status.setAttribute('role', 'status')
   const preview = document.createElement('pre'); preview.style.whiteSpace = 'pre-wrap'
+  preview.style.cssText += ';overflow-wrap:anywhere;max-height:50vh;overflow:auto'
   const file = document.createElement('input'); file.type = 'file'; file.accept = '.json,application/json'; file.setAttribute('aria-label', 'Choose Mochi export')
   const label = document.createElement('label'), check = document.createElement('input'); check.type = 'checkbox'
   label.append(check, ' I reviewed this inventory, saved the original bytes, and confirm the old source is disabled. I consent to this operation for my authenticated owner ID.')

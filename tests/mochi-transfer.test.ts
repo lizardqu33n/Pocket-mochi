@@ -331,3 +331,23 @@ test('oversized source and unavailable host APIs are refused before file bytes o
   expect(() => startTransferMaintenance(s.host, 'source')).toThrow('capability')
   expect(() => startTransferMaintenance(memory('mochi').host, 'source')).toThrow('namespace')
 })
+
+test('maintenance teardown stops further storage operations and leaves an interrupted import recoverable', async () => {
+  const { a } = await archive(), d = memory()
+  const original = d.host.userStorage.setJson
+  let stop = () => {}, stoppedAfterMarker = false
+  d.host.userStorage.setJson = async (p: string, v: any, o: any) => {
+    await original(p, v, o)
+    if (p === TRANSFER_LOCK && !stoppedAfterMarker) { stoppedAfterMarker = true; stop() }
+  }
+  stop = startTransferMaintenance(d.host, 'destination')
+  d.emit({ type: 'mochi-transfer:request', requestId: 'stop_mid_import', action: 'import', archive: a, consent: consent(a) }, 'alice')
+  for (let i = 0; i < 20; i++) await new Promise(r => setTimeout(r, 0))
+  expect(stoppedAfterMarker).toBe(true); expect(d.events).toHaveLength(0)
+  expect(await d.host.userStorage.list('mochi/v1/', 'alice')).toEqual([])
+  expect(await d.host.userStorage.exists(TRANSFER_LOCK, 'alice')).toBe(true)
+  d.host.userStorage.setJson = original
+  await importArchive(d.host, 'alice', a, consent(a))
+  expect(await d.host.userStorage.exists(TRANSFER_LOCK, 'alice')).toBe(false)
+  expect(d.calls).toHaveLength(0)
+})

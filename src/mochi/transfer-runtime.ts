@@ -10,6 +10,17 @@ export function startTransferMaintenance(host: SpindleAPI, mode: MaintenanceMode
     if (typeof host.userStorage[api] !== 'function') throw Error('Required host storage capability is unavailable: ' + api)
   }
   let stopped = false
+  const guarded = Object.create(host) as TransferHost
+  guarded.userStorage = new Proxy(host.userStorage, { get(storage, key) {
+    const fn = Reflect.get(storage, key)
+    if (typeof fn !== 'function') return fn
+    return async (...args: unknown[]) => {
+      if (stopped) throw Error('Maintenance stopped; retain the journal and resume after approval.')
+      const result = await fn.apply(storage, args)
+      if (stopped) throw Error('Maintenance stopped; retain the journal and resume after approval.')
+      return result
+    }
+  } })
   const serial = new Map<string, Promise<unknown>>()
   const unsubscribe = host.onFrontendMessage((payload, owner) => {
     const p = payload as any
@@ -22,11 +33,11 @@ export function startTransferMaintenance(host: SpindleAPI, mode: MaintenanceMode
         if (host.users) await host.users.getRole(owner)
         if (stopped) return
         if (p.action === 'identity') result = { ownerId: owner, mode }
-        else if (mode === 'source' && p.action === 'export') result = await exportArchive(host as TransferHost, owner, 'lumiphone', p.confirmed, p.includeProfiles === true)
+        else if (mode === 'source' && p.action === 'export') result = await exportArchive(guarded, owner, 'lumiphone', p.confirmed, p.includeProfiles === true)
         else if (mode === 'destination' && p.action === 'review') result = await reviewArchive(p.archive, owner)
-        else if (mode === 'destination' && p.action === 'import') { await importArchive(host as TransferHost, owner, p.archive, p.consent); result = { completed: true } }
-        else if (mode === 'destination' && p.action === 'review-rollback') result = await reviewRollback(host as TransferHost, owner)
-        else if (mode === 'destination' && p.action === 'rollback') { await rollbackImport(host as TransferHost, owner, p.consent); result = { rolledBack: true } }
+        else if (mode === 'destination' && p.action === 'import') { await importArchive(guarded, owner, p.archive, p.consent); result = { completed: true } }
+        else if (mode === 'destination' && p.action === 'review-rollback') result = await reviewRollback(guarded, owner)
+        else if (mode === 'destination' && p.action === 'rollback') { await rollbackImport(guarded, owner, p.consent); result = { rolledBack: true } }
         else throw Error('Unsupported maintenance operation.')
         if (!stopped) host.sendToFrontend({ type: 'mochi-transfer:result', requestId: p.requestId, ownerId: owner, result }, owner)
       } catch (error) {
@@ -34,7 +45,7 @@ export function startTransferMaintenance(host: SpindleAPI, mode: MaintenanceMode
       }
     })
     serial.set(owner, task)
-    void task.finally(() => { if (serial.get(owner) === task) serial.delete(owner) })
+    void task.finally(() => { if (serial.get(owner) === task) serial.delete(owner) }).catch(() => {})
   })
   return () => { stopped = true; unsubscribe() }
 }
