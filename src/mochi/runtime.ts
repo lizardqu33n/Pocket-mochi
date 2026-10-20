@@ -1,6 +1,7 @@
 import type { SpindleAPI } from 'lumiverse-spindle-types'
 import { MochiService } from './service.js'
 import { MochiScheduler } from './scheduler.js'
+import { assertTransferUnlocked } from './transfer-gate.js'
 
 type Host = Pick<SpindleAPI, 'onFrontendMessage' | 'ui' | 'log'> & ConstructorParameters<typeof MochiService>[0]
 export interface MochiRuntime { readonly service: MochiService; readonly scheduler: MochiScheduler; stop(): void }
@@ -13,9 +14,18 @@ export function startMochiRuntime(host: Host): MochiRuntime {
   if (existing) return existing
   let stopped = false
   const serviceHost = Object.create(host) as Host
+  // Interruptions fail closed even if an operator restarts the normal package.
+  serviceHost.userStorage = {
+    exists: async (p, u) => { await assertTransferUnlocked(host, u); return host.userStorage.exists(p, u) },
+    getJson: async (p, o) => { await assertTransferUnlocked(host, o.userId); return host.userStorage.getJson(p, o) },
+    setJson: async (p, v, o) => { await assertTransferUnlocked(host, o.userId); return host.userStorage.setJson(p, v, o) },
+    move: async (a, b, u) => { await assertTransferUnlocked(host, u); return host.userStorage.move(a, b, u) },
+    list: async (p, u) => { await assertTransferUnlocked(host, u); return host.userStorage.list(p, u) },
+  }
   serviceHost.sendToFrontend = (payload, user) => { if (!stopped) host.sendToFrontend(payload, user) }
   if (host.generate) serviceHost.generate = { quiet: async input => {
     if (stopped) throw new Error('Mochi runtime is stopped.')
+    await assertTransferUnlocked(host, input.userId)
     const result = await host.generate!.quiet(input)
     if (stopped) throw new Error('Mochi runtime is stopped.')
     return result

@@ -52,9 +52,9 @@ export class MochiUIPreferences {
    return record
   })
  }
- async read(userId:string,accountId?:string):Promise<UIPreferenceRecord>{
+ async read(userId:string,accountId?:string,includeArchived=false):Promise<UIPreferenceRecord>{
   const user=identifier(userId),account=accountId===undefined?undefined:fictionalAccountId(accountId)
-  if(account)await this.accounts.get(user,account)
+  if(account)await this.accounts.get(user,account,includeArchived)
   const path=`mochi/v1/ui-preferences/${account||'legacy'}.json`
   if(!await this.host.userStorage.exists(path,user))return {version:1,ownerId:user,accountId:account,revision:0,preferences:defaultUIPreferences()}
   const record=await this.host.userStorage.getJson(path,{userId:user}) as UIPreferenceRecord

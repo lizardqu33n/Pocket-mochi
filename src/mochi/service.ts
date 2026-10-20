@@ -259,11 +259,13 @@ export class MochiService {
     if (room.accountId !== accountId) throw new Error('This room does not belong to the requested fictional account.')
     return room
   }
-  private async readStored(userId: string, id: string): Promise<MochiRoom> {
+  /** Read-only maintenance validation retains archived account histories too. */
+  async validateTransferredRoom(userId: string, id: string): Promise<MochiRoom> { return this.readStored(userId, id, true) }
+  private async readStored(userId: string, id: string, includeArchived = false): Promise<MochiRoom> {
     const user = this.account(userId), path = pathFor(id)
     if (!await this.host.userStorage.exists(path, user)) throw new Error('This room is not available to your account.')
     const room = validateRoom(await this.host.userStorage.getJson(path, { userId: user }), id)
-    if (room.accountId) await this.fictionalAccounts.get(user, room.accountId)
+    if (room.accountId) await this.fictionalAccounts.get(user, room.accountId, includeArchived)
     if(room.preset)validateBinding(room.preset,room.accountId)
     if(room.memory)validateMemory(room.memory,room.id,user)
     validatePinnedContent(room)
