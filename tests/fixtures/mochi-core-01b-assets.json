@@ -1,0 +1,458 @@
+[
+  {
+    "sha256": "63f7b6e634f0ad02cb74eeb9b24f5661d213a81622f26c9ea4be0d897566e097",
+    "path": "src/mochi/ui/geometry.ts"
+  },
+  {
+    "sha256": "45dab36ba6cb971b49c50b892d0d1bb723c1a1c27121101eb2cd463db47eeab7",
+    "path": "src/mochi/ui/icon-assets.ts"
+  },
+  {
+    "sha256": "c4fe69506f75af94c17164a992c20478162339ce5cf75296470779831b87cdae",
+    "path": "src/mochi/ui/icon-inventory.json"
+  },
+  {
+    "sha256": "7a89144e6173a5215b486f9fe64550c76417be409f97ec3a5de55cc58183bbac",
+    "path": "src/mochi/ui/icon-slots.ts"
+  },
+  {
+    "sha256": "e4dc0b74be5b04e8ba68f3177903a65ddcb1263de9dcf32699da4dd4316569a7",
+    "path": "src/mochi/ui/ICON-THEMING.md"
+  },
+  {
+    "sha256": "b5aad254a2dafb8faaebfea62a17e0181e8cf05cf5a7f059f6f9e6cdd9ed33ac",
+    "path": "src/mochi/ui/icons.css"
+  },
+  {
+    "sha256": "6c315e87b24dcd5dcd10750dd7d691de4ba6a68a6a01a125ea19a4cb8a5e48dc",
+    "path": "src/mochi/ui/lucide.ts"
+  },
+  {
+    "sha256": "9c7d2cc347e8fe5fa16e1d3789f1d680b55f444e8729cf3f796c2dc03691a7ad",
+    "path": "src/mochi/ui/mochi-theme.css"
+  },
+  {
+    "sha256": "022c749f834e814563f6141464d43a3b4bd33a3b45fea6d1fe343379e56e39d9",
+    "path": "src/mochi/ui/mochi-tokens.css"
+  },
+  {
+    "sha256": "639a56b17bafc7f4d14d332d3831008e3d8969df692d4a8c4eb475f955d1dc7c",
+    "path": "src/mochi/ui/mochi.css"
+  },
+  {
+    "sha256": "6015a1d5276c495465306388f359226273d2ebdfce7566dfa42b7ebaae64c8ea",
+    "path": "src/mochi/ui/PHASE1-RESULTS.md"
+  },
+  {
+    "sha256": "92655a3c0f270acc4cb2bd0114d2a4d6a965d7c4afc0748859face06c2c8d24c",
+    "path": "src/mochi/ui/PHASE2-RESULTS.md"
+  },
+  {
+    "sha256": "98aed506ccd318c3454397151208c01ecb500f50b27d51afe5603ffddc1f53c2",
+    "path": "src/mochi/ui/phase2-validation.json"
+  },
+  {
+    "sha256": "e21181ea37c0bd74eb9ecf58fdecf6a05fe7ee196ee7310fc0d7393866c0e35e",
+    "path": "src/mochi/ui/phase3-files.txt"
+  },
+  {
+    "sha256": "07f8d037f26f9a30e96e4d27f7f934550dac85c8d90e9ffba32c9c5898bbee55",
+    "path": "src/mochi/ui/PHASE3-RESULTS.md"
+  },
+  {
+    "sha256": "1bc0766a2e31eaf3c01ed0906712b064f4658c2cdd9534bf724015e42c059196",
+    "path": "src/mochi/ui/phase3-validation.json"
+  },
+  {
+    "sha256": "ed3e1e74ffcf46498f36ed7c69575f8b0e6ea35bb9cf2c50928d33f0f17c6510",
+    "path": "src/mochi/ui/README.md"
+  },
+  {
+    "sha256": "0cb5d061d00e2f8259fd06026716cbacaad8e7540e2a012fb7bbead22fcccd29",
+    "path": "src/mochi/ui/starter-theme.css"
+  },
+  {
+    "sha256": "d365bab640a1276af8d8ddfd26b5a1480d3086409543b8594e047bf367973421",
+    "path": "src/mochi/ui/styles.ts"
+  },
+  {
+    "sha256": "800b6ef47c8d0b669e0c3f3f04a97d7011b6d7b2e8da6e63f8d4a2386a54469f",
+    "path": "src/mochi/ui/THEME-CONTRACT.md"
+  },
+  {
+    "sha256": "0c4f52496568aed07c23254f864a52d105e533ade6ac42f2af1cbd92c4bf2a73",
+    "path": "src/mochi/ui/theme-inventory.json"
+  },
+  {
+    "sha256": "580a0817680489c6f430a19cd80e1bd0dedeeb3d753a6dc3572c9cb1bd9e0f26",
+    "path": "src/mochi/ui/THEME-INVENTORY.md"
+  },
+  {
+    "sha256": "a6bf67d1ae8c2a708f05b830f0693c26597d06edad9a1aae156b1c5717e21d58",
+    "path": "src/mochi/ui/UI-CUSTOMIZATION-MAP.md"
+  },
+  {
+    "sha256": "c38a3abaee90c86c7d8f9b15c883deecabb7834b8e5d183558e7f62e4d9d6531",
+    "path": "src/mochi/ui/examples/orbit.svg"
+  },
+  {
+    "sha256": "8a54f30d1948365a771a63bff172e938696b6b6ab3c11d84450b87c9af1ba5f2",
+    "path": "src/mochi/ui/icons/accessibility.svg"
+  },
+  {
+    "sha256": "1a6e1c540c9a1a9b489893cc14ab9f597496c69aab5ba222fdd5b456de9e2fac",
+    "path": "src/mochi/ui/icons/archive.svg"
+  },
+  {
+    "sha256": "6004816c7f55e714b853db6599e2c23c9075fa1f962265caf4f0d012ff747c0a",
+    "path": "src/mochi/ui/icons/arrow-down-wide-narrow.svg"
+  },
+  {
+    "sha256": "fd930d19a3522c8bae7773dacb1bd68e657b9e2015acb52de4a36905a46b8ef6",
+    "path": "src/mochi/ui/icons/arrow-down.svg"
+  },
+  {
+    "sha256": "e31ed0af85ffbed2b54f78f37af197c3b84b24e776cba1d27613d6a9ad555a16",
+    "path": "src/mochi/ui/icons/arrow-left.svg"
+  },
+  {
+    "sha256": "12b97a4d2821da556ce7df95f89df46deb94aa711d46b36a848be0de0ac2a7f0",
+    "path": "src/mochi/ui/icons/arrow-right.svg"
+  },
+  {
+    "sha256": "df0ff279d41bba93ae6797ef519ba442b895cd5d546fb36f22b7a656c3b05fd1",
+    "path": "src/mochi/ui/icons/arrow-up.svg"
+  },
+  {
+    "sha256": "129a018bd5025fc992a510e9c95e7868300d888b69c38c69a3466d310919ea13",
+    "path": "src/mochi/ui/icons/bell.svg"
+  },
+  {
+    "sha256": "241aeb7d7e27ff9bd3ffca766820c9c080418d62b0bfb0e56458ed3ec48316c4",
+    "path": "src/mochi/ui/icons/bookmark.svg"
+  },
+  {
+    "sha256": "45bd22916cd7d07d75bf147e5a98c02358390b08030361317a59d9c768d79f80",
+    "path": "src/mochi/ui/icons/brain.svg"
+  },
+  {
+    "sha256": "2e2a7df92c2cca71dd6de34bb3f7187e276e8e8e003abe2e80b2ffd13347af60",
+    "path": "src/mochi/ui/icons/calendar.svg"
+  },
+  {
+    "sha256": "89b7493fb7f18b3a303184f9dea61e989521eae4a98349bbaa979a586f063cba",
+    "path": "src/mochi/ui/icons/camera.svg"
+  },
+  {
+    "sha256": "43040e0b20ee788e0f4352a5e4fc005b7de63caab106ca62c28fa19f30b88a91",
+    "path": "src/mochi/ui/icons/chart-no-axes-column.svg"
+  },
+  {
+    "sha256": "04458777b8a99214cd167dc9a8c8a1e35dcc9373b7577f74d5b5da6418ffcf67",
+    "path": "src/mochi/ui/icons/chevron-down.svg"
+  },
+  {
+    "sha256": "5462ccfbbf3a0d0b156429c87b30a340af270f325c638ac182b0baa6910b6eb8",
+    "path": "src/mochi/ui/icons/cloud-sun.svg"
+  },
+  {
+    "sha256": "6828c476979a7e4d5ae3ac726f8fadbcab066ec53299b7f8422cda321a60a841",
+    "path": "src/mochi/ui/icons/copy.svg"
+  },
+  {
+    "sha256": "f68a21e11115edc0aef51ac6f8f4618e14d2b92055f1cb9f5d670efc696bea85",
+    "path": "src/mochi/ui/icons/download.svg"
+  },
+  {
+    "sha256": "c223eec545dc86e0de4c672e621550b391198ca97b8eabbe043613c3332d48b1",
+    "path": "src/mochi/ui/icons/ellipsis.svg"
+  },
+  {
+    "sha256": "7a23c549710b70c9eb1324540260943190190ef309e9f3604726a42c85f9b552",
+    "path": "src/mochi/ui/icons/eye.svg"
+  },
+  {
+    "sha256": "a2528528d53d609c02376d8efc8d00ea0e1cc48c387198880000b9d6ba9ae1a8",
+    "path": "src/mochi/ui/icons/FEATHER-LICENSE"
+  },
+  {
+    "sha256": "5b4c470a3e073ebde1619e02dc94b228714256ee0be5823da84bd0bd7af476db",
+    "path": "src/mochi/ui/icons/grip-vertical.svg"
+  },
+  {
+    "sha256": "2c13f570d9b9727c9b6c23400c95acfa9737e91884ed926332edb18fd47a2a76",
+    "path": "src/mochi/ui/icons/house.svg"
+  },
+  {
+    "sha256": "a6c4da2ffe904131fdd47c7f024ef91a48df17162ba166275825b140cf2c2764",
+    "path": "src/mochi/ui/icons/image.svg"
+  },
+  {
+    "sha256": "8b0a0b5641a875a2e0d8c04080c55cf6c1808c1f76477acb89958e8da00ba5a1",
+    "path": "src/mochi/ui/icons/info.svg"
+  },
+  {
+    "sha256": "e0471ac93c7e2d383864a837ac4e15f325c5ceff710440634dfe08f762cf2858",
+    "path": "src/mochi/ui/icons/layers.svg"
+  },
+  {
+    "sha256": "f5dfe49a6c944a86a6d75f9f18a9a51903272ba2b9397333cd24f62cf2620969",
+    "path": "src/mochi/ui/icons/layout-grid.svg"
+  },
+  {
+    "sha256": "1e7290b35280a048667bbf0ebabac1c7fd52a75300e8b2946ac165715997f2bc",
+    "path": "src/mochi/ui/icons/LICENSE"
+  },
+  {
+    "sha256": "490d9d70cad07afaf4af2aad4be9fd34898e91c2ed296e05fd35c07977839963",
+    "path": "src/mochi/ui/icons/list.svg"
+  },
+  {
+    "sha256": "4536c5da2258665a0f8a64566d466f9ea2bc590d744408a9870fc77e9ca1a73a",
+    "path": "src/mochi/ui/icons/lock-keyhole-open.svg"
+  },
+  {
+    "sha256": "d2c052ce26b89b063a4b1ecaa98198803b7d881cb0d176cb33c067e5140b2dd0",
+    "path": "src/mochi/ui/icons/lock-keyhole.svg"
+  },
+  {
+    "sha256": "3f28d1eedd9a71ec6933578fc1b7cd21c56618e8b9b8339e55bfc133b4eb6bee",
+    "path": "src/mochi/ui/icons/log-out.svg"
+  },
+  {
+    "sha256": "0864b30f3a6b95b49375c93ad874db47474a56bd2d6276c51e938f0b5e4ade9e",
+    "path": "src/mochi/ui/icons/maximize.svg"
+  },
+  {
+    "sha256": "3c894dd471000d573faf269444bd345ecb5874716c712cd27cf663623715b7ac",
+    "path": "src/mochi/ui/icons/messages-square.svg"
+  },
+  {
+    "sha256": "043ddac5e95b96c443d42d15a4444f70fc24aa57d7642ce7c782bb2644ed5be4",
+    "path": "src/mochi/ui/icons/minimize.svg"
+  },
+  {
+    "sha256": "9291ac5f2e7c4e670db32ba7377f47d1d6933e7b7decb9d60fb85d2cc4e2b4d3",
+    "path": "src/mochi/ui/icons/move-diagonal-2.svg"
+  },
+  {
+    "sha256": "4723725b43bd649181f37fd32669650ccd8babacd3a7fae698a0e1bfbc92fe33",
+    "path": "src/mochi/ui/icons/notebook-pen.svg"
+  },
+  {
+    "sha256": "290ec7c113d3cbb6d62d5d074ff41df3c79420eb287a23d12a0891d299e75776",
+    "path": "src/mochi/ui/icons/palette.svg"
+  },
+  {
+    "sha256": "d945ba6a903ae3d43f82ddc2b2f80a273648e67ae0ac7e5b5cffeb7c46dbf16e",
+    "path": "src/mochi/ui/icons/panel-right.svg"
+  },
+  {
+    "sha256": "5ab7033f164ff2813af748eaaa5cb104f04534bde78b53d90016b1465769e575",
+    "path": "src/mochi/ui/icons/pencil.svg"
+  },
+  {
+    "sha256": "66992f3d24d255fbad702362e736df6908e3cc13e25d2b0acd258da16854dcee",
+    "path": "src/mochi/ui/icons/pin.svg"
+  },
+  {
+    "sha256": "b29207ee8f5cc0e829c0bab2e5b223fc88687599c6bd40b94ba35f52327615d6",
+    "path": "src/mochi/ui/icons/plus.svg"
+  },
+  {
+    "sha256": "0fe9fe8cc5ffa3bc81da60b80af8c4ceff557aa8b87e913b1a86aa8f4bc01382",
+    "path": "src/mochi/ui/icons/power.svg"
+  },
+  {
+    "sha256": "40e8dfc55da6b2a7defad41c7c43aa74aaa656b4bf9a23bd78a2bade584b21df",
+    "path": "src/mochi/ui/icons/provenance.json"
+  },
+  {
+    "sha256": "d63b359b0fe05e03cff8aaa7acf82f9569733e83f7fb4742d583a086972c4bb0",
+    "path": "src/mochi/ui/icons/refresh-cw.svg"
+  },
+  {
+    "sha256": "5aa9a4ae2239acdd20268a19aed53790090ca4bf094477b560255dd3b027f2aa",
+    "path": "src/mochi/ui/icons/reply.svg"
+  },
+  {
+    "sha256": "197f2ac68c3c0fbf01ca90c2a010d6b1f95c01af3610a2a59a618a2d5b293043",
+    "path": "src/mochi/ui/icons/save.svg"
+  },
+  {
+    "sha256": "e11a04d51c122a8a759211424920efc65fa36b7ab06237c34ef90317d920ddf9",
+    "path": "src/mochi/ui/icons/search.svg"
+  },
+  {
+    "sha256": "c12c313d7409cb0e3c98aa07562e6e49dd5359dbcfe54692a0263a7eb57a8194",
+    "path": "src/mochi/ui/icons/send.svg"
+  },
+  {
+    "sha256": "ceea1a72d04b112291222ba9ad0779a12d47d816079fe4174900c724f360b55c",
+    "path": "src/mochi/ui/icons/settings.svg"
+  },
+  {
+    "sha256": "995507595c7c24deffef382bacc452a24b40a2efc4aa54908563a0f09b6a75aa",
+    "path": "src/mochi/ui/icons/sliders-horizontal.svg"
+  },
+  {
+    "sha256": "3ea206130acd9f2b442edb9cb9c987d684a0b3b146d62619e72eb842f29389e3",
+    "path": "src/mochi/ui/icons/smile.svg"
+  },
+  {
+    "sha256": "40a7c96d3ad44a83803c7dc2f449653b972602763cda2adfea7f72f3925c375e",
+    "path": "src/mochi/ui/icons/sparkles.svg"
+  },
+  {
+    "sha256": "beaaed5b0756fe053fe2a00e1cf0f9cdc00ac1897ea18b57b297e732de1590dd",
+    "path": "src/mochi/ui/icons/square-check.svg"
+  },
+  {
+    "sha256": "c6c07f247abd06d3164a6749e21812da9092908fe0033f8163149b4ee2e31347",
+    "path": "src/mochi/ui/icons/square.svg"
+  },
+  {
+    "sha256": "9268a35cfb4f9d852c3d13f2c91476dd067c21c20e2bcdb0093fd93fd0bf34b7",
+    "path": "src/mochi/ui/icons/trash-2.svg"
+  },
+  {
+    "sha256": "cba6c904f2cc8cc0ca16940e89762a4885dff08be9105ccff1dbd13d12663f70",
+    "path": "src/mochi/ui/icons/triangle-alert.svg"
+  },
+  {
+    "sha256": "ebdb92b0456cbae0a2897676607490897734deda0248aa3369d864e94ad28f28",
+    "path": "src/mochi/ui/icons/upload.svg"
+  },
+  {
+    "sha256": "d7390d374551a27503c64a6c4232753f0f5ad5dc03aefa760b52c9347e5474c3",
+    "path": "src/mochi/ui/icons/user-round.svg"
+  },
+  {
+    "sha256": "e7ccd113816a1631cefa00ffadc7d6ec3d439d1fb706bae8c390047edd6e71a2",
+    "path": "src/mochi/ui/icons/users-round.svg"
+  },
+  {
+    "sha256": "915b847fcee9bba25e4b5fbe8f78305ad3d22c903a51c239c57ca1c248c904e5",
+    "path": "src/mochi/ui/icons/volume-2.svg"
+  },
+  {
+    "sha256": "0f38855d9d5775c10960ae53e46b745f77914b43f78c43bf8abc39f4d5e06de1",
+    "path": "src/mochi/ui/icons/x.svg"
+  },
+  {
+    "sha256": "48dea4c95e64d7b2f12b4431b4a5daf8362dfcc69486e261abf659a58dcec6d7",
+    "path": "src/mochi/ui/reference/base.md"
+  },
+  {
+    "sha256": "8e0795770b356c87c6eea107798b2956d59f09b7a2d8d82dd2d9776874339c10",
+    "path": "src/mochi/ui/reference/block-editor.md"
+  },
+  {
+    "sha256": "138a39205afc4afc1c9eca03897ed8c7cd1f0e7c9d1da1390ba312fea29074aa",
+    "path": "src/mochi/ui/reference/desktop.md"
+  },
+  {
+    "sha256": "6024de9f3ef11ac5d4dc0bd6d5fe8aeff558fb885d19096cf02406dc3bdcba4a",
+    "path": "src/mochi/ui/reference/icons.md"
+  },
+  {
+    "sha256": "f89ff1976dce0531148d79dd8fe905fb614bc076e28ea17529543e5195618cf4",
+    "path": "src/mochi/ui/reference/launcher.md"
+  },
+  {
+    "sha256": "93ef85c54107b1505e07cb32b4ec1c0e1a8a36f81889d661ef4dc8f8a0e6a72e",
+    "path": "src/mochi/ui/reference/mobile-surface.md"
+  },
+  {
+    "sha256": "018b662b8cc7ff1809c9081d580c34882f5b45084c85d6d6a4704c6e35fed431",
+    "path": "src/mochi/ui/reference/mochi-disclosure-styles.md"
+  },
+  {
+    "sha256": "00d50f32acc81512458271c837fac01be460eb2a651781b99d5fd93166b84c35",
+    "path": "src/mochi/ui/reference/mochi-memory-styles.md"
+  },
+  {
+    "sha256": "857cdb9228bfd87a8ff68b006613fc6ccbbf272998efcc59aaac1e76d0f12656",
+    "path": "src/mochi/ui/reference/mochi-pin-styles.md"
+  },
+  {
+    "sha256": "88cc8fd26a387f91609a6ed8797312ca8df56f971120aec76063ca94a3b0baee",
+    "path": "src/mochi/ui/reference/mochi-preset-chrome-styles.md"
+  },
+  {
+    "sha256": "29856deedb52b392bfd382862a9c93b59310bd61541ae46b6cf15983d69ab901",
+    "path": "src/mochi/ui/reference/mochi-preset-dedicated-styles.md"
+  },
+  {
+    "sha256": "81eff5c8ac500cfca8e8b2ff3e75445a562302f250c2d0badf5f4f61e9695af6",
+    "path": "src/mochi/ui/reference/mochi-preset-styles.md"
+  },
+  {
+    "sha256": "de949ce017b34311ff33340b7edc119949558fa5f09de3b3a3dceecff8a1a763",
+    "path": "src/mochi/ui/reference/mochi-preview-styles.md"
+  },
+  {
+    "sha256": "8eca472a921dadb9b82b2d76d3529b07978cf8b2a4e373926a8bfc47bca375ae",
+    "path": "src/mochi/ui/reference/mochi-reaction-styles.md"
+  },
+  {
+    "sha256": "0e43298228dcfc4b11a51339ab83ef5dbedb45077408666611b4623708ee451b",
+    "path": "src/mochi/ui/reference/mochi-reply-styles.md"
+  },
+  {
+    "sha256": "1f023941188b02e75f70e48a0e788f96e180c62f3bab98ec9cf63bb7ce50fcf4",
+    "path": "src/mochi/ui/reference/mochi-search-styles.md"
+  },
+  {
+    "sha256": "13bd3644a458598468154b6854634eff8f7f0269d7dce9fb657b5633570e8b7c",
+    "path": "src/mochi/ui/reference/mochi-sidebar-styles.md"
+  },
+  {
+    "sha256": "1fc93e87a37bdc46d78b5a303701b4bd69a8f82be87c39ad167adc5da7eb61d3",
+    "path": "src/mochi/ui/reference/mochi-texting-styles.md"
+  },
+  {
+    "sha256": "d2b1d2aba63ed0f943dc54475116bdbd268c69bec37e2ecb4d474686181a3d43",
+    "path": "src/mochi/ui/reference/notifications.md"
+  },
+  {
+    "sha256": "b1b297c0db88000aff4d3a95a1e686add5ec563770361cfb63443112bcf2819e",
+    "path": "src/mochi/ui/reference/preset-workspace-base.md"
+  },
+  {
+    "sha256": "bee0cfc8c03ef33a13aebdb8d9968db19fd27041220507ab3ba3829f97ea721d",
+    "path": "src/mochi/ui/reference/preset-workspace-final.md"
+  },
+  {
+    "sha256": "66ed5d63a7a6fc92456c243820defa290e856fe1715fa459466722d9b4a7ecff",
+    "path": "src/mochi/ui/reference/settings-workspace-styles.md"
+  },
+  {
+    "sha256": "9ab2bf91a2c01db4abe5927bf31706f682b463be7f1cd054aebb9d70912ec0f3",
+    "path": "src/mochi/ui/reference/shared-pocket.md"
+  },
+  {
+    "sha256": "9d6c645be7bec0b10213f07eafe6b3e2829d53a9a613e6401abe12c9b3e11700",
+    "path": "src/mochi/ui/reference/window-focus.md"
+  },
+  {
+    "sha256": "a83429391fa42d3b2e93e43fb4b5a26e2a9748d053d92788643d8dfa20598c82",
+    "path": "src/mochi/ui/reference/window.md"
+  },
+  {
+    "sha256": "67b669323d3d692d34c7a980fd944e2e002b0ab8b1978374e92010c48ae5e3fa",
+    "path": "src/mochi/ui/reference/workspace.md"
+  },
+  {
+    "sha256": "29af4aa8e58ef79ac8079dd449010ecd5e1e9acc15a9ed8dd13ed9f0997624fd",
+    "path": "src/styles.ts"
+  },
+  {
+    "sha256": "5a8645dcec5276dc5777593c8212874030eaf24c676815f1d472f8735084a92c",
+    "path": "src/frontend/components/design-system.ts"
+  },
+  {
+    "sha256": "8a458c574b92b9c1ae4519d3422d7b9e3e55f6fad187916d3937f3e8eaaddbbb",
+    "path": "src/mochi/sidebar-icon.ts"
+  }
+]
