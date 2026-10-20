@@ -79,6 +79,15 @@ function validateRoom(value: any, id: string): MochiRoom {
   return value
 }
 export class MochiService {
+  private disposed = false
+  /** Terminal runtime teardown: cancel interactive, queued and scheduled provider work. */
+  dispose(): void {
+    if (this.disposed) return
+    this.disposed = true
+    for (const job of this.jobs.values()) job.controller.abort()
+    for (const queued of this.pending.values()) for (const job of queued) job.controller.abort()
+    this.summaryAttempts.clear(); this.routineDrafts.clear()
+  }
   readonly generationPrompts:GenerationPrompts
   /** Read-only construction is shared with dispatch; no provider or quota reservation. */
   private async generationPlan(user:string,room:MochiRoom,input:any,f:GenerationFeature):Promise<any>{
@@ -174,6 +183,7 @@ export class MochiService {
     this.presets=new MochiPresets(host)
     this.fictionalAccounts = new MochiAccounts(host, (user, input) => this.persona(user, input), now)
   }
+  // Cancellation recovery still needs authenticated reads after dispose.
   private account(userId: unknown): string { return text(userId, 180, true) }
   async accountsState(userId: string, phone?: unknown) {
     const user = identifier(userId), bank = await this.fictionalAccounts.bank(user)
@@ -1142,7 +1152,7 @@ export class MochiService {
     }
   }
   async handle(payload: any, userId?: string): Promise<void> {
-    if (!userId) return
+    if (this.disposed || !userId) return
     let selectedRoomId: string | undefined
     try {
       if(payload.type==='mochi:generation_prompt'){

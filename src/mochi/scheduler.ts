@@ -106,7 +106,7 @@ export class MochiScheduler {
       await Promise.all(work)
     } finally { this.ticking = false }
   }
-  start(poll = true): void {
+  start(poll = true, immediate = true): void {
     if (!this.stopped) return
     this.stopped = false
     if (!poll) return
@@ -114,7 +114,8 @@ export class MochiScheduler {
       try { await this.tick() } catch { this.report('Mochi scheduler could not read its registry; no work was generated.') }
       if (!this.stopped) { this.timer = setTimeout(wake, 30000); (this.timer as unknown as { unref?: () => void }).unref?.() }
     }
-    void wake()
+    if (immediate) void wake()
+    else { this.timer = setTimeout(wake, 30000); (this.timer as unknown as { unref?: () => void }).unref?.() }
   }
   stop(): void { this.stopped = true; clearTimeout(this.timer); this.service.abortScheduled() }
   async handle(payload: any, userId: string): Promise<void> {
