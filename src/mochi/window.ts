@@ -27,15 +27,15 @@ export function createMochiWindow(ui: MochiWindowUI, session: MochiSession,
   if (existing) return existing
   const geometry = ui.geometry
   if (!geometry || typeof geometry.layoutViewportSize !== 'function' || typeof geometry.createResizeController !== 'function') {
-    throw new Error('This host lacks supported floating-window geometry. Use the Pocket portal.')
+    throw new Error('This host lacks supported floating-window geometry. Use the Mochi drawer.')
   }
   const bounds = () => {
     const viewport = geometry.layoutViewportSize()
-    if (!Number.isFinite(viewport.width) || !Number.isFinite(viewport.height) || viewport.width < 120 || viewport.height < 160) throw new Error('Window viewport is unavailable. Use the Pocket portal.')
+    if (!Number.isFinite(viewport.width) || !Number.isFinite(viewport.height) || viewport.width < 120 || viewport.height < 160) throw new Error('Window viewport is unavailable. Use the Mochi drawer.')
     return {width:Math.max(1,viewport.width-16),height:Math.max(1,viewport.height-16)}
   }
   const clamp = (rect: WindowRect): WindowRect => {
-    if (![rect.x,rect.y,rect.width,rect.height].every(Number.isFinite)) throw new Error('Window geometry is invalid. Use the Pocket portal.')
+    if (![rect.x,rect.y,rect.width,rect.height].every(Number.isFinite)) throw new Error('Window geometry is invalid. Use the Mochi drawer.')
     const limit = bounds(), width = Math.min(limit.width,Math.max(Math.min(320,limit.width),rect.width)), height = Math.min(limit.height,Math.max(Math.min(420,limit.height),rect.height))
     return {width,height,x:Math.max(8,Math.min(rect.x,limit.width+8-width)),y:Math.max(8,Math.min(rect.y,limit.height+8-height))}
   }
@@ -81,7 +81,7 @@ export function createMochiWindow(ui: MochiWindowUI, session: MochiSession,
   try {
     widget.setVisible(false)
     const disposeResize=geometry.createResizeController(panel,{handles:['se'],bounds:{minWidth:Math.min(320,bounds().width),minHeight:Math.min(420,bounds().height)},onChange:apply,onCommit:apply})
-    if(typeof disposeResize!=='function')throw new Error('Unsupported resize-controller lifecycle. Use the Pocket portal.')
+    if(typeof disposeResize!=='function')throw new Error('Unsupported resize-controller lifecycle. Use the Mochi drawer.')
     resizeCleanup=disposeResize
     dragCleanup=widget.onDragEnd(position=>{rect={...rect,...position}})
     workspace=createMochiWorkspace({root:body,session,notificationPolicy,presentation:'messenger',isHostVisible:()=>widget.isVisible(),

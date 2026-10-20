@@ -41,7 +41,7 @@ export function createMochiSidebar(ctx: Pick<SpindleFrontendContext,'ui'>, sessi
     let fullscreen=false
     if(mobile){
       try{mobileSurface ||= createMochiMobileSurface(ctx.ui,root);mobileSurface.open();fullscreen=true;fallback=''}
-      catch{mobileSurface?.destroy();mobileSurface=undefined;fallback='Full-screen Mochi is unavailable. The messenger is open below in the Pocket drawer.'}
+      catch{mobileSurface?.destroy();mobileSurface=undefined;fallback='Full-screen Mochi is unavailable. The messenger is open below in the Mochi drawer.'}
     }
     if(!fullscreen)activateSidebar()
     workspace ||= createMochiWorkspace({root:body,session,notificationPolicy:policy,presentation:'messenger',isHostVisible:()=>!root.hasAttribute('data-mobile-messenger')||!!mobileSurface?.isOpen,onVisibilityChange:visible=>{if(!visible)mobileSurface?.hide();for(const fn of visibility)fn(visible)}})
@@ -50,7 +50,7 @@ export function createMochiSidebar(ctx: Pick<SpindleFrontendContext,'ui'>, sessi
     // Use the caller's supported host bridge; never destroy the drawer/session.
     if(fullscreen&&!wasFullscreen){
       try{dismissDrawer?.()}
-      catch{fallback='Mochi is open. Close the Pocket drawer manually.';render()}
+      catch{fallback='Mochi is open. Close the Mochi drawer manually.';render()}
     }
     if(fullscreen)body.querySelector<HTMLElement>(session.view.roomId?'[aria-label="Back to conversations"]':'.mochi-desktop-room,[aria-label="New Chat"]')?.focus({preventScroll:true})
   }

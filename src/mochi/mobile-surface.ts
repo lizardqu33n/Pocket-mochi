@@ -8,7 +8,7 @@ export function createMochiMobileSurface(ui:SpindleFrontendContext['ui'],content
   const options={width:viewport.width,height:viewport.height,initialPosition:{x:0,y:0},fullscreen:true,chromeless:true,snapToEdge:false,resizable:false,persistGeometry:false,touchScrollMode:'native' as const,tooltip:'Mochi'}
   const widget=ui.createFloatWidget(options)
   if(typeof widget.setFullscreen!=='function'){widget.destroy();throw Error('Full-screen Mochi is unavailable in this host.')}
-  widget.setVisible(false)
+  try { widget.setVisible(false) } catch(error) { widget.destroy(); throw error }
   const panel=document.createElement('section');panel.className='mochi-mobile-surface';panel.setAttribute('aria-label','Mochi mobile messenger')
   const style=document.createElement('style');style.textContent=mochiStyle('mobile-surface')
   panel.append(style);widget.root.style.height='100%';widget.root.append(panel)
