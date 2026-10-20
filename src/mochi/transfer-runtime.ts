@@ -22,7 +22,7 @@ export function startTransferMaintenance(host: SpindleAPI, mode: MaintenanceMode
         if (host.users) await host.users.getRole(owner)
         if (stopped) return
         if (p.action === 'identity') result = { ownerId: owner, mode }
-        else if (mode === 'source' && p.action === 'export') result = await exportArchive(host as TransferHost, owner, 'lumiphone', p.confirmed)
+        else if (mode === 'source' && p.action === 'export') result = await exportArchive(host as TransferHost, owner, 'lumiphone', p.confirmed, p.includeProfiles === true)
         else if (mode === 'destination' && p.action === 'review') result = await reviewArchive(p.archive, owner)
         else if (mode === 'destination' && p.action === 'import') { await importArchive(host as TransferHost, owner, p.archive, p.consent); result = { completed: true } }
         else if (mode === 'destination' && p.action === 'review-rollback') result = await reviewRollback(host as TransferHost, owner)

@@ -24,10 +24,12 @@ export interface TransferFile { path: string; bytes: number; sha256: string; bas
 export interface TransferArchive {
   format: 'mochi-transfer'; version: 1; ownerId: string; source: 'lumiphone' | 'mochi'
   createdAt: string; files: TransferFile[]; digest: string
+  profileSourceSha256?: string
   excluded: Array<{ path: 'mochi/v1/scheduler-accounts.json'; bytes: number; sha256: string; reason: 'extension-registry-not-owner-data' }>
 }
 export interface TransferConsent {
   ownerId: string; digest: string; confirmed: true; sourceDisabled: true; originalsSaved: true
+  copyPocketProfiles?: true
 }
 export interface TransferReview {
   digest: string; ownerId: string; files: Array<Omit<TransferFile, 'base64'>>
@@ -59,6 +61,7 @@ function decode(base64: string): Uint8Array {
 export function transferPath(path: string, registry = false): string {
   if (typeof path !== 'string' || path.includes('\\') || path.includes('..') || path.includes('%') || path.length > 300) fail('Unsafe transfer path.')
   if (registry && path === 'mochi/v1/scheduler-accounts.json') return path
+  if (path === 'identity-profiles.json') return path
   if (!/^mochi\/v1\/(?:fictional-accounts|generation-prompts|shared-presentation|scheduler)\.json$/.test(path) &&
       !/^mochi\/v1\/(?:rooms\/room_[a-f0-9]{32}|(?:presets|ui-preferences)\/(?:legacy|account_[a-f0-9]{32})|character-preferences\/[A-Za-z0-9_-]{1,180})\.json$/.test(path)) fail('Unsupported file in Mochi inventory: ' + path)
   return path
@@ -72,7 +75,7 @@ async function inventoryDigest(files: TransferFile[]): Promise<string> {
   return sha256(encoder.encode(JSON.stringify(files.map(({ path, bytes, sha256 }) => [path, bytes, sha256]))))
 }
 export async function archiveDigest(a: Omit<TransferArchive, 'digest'>): Promise<string> {
-  return sha256(encoder.encode(JSON.stringify([a.format, a.version, a.ownerId, a.source, a.createdAt, await inventoryDigest(a.files), a.excluded])))
+  return sha256(encoder.encode(JSON.stringify([a.format, a.version, a.ownerId, a.source, a.createdAt, await inventoryDigest(a.files), a.excluded, a.profileSourceSha256 || null])))
 }
 function credentials(value: unknown, depth = 0): void {
   if (depth > 80) fail('Excessive record nesting.')
@@ -86,6 +89,7 @@ async function validatedFiles(a: TransferArchive, owner: string): Promise<Map<st
   identifier(owner)
   if (!a || a.format !== 'mochi-transfer' || a.version !== 1 || a.ownerId !== owner || !['lumiphone', 'mochi'].includes(a.source) || !Number.isFinite(Date.parse(a.createdAt)) || !Array.isArray(a.files) || a.files.length > MAX_FILES || !hex(a.digest)) fail('Unsupported archive, owner or manifest.')
   if (!Array.isArray(a.excluded) || a.excluded.length > 1 || a.excluded.some(f => !f || f.path !== 'mochi/v1/scheduler-accounts.json' || f.reason !== 'extension-registry-not-owner-data' || !hex(f.sha256) || !Number.isSafeInteger(f.bytes) || f.bytes < 0)) fail('Unsupported excluded-file manifest.')
+  if (a.profileSourceSha256 !== undefined && !hex(a.profileSourceSha256)) fail('Invalid original profile-bank checksum.')
   const records = new Map<string, any>(), paths: string[] = []
   let total = 0
   for (const f of a.files) {
@@ -187,13 +191,27 @@ export async function reviewArchive(a: TransferArchive, owner: string): Promise<
     }
   } finally { service.dispose() }
   review.pocketSourceIds = [...pocket].sort(); review.imageReferences = [...images].sort(); review.nativeReferences = [...native].sort()
+  const profiles = records.get('identity-profiles.json')
+  if (profiles) {
+    if (!a.profileSourceSha256 || profiles.ownerId !== owner || Object.keys(profiles).some(k => !['version', 'ownerId', 'entries'].includes(k)) || !Array.isArray(profiles.entries) || profiles.entries.length !== pocket.size || !pocket.size || new Set(profiles.entries.map((p: any) => p?.id)).size !== pocket.size) fail('Selected Pocket profile inventory does not match required identities.')
+    for (const p of profiles.entries) {
+      if (!p || !pocket.has(p.id) || p.kind !== 'persona' || typeof p.name !== 'string' || !p.name.trim() || p.name.length > 120 || Object.keys(p).some(k => !['id', 'kind', 'sourceId', 'name', 'pronouns', 'role', 'identityBrief', 'phoneProfile', 'updatedAt'].includes(k))) fail('Unsupported selected Pocket persona; repair explicitly.')
+      for (const [key, max] of [['sourceId', 180], ['pronouns', 120], ['role', 120], ['identityBrief', 1200], ['updatedAt', 80]] as const) if (p[key] !== undefined && (typeof p[key] !== 'string' || p[key].length > max)) fail('Damaged selected Pocket persona.')
+      if (p.phoneProfile !== undefined) {
+        if (!p.phoneProfile || typeof p.phoneProfile !== 'object' || Array.isArray(p.phoneProfile) || Object.keys(p.phoneProfile).some(k => !['personality', 'appearance', 'textingStyle'].includes(k))) fail('Unsupported Pocket persona fields.')
+        for (const [key, max] of [['personality', 600], ['appearance', 360], ['textingStyle', 600]] as const) if (p.phoneProfile[key] !== undefined && (typeof p.phoneProfile[key] !== 'string' || p.phoneProfile[key].length > max)) fail('Damaged Pocket persona fields.')
+      }
+    }
+  }
   review.warnings.push('Source must remain disabled from final export through completed import. Operator attestation is required; the host provides no cross-extension lock.', 'Native assets and image bytes are not copied. References must be available to this same owner on this host.', 'Browser session-only drafts and unrelated Pocket/RP records are not included.', 'Global scheduler registry is not copied; imported owner history is retained and all copied dispatch is disabled.')
-  if (pocket.size) review.warnings.push('Pocket identities retain source:pocket. Import is refused until the referenced profiles are explicitly copied/repaired in the target; this tool never reads another extension namespace.')
+  if (pocket.size) review.warnings.push('Pocket identities retain source:pocket. Import requires a consented export of exactly these backing profiles and a separate copy checkbox. Existing target profile banks cause collision refusal. Missing source profiles must be explicitly repaired before re-export; this tool never reads another extension namespace.')
   review.changes.push('Every copied nonterminal job becomes paused; room and idle scheduling are disabled. Account background opt-in becomes false. Original bytes are retained in the journal archive.', 'Copied jobs remain paused even after enabling account background messaging; recreate or explicitly repair them after review. Import never resumes a job.')
   return review
 }
-async function snapshot(host: TransferHost, owner: string): Promise<TransferFile[]> {
+async function snapshot(host: TransferHost, owner: string, profiles = false): Promise<TransferFile[]> {
   const names = (await host.userStorage.list('mochi/v1/', owner)).map(n => 'mochi/v1/' + n.replaceAll('\\', '/')).sort()
+  if (profiles && await host.userStorage.exists('identity-profiles.json', owner)) names.push('identity-profiles.json')
+  names.sort()
   if (names.length > MAX_FILES || new Set(names).size !== names.length) fail('Invalid source inventory.')
   const files: TransferFile[] = []
   let total = 0
@@ -210,7 +228,7 @@ function consent(c: TransferConsent, owner: string, digest: string): void {
   if (!c || c.confirmed !== true || c.sourceDisabled !== true || c.originalsSaved !== true || c.ownerId !== owner || c.digest !== digest) fail('Explicit same-owner reviewed consent is required.')
 }
 /** Export only this extension's authenticated owner's Mochi files. No writes. */
-export async function exportArchive(host: TransferHost, owner: string, source: TransferArchive['source'], confirmed: unknown): Promise<TransferArchive> {
+export async function exportArchive(host: TransferHost, owner: string, source: TransferArchive['source'], confirmed: unknown, includeProfiles = false): Promise<TransferArchive> {
   identifier(owner)
   if (confirmed !== true) fail('Explicit export consent is required.')
   const all = await snapshot(host, owner), registry = all.filter(f => f.path === 'mochi/v1/scheduler-accounts.json')
@@ -218,7 +236,21 @@ export async function exportArchive(host: TransferHost, owner: string, source: T
   const excluded: TransferArchive['excluded'] = registry.map(f => ({ path: 'mochi/v1/scheduler-accounts.json', bytes: f.bytes, sha256: f.sha256, reason: 'extension-registry-not-owner-data' }))
   const a: TransferArchive = { format: 'mochi-transfer', version: 1, ownerId: owner, source, createdAt: new Date().toISOString(), files, excluded, digest: '' }
   a.digest = await archiveDigest(a)
-  await reviewArchive(a, owner)
+  const review = await reviewArchive(a, owner)
+  if (includeProfiles && review.pocketSourceIds.length) {
+    const stat = await host.userStorage.stat('identity-profiles.json', owner)
+    if (!stat.exists || !stat.isFile || stat.sizeBytes > 1024 * 1024) fail('Missing or oversized source Pocket profile bank; repair explicitly.')
+    const bytes = await host.userStorage.readBinary('identity-profiles.json', owner)
+    const bank = JSON.parse(decoder.decode(bytes))
+    if (bank?.version !== 1 || !Array.isArray(bank.entries)) fail('Damaged source Pocket profile bank.')
+    const entries = bank.entries.filter((p: any) => p?.kind === 'persona' && review.pocketSourceIds.includes(p.id))
+    a.profileSourceSha256 = await sha256(bytes)
+    a.files.push(await file('identity-profiles.json', encoder.encode(JSON.stringify({ version: 1, ownerId: owner, entries }))))
+    a.files.sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0)
+    a.digest = await archiveDigest(a)
+    await reviewArchive(a, owner)
+    if (await sha256(await host.userStorage.readBinary('identity-profiles.json', owner)) !== a.profileSourceSha256) fail('Source profiles changed during export.')
+  }
   if (await inventoryDigest(await snapshot(host, owner)) !== await inventoryDigest(all)) fail('Source changed during export.')
   return a
 }
@@ -258,11 +290,9 @@ async function pausedFiles(a: TransferArchive): Promise<TransferFile[]> {
   }
   return files
 }
-async function verifyReferences(host: TransferHost, owner: string, review: TransferReview): Promise<void> {
+async function verifyReferences(host: TransferHost, owner: string, review: TransferReview, a: TransferArchive, c: TransferConsent): Promise<void> {
   if (review.pocketSourceIds.length) {
-    // Reads only the TARGET's own bank, never the source namespace.
-    const bank = await host.userStorage.getJson('identity-profiles.json', { userId: owner, fallback: null }) as any
-    if (bank?.version !== 1 || review.pocketSourceIds.some(id => !bank.entries?.some((p: any) => p.id === id && p.kind === 'persona'))) fail('Referenced Pocket profiles need explicit target copy/repair before import.')
+    if (!a.files.some(f => f.path === 'identity-profiles.json') || c.copyPocketProfiles !== true) fail('Referenced Pocket profiles need explicit selected-source export and copy/repair consent before import.')
   }
   for (const reference of review.nativeReferences) {
     const [kind, id] = reference.split(':')
@@ -279,7 +309,7 @@ export async function importArchive(host: TransferHost, owner: string, a: Transf
   const review = await reviewArchive(a, owner)
   consent(c, owner, a.digest)
   if (a.source !== 'lumiphone') fail('This path accepts legacy lumiphone exports only.')
-  await verifyReferences(host, owner, review)
+  await verifyReferences(host, owner, review, a, c)
   let journal = await loadJournal(host, owner)
   if (journal && journal.digest !== a.digest) fail('A different transfer already owns this destination.')
   if (journal?.phase === 'rolled-back' || journal?.phase === 'rolling-back') fail('Transfer was rolled back or is rolling back; retain its archive and use a fresh destination.')
@@ -289,6 +319,7 @@ export async function importArchive(host: TransferHost, owner: string, a: Transf
   }
   if (!journal) {
     if ((await host.userStorage.list('mochi/v1/', owner)).length) fail('Destination is not empty; collision refused.')
+    if (a.files.some(f => f.path === 'identity-profiles.json') && await host.userStorage.exists('identity-profiles.json', owner)) fail('Destination profile bank exists; collision refused, never silently relink.')
     if (await host.userStorage.exists(TRANSFER_LOCK, owner)) {
       const lock = await host.userStorage.getJson(TRANSFER_LOCK, { userId: owner }) as any
       if (lock?.version !== 1 || lock.ownerId !== owner || lock.digest !== a.digest) fail('Unfinished transfer lock; inspect before recovery.')
@@ -325,7 +356,7 @@ export async function reviewRollback(host: TransferHost, owner: string): Promise
   const j = await loadJournal(host, owner)
   if (!j || !['staging', 'copying', 'committed', 'rolling-back', 'rolled-back'].includes(j.phase)) fail('No import available for rollback.')
   if (j.rollback && j.rollbackDigest) return { digest: j.rollbackDigest, files: j.rollback.map(({ base64, ...f }) => f) }
-  const files = await snapshot(host, owner)
+  const files = await snapshot(host, owner, j.files.some(f => f.path === 'identity-profiles.json'))
   return { digest: await inventoryDigest(files), files: files.map(({ base64, ...f }) => f) }
 }
 /** Preserve ALL later Mochi writes in a durable rollback archive before removing live copies. */
@@ -338,7 +369,7 @@ export async function rollbackImport(host: TransferHost, owner: string, c: Trans
     return
   }
   if (['staging', 'copying', 'committed'].includes(j.phase)) {
-    const files = await snapshot(host, owner), digest = await inventoryDigest(files)
+    const files = await snapshot(host, owner, j.files.some(f => f.path === 'identity-profiles.json')), digest = await inventoryDigest(files)
     consent(c, owner, digest)
     await host.userStorage.setJson(TRANSFER_LOCK, { version: 1, ownerId: owner, digest }, { userId: owner })
     j.rollback = files; j.rollbackDigest = digest; j.phase = 'rolling-back'
@@ -346,6 +377,7 @@ export async function rollbackImport(host: TransferHost, owner: string, c: Trans
   } else consent(c, owner, j.rollbackDigest!)
   if (!j.rollback || !await host.userStorage.exists(TRANSFER_LOCK, owner)) fail('Rollback recovery is incomplete.')
   const expected = new Map(j.rollback.map(f => [f.path, f]))
+  for (const f of j.rollback) if (await host.userStorage.exists(f.path, owner) && await sha256(await host.userStorage.readBinary(f.path, owner)) !== f.sha256) fail('Rollback source changed; retain the newer bytes before recovery.')
   for (const name of await host.userStorage.list('mochi/v1/', owner)) {
     const path = 'mochi/v1/' + name.replaceAll('\\', '/'), f = expected.get(path)
     if (!f || await sha256(await host.userStorage.readBinary(path, owner)) !== f.sha256) fail('Rollback source changed; recover without overwriting later writes.')

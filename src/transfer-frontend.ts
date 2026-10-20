@@ -13,21 +13,24 @@ export function setup(ctx: SpindleFrontendContext): () => void {
   const file = document.createElement('input'); file.type = 'file'; file.accept = '.json,application/json'; file.setAttribute('aria-label', 'Choose Mochi export')
   const label = document.createElement('label'), check = document.createElement('input'); check.type = 'checkbox'
   label.append(check, ' I reviewed this inventory, saved the original bytes, and confirm the old source is disabled. I consent to this operation for my authenticated owner ID.')
+  const profileLabel = document.createElement('label'), profiles = document.createElement('input'); profiles.type = 'checkbox'
+  profileLabel.append(profiles, ' Also include/copy only the explicitly inventoried backing Pocket persona profiles. This never changes source:pocket or copies unrelated profiles.')
   const ownerLabel = document.createElement('label'), ownerInput = document.createElement('input')
   ownerLabel.append('Confirm the real owner ID shown above ', ownerInput)
   let owner = '', archive: TransferArchive | undefined, review: TransferReview | undefined, rollbackDigest = '', stopped = false, sequence = 0
+  const sessionId = crypto.randomUUID().replaceAll('-', '')
   const pending = new Map<string, { resolve(v: any): void; reject(e: Error): void }>()
   const buttons: HTMLButtonElement[] = []
-  const resetConsent = () => { check.checked = false; ownerInput.value = '' }
+  const resetConsent = () => { check.checked = false; profiles.checked = false; ownerInput.value = '' }
   const request = (action: string, more: Record<string, unknown> = {}) => new Promise<any>((resolve, reject) => {
     if (stopped) { reject(Error('Authentication changed. Reopen a fresh maintenance context.')); return }
-    const requestId = 'transfer_' + (++sequence)
+    const requestId = 'transfer_' + sessionId + '_' + (++sequence)
     pending.set(requestId, { resolve, reject })
     ctx.sendToBackend({ type: 'mochi-transfer:request', requestId, action, ...more })
   })
   const consent = (digest: string) => {
     if (!check.checked || !owner || ownerInput.value !== owner) throw Error('Review the inventory, check consent and type the matching authenticated owner ID.')
-    return { ownerId: owner, digest, confirmed: true, sourceDisabled: true, originalsSaved: true }
+    return { ownerId: owner, digest, confirmed: true, sourceDisabled: true, originalsSaved: true, ...(profiles.checked ? { copyPocketProfiles: true } : {}) }
   }
   const button = (title: string, work: () => Promise<void>) => {
     const b = document.createElement('button'); b.type = 'button'; b.textContent = title
@@ -36,7 +39,7 @@ export function setup(ctx: SpindleFrontendContext): () => void {
   }
   const exporter = button('Export my legacy Mochi data', async () => {
     consent('export')
-    const a = await request('export', { confirmed: true }) as TransferArchive
+    const a = await request('export', { confirmed: true, includeProfiles: profiles.checked }) as TransferArchive
     const blob = new Blob([JSON.stringify(a)], { type: 'application/json' }), url = URL.createObjectURL(blob), link = document.createElement('a')
     link.href = url; link.download = 'mochi-' + a.ownerId + '-' + a.digest.slice(0, 12) + '.json'; link.textContent = 'Save Mochi archive'
     root.append(link); link.click(); setTimeout(() => URL.revokeObjectURL(url), 60000)
@@ -67,7 +70,7 @@ export function setup(ctx: SpindleFrontendContext): () => void {
     await request('rollback', { consent: consent(rollbackDigest) })
     status.textContent = 'Rollback complete. The preserved source and journal archives remain. Later destination writes are retained separately in the rollback archive.'; resetConsent()
   })
-  root.append(heading, notice, status, file, preview, ownerLabel, label, exporter, reviewer, importer, rollbackReview, rollback)
+  root.append(heading, notice, status, file, preview, ownerLabel, label, profileLabel, exporter, reviewer, importer, rollbackReview, rollback)
   tab.root.append(root)
   const dispose = () => {
     if (stopped) return
