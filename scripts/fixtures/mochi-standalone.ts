@@ -2,6 +2,9 @@
 // RP APIs, Pocket controller, phone widgets, network or persisted data.
 import {startMochiRuntime} from '../../src/mochi/runtime.js'
 import {setup} from '../../src/frontend.js'
+import {getMochiSession} from '../../src/mochi/session.js'
+const fallback=new URLSearchParams(location.search).has('fallback')
+let drawerHandle:any
 const files=new Map<string,any>(),backend=new Set<any>(),frontend=new Set<any>(),providerCalls:any[]=[]
 const store=(scope:string)=>({
   exists:async(p:string,u?:string)=>files.has(scope+(u||'')+':'+p),
@@ -26,12 +29,12 @@ const widget=(options:any)=>{
   const setSize=(w:number,h:number)=>{root.style.width=w+'px';root.style.height=h+'px'}
   moveTo(position.x,position.y);setSize(options.width,options.height)
   return {root,moveTo,getPosition:()=>position,setSize,setVisible:(v:boolean)=>{root.hidden=!v},isVisible:()=>!root.hidden,onDragEnd:()=>()=>{},
-    setFullscreen:(value:boolean)=>{full=value;if(value){moveTo(0,0);setSize(innerWidth,innerHeight)}},isFullscreen:()=>full,destroy:()=>root.remove()}
+    setFullscreen:fallback?undefined:(value:boolean)=>{full=value;if(value){moveTo(0,0);setSize(innerWidth,innerHeight)}},isFullscreen:()=>full,destroy:()=>root.remove()}
 }
 const ctx:any={sendToBackend:(p:any)=>{for(const fn of backend)fn(p,'synthetic')},onBackendMessage:(fn:any)=>{frontend.add(fn);return()=>frontend.delete(fn)},
   dom:{addStyle:(css:string)=>{const style=document.createElement('style');style.textContent=css;document.head.append(style);return()=>style.remove()}},
-  ready:()=>{},ui:{createFloatWidget:widget,geometry:{layoutViewportSize:()=>({width:innerWidth,height:innerHeight}),createResizeController:()=>()=>{}},
-    registerDrawerTab:()=>{const root=document.getElementById('drawer')!;let active:any;return{root,onActivate:(fn:any)=>{active=fn;return()=>{active=undefined}},activate:()=>{root.hidden=false;active?.()},destroy:()=>root.remove()}},
+  ready:()=>{},ui:{createFloatWidget:widget,geometry:fallback?undefined:{layoutViewportSize:()=>({width:innerWidth,height:innerHeight}),createResizeController:()=>()=>{}},
+    registerDrawerTab:()=>{const root=document.getElementById('drawer')!;let active:any;return drawerHandle={root,onActivate:(fn:any)=>{active=fn;return()=>{active=undefined}},activate:()=>{root.hidden=false;active?.()},destroy:()=>root.remove()}},
     registerInputBarAction:(options:any)=>{const button=document.createElement('button');button.textContent=options.label;button.id='owned-action';document.body.append(button);return{onClick:(fn:any)=>{button.onclick=fn;return()=>{button.onclick=null}},destroy:()=>button.remove()}},
   },
 }
@@ -40,6 +43,9 @@ async function start(){
   await runtime.service.fictionalAccounts.create('synthetic',{displayName:'Night worker',persona:{source:'manual',name:'Night worker'}})
   await runtime.service.create('synthetic',{accountId:day.id,title:'Independent messenger',characterIds:['rowan']})
   const dispose=setup(ctx)
-  ;(window as any).__mochiCore={providerCalls,dispose:()=>{dispose();runtime.stop()},frontend}
+  ;(window as any).__mochiCore={providerCalls,dispose:()=>{dispose();runtime.stop()},frontend,
+    changeOwner:()=>{const session=getMochiSession(ctx);session.authenticatedIdentityChanged('synthetic');session.authenticatedIdentityChanged('other')},
+    openDrawer:()=>drawerHandle.activate(),closeDrawer:()=>{document.getElementById('drawer')!.hidden=true},
+  }
 }
 void start()

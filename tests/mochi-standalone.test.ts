@@ -188,6 +188,9 @@ test('B0/B3: owner CSS, design system, Lucide notices/provenance and artwork ret
 test('B3: delivery retains legacy identity, Mochi entries and compatible core capabilities',()=>{
   const manifest=JSON.parse(readFileSync(new URL('../spindle.json',import.meta.url),'utf8'))
   expect(manifest.identifier).toBe('lumiphone');expect(manifest.entry_backend).toBe('dist/backend.js');expect(manifest.entry_frontend).toBe('dist/frontend.js')
+  expect(manifest.author).toBe('lizardqu33n')
+  expect(manifest.github).toBe('https://github.com/lizardqu33n/Pocket-mochi')
+  expect(manifest.homepage).toBe(manifest.github)
   expect(manifest.permissions.sort()).toEqual(['characters','generation','images','personas','ui_panels'])
   for(const entry of ['backend','frontend']){
     const bundle=readFileSync(new URL('../dist/'+entry+'.js',import.meta.url),'utf8')

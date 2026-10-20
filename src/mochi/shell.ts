@@ -25,12 +25,18 @@ export function setupMochiShell(ctx: SpindleFrontendContext): () => void {
     cleanups.push(() => session.destroy())
     const drawer = ctx.ui.registerDrawerTab({ id: 'mochi', title: 'Mochi', shortName: 'Mochi', headerTitle: 'Mochi', description: 'Mochi accounts and messenger', keywords: ['mochi', 'messages', 'accounts'], iconSvg: MOCHI_SIDEBAR_ICON })
     cleanups.push(() => drawer.destroy())
-    // Keep shared wrapper/style contracts without constructing a handset.
+    // Reuse the legacy portal's full-size Mochi layout contract. The phone
+    // landing-card wrapper centers intrinsic-width children and collapses the
+    // container-query profile editor when its navigation is hidden.
     const root = document.createElement('div')
-    root.className = 'lumiphone-drawer'
+    root.className = 'pocket-portal'
+    root.dataset.destination = 'mochi'
+    const body = document.createElement('div')
+    body.className = 'pocket-portal-body'
+    root.append(body)
     drawer.root.append(root)
     const navigation = createMochiSidebar(ctx, session, () => ({ enabled: true, previews: false }), () => drawer.activate(), () => ctx.sendToBackend({ type: 'mochi:open_shell' }))
-    root.append(navigation.root)
+    body.append(navigation.root)
     cleanups.push(() => navigation.destroy())
     cleanups.push(drawer.onActivate(() => navigation.open()))
     const action = ctx.ui.registerInputBarAction({ id: 'open-mochi', label: 'Open Mochi', subtitle: 'Open Mochi accounts and messenger', iconSvg: MOCHI_SIDEBAR_ICON })
