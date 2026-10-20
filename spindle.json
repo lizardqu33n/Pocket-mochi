@@ -1,11 +1,11 @@
 {
-  "version": "0.2.0",
+  "version": "0.6.1",
   "name": "Mochi",
-  "identifier": "lumiphone",
+  "identifier": "mochi",
   "author": "lizardqu33n",
   "github": "https://github.com/lizardqu33n/Pocket-mochi",
   "homepage": "https://github.com/lizardqu33n/Pocket-mochi",
-  "description": "Independent Mochi messenger for Lumiverse/Spindle. Legacy lumiphone identity; cannot coexist with another lumiphone installation.",
+  "description": "Independent Mochi messenger for Lumiverse/Spindle. Dedicated mochi namespace; fresh install or explicit same-owner reviewed import.",
   "permissions": [
     "generation",
     "characters",

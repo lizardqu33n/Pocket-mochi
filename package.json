@@ -1,9 +1,12 @@
 {
   "name": "pocket-spindle-extension",
-  "version": "0.2.0",
+  "version": "0.6.1",
   "private": true,
   "type": "module",
   "scripts": {
+    "build:transfer-source": "bun run scripts/build-mochi-transfer.ts source",
+    "build:transfer-destination": "bun run scripts/build-mochi-transfer.ts destination",
+    "test:mochi-transfer": "bun test --timeout 30000 tests/mochi-transfer.test.ts",
     "build": "bun run build:backend && bun run build:frontend",
     "build:backend": "bun build src/backend.ts --target=bun --format=esm --outfile=dist/backend.js",
     "build:frontend": "bun run scripts/check-mochi-css.ts && bun build src/frontend.ts --target=browser --format=esm --outfile=dist/frontend.js",

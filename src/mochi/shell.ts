@@ -23,7 +23,7 @@ export function setupMochiShell(ctx: SpindleFrontendContext): () => void {
     cleanups.push(ctx.dom.addStyle(PHONE_STYLES + PORTAL_STYLES))
     const session = getMochiSession(ctx)
     cleanups.push(() => session.destroy())
-    const drawer = ctx.ui.registerDrawerTab({ id: 'mochi', title: 'Mochi', shortName: 'Mochi', headerTitle: 'Mochi', description: 'Mochi accounts and messenger', keywords: ['mochi', 'messages', 'accounts'], iconSvg: MOCHI_SIDEBAR_ICON })
+    const drawer = ctx.ui.registerDrawerTab({ id: 'mochi-independent', title: 'Mochi', shortName: 'Mochi', headerTitle: 'Mochi', description: 'Mochi accounts and messenger', keywords: ['mochi', 'messages', 'accounts'], iconSvg: MOCHI_SIDEBAR_ICON })
     cleanups.push(() => drawer.destroy())
     // Reuse the legacy portal's full-size Mochi layout contract. The phone
     // landing-card wrapper centers intrinsic-width children and collapses the
@@ -39,7 +39,7 @@ export function setupMochiShell(ctx: SpindleFrontendContext): () => void {
     body.append(navigation.root)
     cleanups.push(() => navigation.destroy())
     cleanups.push(drawer.onActivate(() => navigation.open()))
-    const action = ctx.ui.registerInputBarAction({ id: 'open-mochi', label: 'Open Mochi', subtitle: 'Open Mochi accounts and messenger', iconSvg: MOCHI_SIDEBAR_ICON })
+    const action = ctx.ui.registerInputBarAction({ id: 'mochi-open-independent', label: 'Open Mochi', subtitle: 'Open Mochi accounts and messenger', iconSvg: MOCHI_SIDEBAR_ICON })
     cleanups.push(() => action.destroy())
     cleanups.push(action.onClick(() => { drawer.activate(); navigation.openMessenger() }))
     // Widgets/geometry are optional; the owned drawer/action remain available.

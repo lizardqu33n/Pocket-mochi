@@ -1,4 +1,4 @@
-import { expect, test } from 'bun:test'
+import { expect, test, setSystemTime } from 'bun:test'
 import { JSDOM } from 'jsdom'
 import { readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
@@ -53,6 +53,7 @@ test('B1: stop aborts queued/interactive/scheduled jobs and suppresses late tran
 })
 
 test('B0: even an existing due synthetic job is not dispatched as a startup side effect',async()=>{
+  setSystemTime(new Date('2026-10-20T12:00:00Z'))
   const h=backend(),first=startMochiRuntime(h.host)
   let second:ReturnType<typeof startMochiRuntime>|undefined
   try{
@@ -65,10 +66,11 @@ test('B0: even an existing due synthetic job is not dispatched as a startup side
     first.stop();const before=JSON.stringify([...h.files])
     second=startMochiRuntime(h.host);await flush()
     expect(h.calls).toHaveLength(0);expect(JSON.stringify([...h.files])).toBe(before);expect(h.listeners.size).toBe(1)
-  }finally{first.stop();second?.stop()}
+  }finally{first.stop();second?.stop();setSystemTime()}
 })
 
 test('B1: stopping real scheduled generation preserves recoverable job and rejects late provider output',async()=>{
+  setSystemTime(new Date('2026-10-20T12:00:00Z'))
   const h=backend();let release!:(value:any)=>void,started!:()=>void
   const ready=new Promise<void>(resolve=>{started=resolve})
   h.host.generate.quiet=async(input:any)=>{h.calls.push(input);started();return new Promise(resolve=>{release=resolve})}
@@ -85,7 +87,7 @@ test('B1: stopping real scheduled generation preserves recoverable job and rejec
     release({content:'{"speakerId":"char","text":"Late output must be discarded"}'});await running
     const stored=await service.read('alice',room.id)
     expect(stored.messages).toEqual([]);expect(stored.runtime!.jobs[0].status).toBe('queued');expect(h.events.length).toBe(events)
-  }finally{runtime.stop()}
+  }finally{runtime.stop();setSystemTime()}
 })
 
 test('B0: preserved Pocket-source record is readable without Pocket; missing source never becomes manual',async()=>{
@@ -140,7 +142,7 @@ test('B1/B2: one owned drawer/action/session/launcher, no phone; ready once and 
   const h=frontend();let destroy=()=>{}
   try{
     destroy=setup(h.ctx);expect(setup(h.ctx)).toBe(destroy);expect(h.ready).toBe(1);expect(h.listeners.size).toBe(1)
-    expect(h.tabs.map(t=>t.spec.id)).toEqual(['mochi']);expect(h.actions.map(a=>a.spec.id)).toEqual(['open-mochi'])
+    expect(h.tabs.map(t=>t.spec.id)).toEqual(['mochi-independent']);expect(h.actions.map(a=>a.spec.id)).toEqual(['mochi-open-independent'])
     expect(h.widgets).toHaveLength(1);expect(h.widgets[0].spec.width).toBe(58);expect(document.querySelector('.mochi-launcher svg image')).not.toBeNull()
     expect(document.querySelector('.lumiphone-shell')).toBeNull();expect(h.sent).toEqual([])
     h.actions[0].click();expect(h.sent.some(p=>p.type==='mochi:accounts')).toBe(true)
@@ -185,9 +187,9 @@ test('B0/B3: owner CSS, design system, Lucide notices/provenance and artwork ret
   for(const [name,hash]of Object.entries(provenance.files))expect(createHash('sha256').update(readFileSync(new URL('../src/mochi/ui/icons/'+name+'.svg',import.meta.url),'utf8').replaceAll('\r\n','\n')).digest('hex')).toBe(hash)
 })
 
-test('B3: delivery retains legacy identity, Mochi entries and compatible core capabilities',()=>{
+test('C: delivery uses the dedicated Mochi namespace, 0.6.1 and compatible core capabilities',()=>{
   const manifest=JSON.parse(readFileSync(new URL('../spindle.json',import.meta.url),'utf8'))
-  expect(manifest.identifier).toBe('lumiphone');expect(manifest.entry_backend).toBe('dist/backend.js');expect(manifest.entry_frontend).toBe('dist/frontend.js')
+  expect(manifest.identifier).toBe('mochi');expect(manifest.version).toBe('0.6.1');expect(manifest.entry_backend).toBe('dist/backend.js');expect(manifest.entry_frontend).toBe('dist/frontend.js')
   expect(manifest.author).toBe('lizardqu33n')
   expect(manifest.github).toBe('https://github.com/lizardqu33n/Pocket-mochi')
   expect(manifest.homepage).toBe(manifest.github)
@@ -213,7 +215,7 @@ test('B3: both delivery bundles load against synthetic hosts without a Pocket in
   const f=frontend({widgets:false});let destroy=()=>{}
   try{
     const module=await import('../dist/frontend.js')
-    destroy=module.setup(f.ctx);expect(f.ready).toBe(1);expect(f.listeners.size).toBe(1);expect(f.tabs[0].spec.id).toBe('mochi')
+    destroy=module.setup(f.ctx);expect(f.ready).toBe(1);expect(f.listeners.size).toBe(1);expect(f.tabs[0].spec.id).toBe('mochi-independent')
     f.tabs[0].activate();expect(f.sent.at(-1).type).toBe('mochi:accounts')
   }finally{destroy();f.cleanup()}
   expect(f.listeners.size).toBe(0)
