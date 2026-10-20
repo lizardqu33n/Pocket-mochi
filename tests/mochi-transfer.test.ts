@@ -22,6 +22,7 @@ function memory(namespace = 'mochi', files = new Map<string, Uint8Array>()) {
     userStorage: {
       exists: async (p: string, u: string) => files.has(key(p, u)),
       readBinary: async (p: string, u: string) => { const f = files.get(key(p, u)); if (!f) throw Error('missing file'); return f.slice() },
+      stat: async (p: string, u: string) => ({ exists: files.has(key(p, u)), isFile: files.has(key(p, u)), sizeBytes: files.get(key(p, u))?.length || 0 }),
       writeBinary: async (p: string, b: Uint8Array, u: string) => put(p, b, u),
       getJson: async (p: string, o: any) => { const f = files.get(key(p, o.userId)); return f ? JSON.parse(dec.decode(f)) : o.fallback },
       setJson: async (p: string, v: any, o: any) => put(p, enc.encode(JSON.stringify(v)), o.userId),
@@ -33,6 +34,7 @@ function memory(namespace = 'mochi', files = new Map<string, Uint8Array>()) {
     users: { getRole: async (u: string) => { if (!['alice', 'bob'].includes(u)) throw Error('auth unavailable'); return 'user' } },
     characters: { get: async (id: string, u: string) => ({ id, ownerId: u }), list: async () => ({ data: [] }) },
     personas: { get: async (id: string, u: string) => ({ id, ownerId: u }), list: async () => ({ data: [] }) },
+    connections: { get: async (id: string, u: string) => ({ id, ownerId: u }), list: async () => [] },
     images: { get: async (id: string, u: string) => ({ id, ownerId: u }), list: async () => ({ data: [] }) },
     permissions: { has: () => true }, generate: { quiet: async () => { calls.push('forbidden'); throw Error('No generation during transfer') } },
     sendToFrontend: (p: any, u: string) => events.push({ p, u }),
@@ -277,4 +279,35 @@ test('user-install aliased scheduler registry is explicitly inventoried but neve
   const j = await d.host.userStorage.getJson('mochi-transfer/v1/journal.json', { userId: 'alice' })
   expect(j.rollback.some((f: any) => f.path.endsWith('scheduler-accounts.json'))).toBe(true)
   expect(await d.host.userStorage.list('mochi/v1/', 'alice')).toEqual([])
+})
+
+test('queued, claimed, deferred, expired and terminal jobs retain IDs/history; opt-out, idle dispatch and provider calls remain disabled', async () => {
+  const { a } = await archive(), d = memory()
+  const all = await mutate(a, 'mochi/v1/rooms/' + R + '.json', v => {
+    const base = v.runtime.jobs[0]
+    v.runtime.jobs.push(...['generating', 'paused', 'delivered', 'cancelled', 'failed', 'missed'].map((status, i) => ({ ...base, id: 'state_' + i, kind: 'scheduled', status, claim: 'old_claim', leaseUntil: 9999999999999 })))
+    v.runtime.jobs.push({ ...base, id: 'expired', expiresAt: 2, kind: 'idle' })
+    v.runtime.idle = { enabled: true, periodId: 'period', startedAt: 1, delivered: 0, opportunities: 1, lastDeliveredAt: 0, nextDueAt: 2 }
+    v.settings.connectionId = 'saved_connection'
+  })
+  await importArchive(d.host, 'alice', all, consent(all))
+  const room = await d.host.userStorage.getJson('mochi/v1/rooms/' + R + '.json', { userId: 'alice' })
+  expect(room.runtime.idle.enabled).toBe(false)
+  expect(room.runtime.jobs.filter((j: any) => !['delivered', 'cancelled', 'failed', 'missed'].includes(j.status)).every((j: any) => j.status === 'paused' && !j.claim && !j.leaseUntil)).toBe(true)
+  expect(room.runtime.jobs.find((j: any) => j.id === 'state_2').status).toBe('delivered')
+  expect(d.calls).toHaveLength(0)
+  const missing = memory(); missing.host.connections.get = async () => null
+  await expect(importArchive(missing.host, 'alice', all, consent(all))).rejects.toThrow('connection')
+  expect(missing.files.size).toBe(0)
+})
+
+test('oversized source and unavailable host APIs are refused before file bytes or real providers are read', async () => {
+  const s = memory('lumiphone'); await seed(s, 'alice')
+  s.host.userStorage.stat = async () => ({ exists: true, isFile: true, sizeBytes: 33 * 1024 * 1024 })
+  let reads = 0; s.host.userStorage.readBinary = async () => { reads++; throw Error('must not read') }
+  await expect(exportArchive(s.host, 'alice', 'lumiphone', true)).rejects.toThrow('oversized')
+  expect(reads).toBe(0)
+  s.host.userStorage.stat = undefined
+  expect(() => startTransferMaintenance(s.host, 'source')).toThrow('capability')
+  expect(() => startTransferMaintenance(memory('mochi').host, 'source')).toThrow('namespace')
 })

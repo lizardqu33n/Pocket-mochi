@@ -6,7 +6,7 @@ export type MaintenanceMode = 'source' | 'destination'
 export function startTransferMaintenance(host: SpindleAPI, mode: MaintenanceMode): () => void {
   const expected = mode === 'source' ? 'lumiphone' : 'mochi'
   if (host.manifest.identifier !== expected) throw Error('Maintenance package namespace mismatch.')
-  for (const api of ['readBinary', 'writeBinary', 'delete', 'list', 'exists', 'move', 'getJson', 'setJson'] as const) {
+  for (const api of ['readBinary', 'writeBinary', 'delete', 'list', 'exists', 'move', 'getJson', 'setJson', 'stat'] as const) {
     if (typeof host.userStorage[api] !== 'function') throw Error('Required host storage capability is unavailable: ' + api)
   }
   let stopped = false

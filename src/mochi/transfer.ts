@@ -3,6 +3,7 @@ import { MochiUIPreferences } from './ui-preferences.js'
 import { MochiCharacterPreferences } from './character-preferences.js'
 import { proveCoverage } from './memory.js'
 import { readReactions } from './reactions.js'
+import { replyIdentifier } from './replies.js'
 import { identifier, TERMINAL } from './scheduling.js'
 import type { MochiRoom, MochiMessage } from './types.js'
 
@@ -16,6 +17,7 @@ export type TransferHost = MochiHost & {
     readBinary(path: string, user: string): Promise<Uint8Array>
     writeBinary(path: string, bytes: Uint8Array, user: string): Promise<void>
     delete(path: string, user: string): Promise<void>
+    stat(path: string, user: string): Promise<{ exists: boolean; isFile: boolean; sizeBytes: number }>
   }
 }
 export interface TransferFile { path: string; bytes: number; sha256: string; base64: string }
@@ -142,10 +144,11 @@ export async function reviewArchive(a: TransferArchive, owner: string): Promise<
         if (room.accountId && !ids.has(room.accountId)) fail('Missing fictional account dependency.')
         review.rooms++; if (!room.accountId) review.legacyRooms++
         room.characterIds.forEach(id => native.add('character:' + id))
+        if (room.settings?.connectionId) native.add('connection:' + identifier(room.settings.connectionId))
         const seen = new Set<string>()
         for (const raw of room.messages) {
           const m = raw as MochiMessage
-          identifier(m?.id)
+          if (!replyIdentifier(m?.id)) fail('Invalid stable message identifier.')
           if (seen.has(m.id) || !['user', 'assistant'].includes(m.role) || typeof m.content !== 'string' || m.content.length > 100000 || typeof m.name !== 'string' || typeof m.avatarUrl !== 'string' || !Number.isFinite(Date.parse(m.createdAt)) || typeof m.requestId !== 'string') fail('Damaged or ambiguous message history.')
           if (m.replyTo && !room.messages.some((r: any) => r.id === m.replyTo)) fail('Orphaned quote reference; repair explicitly.')
           readReactions(m.reactions, room)
@@ -169,11 +172,13 @@ export async function reviewArchive(a: TransferArchive, owner: string): Promise<
       } else if (path.includes('/character-preferences/')) {
         if (path !== `mochi/v1/character-preferences/${value.characterId}.json`) fail('Character preference path mismatch.')
         await characters.read(owner, value.characterId, false)
+        native.add('character:' + identifier(value.characterId))
       } else if (path.endsWith('/generation-prompts.json')) {
         const prompts = await service.generationPrompts.read(owner)
         for (const key of Object.keys(prompts.entries)) {
           const parts = JSON.parse(key)
           if (['account', 'character'].includes(parts[0]) && parts[1] && !ids.has(parts[1])) fail('Orphaned prompt account.')
+          if (parts[0] === 'character') native.add('character:' + identifier(parts[2]))
         }
       } else if (path.endsWith('/shared-presentation.json')) await ui.shared(owner)
       else if (path.endsWith('/scheduler.json')) {
@@ -191,7 +196,13 @@ async function snapshot(host: TransferHost, owner: string): Promise<TransferFile
   const names = (await host.userStorage.list('mochi/v1/', owner)).map(n => 'mochi/v1/' + n.replaceAll('\\', '/')).sort()
   if (names.length > MAX_FILES || new Set(names).size !== names.length) fail('Invalid source inventory.')
   const files: TransferFile[] = []
-  for (const path of names) files.push(await file(path, await host.userStorage.readBinary(path, owner), true))
+  let total = 0
+  for (const path of names) {
+    transferPath(path, true)
+    const stat = await host.userStorage.stat(path, owner)
+    if (!stat.exists || !stat.isFile || !Number.isSafeInteger(stat.sizeBytes) || stat.sizeBytes < 0 || (total += stat.sizeBytes) > MAX_BYTES) fail('Invalid or oversized source file inventory.')
+    files.push(await file(path, await host.userStorage.readBinary(path, owner), true))
+  }
   if (files.reduce((sum, f) => sum + f.bytes, 0) > MAX_BYTES) fail('Transfer exceeds archive limit.')
   return files
 }
@@ -255,6 +266,10 @@ async function verifyReferences(host: TransferHost, owner: string, review: Trans
   }
   for (const reference of review.nativeReferences) {
     const [kind, id] = reference.split(':')
+    if (kind === 'connection') {
+      if (!host.connections || !await host.connections.get(id, owner)) fail('Missing owner connection reference: ' + id)
+      continue
+    }
     if (!host.permissions.has(kind === 'persona' ? 'personas' : 'characters') || !await (kind === 'persona' ? host.personas : host.characters).get(id, owner)) fail('Missing native reference: ' + reference)
   }
   for (const id of review.imageReferences) if (!host.images || !host.permissions.has('images') || !await host.images.get(id, owner)) fail('Missing owner image reference: ' + id)
