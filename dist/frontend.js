@@ -17928,7 +17928,7 @@ function setupMochiShell(ctx) {
     cleanups.push(ctx.dom.addStyle(PHONE_STYLES + PORTAL_STYLES));
     const session = getMochiSession(ctx);
     cleanups.push(() => session.destroy());
-    const drawer = ctx.ui.registerDrawerTab({ id: "mochi", title: "Mochi", shortName: "Mochi", headerTitle: "Mochi", description: "Mochi accounts and messenger", keywords: ["mochi", "messages", "accounts"], iconSvg: MOCHI_SIDEBAR_ICON });
+    const drawer = ctx.ui.registerDrawerTab({ id: "mochi-independent", title: "Mochi", shortName: "Mochi", headerTitle: "Mochi", description: "Mochi accounts and messenger", keywords: ["mochi", "messages", "accounts"], iconSvg: MOCHI_SIDEBAR_ICON });
     cleanups.push(() => drawer.destroy());
     const root = document.createElement("div");
     root.className = "pocket-portal";
@@ -17941,7 +17941,7 @@ function setupMochiShell(ctx) {
     body.append(navigation.root);
     cleanups.push(() => navigation.destroy());
     cleanups.push(drawer.onActivate(() => navigation.open()));
-    const action = ctx.ui.registerInputBarAction({ id: "open-mochi", label: "Open Mochi", subtitle: "Open Mochi accounts and messenger", iconSvg: MOCHI_SIDEBAR_ICON });
+    const action = ctx.ui.registerInputBarAction({ id: "mochi-open-independent", label: "Open Mochi", subtitle: "Open Mochi accounts and messenger", iconSvg: MOCHI_SIDEBAR_ICON });
     cleanups.push(() => action.destroy());
     cleanups.push(action.onClick(() => {
       drawer.activate();

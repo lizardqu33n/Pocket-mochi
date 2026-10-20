@@ -1,10 +1,20 @@
 <img width="1254" height="1254" alt="image" src="https://github.com/user-attachments/assets/5cae7d35-77d1-450b-9007-5e81ba1f9af2" />
 
-# Pocket
+# Mochi 0.6.1
+
+Independent Mochi messenger for Lumiverse/Spindle, authored by lizardqu33n and derived from Pocket by kittyafterdark and its contributors. Repository: https://github.com/lizardqu33n/Pocket-mochi.
+
+The default package now uses the dedicated **`mochi`** identifier. This changes host installation and storage namespace: existing **`lumiphone` data will not appear without an explicit same-owner import**. This is a separate installation, not an in-place update path. Do not run an existing lumiphone installation's updater against this identity-changing branch. Pocket can keep its own lumiphone namespace; Mochi has separate drawer/action registrations and no mandatory Pocket runtime.
+
+Read [CORE-01C transfer, recovery and isolated-host acceptance](docs/MOCHI-CORE-01C.md) before changing installations. A clean Mochi installation can start empty. Transfer uses separately built, exclusive operator-assisted maintenance packages; it never reads another extension's namespace. Copied jobs stay paused. No installation or real-data transfer is implied by publication to the test branch.
+
+Current extension/package version: **0.6.1**. Next planned milestone: **0.7.0**, documentation only; no 0.7.0 tag, package or release is published. Public standalone distribution remains subject to Pocket permission/license clarification and host/device acceptance. Attribution is retained and is not a license grant.
+
+## Legacy Pocket composition reference
 
 Pocket is a live-mounted Lumiverse Spindle extension that gives every chat + character pair its own persistent in-world phone.
 
-The extension identifier and storage namespace intentionally remain `lumiphone` so existing installations and roleplay data upgrade in place.
+The legacy Pocket composition described below uses `lumiphone`. Its phone/RP behavior and paths describe retained reference source, not Mochi's default standalone entry points or an upgrade promise for the new `mochi` package.
 
 ## Included apps
 

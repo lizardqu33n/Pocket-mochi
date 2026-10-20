@@ -1155,10 +1155,10 @@ class MochiUIPreferences {
       return record;
     });
   }
-  async read(userId, accountId) {
+  async read(userId, accountId, includeArchived = false) {
     const user = identifier(userId), account = accountId === undefined ? undefined : fictionalAccountId(accountId);
     if (account)
-      await this.accounts.get(user, account);
+      await this.accounts.get(user, account, includeArchived);
     const path = `mochi/v1/ui-preferences/${account || "legacy"}.json`;
     if (!await this.host.userStorage.exists(path, user))
       return { version: 1, ownerId: user, accountId: account, revision: 0, preferences: defaultUIPreferences() };
@@ -2578,13 +2578,16 @@ class MochiService {
       throw new Error("This room does not belong to the requested fictional account.");
     return room;
   }
-  async readStored(userId, id) {
+  async validateTransferredRoom(userId, id) {
+    return this.readStored(userId, id, true);
+  }
+  async readStored(userId, id, includeArchived = false) {
     const user = this.account(userId), path = pathFor(id);
     if (!await this.host.userStorage.exists(path, user))
       throw new Error("This room is not available to your account.");
     const room = validateRoom(await this.host.userStorage.getJson(path, { userId: user }), id);
     if (room.accountId)
-      await this.fictionalAccounts.get(user, room.accountId);
+      await this.fictionalAccounts.get(user, room.accountId, includeArchived);
     if (room.preset)
       validateBinding(room.preset, room.accountId);
     if (room.memory)
@@ -4462,6 +4465,13 @@ class MochiScheduler {
   }
 }
 
+// src/mochi/transfer-gate.ts
+var TRANSFER_LOCK = "mochi-transfer/v1/blocked.json";
+async function assertTransferUnlocked(host, owner) {
+  if (await host.userStorage.exists(TRANSFER_LOCK, owner))
+    throw Error("Mochi transfer recovery is required. Open the approved maintenance package before using this account.");
+}
+
 // src/mochi/runtime.ts
 var runtimes = new WeakMap;
 var scheduling = new Set(["mochi:background_account", "mochi:background_room", "mochi:schedule", "mochi:schedule_cancel", "mochi:presence", "mochi:idle"]);
@@ -4471,6 +4481,28 @@ function startMochiRuntime(host) {
     return existing;
   let stopped = false;
   const serviceHost = Object.create(host);
+  serviceHost.userStorage = {
+    exists: async (p, u) => {
+      await assertTransferUnlocked(host, u);
+      return host.userStorage.exists(p, u);
+    },
+    getJson: async (p, o) => {
+      await assertTransferUnlocked(host, o.userId);
+      return host.userStorage.getJson(p, o);
+    },
+    setJson: async (p, v, o) => {
+      await assertTransferUnlocked(host, o.userId);
+      return host.userStorage.setJson(p, v, o);
+    },
+    move: async (a, b, u) => {
+      await assertTransferUnlocked(host, u);
+      return host.userStorage.move(a, b, u);
+    },
+    list: async (p, u) => {
+      await assertTransferUnlocked(host, u);
+      return host.userStorage.list(p, u);
+    }
+  };
   serviceHost.sendToFrontend = (payload, user) => {
     if (!stopped)
       host.sendToFrontend(payload, user);
@@ -4479,6 +4511,7 @@ function startMochiRuntime(host) {
     serviceHost.generate = { quiet: async (input) => {
       if (stopped)
         throw new Error("Mochi runtime is stopped.");
+      await assertTransferUnlocked(host, input.userId);
       const result = await host.generate.quiet(input);
       if (stopped)
         throw new Error("Mochi runtime is stopped.");
