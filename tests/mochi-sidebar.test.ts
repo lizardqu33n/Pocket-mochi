@@ -262,7 +262,7 @@ test('drawer-close runs for successful desktop/mobile openings; unsupported host
   const failed=fixture(390,true,()=>{throw Error('Bridge unavailable')})
   try{
     failed.tabs[0].activate();failed.accounts();failed.select(failed.a)
-    expect(failed.navigation.root.closest('.mochi-mobile-surface')).not.toBeNull();expect(failed.navigation.root.textContent).toContain('Close the Pocket drawer manually');expect(failed.listeners.size).toBe(1)
+    expect(failed.navigation.root.closest('.mochi-mobile-surface')).not.toBeNull();expect(failed.navigation.root.textContent).toContain('Close the Mochi drawer manually');expect(failed.listeners.size).toBe(1)
   }finally{failed.cleanup()}
 })
 
