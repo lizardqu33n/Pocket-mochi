@@ -1,2 +1,4 @@
 # Bun embeds these files as text; keep checkout bytes stable on Windows/Linux.
 /src/mochi/ui/*.css text eol=lf
+# Delivery bundles must retain the exact bytes produced and hashed by the build.
+dist/*.js -text
