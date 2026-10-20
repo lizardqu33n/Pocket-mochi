@@ -17,7 +17,9 @@
     "test:visual:update": "node scripts/check-visual.mjs --update",
     "test:real-host-relay": "node scripts/check-real-host-relay.mjs",
     "mount:local": "node scripts/mount-local.mjs --enable",
-    "test:mochi-css-ui": "node scripts/check-mochi-css-ui.mjs"
+    "test:mochi-css-ui": "node scripts/check-mochi-css-ui.mjs",
+    "test:mochi-core": "node scripts/verify-mochi-core.mjs",
+    "build:legacy": "bun build src/backend-legacy.ts --target=bun --format=esm --outfile=tmp/legacy-dist/backend.js && bun build src/frontend-legacy.ts --target=browser --format=esm --outfile=tmp/legacy-dist/frontend.js"
   },
   "devDependencies": {
     "jsdom": "^30.0.1",

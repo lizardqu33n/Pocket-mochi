@@ -1,24 +1,17 @@
 {
   "version": "0.2.0",
-  "name": "Pocket",
+  "name": "Mochi",
   "identifier": "lumiphone",
   "author": "kittyafterdark",
   "github": "https://github.com/kittyafterdark/Pocket",
   "homepage": "https://github.com/kittyafterdark/Pocket",
-  "description": "A character-aware roleplay phone with messages, camera, gallery, notes, weather, calendar timelines, typed trackers, model tools, and Swarm Studio visual-profile sync.",
+  "description": "Independent Mochi messenger for Lumiverse/Spindle. Legacy lumiphone identity; cannot coexist with another lumiphone installation.",
   "permissions": [
     "generation",
-    "interceptor",
-    "tools",
-    "chats",
-    "chat_mutation",
     "characters",
     "personas",
     "images",
-    "cors_proxy",
-    "image_gen",
-    "ui_panels",
-    "push_notification"
+    "ui_panels"
   ],
   "entry_backend": "dist/backend.js",
   "entry_frontend": "dist/frontend.js",
